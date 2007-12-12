@@ -5,7 +5,8 @@ pulseaudio (0.9.8-2maemo1) unstable; urgency=low
   * Remove libsamplerate dependency.
   * Remove avahi stuffs (browse module, pabrowse..)
   * debian/pulseaudio.postinst:
-    + use groupadd and useradd instead of debian adduser tools
+    + use groupadd and useradd instead of debian adduser tools.
+  * Add maemo omap2 dsp.
 
  -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Tue, 04 Dec 2007 17:31:27 +0100
 
