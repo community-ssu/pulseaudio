@@ -2,7 +2,7 @@ pulseaudio (0.9.8-2maemo1) unstable; urgency=low
 
   * maemo port.
   * Lower compat and debhelper to version 4.
-  * Remove libsamplerate dependency.
+  * Remove build depedency (using [!armel]!)
   * Remove avahi stuffs (browse module, pabrowse..)
   * debian/pulseaudio.postinst:
     + use groupadd and useradd instead of debian adduser tools.

@@ -1,4 +1,4 @@
-From 0cb435592f111c5431e4dc06c814c4dad03d0b55 Mon Sep 17 00:00:00 2001
+From adb71650b2f2baf21041c4335e874ea7e2aead43 Mon Sep 17 00:00:00 2001
 From: Marc-Andre Lureau <marcandre.lureau@gmail.com>
 Date: Wed, 12 Dec 2007 21:50:38 +0200
 Subject: [PATCH] Maemo DSP plugin (WIP)

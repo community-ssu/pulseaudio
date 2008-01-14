@@ -1,4 +1,4 @@
-From 39622ccd6563642bb26a2d5e7807e6d99db75b8b Mon Sep 17 00:00:00 2001
+From ad306c0bdd41c9839cd386ff8f323eb245531156 Mon Sep 17 00:00:00 2001
 From: Marc-Andre Lureau <marcandre.lureau@gmail.com>
 Date: Wed, 12 Dec 2007 21:57:20 +0200
 Subject: [PATCH] fix automake after DSP
