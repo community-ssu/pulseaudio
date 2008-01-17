@@ -2,6 +2,7 @@ pulseaudio (0.9.8-2maemo1) unstable; urgency=low
 
   * maemo port.
   * Lower compat and debhelper to version 4.
+  * Add libltdl3-dev >= 1.5.24 to satisfy scratchbox!
   * Remove build depedency (using [!armel]!)
   * Remove avahi stuffs (browse module, pabrowse..)
   * debian/pulseaudio.postinst:
