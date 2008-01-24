@@ -1,4 +1,4 @@
-pulseaudio (0.9.8-2maemo1) unstable; urgency=low
+pulseaudio (0.9.9-1maemo1) unstable; urgency=low
 
   * maemo port.
   * Lower compat and debhelper to version 4.
@@ -9,7 +9,15 @@ pulseaudio (0.9.8-2maemo1) unstable; urgency=low
     + use groupadd and useradd instead of debian adduser tools.
   * Add maemo omap2 dsp.
 
- -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Tue, 04 Dec 2007 17:31:27 +0100
+ -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Thu, 24 Jan 2008 16:28:34 +0200
+
+pulseaudio (0.9.9-1) unstable; urgency=high
+
+  * New Upstream Version.
+  * Fixes CVE-2008-008: Assert that dropping permissions succeeds.
+  * Priority high because it fixes a security issue.
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 24 Jan 2008 12:44:55 +0100
 
 pulseaudio (0.9.8-2) unstable; urgency=low
 
