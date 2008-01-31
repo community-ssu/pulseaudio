@@ -8,4 +8,4 @@
 0008-Fix-compilation-on-non-linux-platforms.patch
 0009-Force-module-tunnel-to-use-protocol-version-11.patch
 0010-Maemo-DSP-plugin-WIP.patch
-0011-fix-automake-after-DSP.patch
+0011-final-touch-autoreconf.patch

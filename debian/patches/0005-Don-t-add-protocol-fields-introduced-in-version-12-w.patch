@@ -1,4 +1,4 @@
-From 1e0a2e94f26b3ebbfabf2874e62160f9928e8274 Mon Sep 17 00:00:00 2001
+From e376241917558a6d14fd0b360d9cb7d2a6246847 Mon Sep 17 00:00:00 2001
 From: Sjoerd Simons <sjoerd@luon.net>
 Date: Fri, 4 Jan 2008 12:15:35 +0100
 Subject: [PATCH] Don't add protocol fields introduced in version 12 when connecting to a server with a lower version

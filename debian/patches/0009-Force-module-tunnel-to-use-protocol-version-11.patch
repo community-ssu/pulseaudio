@@ -1,4 +1,4 @@
-From ccf8f1581a22c2af89c1f2a4a582c5a31a1b27f5 Mon Sep 17 00:00:00 2001
+From c827067871141fa78fa9a510211c0557de3e9faf Mon Sep 17 00:00:00 2001
 From: CJ van den Berg <cj@vdbonline.com>
 Date: Wed, 28 Nov 2007 22:26:14 +0100
 Subject: [PATCH] Force module-tunnel to use protocol version 11

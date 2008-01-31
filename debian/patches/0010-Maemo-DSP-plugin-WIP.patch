@@ -1,4 +1,4 @@
-From adb71650b2f2baf21041c4335e874ea7e2aead43 Mon Sep 17 00:00:00 2001
+From e6b40c3b52a2e324614b1912eaeed9c878836efb Mon Sep 17 00:00:00 2001
 From: Marc-Andre Lureau <marcandre.lureau@gmail.com>
 Date: Wed, 12 Dec 2007 21:50:38 +0200
 Subject: [PATCH] Maemo DSP plugin (WIP)
@@ -17,7 +17,7 @@ Subject: [PATCH] Maemo DSP plugin (WIP)
  create mode 100644 src/modules/module-maemo-dsp-sink.c
 
 diff --git a/configure.ac b/configure.ac
-index 01b32c5..2ac1f16 100644
+index 10111e1..ae6d72a 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -940,6 +940,14 @@ fi

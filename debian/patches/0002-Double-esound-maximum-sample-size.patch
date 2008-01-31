@@ -1,4 +1,4 @@
-From 5def85371aa7f80523c0aa1640772ada6c66831c Mon Sep 17 00:00:00 2001
+From 2d86a846d6233617d52d90fe5d7a336b58486251 Mon Sep 17 00:00:00 2001
 From: Oliver Grawert <ogra@ubuntu.com>
 Date: Sun, 18 Nov 2007 20:36:17 +0100
 Subject: [PATCH] Double esound maximum sample size

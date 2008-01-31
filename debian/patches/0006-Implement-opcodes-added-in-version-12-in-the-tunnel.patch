@@ -1,4 +1,4 @@
-From c383cf489cdcb0d6c6e3cf6b5c22df74f0945148 Mon Sep 17 00:00:00 2001
+From 0ed9ac4d2e50bc36e4e54cab92f4faefb4928b30 Mon Sep 17 00:00:00 2001
 From: Sjoerd Simons <sjoerd@luon.net>
 Date: Fri, 4 Jan 2008 12:21:49 +0100
 Subject: [PATCH] Implement opcodes added in version 12 in the tunnel moduel
