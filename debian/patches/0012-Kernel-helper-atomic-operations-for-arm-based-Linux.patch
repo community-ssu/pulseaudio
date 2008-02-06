@@ -1,0 +1,140 @@
+From 153e8b843945b5d33a9c4fb3a6a8d250118de82e Mon Sep 17 00:00:00 2001
+From: Jyri Sarha <jyri.sarha@nokia.com>
+Date: Tue, 5 Feb 2008 16:43:37 +0200
+Subject: [PATCH] Kernel helper atomic operations for arm based Linux systems.
+
+---
+ src/pulsecore/atomic.h |  120 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 120 insertions(+), 0 deletions(-)
+
+diff --git a/src/pulsecore/atomic.h b/src/pulsecore/atomic.h
+index a358501..6b1a107 100644
+--- a/src/pulsecore/atomic.h
++++ b/src/pulsecore/atomic.h
+@@ -182,6 +182,126 @@ static inline int pa_atomic_ptr_cmpxchg(pa_atomic_ptr_t *a, void *old_p, void* n
+     return result;
+ }
+ 
++#elif (defined(__linux__) && defined(__arm__))
++
++
++/* See file arch/arm/kernel/entry-armv.S in your kernel sources for more 
++   information about these functions.
++   The kernel helper functions have been there since 2.6.16.
++   Compile time checking in cross compile environment is tricky. However qemu
++   should emulate cmpxchg helper, but it crashes on memory barrier call.
++*/
++/* Memory barrier */
++typedef void (__kernel_dmb_t)(void);
++#define __kernel_dmb (*(__kernel_dmb_t *)0xffff0fa0)
++
++/* This is only a remainder here, NEED_MEMORY_BARRIER is not defined any 
++   where at the moment. We should need memory barriers only in SMP systems 
++   and currently I have no knowledge of ARM based SMP systems. 
++*/
++static inline void pa_memory_barrier(void) {
++#ifdef NEED_MEMORY_BARRIER
++    __kernel_dmb();
++#endif
++}
++
++/* Atomic exchange */
++typedef int (__kernel_cmpxchg_t)(int oldval, int newval, volatile int *ptr);
++#define __kernel_cmpxchg (*(__kernel_cmpxchg_t *)0xffff0fc0)
++
++/* The same thing for unsigned integers. This is just to get rid of warnings */
++typedef int (__kernel_cmpxchg_u_t)(unsigned long oldval, unsigned long newval, volatile unsigned long *ptr);
++#define __kernel_cmpxchg_u (*(__kernel_cmpxchg_u_t *)0xffff0fc0)
++
++typedef struct pa_atomic {
++    volatile int value;
++} pa_atomic_t;
++
++#define PA_ATOMIC_INIT(v) { .value = (v) }
++
++static inline int pa_atomic_load(const pa_atomic_t *a) {
++    pa_memory_barrier();
++    return a->value;
++}
++
++static inline void pa_atomic_store(pa_atomic_t *a, int i) {
++    pa_memory_barrier();
++    a->value = i;
++    pa_memory_barrier();
++}
++
++/* Returns the previously set value */
++static inline int pa_atomic_add(pa_atomic_t *a, int i) {
++    int ret;
++    do {
++	ret = a->value;
++    } while(__kernel_cmpxchg(ret, ret + i, &a->value));
++    return ret;
++}
++
++/* Returns the previously set value */
++static inline int pa_atomic_sub(pa_atomic_t *a, int i) {
++    int ret;
++    do {
++	ret = a->value;
++    } while(__kernel_cmpxchg(ret, ret - i, &a->value));
++    return ret;
++}
++
++/* Returns the previously set value */
++static inline int pa_atomic_inc(pa_atomic_t *a) {
++    return pa_atomic_add(a, 1);
++}
++
++/* Returns the previously set value */
++static inline int pa_atomic_dec(pa_atomic_t *a) {
++    return pa_atomic_sub(a, 1);
++}
++
++/* Returns non-zero when the operation was successful. */
++static inline int pa_atomic_cmpxchg(pa_atomic_t *a, int old_i, int new_i) {
++/* The loop here simulates a fully atomic compare and exchange which should
++   only fail if a->value != old_i. The regular kernel helper version sometimes
++   would look like this:
++   return !__kernel_cmpxchg(old_i, new_i, &a->value);
++*/
++    int failed = 1;
++    do { 
++	failed = __kernel_cmpxchg((unsigned long) old_i, (unsigned long) new_i, &a->value);
++    } while(failed && a->value == old_i);
++    return !failed;
++}
++
++typedef struct pa_atomic_ptr {
++    volatile unsigned long value;
++} pa_atomic_ptr_t;
++
++#define PA_ATOMIC_PTR_INIT(v) { .value = (unsigned long) (v) }
++
++static inline void* pa_atomic_ptr_load(const pa_atomic_ptr_t *a) {
++    pa_memory_barrier();
++    return (void*) a->value;
++}
++
++static inline void pa_atomic_ptr_store(pa_atomic_ptr_t *a, void *p) {
++    pa_memory_barrier();
++    a->value = p;
++    pa_memory_barrier();
++}
++
++static inline int pa_atomic_ptr_cmpxchg(pa_atomic_ptr_t *a, void *old_p, void* new_p) {
++/* The loop here simulate a fully atomic compare and exchange which should
++   only fail if a->value != old_i. The regular kernel helper version sometimes
++   would look like this:
++    return !__kernel_cmpxchg_u((unsigned long) old_p, (unsigned long) new_p, &a->value);
++*/
++    int failed = 1;
++    do { 
++	failed = __kernel_cmpxchg_u((unsigned long) old_p, (unsigned long) new_p, &a->value);
++    } while(failed && a->value == old_p);
++    return !failed;
++}
++
+ #else
+ 
+ /* libatomic_ops based implementation */

@@ -9,3 +9,4 @@
 0009-Force-module-tunnel-to-use-protocol-version-11.patch
 0010-Maemo-DSP-plugin-WIP.patch
 0011-final-touch-autoreconf.patch
+0012-Kernel-helper-atomic-operations-for-arm-based-Linux.patch
