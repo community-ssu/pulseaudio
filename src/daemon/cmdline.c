@@ -1,4 +1,4 @@
-/* $Id: cmdline.c 2023 2007-11-05 15:10:13Z lennart $ */
+/* $Id: cmdline.c 2158 2008-03-27 23:27:34Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -70,7 +70,7 @@ enum {
 };
 
 /* Tabel for getopt_long() */
-static struct option long_options[] = {
+static const struct option long_options[] = {
     {"help",                        0, 0, ARG_HELP},
     {"version",                     0, 0, ARG_VERSION},
     {"dump-conf",                   0, 0, ARG_DUMP_CONF},

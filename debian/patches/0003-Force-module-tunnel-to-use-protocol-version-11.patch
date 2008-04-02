@@ -1,4 +1,4 @@
-From c827067871141fa78fa9a510211c0557de3e9faf Mon Sep 17 00:00:00 2001
+From d529ef293e1266555f5f911efefb9b7df82cd456 Mon Sep 17 00:00:00 2001
 From: CJ van den Berg <cj@vdbonline.com>
 Date: Wed, 28 Nov 2007 22:26:14 +0100
 Subject: [PATCH] Force module-tunnel to use protocol version 11
@@ -11,7 +11,7 @@ module-tunnel reporting "protocol error" and unloading.
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/modules/module-tunnel.c b/src/modules/module-tunnel.c
-index c7cbed3..ee79982 100644
+index 35ec560..e9d901d 100644
 --- a/src/modules/module-tunnel.c
 +++ b/src/modules/module-tunnel.c
 @@ -1185,7 +1185,7 @@ static void on_connection(pa_socket_client *sc, pa_iochannel *io, void *userdata

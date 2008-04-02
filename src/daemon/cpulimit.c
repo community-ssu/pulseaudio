@@ -1,4 +1,4 @@
-/* $Id: cpulimit.c 2011 2007-11-01 01:42:34Z lennart $ */
+/* $Id: cpulimit.c 2171 2008-03-27 23:37:46Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -151,7 +151,7 @@ static void signal_handler(int sig) {
 
     } else if (phase == PHASE_SOFT) {
         write_err("Hard CPU time limit exhausted, terminating forcibly.\n");
-        _exit(1); /* Forced exit */
+        abort(); /* Forced exit */
     }
 
     errno = saved_errno;

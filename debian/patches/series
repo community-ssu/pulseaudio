@@ -1,12 +1,6 @@
 0001-Set-ESD-socket-to-tmp-.esd-socket-to-match-up-with.patch
-0002-Double-esound-maximum-sample-size.patch
-0003-fix-uploading-of-samples-into-PA.-Problem-discovered.patch
-0004-make-sure-to-create-.pulse-before-using-any-config.patch
-0005-Don-t-add-protocol-fields-introduced-in-version-12-w.patch
-0006-Implement-opcodes-added-in-version-12-in-the-tunnel.patch
-0007-Change-config-to-not-fail-if-loading-of-esd-gconf-o.patch
-0008-Fix-compilation-on-non-linux-platforms.patch
-0009-Force-module-tunnel-to-use-protocol-version-11.patch
-0010-Maemo-DSP-plugin-WIP.patch
-0011-final-touch-autoreconf.patch
-0012-Kernel-helper-atomic-operations-for-arm-based-Linux.patch
+0002-Fix-library-search-path-to-include-lib-and-usr-lib.patch
+0003-Force-module-tunnel-to-use-protocol-version-11.patch
+0004-Maemo-DSP-plugin-WIP.patch
+0005-autoreconf-foo-ness.patch
+0006-upstream-2213-changeset-fix-caps.c.patch

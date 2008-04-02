@@ -1,8 +1,28 @@
-pulseaudio (0.9.9-2maemo1) UNRELEASED; urgency=low
+pulseaudio (0.9.10-1maemo1) UNRELEASED; urgency=low
 
   * UNRELEASED.
+  * Removed Jyri's patch, it's in upstream.
 
  -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Mon, 17 Mar 2008 19:27:37 +0200
+
+pulseaudio (0.9.10-1) unstable; urgency=low
+
+  [ CJ van den Berg ]
+  * New Upstream Version
+  * debian/patches: Drop patches merged upstream
+    - 0002-Double-esound-maximum-sample-size.patch
+    - 0003-fix-uploading-of-samples-into-PA.-Problem-discovered.patch
+    - 0004-make-sure-to-create-.pulse-before-using-any-config.patch
+    - 0005-Don-t-add-protocol-fields-introduced-in-version-12-w.patch
+    - 0006-Implement-opcodes-added-in-version-12-in-the-tunnel.patch
+    - 0007-Change-config-to-not-fail-if-loading-of-esd-gconf-o.patch
+    - 0008-Fix-compilation-on-non-linux-platforms.patch
+  * debian/patches: Add patch to fix RPATHs.
+    + 0002-Fix-library-search-path-to-include-lib-and-usr-lib.patch
+  * debian/control:
+    + Make libpulsecore5-dbg depend on libpulsecore5, instead of pulseaudio.
+    + Make libpulse-browse0-dbg depend on libpulse-browse0.
+  * Update Standards-Version to 3.7.3 (no changes required).
 
 pulseaudio (0.9.9-2) UNRELEASED; urgency=low
 
@@ -10,7 +30,7 @@ pulseaudio (0.9.9-2) UNRELEASED; urgency=low
   * debian/pulseaudio.init: Fix problems with LSB header in init.d script.
       (Closes: #470934)
 
- -- CJ van den Berg <cj@vdbonline.com>  Fri, 14 Mar 2008 21:50:26 +0100
+ -- CJ van den Berg <cj@vdbonline.com>  Sun, 30 Mar 2008 20:11:02 +0200
 
 pulseaudio (0.9.9-1maemo3) unstable; urgency=low
 

@@ -1,0 +1,24 @@
+From 3f9dccc60e0135b373a3e16bcdfd84039667177a Mon Sep 17 00:00:00 2001
+From: Marc-Andre Lureau <marcandre.lureau@gmail.com>
+Date: Wed, 2 Apr 2008 17:14:18 +0300
+Subject: [PATCH] upstream [2213] changeset: fix caps.c
+
+---
+ src/daemon/caps.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/src/daemon/caps.c b/src/daemon/caps.c
+index 8b19838..fbe4471 100644
+--- a/src/daemon/caps.c
++++ b/src/daemon/caps.c
+@@ -131,9 +131,8 @@ int pa_limit_caps(void) {
+     return 0;
+ }
+ 
+-int pa_drop_caps(void) {
++void pa_drop_caps(void) {
+     pa_drop_root();
+-    return 0;
+ }
+ 
+ #endif

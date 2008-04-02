@@ -1,4 +1,4 @@
-/* $Id: context.c 2067 2007-11-21 01:30:40Z lennart $ */
+/* $Id: context.c 2144 2008-03-27 21:24:48Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -50,11 +50,11 @@
 #include <netdb.h>
 #endif
 
-#include "../pulsecore/winsock.h"
-
-#include <pulsecore/core-error.h>
 #include <pulse/version.h>
 #include <pulse/xmalloc.h>
+
+#include <pulsecore/winsock.h>
+#include <pulsecore/core-error.h>
 
 #include <pulsecore/native-common.h>
 #include <pulsecore/pdispatch.h>

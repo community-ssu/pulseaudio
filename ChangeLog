@@ -1,14 +1,263 @@
-2008-01-24 01:06  lennart
+2008-03-30 01:43  lennart
+
+	* src/Makefile.am: fix buildsystem to provide pa_log() in all
+	  binaries
+
+2008-03-30 01:42  lennart
+
+	* src/pulsecore/macro.h: rework pa_assert_se() to make sure it
+	  never gets optmized away, even if NDEBUG is defined
+
+2008-03-30 00:39  lennart
+
+	* src/daemon/caps.c, src/daemon/caps.h: make pa_drop_caps() abort
+	  on failure
+
+2008-03-30 00:38  lennart
+
+	* src/pulsecore/hashmap.c: avoid name clash with libc's remove()
+	  function
+
+2008-03-29 23:09  lennart
+
+	* src/tests/smoother-test.c: fix compiler warning
+
+2008-03-29 22:09  lennart
+
+	* configure.ac: require autoconf 2.60 since we use AC_PROG_MKDIR_P
+
+2008-03-29 00:42  lennart
+
+	* configure.ac: bump soname
+
+2008-03-29 00:31  lennart
+
+	* src/pulsecore/protocol-native.c: merge r2187 from trunk
+
+2008-03-28 18:09  lennart
+
+	* src/daemon/main.c: don't fail on init if the default device does
+	  not exist and .nofail is active
+
+2008-03-28 18:01  lennart
+
+	* src/modules/module-tunnel.c: don't segfault when module-tunnel is
+	  used without a sink_name/source_name parameter. Closes #197
+
+2008-03-28 17:12  lennart
+
+	* src/pulse/util.c: if we are run as root, always use 'root' as
+	  username, regardless of any env vars
+
+2008-03-28 17:03  lennart
+
+	* src/daemon/main.c: actually set lennart to the user name, not the
+	  group name. Set lennart too.
+
+2008-03-28 00:51  lennart
+
+	* src/utils/padsp.c: Fix ioctl() definition for solaris compat.
+	  Patch from yippi. Closes #253
+
+2008-03-28 00:47  lennart
+
+	* src/utils/pactl.c: work around yet another solaris braindamage
+
+2008-03-27 23:47  lennart
+
+	* src/daemon/default.pa.in: initialize gconf module before we
+	  publish our X11 credentials -- because gconf might cause network
+	  support enabled in the first place
+
+2008-03-27 23:41  lennart
+
+	* src/modules/bt-proximity-helper.c: merge r2146 from trunk
+
+2008-03-27 23:41  lennart
+
+	* src/daemon/default.pa.in: merge r2134 from trunk
+
+2008-03-27 23:40  lennart
+
+	* src/pulsecore/protocol-esound.c: merge r2133 from trunk
+
+2008-03-27 23:39  lennart
+
+	* src/daemon/daemon.conf.in, src/daemon/default.pa.in,
+	  src/pulsecore/cli-command.c: merge r2132 from trunk
+
+2008-03-27 23:38  lennart
+
+	* configure.ac, src/daemon/polkit.c: merge r2131 from trunk
+
+2008-03-27 23:38  lennart
+
+	* src/Makefile.am, src/daemon/PulseAudio.policy,
+	  src/daemon/org.pulseaudio.policy: merge r2130 from trunk
+
+2008-03-27 23:38  lennart
+
+	* src/daemon/PulseAudio.policy: merge r2129 from trunk
+
+2008-03-27 23:37  lennart
+
+	* src/daemon/cpulimit.c: merge r2128 from trunk
+
+2008-03-27 23:37  lennart
+
+	* configure.ac, src/pulsecore/atomic.h: merge r2127 from trunk
+
+2008-03-27 23:36  lennart
+
+	* src/utils/pactl.c: merge r2117 from trunk
+
+2008-03-27 23:36  lennart
+
+	* src/daemon/PulseAudio.policy: merge r2116 from trunk
+
+2008-03-27 23:35  lennart
+
+	* configure.ac, src/daemon/ltdl-bind-now.c: merge r2113,r2214,r2115
+	  from trunk
+
+2008-03-27 23:33  lennart
+
+	* src/pulsecore/autoload.h: merge r2112 from trunk
+
+2008-03-27 23:33  lennart
+
+	* src/daemon/main.c: merge r2111 from trunk
+
+2008-03-27 23:32  lennart
+
+	* src/pulsecore/shm.c: merge r2110 from trunk
+
+2008-03-27 23:31  lennart
+
+	* man/pasuspender.1.xml.in: merge r2109 from trunk
+
+2008-03-27 23:31  lennart
+
+	* configure.ac: merge r2108 from trunk
+
+2008-03-27 23:31  lennart
+
+	* src/daemon/main.c: merge r2107 from trunk
+
+2008-03-27 23:30  lennart
+
+	* src/utils/padsp.c: merge r2106 from trunk
+
+2008-03-27 23:29  lennart
+
+	* src/modules/alsa-util.c, src/modules/module-combine.c,
+	  src/modules/module-jack-sink.c, src/modules/module-jack-source.c,
+	  src/modules/module-zeroconf-discover.c, src/pulse/stream.c,
+	  src/pulsecore/core-scache.c, src/pulsecore/resampler.c,
+	  src/pulsecore/sink-input.c, src/pulsecore/sink.c,
+	  src/pulsecore/sound-file.c, src/pulsecore/source-output.c,
+	  src/pulsecore/source.c: merge r2105 from trunk
+
+2008-03-27 23:27  lennart
+
+	* src/daemon/cmdline.c: merge r2104 from trunk
+
+2008-03-27 23:25  lennart
+
+	* src/pulse/sample.h: merge r2098 from trunk
+
+2008-03-27 23:24  lennart
+
+	* src/pulsecore/protocol-native.c: merge r2097 from trunk
+
+2008-03-27 23:23  lennart
+
+	* src/modules/module-tunnel.c: merge r2096 from trunk
+
+2008-03-27 23:23  lennart
+
+	* src/pulsecore/rtpoll.c, src/tests/rtpoll-test.c: merge r2095 from
+	  trunk
+
+2008-03-27 23:22  lennart
+
+	* src/modules/module-ladspa-sink.c: merge r2092,r2093,r2094,r2152
+	  from trunk
+
+2008-03-27 23:18  lennart
+
+	* src/modules/module-ladspa-sink.c: merge r2091 from trunk
+
+2008-03-27 23:18  lennart
+
+	* src/pulsecore/gccmacro.h: merge r2090 from trunk
+
+2008-03-27 23:18  lennart
+
+	* src/pulsecore/cli-command.c: merge r2084 from trunk
+
+2008-03-27 23:17  lennart
+
+	* configure.ac, src/modules/module-protocol-stub.c: merge r2145
+	  from trunk
+
+2008-03-27 23:16  lennart
+
+	* configure.ac, src/modules/module-protocol-stub.c: merge r2083
+	  from trunk
+
+2008-03-27 21:24  lennart
+
+	* src/pulse/context.c: merge r2081 from trunk
+
+2008-03-27 21:24  lennart
+
+	* src/pulsecore/endianmacros.h: merge r2079 from trunk
+
+2008-03-27 21:22  lennart
+
+	* configure.ac, src/Makefile.am: merge r2077 from trunk
+
+2008-03-27 21:22  lennart
+
+	* configure.ac, src/Makefile.am: merge r2076 from trunk
+
+2008-03-27 21:21  lennart
+
+	* configure.ac: merge r2075 from trunk
+
+2008-03-27 21:21  lennart
+
+	* src/Makefile.am, src/pulsecore/speex/arch.h,
+	  src/pulsecore/speex/resample.c: merge r2073 from trunk
+
+2008-03-27 21:20  lennart
+
+	* src/pulse/stream.c: merge r2074 from trunk
+
+2008-03-27 21:20  lennart
+
+	* src/pulsecore/core-util.c: merge r2078 from trunk
+
+2008-03-27 21:15  lennart
 
 	* configure.ac: bump revision
 
+2008-03-27 21:14  lennart
+
+	* .: create branch for 0.9.10
+
+2008-01-24 01:06  lennart
+
+	* : bump revision
+
 2008-01-24 01:05  lennart
 
-	* src/daemon/caps.c: fix CVE-2008-0008.patch
+	* : fix CVE-2008-0008.patch
 
 2008-01-24 00:44  lennart
 
-	* .: prepare 0.9.9
+	* : prepare 0.9.9
 
 2007-11-21 23:59  lennart
 
