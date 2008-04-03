@@ -2,7 +2,9 @@ pulseaudio (0.9.10-1maemo1) UNRELEASED; urgency=low
 
   * UNRELEASED.
   * Removed Jyri's patch, it's in upstream.
-  * Remove libatomic-dev build dependency on armel architecture.
+  * Remove libatomic-dev, libcap-dev, libavahi-client-dev,
+    libjack0.100.0-dev, libwrap0-dev, liblircclient-dev, libasyncns-dev,
+    libatomic-ops-dev build dependencies on all architectures.
 
  -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Mon, 17 Mar 2008 19:27:37 +0200
 
