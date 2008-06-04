@@ -1,6 +1,5 @@
 0001-Set-ESD-socket-to-tmp-.esd-socket-to-match-up-with.patch
 0002-Fix-library-search-path-to-include-lib-and-usr-lib.patch
-0003-Force-module-tunnel-to-use-protocol-version-11.patch
-0004-Maemo-DSP-plugin-WIP.patch
-0005-autoreconf-foo-ness.patch
-0006-upstream-2213-changeset-fix-caps.c.patch
+0003-Define-PULSE_INTERNAL.patch
+0004-load-module-gconf-earlier.patch
+0005-Reduce-RT-prio-logging-severity.patch
