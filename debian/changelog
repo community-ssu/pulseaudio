@@ -4,6 +4,7 @@ pulseaudio (0.9.11~svn2521-0maemo1) unstable; urgency=low
   * Add pulseaudio-module-dev packaging pulsecore headers.
   * bootstrap during build (svn version).
   * Added libgdbm-dev build dependency required by module-restore.
+  * Put Marc-Andre Lureau as a maemo Maintainer.
 
  -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Thu, 12 Jun 2008 18:24:39 +0300
 
