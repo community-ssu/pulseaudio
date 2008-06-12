@@ -47,7 +47,7 @@
 #include "resampler.h"
 
 /* Number of samples of extra space we allow the resamplers to return */
-#define EXTRA_SAMPLES 128
+#define EXTRA_FRAMES 128
 
 struct pa_resampler {
     pa_resample_method_t method;
@@ -72,11 +72,21 @@ struct pa_resampler {
     void (*impl_free)(pa_resampler *r);
     void (*impl_update_rates)(pa_resampler *r);
     void (*impl_resample)(pa_resampler *r, const pa_memchunk *in, unsigned in_samples, pa_memchunk *out, unsigned *out_samples);
+    void (*impl_reset)(pa_resampler *r);
 
     struct { /* data specific to the trivial resampler */
         unsigned o_counter;
         unsigned i_counter;
     } trivial;
+
+    struct { /* data specific to the peak finder pseudo resampler */
+        unsigned o_counter;
+        unsigned i_counter;
+
+        float max_f[PA_CHANNELS_MAX];
+        int16_t max_i[PA_CHANNELS_MAX];
+
+    } peaks;
 
 #ifdef HAVE_LIBSAMPLERATE
     struct { /* data specific to libsamplerate */
@@ -98,6 +108,7 @@ static int copy_init(pa_resampler *r);
 static int trivial_init(pa_resampler*r);
 static int speex_init(pa_resampler*r);
 static int ffmpeg_init(pa_resampler*r);
+static int peaks_init(pa_resampler*r);
 #ifdef HAVE_LIBSAMPLERATE
 static int libsamplerate_init(pa_resampler*r);
 #endif
@@ -143,7 +154,8 @@ static int (* const init_table[])(pa_resampler*r) = {
     [PA_RESAMPLER_SPEEX_FIXED_BASE+10]     = speex_init,
     [PA_RESAMPLER_FFMPEG]                  = ffmpeg_init,
     [PA_RESAMPLER_AUTO]                    = NULL,
-    [PA_RESAMPLER_COPY]                    = copy_init
+    [PA_RESAMPLER_COPY]                    = copy_init,
+    [PA_RESAMPLER_PEAKS]                   = peaks_init,
 };
 
 static inline size_t sample_size(pa_sample_format_t f) {
@@ -208,6 +220,7 @@ pa_resampler* pa_resampler_new(
     r->impl_free = NULL;
     r->impl_update_rates = NULL;
     r->impl_resample = NULL;
+    r->impl_reset = NULL;
 
     /* Fill sample specs */
     r->i_ss = *a;
@@ -240,9 +253,9 @@ pa_resampler* pa_resampler_new(
     if ((method >= PA_RESAMPLER_SPEEX_FIXED_BASE && method <= PA_RESAMPLER_SPEEX_FIXED_MAX) ||
         (method == PA_RESAMPLER_FFMPEG))
         r->work_format = PA_SAMPLE_S16NE;
-    else if (method == PA_RESAMPLER_TRIVIAL || method == PA_RESAMPLER_COPY) {
+    else if (method == PA_RESAMPLER_TRIVIAL || method == PA_RESAMPLER_COPY || method == PA_RESAMPLER_PEAKS) {
 
-        if (r->map_required || a->format != b->format) {
+        if (r->map_required || a->format != b->format || method == PA_RESAMPLER_PEAKS) {
 
             if (a->format == PA_SAMPLE_S32NE || a->format == PA_SAMPLE_S32RE ||
                 a->format == PA_SAMPLE_FLOAT32NE || a->format == PA_SAMPLE_FLOAT32RE ||
@@ -345,6 +358,12 @@ size_t pa_resampler_request(pa_resampler *r, size_t out_length) {
     return (((out_length / r->o_fz)*r->i_ss.rate)/r->o_ss.rate) * r->i_fz;
 }
 
+size_t pa_resampler_result(pa_resampler *r, size_t in_length) {
+    pa_assert(r);
+
+    return (((in_length / r->i_fz)*r->o_ss.rate)/r->i_ss.rate) * r->o_fz;
+}
+
 size_t pa_resampler_max_block_size(pa_resampler *r) {
     size_t block_size_max;
     pa_sample_spec ss;
@@ -356,22 +375,24 @@ size_t pa_resampler_max_block_size(pa_resampler *r) {
 
     /* We deduce the "largest" sample spec we're using during the
      * conversion */
-    ss = r->i_ss;
-    if (r->o_ss.channels > ss.channels)
-        ss.channels = r->o_ss.channels;
+    ss.channels = PA_MAX(r->i_ss.channels, r->o_ss.channels);
 
     /* We silently assume that the format enum is ordered by size */
-    if (r->o_ss.format > ss.format)
-        ss.format = r->o_ss.format;
-    if (r->work_format > ss.format)
-        ss.format = r->work_format;
+    ss.format = PA_MAX(r->i_ss.format, r->o_ss.format);
+    ss.format = PA_MAX(ss.format, r->work_format);
 
-    if (r->o_ss.rate > ss.rate)
-        ss.rate = r->o_ss.rate;
+    ss.rate = PA_MAX(r->i_ss.rate, r->o_ss.rate);
 
     fs = pa_frame_size(&ss);
 
-    return (((block_size_max/fs + EXTRA_SAMPLES)*r->i_ss.rate)/ss.rate)*r->i_fz;
+    return (((block_size_max/fs - EXTRA_FRAMES)*r->i_ss.rate)/ss.rate)*r->i_fz;
+}
+
+void pa_resampler_reset(pa_resampler *r) {
+    pa_assert(r);
+
+    if (r->impl_reset)
+        r->impl_reset(r);
 }
 
 pa_resample_method_t pa_resampler_get_method(pa_resampler *r) {
@@ -411,7 +432,8 @@ static const char * const resample_methods[] = {
     "speex-fixed-10",
     "ffmpeg",
     "auto",
-    "copy"
+    "copy",
+    "peaks"
 };
 
 const char *pa_resample_method_to_string(pa_resample_method_t m) {
@@ -1060,7 +1082,7 @@ static pa_memchunk *resample(pa_resampler *r, pa_memchunk *input) {
     in_n_samples = input->length / r->w_sz;
     in_n_frames = in_n_samples / r->o_ss.channels;
 
-    out_n_frames = ((in_n_frames*r->o_ss.rate)/r->i_ss.rate)+EXTRA_SAMPLES;
+    out_n_frames = ((in_n_frames*r->o_ss.rate)/r->i_ss.rate)+EXTRA_FRAMES;
     out_n_samples = out_n_frames * r->o_ss.channels;
 
     r->buf3.index = 0;
@@ -1181,6 +1203,12 @@ static void libsamplerate_update_rates(pa_resampler *r) {
     pa_assert_se(src_set_ratio(r->src.state, (double) r->o_ss.rate / r->i_ss.rate) == 0);
 }
 
+static void libsamplerate_reset(pa_resampler *r) {
+    pa_assert(r);
+
+    pa_assert_se(src_reset(r->src.state) == 0);
+}
+
 static void libsamplerate_free(pa_resampler *r) {
     pa_assert(r);
 
@@ -1199,6 +1227,7 @@ static int libsamplerate_init(pa_resampler *r) {
     r->impl_free = libsamplerate_free;
     r->impl_update_rates = libsamplerate_update_rates;
     r->impl_resample = libsamplerate_resample;
+    r->impl_reset = libsamplerate_reset;
 
     return 0;
 }
@@ -1259,6 +1288,17 @@ static void speex_update_rates(pa_resampler *r) {
     }
 }
 
+static void speex_reset(pa_resampler *r) {
+    pa_assert(r);
+
+    if (r->method >= PA_RESAMPLER_SPEEX_FIXED_BASE && r->method <= PA_RESAMPLER_SPEEX_FIXED_MAX)
+        pa_assert_se(paspfx_resampler_reset_mem(r->speex.state) == 0);
+    else  {
+        pa_assert(r->method >= PA_RESAMPLER_SPEEX_FLOAT_BASE && r->method <= PA_RESAMPLER_SPEEX_FLOAT_MAX);
+        pa_assert_se(paspfl_resampler_reset_mem(r->speex.state) == 0);
+    }
+}
+
 static void speex_free(pa_resampler *r) {
     pa_assert(r);
 
@@ -1280,6 +1320,7 @@ static int speex_init(pa_resampler *r) {
 
     r->impl_free = speex_free;
     r->impl_update_rates = speex_update_rates;
+    r->impl_reset = speex_reset;
 
     if (r->method >= PA_RESAMPLER_SPEEX_FIXED_BASE && r->method <= PA_RESAMPLER_SPEEX_FIXED_MAX) {
         q = r->method - PA_RESAMPLER_SPEEX_FIXED_BASE;
@@ -1353,7 +1394,7 @@ static void trivial_resample(pa_resampler *r, const pa_memchunk *input, unsigned
     }
 }
 
-static void trivial_update_rates(pa_resampler *r) {
+static void trivial_update_rates_or_reset(pa_resampler *r) {
     pa_assert(r);
 
     r->trivial.i_counter = 0;
@@ -1366,8 +1407,117 @@ static int trivial_init(pa_resampler*r) {
     r->trivial.o_counter = r->trivial.i_counter = 0;
 
     r->impl_resample = trivial_resample;
-    r->impl_update_rates = trivial_update_rates;
-    r->impl_free = NULL;
+    r->impl_update_rates = trivial_update_rates_or_reset;
+    r->impl_reset = trivial_update_rates_or_reset;
+
+    return 0;
+}
+
+/* Peak finder implementation */
+
+static void peaks_resample(pa_resampler *r, const pa_memchunk *input, unsigned in_n_frames, pa_memchunk *output, unsigned *out_n_frames) {
+    size_t fz;
+    unsigned o_index;
+    void *src, *dst;
+    unsigned start = 0;
+
+    pa_assert(r);
+    pa_assert(input);
+    pa_assert(output);
+    pa_assert(out_n_frames);
+
+    fz = r->w_sz * r->o_ss.channels;
+
+    src = (uint8_t*) pa_memblock_acquire(input->memblock) + input->index;
+    dst = (uint8_t*) pa_memblock_acquire(output->memblock) + output->index;
+
+    for (o_index = 0;; o_index++, r->peaks.o_counter++) {
+        unsigned j;
+
+        j = ((r->peaks.o_counter * r->i_ss.rate) / r->o_ss.rate);
+        j = j > r->peaks.i_counter ? j - r->peaks.i_counter : 0;
+
+        if (j >= in_n_frames)
+            break;
+
+        pa_assert(o_index * fz < pa_memblock_get_length(output->memblock));
+
+        if (r->work_format == PA_SAMPLE_S16NE) {
+            unsigned i, c;
+            int16_t *s = (int16_t*) ((uint8_t*) src + fz * j);
+            int16_t *d = (int16_t*) ((uint8_t*) dst + fz * o_index);
+
+            for (i = start; i <= j; i++)
+                for (c = 0; c < r->o_ss.channels; c++, s++) {
+                    int16_t n;
+
+                    n = *s < 0 ? -*s : *s;
+
+                    if (n > r->peaks.max_i[c])
+                        r->peaks.max_i[c] = n;
+                }
+
+            for (c = 0; c < r->o_ss.channels; c++, d++) {
+                 *d = r->peaks.max_i[c];
+                 r->peaks.max_i[c] = 0;
+            }
+        } else {
+            unsigned i, c;
+            float *s = (float*) ((uint8_t*) src + fz * j);
+            float *d = (float*) ((uint8_t*) dst + fz * o_index);
+
+            pa_assert(r->work_format == PA_SAMPLE_FLOAT32NE);
+
+            for (i = start; i <= j; i++)
+                for (c = 0; c < r->o_ss.channels; c++, s++) {
+                    float n = fabsf(*s);
+
+                    if (n > r->peaks.max_f[c])
+                        r->peaks.max_f[c] = n;
+                }
+
+            for (c = 0; c < r->o_ss.channels; c++, d++) {
+                *d = r->peaks.max_f[c];
+                r->peaks.max_f[c] = 0;
+            }
+        }
+
+        start = j+1;
+    }
+
+    pa_memblock_release(input->memblock);
+    pa_memblock_release(output->memblock);
+
+    *out_n_frames = o_index;
+
+    r->peaks.i_counter += in_n_frames;
+
+    /* Normalize counters */
+    while (r->peaks.i_counter >= r->i_ss.rate) {
+        pa_assert(r->peaks.o_counter >= r->o_ss.rate);
+
+        r->peaks.i_counter -= r->i_ss.rate;
+        r->peaks.o_counter -= r->o_ss.rate;
+    }
+}
+
+static void peaks_update_rates_or_reset(pa_resampler *r) {
+    pa_assert(r);
+
+    r->peaks.i_counter = 0;
+    r->peaks.o_counter = 0;
+}
+
+static int peaks_init(pa_resampler*r) {
+    pa_assert(r);
+
+    r->peaks.o_counter = r->peaks.i_counter = 0;
+    memset(r->peaks.max_i, 0, sizeof(r->peaks.max_i));
+    memset(r->peaks.max_f, 0, sizeof(r->peaks.max_f));
+
+    r->impl_resample = peaks_resample;
+    r->impl_update_rates = peaks_update_rates_or_reset;
+    r->impl_reset = peaks_update_rates_or_reset;
 
     return 0;
 }
@@ -1494,10 +1644,6 @@ static int copy_init(pa_resampler *r) {
     pa_assert(r);
 
     pa_assert(r->o_ss.rate == r->i_ss.rate);
-
-    r->impl_free = NULL;
-    r->impl_resample = NULL;
-    r->impl_update_rates = NULL;
 
     return 0;
 }

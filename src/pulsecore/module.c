@@ -109,8 +109,8 @@ pa_module* pa_module_load(pa_core *c, const char *name, const char *argument) {
     m->userdata = NULL;
     m->core = c;
     m->n_used = -1;
-    m->auto_unload = 0;
-    m->unload_requested = 0;
+    m->auto_unload = FALSE;
+    m->unload_requested = FALSE;
 
     if (m->init(m) < 0) {
         pa_log_error("Failed to load  module \"%s\" (argument: \"%s\"): initialization failed.", name, argument ? argument : "");
@@ -120,7 +120,7 @@ pa_module* pa_module_load(pa_core *c, const char *name, const char *argument) {
     if (!c->modules)
         c->modules = pa_idxset_new(NULL, NULL);
 
-    if (!c->module_auto_unload_event) {
+    if (m->auto_unload && !c->module_auto_unload_event) {
         struct timeval ntv;
         pa_gettimeofday(&ntv);
         pa_timeval_add(&ntv, UNLOAD_POLL_TIME*1000000);
@@ -281,7 +281,7 @@ static void defer_cb(pa_mainloop_api*api, pa_defer_event *e, void *userdata) {
 void pa_module_unload_request(pa_module *m) {
     pa_assert(m);
 
-    m->unload_requested = 1;
+    m->unload_requested = TRUE;
 
     if (!m->core->module_defer_unload_event)
         m->core->module_defer_unload_event = m->core->mainloop->defer_new(m->core->mainloop, defer_cb, m->core);

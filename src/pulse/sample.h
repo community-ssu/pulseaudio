@@ -30,6 +30,7 @@
 #include <sys/param.h>
 #include <math.h>
 
+#include <pulse/gccmacro.h>
 #include <pulse/cdecl.h>
 
 /** \page sample Sample Format Specifications
@@ -114,10 +115,10 @@ PA_C_DECL_BEGIN
 #endif
 
 /** Maximum number of allowed channels */
-#define PA_CHANNELS_MAX 32
+#define PA_CHANNELS_MAX 32U
 
 /** Maximum allowed sample rate */
-#define PA_RATE_MAX (48000*4)
+#define PA_RATE_MAX (48000U*4U)
 
 /** Sample format */
 typedef enum pa_sample_format {
@@ -172,7 +173,7 @@ typedef struct pa_sample_spec {
     uint8_t channels;              /**< Audio channels. (1 for mono, 2 for stereo, ...) */
 } pa_sample_spec;
 
-/** Type for usec specifications (unsigned). May be either 32 or 64 bit, depending on the architecture */
+/** Type for usec specifications (unsigned). Always 64 bit. */
 typedef uint64_t pa_usec_t;
 
 /** Return the amount of bytes playback of a second of audio with the specified sample type takes */
