@@ -1,4 +1,4 @@
-From eb185222f12bd3bf0971e7c21ff17fd0036e73db Mon Sep 17 00:00:00 2001
+From af85e82ec51078e1ff7a6214565471f624146a81 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Wed, 9 Apr 2008 16:46:14 +0300
 Subject: [PATCH] Fine tune ffmpeg resampler parameters for maemo.

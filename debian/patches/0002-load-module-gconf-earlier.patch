@@ -1,4 +1,4 @@
-From 8f729b6959d2ddd45f0545d4f3fc0794aea4a0c7 Mon Sep 17 00:00:00 2001
+From c84cab89b186f79c66ea4cf4d6a1ee8c00a3b0c3 Mon Sep 17 00:00:00 2001
 From: Sjoerd Simons <sjoerd@luon.net>
 Date: Sat, 10 May 2008 18:35:08 +0200
 Subject: [PATCH] load module-gconf earlier

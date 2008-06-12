@@ -1,4 +1,4 @@
-From ec780f81166cb872f611874876884f4296e0f9a1 Mon Sep 17 00:00:00 2001
+From b2117661cbd6c9eba6abc3cc56aafceeffd5bd57 Mon Sep 17 00:00:00 2001
 From: Sjoerd Simons <sjoerd@luon.net>
 Date: Sat, 10 May 2008 21:59:57 +0200
 Subject: [PATCH] Reduce RT prio logging severity
