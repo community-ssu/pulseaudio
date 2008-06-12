@@ -58,7 +58,7 @@ static const pa_client_conf default_conf = {
     .default_sink = NULL,
     .default_source = NULL,
     .default_server = NULL,
-    .autospawn = FALSE,
+    .autospawn = TRUE,
     .disable_shm = FALSE,
     .cookie_file = NULL,
     .cookie_valid = FALSE,
@@ -112,20 +112,26 @@ int pa_client_conf_load(pa_client_conf *c, const char *filename) {
     table[6].data = &c->cookie_file;
     table[7].data = &c->disable_shm;
 
-    f = filename ?
-        fopen((fn = pa_xstrdup(filename)), "r") :
-        pa_open_config_file(DEFAULT_CLIENT_CONFIG_FILE, DEFAULT_CLIENT_CONFIG_FILE_USER, ENV_CLIENT_CONFIG_FILE, &fn, "r");
+    if (filename) {
 
-    if (!f && errno != EINTR) {
-        pa_log_warn("Failed to open configuration file '%s': %s", fn, pa_cstrerror(errno));
-        goto finish;
+        if (!(f = fopen(filename, "r"))) {
+            pa_log("Failed to open configuration file '%s': %s", fn, pa_cstrerror(errno));
+            goto finish;
+        }
+
+        fn = pa_xstrdup(fn);
+
+    } else {
+
+        if (!(f = pa_open_config_file(DEFAULT_CLIENT_CONFIG_FILE, DEFAULT_CLIENT_CONFIG_FILE_USER, ENV_CLIENT_CONFIG_FILE, &fn)))
+            if (errno != ENOENT)
+                goto finish;
     }
 
     r = f ? pa_config_parse(fn, f, table, NULL) : 0;
 
     if (!r)
         r = pa_client_conf_load_cookie(c);
-
 
 finish:
     pa_xfree(fn);
@@ -172,10 +178,10 @@ int pa_client_conf_env(pa_client_conf *c) {
 int pa_client_conf_load_cookie(pa_client_conf* c) {
     pa_assert(c);
 
-    c->cookie_valid = FALSE;
-
     if (!c->cookie_file)
         return -1;
+
+    c->cookie_valid = FALSE;
 
     if (pa_authkey_load_auto(c->cookie_file, c->cookie, sizeof(c->cookie)) < 0)
         return -1;

@@ -26,7 +26,7 @@ AC_PREREQ(2.60)
 
 m4_define(PA_MAJOR, [0])
 m4_define(PA_MINOR, [9])
-m4_define(PA_MICRO, [10])
+m4_define(PA_MICRO, [11])
 
 AC_INIT([pulseaudio], PA_MAJOR.PA_MINOR.PA_MICRO,[mzchyfrnhqvb (at) 0pointer (dot) net])
 AC_CONFIG_SRCDIR([src/daemon/main.c])
@@ -37,11 +37,11 @@ AC_SUBST(PA_MAJORMINOR, "PA_MAJOR.PA_MINOR")
 AC_SUBST(PACKAGE_URL, [http://pulseaudio.org/])
 
 AC_SUBST(PA_API_VERSION, 11)
-AC_SUBST(PA_PROTOCOL_VERSION, 12)
+AC_SUBST(PA_PROTOCOL_VERSION, 13)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [4:1:4])
+AC_SUBST(LIBPULSE_VERSION_INFO, [5:0:5])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -58,7 +58,7 @@ AC_SUBST(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO, [0:3:0])
 # An internally used, ABI-unstable library that contains the
 # PulseAudio core, SONAMEs are bumped on every release, version info
 # suffix will always be 0:0
-AC_SUBST(LIBPULSECORE_VERSION_INFO, [5:1:0])
+AC_SUBST(LIBPULSECORE_VERSION_INFO, [6:0:0])
 
 AC_CANONICAL_HOST
 
@@ -339,6 +339,7 @@ AC_CHECK_TYPES(ssize_t, , [AC_DEFINE([ssize_t], [signed long],
 AC_TYPE_OFF_T
 AC_TYPE_SIGNAL
 AC_TYPE_UID_T
+AC_CHECK_DECLS(environ)
 
 AC_CHECK_DEFINE([SIGXCPU], [signal.h], [
 HAVE_SIGXCPU=1
@@ -375,6 +376,9 @@ AC_SEARCH_LIBS([connect], [socket])
 # This magic is needed so we do not needlessly add static libs to the win32
 # build, disabling its ability to make dlls.
 AC_CHECK_FUNCS([getopt_long], [], [AC_CHECK_LIB([iberty], [getopt_long])])
+
+AC_CHECK_LIB(gdbm, gdbm_open)
+AC_CHECK_HEADERS(gdbm.h)
 
 #### Check for functions ####
 
@@ -591,7 +595,7 @@ AC_ARG_ENABLE([alsa],
         [alsa=auto])
 
 if test "x${alsa}" != xno ; then
-    PKG_CHECK_MODULES(ASOUNDLIB, [ alsa >= 1.0.0 ],
+    PKG_CHECK_MODULES(ASOUNDLIB, [ alsa >= 1.0.16 ],
         [
             HAVE_ALSA=1
             AC_DEFINE([HAVE_ALSA], 1, [Have ALSA?])
@@ -1075,7 +1079,7 @@ AC_DEFINE_UNQUOTED(PA_ACCESS_GROUP,"$PA_ACCESS_GROUP", [Access group])
 
 AC_ARG_ENABLE(
         per_user_esound_socket,
-        AS_HELP_STRING([--disable-per-user-esound-socket], [Use per-user esound socket directory, like /tmp/.esd-UID/socket.]),
+        AS_HELP_STRING([--disable-per-user-esound-socket], [Use global esound socket directory /tmp/.esd/socket.]),
         [
             case "${enableval}" in
                 yes) per_user_esound_socket=1 ;;
@@ -1092,6 +1096,10 @@ fi
 #### PulseAudio system runtime dir ####
 PA_SYSTEM_RUNTIME_PATH="${localstatedir}/run/pulse"
 AC_SUBST(PA_SYSTEM_RUNTIME_PATH)
+PA_SYSTEM_CONFIG_PATH="${localstatedir}/lib/pulse"
+AC_SUBST(PA_SYSTEM_CONFIG_PATH)
+PA_SYSTEM_STATE_PATH="${localstatedir}/lib/pulse"
+AC_SUBST(PA_SYSTEM_STATE_PATH)
 
 ###################################
 #            Output               #
@@ -1232,6 +1240,8 @@ echo "
     sysconfdir:                    ${sysconfdir}
     localstatedir:                 ${localstatedir}
     System Runtime Path:           ${PA_SYSTEM_RUNTIME_PATH}
+    System State Path:             ${PA_SYSTEM_STATE_PATH}
+    System Config Path:            ${PA_SYSTEM_CONFIG_PATH}
     Compiler:                      ${CC}
     CFLAGS:                        ${CFLAGS}
     Have X11:                      ${ENABLE_X11}

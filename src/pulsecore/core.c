@@ -125,6 +125,7 @@ pa_core* pa_core_new(pa_mainloop_api *m, int shared) {
     c->subscription_event_last = NULL;
 
     c->mempool = pool;
+    pa_silence_cache_init(&c->silence_cache);
 
     c->quit_event = NULL;
 
@@ -134,7 +135,6 @@ pa_core* pa_core_new(pa_mainloop_api *m, int shared) {
 
     c->resample_method = PA_RESAMPLER_SPEEX_FLOAT_BASE + 3;
 
-    c->is_system_instance = FALSE;
     c->disallow_module_loading = FALSE;
     c->realtime_scheduling = FALSE;
     c->realtime_priority = 5;
@@ -188,6 +188,7 @@ static void core_free(pa_object *o) {
     pa_xfree(c->default_source_name);
     pa_xfree(c->default_sink_name);
 
+    pa_silence_cache_done(&c->silence_cache);
     pa_mempool_free(c->mempool);
 
     pa_property_cleanup(c);
@@ -208,11 +209,16 @@ static void quit_callback(pa_mainloop_api*m, pa_time_event *e, PA_GCC_UNUSED con
 void pa_core_check_quit(pa_core *c) {
     pa_assert(c);
 
-    if (!c->quit_event && c->exit_idle_time >= 0 && pa_idxset_size(c->clients) == 0) {
+    if (!c->quit_event &&
+        c->exit_idle_time >= 0 &&
+        pa_idxset_size(c->clients) == 0) {
+
         struct timeval tv;
         pa_gettimeofday(&tv);
         tv.tv_sec+= c->exit_idle_time;
+
         c->quit_event = c->mainloop->time_new(c->mainloop, &tv, quit_callback, c);
+
     } else if (c->quit_event && pa_idxset_size(c->clients) > 0) {
         c->mainloop->time_free(c->quit_event);
         c->quit_event = NULL;

@@ -140,20 +140,64 @@ fail:
     return -1;
 }
 
+static int proc_name_ours(pid_t pid, const char *procname) {
+#ifdef __linux__
+    char bn[PATH_MAX];
+    FILE *f;
+
+    pa_snprintf(bn, sizeof(bn), "/proc/%lu/stat", (unsigned long) pid);
+
+    if (!(f = fopen(bn, "r"))) {
+        pa_log_info("Failed to open %s: %s", bn, pa_cstrerror(errno));
+        return -1;
+    } else {
+        char *expected;
+        pa_bool_t good;
+        char stored[64];
+
+        if (!(fgets(stored, sizeof(stored), f))) {
+            pa_log_info("Failed to read from %s: %s", bn, feof(f) ? "EOF" : pa_cstrerror(errno));
+            fclose(f);
+            return -1;
+        }
+
+        fclose(f);
+
+        expected = pa_sprintf_malloc("%lu (%s)", (unsigned long) pid, procname);
+        good = pa_startswith(stored, expected);
+        pa_xfree(expected);
+
+#if !defined(__OPTIMIZE__)
+        if (!good) {
+            /* libtool likes to rename our binary names ... */
+            expected = pa_sprintf_malloc("%lu (lt-%s)", (unsigned long) pid, procname);
+            good = pa_startswith(stored, expected);
+            pa_xfree(expected);
+        }
+#endif
+
+        return !!good;
+    }
+#endif
+
+    return 1;
+}
+
 /* Create a new PID file for the current process. */
-int pa_pid_file_create(void) {
+int pa_pid_file_create(const char *procname) {
     int fd = -1;
     int ret = -1;
-    char fn[PATH_MAX];
     char t[20];
     pid_t pid;
     size_t l;
+    char *fn;
 
 #ifdef OS_IS_WIN32
     HANDLE process;
 #endif
 
-    pa_runtime_path("pid", fn, sizeof(fn));
+    if (!(fn = pa_runtime_path("pid")))
+        goto fail;
 
     if ((fd = open_pid_file(fn, O_CREAT|O_RDWR)) < 0)
         goto fail;
@@ -161,14 +205,24 @@ int pa_pid_file_create(void) {
     if ((pid = read_pid(fn, fd)) == (pid_t) -1)
         pa_log_warn("Corrupt PID file, overwriting.");
     else if (pid > 0) {
+
 #ifdef OS_IS_WIN32
         if ((process = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid)) != NULL) {
             CloseHandle(process);
 #else
         if (kill(pid, 0) >= 0 || errno != ESRCH) {
 #endif
-            pa_log("Daemon already running.");
-            goto fail;
+            int ours = 1;
+
+            if (procname)
+                if ((ours = proc_name_ours(pid, procname)) < 0)
+                    goto fail;
+
+            if (ours) {
+                pa_log("Daemon already running.");
+                ret = 1;
+                goto fail;
+            }
         }
 
         pa_log_warn("Stale PID file, overwriting.");
@@ -200,17 +254,20 @@ fail:
         }
     }
 
+    pa_xfree(fn);
+
     return ret;
 }
 
 /* Remove the PID file, if it is ours */
 int pa_pid_file_remove(void) {
     int fd = -1;
-    char fn[PATH_MAX];
+    char *fn;
     int ret = -1;
     pid_t pid;
 
-    pa_runtime_path("pid", fn, sizeof(fn));
+    if (!(fn = pa_runtime_path("pid")))
+        goto fail;
 
     if ((fd = open_pid_file(fn, O_RDWR)) < 0) {
         pa_log_warn("Failed to open PID file '%s': %s", fn, pa_cstrerror(errno));
@@ -232,7 +289,7 @@ int pa_pid_file_remove(void) {
 
 #ifdef OS_IS_WIN32
     pa_lock_fd(fd, 0);
-    close(fd);
+    pa_close(fd);
     fd = -1;
 #endif
 
@@ -254,6 +311,8 @@ fail:
         }
     }
 
+    pa_xfree(fn);
+
     return ret;
 }
 
@@ -261,8 +320,8 @@ fail:
  * exists and the PID therein too. Returns 0 on succcess, -1
  * otherwise. If pid is non-NULL and a running daemon was found,
  * return its PID therein */
-int pa_pid_file_check_running(pid_t *pid, const char *binary_name) {
-    return pa_pid_file_kill(0, pid, binary_name);
+int pa_pid_file_check_running(pid_t *pid, const char *procname) {
+    return pa_pid_file_kill(0, pid, procname);
 }
 
 #ifndef OS_IS_WIN32
@@ -270,18 +329,20 @@ int pa_pid_file_check_running(pid_t *pid, const char *binary_name) {
 /* Kill a current running daemon. Return non-zero on success, -1
  * otherwise. If successful *pid contains the PID of the daemon
  * process. */
-int pa_pid_file_kill(int sig, pid_t *pid, const char *binary_name) {
+int pa_pid_file_kill(int sig, pid_t *pid, const char *procname) {
     int fd = -1;
-    char fn[PATH_MAX];
+    char *fn;
     int ret = -1;
     pid_t _pid;
 #ifdef __linux__
     char *e = NULL;
 #endif
+
     if (!pid)
         pid = &_pid;
 
-    pa_runtime_path("pid", fn, sizeof(fn));
+    if (!(fn = pa_runtime_path("pid")))
+        goto fail;
 
     if ((fd = open_pid_file(fn, O_RDONLY)) < 0)
         goto fail;
@@ -289,22 +350,15 @@ int pa_pid_file_kill(int sig, pid_t *pid, const char *binary_name) {
     if ((*pid = read_pid(fn, fd)) == (pid_t) -1)
         goto fail;
 
-#ifdef __linux__
-    if (binary_name) {
-        pa_snprintf(fn, sizeof(fn), "/proc/%lu/exe", (unsigned long) pid);
+    if (procname) {
+        int ours;
 
-        if ((e = pa_readlink(fn))) {
-            char *f = pa_path_get_filename(e);
-            if (strcmp(f, binary_name)
-#if defined(__OPTIMIZE__)
-                /* libtool likes to rename our binary names ... */
-                && !(pa_startswith(f, "lt-") && strcmp(f+3, binary_name) == 0)
-#endif
-            )
-                goto fail;
-        }
+        if ((ours = proc_name_ours(*pid, procname)) < 0)
+            goto fail;
+
+        if (!ours)
+            goto fail;
     }
-#endif
 
     ret = kill(*pid, sig);
 
@@ -318,6 +372,8 @@ fail:
 #ifdef __linux__
     pa_xfree(e);
 #endif
+
+    pa_xfree(fn);
 
     return ret;
 
