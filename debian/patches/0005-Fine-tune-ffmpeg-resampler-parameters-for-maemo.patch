@@ -1,0 +1,22 @@
+From eb185222f12bd3bf0971e7c21ff17fd0036e73db Mon Sep 17 00:00:00 2001
+From: Jyri Sarha <jyri.sarha@nokia.com>
+Date: Wed, 9 Apr 2008 16:46:14 +0300
+Subject: [PATCH] Fine tune ffmpeg resampler parameters for maemo.
+
+---
+ src/pulsecore/resampler.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/src/pulsecore/resampler.c b/src/pulsecore/resampler.c
+index c999e6a..5a3dfe2 100644
+--- a/src/pulsecore/resampler.c
++++ b/src/pulsecore/resampler.c
+@@ -1626,7 +1626,7 @@ static int ffmpeg_init(pa_resampler *r) {
+      * internally only uses these hardcoded values, so let's use them
+      * here for now as well until ffmpeg makes this configurable. */
+ 
+-    if (!(r->ffmpeg.state = av_resample_init(r->o_ss.rate, r->i_ss.rate, 16, 10, 0, 0.8)))
++    if (!(r->ffmpeg.state = av_resample_init(r->o_ss.rate, r->i_ss.rate, 38, 10, 0, 0.99)))
+         return -1;
+ 
+     r->impl_free = ffmpeg_free;
