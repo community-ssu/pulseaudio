@@ -1,3 +1,9 @@
+pulseaudio (0.9.11~svn2521-0maemo1) unstable; urgency=low
+
+  * Import trunk r2521.
+
+ -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Thu, 12 Jun 2008 18:24:39 +0300
+
 pulseaudio (0.9.10-2maemo1) unstable; urgency=low
 
   * Debian update.
