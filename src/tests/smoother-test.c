@@ -1,5 +1,3 @@
-/* $Id: smoother-test.c 2191 2008-03-29 23:09:48Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

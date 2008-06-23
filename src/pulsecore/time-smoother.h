@@ -1,8 +1,6 @@
 #ifndef foopulsetimesmootherhfoo
 #define foopulsetimesmootherhfoo
 
-/* $Id: time-smoother.h 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -45,5 +43,7 @@ void pa_smoother_set_time_offset(pa_smoother *s, pa_usec_t x_offset);
 
 void pa_smoother_pause(pa_smoother *s, pa_usec_t x);
 void pa_smoother_resume(pa_smoother *s, pa_usec_t x);
+
+void pa_smoother_reset(pa_smoother *s);
 
 #endif

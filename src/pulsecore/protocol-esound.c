@@ -1,5 +1,3 @@
-/* $Id: protocol-esound.c 2176 2008-03-27 23:40:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

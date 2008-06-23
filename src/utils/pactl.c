@@ -1,5 +1,3 @@
-/* $Id: pactl.c 2182 2008-03-28 00:47:31Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

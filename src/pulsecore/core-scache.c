@@ -1,5 +1,3 @@
-/* $Id: core-scache.c 2159 2008-03-27 23:29:32Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -63,7 +61,7 @@
 
 #include "core-scache.h"
 
-#define UNLOAD_POLL_TIME 5
+#define UNLOAD_POLL_TIME 60
 
 static void timeout_callback(pa_mainloop_api *m, pa_time_event*e, PA_GCC_UNUSED const struct timeval *tv, void *userdata) {
     pa_core *c = userdata;
@@ -131,8 +129,7 @@ static pa_scache_entry* scache_add_item(pa_core *c, const char *name) {
     }
 
     e->last_used_time = 0;
-    e->memchunk.memblock = NULL;
-    e->memchunk.index = e->memchunk.length = 0;
+    pa_memchunk_reset(&e->memchunk);
     e->filename = NULL;
     e->lazy = FALSE;
     e->last_used_time = 0;
@@ -165,8 +162,7 @@ int pa_scache_add_item(
     pa_assert(!map || (pa_channel_map_valid(map) && ss && ss->channels == map->channels));
 
     if (ss && !map)
-        if (!(map = pa_channel_map_init_auto(&tmap, ss->channels, PA_CHANNEL_MAP_DEFAULT)))
-            return -1;
+        pa_channel_map_init_extend(&tmap, ss->channels, PA_CHANNEL_MAP_DEFAULT);
 
     if (chunk && chunk->length > PA_SCACHE_ENTRY_SIZE_MAX)
         return -1;
@@ -277,8 +273,7 @@ int pa_scache_remove_item(pa_core *c, const char *name) {
     if (!(e = pa_namereg_get(c, name, PA_NAMEREG_SAMPLE, 0)))
         return -1;
 
-    if (pa_idxset_remove_by_data(c->scache, e, NULL) != e)
-        pa_assert(0);
+    pa_assert_se(pa_idxset_remove_by_data(c->scache, e, NULL) == e);
 
     pa_log_debug("Removed sample \"%s\"", name);
 

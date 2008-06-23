@@ -1,5 +1,3 @@
-/* $Id: client.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -80,7 +78,7 @@ void pa_client_free(pa_client *c) {
     pa_xfree(c->driver);
     pa_xfree(c);
 
-    pa_core_check_quit(c->core);
+    pa_core_check_quit(core);
 }
 
 void pa_client_kill(pa_client *c) {

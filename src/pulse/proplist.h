@@ -1,8 +1,6 @@
 #ifndef foopulseproplisthfoo
 #define foopulseproplisthfoo
 
-/* $Id$ */
-
 /***
   This file is part of PulseAudio.
 
@@ -23,6 +21,8 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
   USA.
 ***/
+
+#include <sys/types.h>
 
 #include <pulse/cdecl.h>
 #include <pulse/gccmacro.h>
@@ -69,7 +69,7 @@ PA_C_DECL_BEGIN
  *    device.bus_path
  *    device.serial
  *    device.vendor_product_id
- *    device.class                   sound, modem, monitor, filter
+ *    device.class                   sound, modem, monitor, filter, abstract
  *    device.form_factor             laptop-speakers, external-speakers, telephone, tv-capture, webcam-capture, microphone-capture, headset
  *    device.connector               isa, pci, usb, firewire, bluetooth
  *    device.access_mode             mmap, mmap_rewrite, serial

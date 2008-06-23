@@ -14,8 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 2029 2007-11-08 22:30:33Z lennart $
-#
 # This file is part of PulseAudio.
 #
 # PulseAudio is free software; you can redistribute it and/or modify
@@ -102,6 +100,7 @@ DBUS_LIBS = @DBUS_LIBS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
+DSYMUTIL = @DSYMUTIL@
 ECHO = @ECHO@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
@@ -167,6 +166,7 @@ LTLIBOBJS = @LTLIBOBJS@
 M4 = @M4@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
+NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
@@ -182,8 +182,10 @@ PA_API_VERSION = @PA_API_VERSION@
 PA_MAJORMINOR = @PA_MAJORMINOR@
 PA_PROTOCOL_VERSION = @PA_PROTOCOL_VERSION@
 PA_REALTIME_GROUP = @PA_REALTIME_GROUP@
+PA_SYSTEM_CONFIG_PATH = @PA_SYSTEM_CONFIG_PATH@
 PA_SYSTEM_GROUP = @PA_SYSTEM_GROUP@
 PA_SYSTEM_RUNTIME_PATH = @PA_SYSTEM_RUNTIME_PATH@
+PA_SYSTEM_STATE_PATH = @PA_SYSTEM_STATE_PATH@
 PA_SYSTEM_USER = @PA_SYSTEM_USER@
 PKG_CONFIG = @PKG_CONFIG@
 POLKIT_CFLAGS = @POLKIT_CFLAGS@
@@ -642,43 +644,43 @@ uninstall-man: uninstall-man1 uninstall-man5
 @BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
 
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pulseaudio.1: pulseaudio.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
+@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
 
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@esdcompat.1: esdcompat.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
+@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
 
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pax11publish.1: pax11publish.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
+@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
 
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@paplay.1: paplay.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
+@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
 
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pacat.1: pacat.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
+@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
 
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pacmd.1: pacmd.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
+@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
 
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pactl.1: pactl.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
+@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
 
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pasuspender.1: pasuspender.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
+@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
 
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@padsp.1: padsp.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
+@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
 
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pabrowse.1: pabrowse.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
+@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
 
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pulse-daemon.conf.5: pulse-daemon.conf.5.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
+@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
 
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pulse-client.conf.5: pulse-client.conf.5.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
+@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
 
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@default.pa.5: default.pa.5.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
+@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
 
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@xmllint: $(noinst_DATA)
 @BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	for f in $(noinst_DATA) ; do \

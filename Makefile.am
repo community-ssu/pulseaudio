@@ -1,5 +1,3 @@
-# $Id: Makefile.am 2023 2007-11-05 15:10:13Z lennart $
-#
 # This file is part of PulseAudio.
 #
 # PulseAudio is free software; you can redistribute it and/or modify

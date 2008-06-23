@@ -1,8 +1,6 @@
 #ifndef fooendianmacroshfoo
 #define fooendianmacroshfoo
 
-/* $Id: endianmacros.h 2143 2008-03-27 21:24:03Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

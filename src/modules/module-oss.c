@@ -1,5 +1,3 @@
-/* $Id: module-oss.c 2066 2007-11-21 01:21:53Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -510,6 +508,9 @@ static int suspend(struct userdata *u) {
     return 0;
 }
 
+static int sink_get_volume(pa_sink *s);
+static int source_get_volume(pa_source *s);
+
 static int unsuspend(struct userdata *u) {
     int m;
     pa_sample_spec ss, *ss_original;
@@ -600,9 +601,9 @@ static int unsuspend(struct userdata *u) {
     build_pollfd(u);
 
     if (u->sink)
-        pa_sink_get_volume(u->sink);
+        sink_get_volume(u->sink);
     if (u->source)
-        pa_source_get_volume(u->source);
+        source_get_volume(u->source);
 
     pa_log_info("Resumed successfully...");
 
@@ -1367,6 +1368,8 @@ int pa__init(pa_module*m) {
         pa_sink_set_asyncmsgq(u->sink, u->thread_mq.inq);
         pa_sink_set_rtpoll(u->sink, u->rtpoll);
         u->sink->refresh_volume = TRUE;
+
+        u->sink->thread_info.max_request = u->out_hwbuf_size;
 
         if (use_mmap)
             u->out_mmap_memblocks = pa_xnew0(pa_memblock*, u->out_nfrags);

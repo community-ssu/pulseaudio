@@ -1,8 +1,6 @@
 #ifndef foomemblockqhfoo
 #define foomemblockqhfoo
 
-/* $Id: memblockq.h 2063 2007-11-21 01:19:28Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -168,5 +166,7 @@ void pa_memblockq_silence(pa_memblockq *bq);
 pa_bool_t pa_memblockq_prebuf_active(pa_memblockq *bq);
 
 unsigned pa_memblockq_get_nblocks(pa_memblockq *bq);
+
+size_t pa_memblockq_get_base(pa_memblockq *bq);
 
 #endif

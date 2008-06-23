@@ -1,8 +1,6 @@
 #ifndef foointernalhfoo
 #define foointernalhfoo
 
-/* $Id: internal.h 2067 2007-11-21 01:30:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -75,8 +73,9 @@ struct pa_context {
 
     pa_mempool *mempool;
 
-    pa_bool_t is_local;
-    pa_bool_t do_autospawn;
+    pa_bool_t is_local:1;
+    pa_bool_t do_autospawn:1;
+    pa_bool_t do_shm:1;
     int autospawn_lock_fd;
     pa_spawn_api spawn_api;
 
@@ -106,6 +105,8 @@ struct pa_stream {
     pa_context *context;
     pa_mainloop_api *mainloop;
 
+    uint32_t direct_on_input;
+
     pa_stream_direction_t direction;
     pa_stream_state_t state;
     pa_stream_flags_t flags;
@@ -115,8 +116,13 @@ struct pa_stream {
 
     pa_proplist *proplist;
 
+    pa_bool_t channel_valid:1;
+    pa_bool_t suspended:1;
+    pa_bool_t corked:1;
+    pa_bool_t timing_info_valid:1;
+    pa_bool_t auto_timing_update_requested:1;
+
     uint32_t channel;
-    pa_bool_t channel_valid;
     uint32_t syncid;
     uint32_t stream_index;
 
@@ -125,17 +131,13 @@ struct pa_stream {
 
     uint32_t device_index;
     char *device_name;
-    pa_bool_t suspended;
 
     pa_memchunk peek_memchunk;
     void *peek_data;
     pa_memblockq *record_memblockq;
 
-    pa_bool_t corked;
-
     /* Store latest latency info */
     pa_timing_info timing_info;
-    pa_bool_t timing_info_valid;
 
     /* Use to make sure that time advances monotonically */
     pa_usec_t previous_time;
@@ -150,7 +152,6 @@ struct pa_stream {
 
     /* Latency interpolation stuff */
     pa_time_event *auto_timing_update_event;
-    pa_bool_t auto_timing_update_requested;
 
     pa_smoother *smoother;
 
@@ -231,7 +232,5 @@ pa_tagstruct *pa_tagstruct_command(pa_context *c, uint32_t command, uint32_t *ta
 } while(0)
 
 #define PA_CHECK_VALIDITY_RETURN_NULL(context, expression, error) PA_CHECK_VALIDITY_RETURN_ANY(context, expression, error, NULL)
-
-void pa_init_proplist(pa_proplist *p);
 
 #endif
