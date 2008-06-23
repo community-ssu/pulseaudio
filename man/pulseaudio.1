@@ -16,6 +16,8 @@ pulseaudio --dump-resample-methods\fB
 
 pulseaudio --cleanup-shm\fB
 
+pulseaudio --start\fB
+
 pulseaudio --kill\fB
 
 pulseaudio --check\fB
@@ -41,6 +43,9 @@ List available audio resamplers.
 .TP
 \fB--cleanup-shm\f1
 Identify stale PulseAudio POSIX shared memory segments in \fI/dev/shm\f1 and remove them if possible. This is done implicitly whenever a new daemon starts up or a client tries to connect to a daemon. It should normally not be necessary to issue this command by hand. Only available on systems with POSIX shared memory segments implemented via a virtual file system mounted to \fI/dev/shm\f1 (e.g. Linux).
+.TP
+\fB--start\f1
+Start PulseAudio if it is not running yet. This is different from starting PulseAudio without \fB--start\f1 which would fail if PA is already running. PulseAudio is guaranteed to be fully initialized when this call returns. Implies \fB--daemon\f1.
 .TP
 \fB-k | --kill\f1
 Kill an already running PulseAudio daemon of the calling user (Equivalent to sending a SIGTERM).

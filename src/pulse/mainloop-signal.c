@@ -1,5 +1,3 @@
-/* $Id: mainloop-signal.c 2004 2007-10-30 18:35:08Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

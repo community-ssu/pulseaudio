@@ -1,8 +1,6 @@
 #ifndef fooconfparserhfoo
 #define fooconfparserhfoo
 
-/* $Id: conf-parser.h 1426 2007-02-13 15:35:19Z ossman $ */
-
 /***
   This file is part of PulseAudio.
 

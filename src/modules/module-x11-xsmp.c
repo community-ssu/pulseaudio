@@ -1,5 +1,3 @@
-/* $Id: module-x11-xsmp.c 2043 2007-11-09 18:25:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -51,7 +49,6 @@ PA_MODULE_DESCRIPTION("X11 session management");
 PA_MODULE_VERSION(PACKAGE_VERSION);
 PA_MODULE_LOAD_ONCE(TRUE);
 PA_MODULE_USAGE("session_manager=<session manager string> display=<X11 display>");
-
 
 static pa_bool_t ice_in_use = FALSE;
 

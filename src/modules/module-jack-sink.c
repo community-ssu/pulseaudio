@@ -1,5 +1,3 @@
-/* $Id: module-jack-sink.c 2159 2008-03-27 23:29:32Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -332,8 +330,7 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
-    pa_assert_se(pa_channel_map_init_auto(&map, channels, PA_CHANNEL_MAP_AUX));
-    pa_channel_map_init_auto(&map, channels, PA_CHANNEL_MAP_ALSA);
+    pa_channel_map_init_extend(&map, channels, PA_CHANNEL_MAP_ALSA);
     if (pa_modargs_get_channel_map(ma, NULL, &map) < 0 || map.channels != channels) {
         pa_log("Failed to parse channel_map= argument.");
         goto fail;

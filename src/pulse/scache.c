@@ -1,5 +1,3 @@
-/* $Id: scache.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -29,9 +27,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <pulse/utf8.h>
+
 #include <pulsecore/pstream-util.h>
 #include <pulsecore/macro.h>
-#include <pulse/utf8.h>
+#include <pulsecore/proplist-util.h>
 
 #include "internal.h"
 

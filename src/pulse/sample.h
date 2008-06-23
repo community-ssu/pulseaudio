@@ -1,8 +1,6 @@
 #ifndef foosamplehfoo
 #define foosamplehfoo
 
-/* $Id: sample.h 2157 2008-03-27 23:25:08Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

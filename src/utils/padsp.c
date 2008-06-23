@@ -1,5 +1,3 @@
-/* $Id: padsp.c 2183 2008-03-28 00:51:36Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

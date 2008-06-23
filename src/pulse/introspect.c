@@ -1,5 +1,3 @@
-/* $Id: introspect.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -106,7 +104,8 @@ static void context_get_server_info_callback(pa_pdispatch *pd, uint32_t command,
                pa_tagstruct_get_sample_spec(t, &i.sample_spec) < 0 ||
                pa_tagstruct_gets(t, &i.default_sink_name) < 0 ||
                pa_tagstruct_gets(t, &i.default_source_name) < 0 ||
-               pa_tagstruct_getu32(t, &i.cookie) < 0) {
+               pa_tagstruct_getu32(t, &i.cookie) < 0 ||
+               !pa_tagstruct_eof(t)) {
 
         pa_context_fail(o->context, PA_ERR_PROTOCOL);
         goto finish;
@@ -1342,7 +1341,7 @@ pa_operation* pa_context_remove_autoload_by_index(pa_context *c, uint32_t idx, p
     return o;
 }
 
-pa_operation* pa_context_move_sink_input_by_name(pa_context *c, uint32_t idx, char *sink_name, pa_context_success_cb_t cb, void* userdata) {
+pa_operation* pa_context_move_sink_input_by_name(pa_context *c, uint32_t idx, const char *sink_name, pa_context_success_cb_t cb, void* userdata) {
     pa_operation *o;
     pa_tagstruct *t;
     uint32_t tag;
@@ -1392,7 +1391,7 @@ pa_operation* pa_context_move_sink_input_by_index(pa_context *c, uint32_t idx, u
     return o;
 }
 
-pa_operation* pa_context_move_source_output_by_name(pa_context *c, uint32_t idx, char *source_name, pa_context_success_cb_t cb, void* userdata) {
+pa_operation* pa_context_move_source_output_by_name(pa_context *c, uint32_t idx, const char *source_name, pa_context_success_cb_t cb, void* userdata) {
     pa_operation *o;
     pa_tagstruct *t;
     uint32_t tag;
@@ -1442,7 +1441,7 @@ pa_operation* pa_context_move_source_output_by_index(pa_context *c, uint32_t idx
     return o;
 }
 
-pa_operation* pa_context_suspend_sink_by_name(pa_context *c, char *sink_name, int suspend, pa_context_success_cb_t cb, void* userdata) {
+pa_operation* pa_context_suspend_sink_by_name(pa_context *c, const char *sink_name, int suspend, pa_context_success_cb_t cb, void* userdata) {
     pa_operation *o;
     pa_tagstruct *t;
     uint32_t tag;
@@ -1489,7 +1488,7 @@ pa_operation* pa_context_suspend_sink_by_index(pa_context *c, uint32_t idx, int 
     return o;
 }
 
-pa_operation* pa_context_suspend_source_by_name(pa_context *c, char *source_name, int suspend, pa_context_success_cb_t cb, void* userdata) {
+pa_operation* pa_context_suspend_source_by_name(pa_context *c, const char *source_name, int suspend, pa_context_success_cb_t cb, void* userdata) {
     pa_operation *o;
     pa_tagstruct *t;
     uint32_t tag;

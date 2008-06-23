@@ -1,5 +1,3 @@
-/* $Id: resampler.c 2159 2008-03-27 23:29:32Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

@@ -1,8 +1,6 @@
 #ifndef fooclientconfhfoo
 #define fooclientconfhfoo
 
-/* $Id: client-conf.h 2009 2007-11-01 00:33:14Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

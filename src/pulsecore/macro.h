@@ -1,8 +1,6 @@
 #ifndef foopulsemacrohfoo
 #define foopulsemacrohfoo
 
-/* $Id: macro.h 2194 2008-03-30 01:42:34Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

@@ -1,5 +1,3 @@
-/* $Id: time-smoother.c 1977 2007-10-29 16:38:57Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -450,4 +448,12 @@ pa_usec_t pa_smoother_translate(pa_smoother *s, pa_usec_t x, pa_usec_t y_delay) 
 /*     pa_log_debug("translate(%llu) = %llu (%0.2f)", (unsigned long long) y_delay, (unsigned long long) ((double) y_delay / nde), nde); */
 
     return (pa_usec_t) ((double) y_delay / nde);
+}
+
+void pa_smoother_reset(pa_smoother *s) {
+    pa_assert(s);
+
+    s->n_history = 0;
+    s->abc_valid = FALSE;
+
 }

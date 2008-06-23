@@ -1,5 +1,3 @@
-/* $Id: protocol-native.c 2188 2008-03-29 00:31:10Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -132,7 +130,8 @@ typedef struct upload_stream {
 struct connection {
     pa_msgobject parent;
 
-    pa_bool_t authorized;
+    pa_bool_t authorized:1;
+    pa_bool_t is_local:1;
     uint32_t version;
     pa_protocol_native *protocol;
     pa_client *client;
@@ -499,7 +498,8 @@ static void fix_record_buffer_attr_pre(record_stream *s, pa_bool_t adjust_latenc
             fragsize_usec = s->source_latency;
 
         *fragsize = pa_usec_to_bytes(fragsize_usec, &s->source_output->sample_spec);
-    }
+    } else
+        s->source_latency = 0;
 }
 
 static void fix_record_buffer_attr_post(record_stream *s, uint32_t *maxlength, uint32_t *fragsize) {
@@ -533,7 +533,8 @@ static record_stream* record_stream_new(
         uint32_t *fragsize,
         pa_source_output_flags_t flags,
         pa_proplist *p,
-        pa_bool_t adjust_latency) {
+        pa_bool_t adjust_latency,
+        pa_sink_input *direct_on_input) {
 
     record_stream *s;
     pa_source_output *source_output;
@@ -553,6 +554,7 @@ static record_stream* record_stream_new(
     data.module = c->protocol->module;
     data.client = c->client;
     data.source = source;
+    data.direct_on_input = direct_on_input;
     pa_source_output_new_data_set_sample_spec(&data, ss);
     pa_source_output_new_data_set_channel_map(&data, map);
     if (peak_detect)
@@ -808,7 +810,7 @@ static void fix_playback_buffer_attr_pre(playback_stream *s, pa_bool_t adjust_la
     if (*tlength <= *minreq)
         *tlength =  *minreq*2 + frame_size;
 
-    if (*prebuf <= 0)
+    if (*prebuf <= 0 || *prebuf > *tlength)
         *prebuf = *tlength;
 }
 
@@ -1286,7 +1288,7 @@ static int sink_input_pop_cb(pa_sink_input *i, size_t nbytes, pa_memchunk *chunk
 
     if (pa_memblockq_peek(s->memblockq, chunk) < 0) {
 
-/*         pa_log("UNDERRUN: %lu", pa_memblockq_get_length(s->memblockq)); */
+/*         pa_log("UNDERRUN: %lu", (unsigned long) pa_memblockq_get_length(s->memblockq)); */
 
         if (s->drain_request && pa_sink_input_safe_to_remove(i)) {
             s->drain_request = FALSE;
@@ -1757,7 +1759,7 @@ static void command_create_record_stream(PA_GCC_UNUSED pa_pdispatch *pd, PA_GCC_
     record_stream *s;
     uint32_t maxlength, fragment_size;
     uint32_t source_index;
-    const char *name, *source_name;
+    const char *name = NULL, *source_name;
     pa_sample_spec ss;
     pa_channel_map map;
     pa_tagstruct *reply;
@@ -1775,6 +1777,8 @@ static void command_create_record_stream(PA_GCC_UNUSED pa_pdispatch *pd, PA_GCC_
         peak_detect = FALSE;
     pa_source_output_flags_t flags = 0;
     pa_proplist *p;
+    uint32_t direct_on_input_idx = PA_INVALID_INDEX;
+    pa_sink_input *direct_on_input = NULL;
 
     connection_assert_ref(c);
     pa_assert(t);
@@ -1823,7 +1827,8 @@ static void command_create_record_stream(PA_GCC_UNUSED pa_pdispatch *pd, PA_GCC_
 
         if (pa_tagstruct_get_boolean(t, &peak_detect) < 0 ||
             pa_tagstruct_get_boolean(t, &adjust_latency) < 0 ||
-            pa_tagstruct_get_proplist(t, p) < 0) {
+            pa_tagstruct_get_proplist(t, p) < 0 ||
+            pa_tagstruct_getu32(t, &direct_on_input_idx) < 0) {
             protocol_error(c);
             pa_proplist_free(p);
             return;
@@ -1853,6 +1858,15 @@ static void command_create_record_stream(PA_GCC_UNUSED pa_pdispatch *pd, PA_GCC_
         }
     }
 
+    if (direct_on_input_idx != PA_INVALID_INDEX) {
+
+        if (!(direct_on_input = pa_idxset_get_by_index(c->protocol->core->sink_inputs, direct_on_input_idx))) {
+            pa_pstream_send_error(c->pstream, tag, PA_ERR_NOENTITY);
+            pa_proplist_free(p);
+            return;
+        }
+    }
+
     flags =
         (corked ?  PA_SOURCE_OUTPUT_START_CORKED : 0) |
         (no_remap ?  PA_SOURCE_OUTPUT_NO_REMAP : 0) |
@@ -1863,7 +1877,7 @@ static void command_create_record_stream(PA_GCC_UNUSED pa_pdispatch *pd, PA_GCC_
         (no_move ?  PA_SOURCE_OUTPUT_DONT_MOVE : 0) |
         (variable_rate ?  PA_SOURCE_OUTPUT_VARIABLE_RATE : 0);
 
-    s = record_stream_new(c, source, &ss, &map, peak_detect, &maxlength, &fragment_size, flags, p, adjust_latency);
+    s = record_stream_new(c, source, &ss, &map, peak_detect, &maxlength, &fragment_size, flags, p, adjust_latency, direct_on_input);
     pa_proplist_free(p);
 
     CHECK_VALIDITY(c->pstream, s, tag, PA_ERR_INVALID);
@@ -1921,7 +1935,7 @@ static void command_auth(PA_GCC_UNUSED pa_pdispatch *pd, PA_GCC_UNUSED uint32_t 
     connection *c = CONNECTION(userdata);
     const void*cookie;
     pa_tagstruct *reply;
-    char tmp[16];
+    pa_bool_t shm_on_remote, do_shm;
 
     connection_assert_ref(c);
     pa_assert(t);
@@ -1939,8 +1953,17 @@ static void command_auth(PA_GCC_UNUSED pa_pdispatch *pd, PA_GCC_UNUSED uint32_t 
         return;
     }
 
-    pa_snprintf(tmp, sizeof(tmp), "%u", c->version);
-    pa_proplist_sets(c->client->proplist, "native-protocol.version", tmp);
+    /* Starting with protocol version 13 the MSB of the version tag
+       reflects if shm is available for this connection or
+       not. */
+    if (c->version >= 13) {
+        shm_on_remote = !!(c->version & 0x80000000U);
+        c->version &= 0x7FFFFFFFU;
+    }
+
+    pa_log_debug("Protocol version: remote %u, local %u", c->version, PA_PROTOCOL_VERSION);
+
+    pa_proplist_setf(c->client->proplist, "native-protocol.version", "%u", c->version);
 
     if (!c->authorized) {
         pa_bool_t success = FALSE;
@@ -1971,16 +1994,7 @@ static void command_auth(PA_GCC_UNUSED pa_pdispatch *pd, PA_GCC_UNUSED uint32_t 
             pa_log_info("Got credentials: uid=%lu gid=%lu success=%i",
                         (unsigned long) creds->uid,
                         (unsigned long) creds->gid,
-                        success);
-
-            if (c->version >= 10 &&
-                pa_mempool_is_shared(c->protocol->core->mempool) &&
-                creds->uid == getuid()) {
-
-                pa_pstream_enable_shm(c->pstream, TRUE);
-                pa_log_info("Enabled SHM for new connection");
-            }
-
+                        (int) success);
         }
 #endif
 
@@ -2000,8 +2014,32 @@ static void command_auth(PA_GCC_UNUSED pa_pdispatch *pd, PA_GCC_UNUSED uint32_t 
         }
     }
 
+    /* Enable shared memory support if possible */
+    do_shm =
+        pa_mempool_is_shared(c->protocol->core->mempool) &&
+        c->is_local;
+
+    pa_log_debug("SHM possible: %s", pa_yes_no(do_shm));
+
+    if (do_shm)
+        if (c->version < 10 || (c->version >= 13 && !shm_on_remote))
+            do_shm = FALSE;
+
+    if (do_shm) {
+        /* Only enable SHM if both sides are owned by the same
+         * user. This is a security measure because otherwise data
+         * private to the user might leak. */
+
+        const pa_creds *creds;
+        if (!(creds = pa_pdispatch_creds(pd)) || getuid() != creds->uid)
+            do_shm = FALSE;
+    }
+
+    pa_log_debug("Negotiated SHM: %s", pa_yes_no(do_shm));
+    pa_pstream_enable_shm(c->pstream, do_shm);
+
     reply = reply_new(tag);
-    pa_tagstruct_putu32(reply, PA_PROTOCOL_VERSION);
+    pa_tagstruct_putu32(reply, PA_PROTOCOL_VERSION | (do_shm ? 0x80000000 : 0));
 
 #ifdef HAVE_CREDS
 {
@@ -2497,6 +2535,7 @@ static void module_fill_tagstruct(pa_tagstruct *t, pa_module *module) {
 
 static void sink_input_fill_tagstruct(connection *c, pa_tagstruct *t, pa_sink_input *s) {
     pa_sample_spec fixed_ss;
+    pa_usec_t sink_latency;
 
     pa_assert(t);
     pa_sink_input_assert_ref(s);
@@ -2511,8 +2550,8 @@ static void sink_input_fill_tagstruct(connection *c, pa_tagstruct *t, pa_sink_in
     pa_tagstruct_put_sample_spec(t, &fixed_ss);
     pa_tagstruct_put_channel_map(t, &s->channel_map);
     pa_tagstruct_put_cvolume(t, &s->volume);
-    pa_tagstruct_put_usec(t, pa_sink_input_get_latency(s));
-    pa_tagstruct_put_usec(t, pa_sink_get_latency(s->sink));
+    pa_tagstruct_put_usec(t, pa_sink_input_get_latency(s, &sink_latency));
+    pa_tagstruct_put_usec(t, sink_latency);
     pa_tagstruct_puts(t, pa_resample_method_to_string(pa_sink_input_get_resample_method(s)));
     pa_tagstruct_puts(t, s->driver);
     if (c->version >= 11)
@@ -2523,6 +2562,7 @@ static void sink_input_fill_tagstruct(connection *c, pa_tagstruct *t, pa_sink_in
 
 static void source_output_fill_tagstruct(connection *c, pa_tagstruct *t, pa_source_output *s) {
     pa_sample_spec fixed_ss;
+    pa_usec_t source_latency;
 
     pa_assert(t);
     pa_source_output_assert_ref(s);
@@ -2536,8 +2576,8 @@ static void source_output_fill_tagstruct(connection *c, pa_tagstruct *t, pa_sour
     pa_tagstruct_putu32(t, s->source->index);
     pa_tagstruct_put_sample_spec(t, &fixed_ss);
     pa_tagstruct_put_channel_map(t, &s->channel_map);
-    pa_tagstruct_put_usec(t, pa_source_output_get_latency(s));
-    pa_tagstruct_put_usec(t, pa_source_get_latency(s->source));
+    pa_tagstruct_put_usec(t, pa_source_output_get_latency(s, &source_latency));
+    pa_tagstruct_put_usec(t, source_latency);
     pa_tagstruct_puts(t, pa_resample_method_to_string(pa_source_output_get_resample_method(s)));
     pa_tagstruct_puts(t, s->driver);
 
@@ -2551,12 +2591,15 @@ static void scache_fill_tagstruct(connection *c, pa_tagstruct *t, pa_scache_entr
     pa_assert(t);
     pa_assert(e);
 
-    fixup_sample_spec(c, &fixed_ss, &e->sample_spec);
+    if (e->memchunk.memblock)
+        fixup_sample_spec(c, &fixed_ss, &e->sample_spec);
+    else
+        memset(&fixed_ss, 0, sizeof(fixed_ss));
 
     pa_tagstruct_putu32(t, e->index);
     pa_tagstruct_puts(t, e->name);
     pa_tagstruct_put_cvolume(t, &e->volume);
-    pa_tagstruct_put_usec(t, pa_bytes_to_usec(e->memchunk.length, &e->sample_spec));
+    pa_tagstruct_put_usec(t, e->memchunk.memblock ? pa_bytes_to_usec(e->memchunk.length, &e->sample_spec) : 0);
     pa_tagstruct_put_sample_spec(t, &fixed_ss);
     pa_tagstruct_put_channel_map(t, &e->channel_map);
     pa_tagstruct_putu32(t, e->memchunk.length);
@@ -3922,6 +3965,7 @@ static void on_connection(PA_GCC_UNUSED pa_socket_server*s, pa_iochannel *io, vo
     } else
         c->auth_timeout_event = NULL;
 
+    c->is_local = pa_iochannel_socket_is_local(io);
     c->version = 8;
     c->protocol = p;
     pa_iochannel_socket_peer_to_string(io, pname, sizeof(pname));
@@ -3954,7 +3998,6 @@ static void on_connection(PA_GCC_UNUSED pa_socket_server*s, pa_iochannel *io, vo
 #ifdef HAVE_CREDS
     if (pa_iochannel_creds_supported(io))
         pa_iochannel_creds_enable(io);
-
 #endif
 }
 

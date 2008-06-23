@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /***
     This file is part of PulseAudio.
 
@@ -46,8 +44,6 @@
 #include <pulsecore/namereg.h>
 #include <pulsecore/core-scache.h>
 #include <pulsecore/modargs.h>
-
-#include <hal/libhal.h>
 
 #include "dbus-util.h"
 #include "module-console-kit-symdef.h"
@@ -324,8 +320,12 @@ void pa__done(pa_module *m) {
     if (!(u = m->userdata))
         return;
 
-    while ((session = pa_hashmap_steal_first(u->sessions)))
-        free_session(session);
+    if (u->sessions) {
+        while ((session = pa_hashmap_steal_first(u->sessions)))
+            free_session(session);
+
+        pa_hashmap_free(u->sessions, NULL, NULL);
+    }
 
     if (u->connection)
         pa_dbus_connection_unref(u->connection);

@@ -1,5 +1,3 @@
-/* $Id: module-remap-sink.c 2043 2007-11-09 18:25:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -51,7 +49,8 @@ PA_MODULE_USAGE(
         "format=<sample format> "
         "channels=<number of channels> "
         "rate=<sample rate> "
-        "channel_map=<channel map>");
+        "channel_map=<channel map> "
+        "remix=<remix channels?>");
 
 struct userdata {
     pa_core *core;
@@ -69,6 +68,7 @@ static const char* const valid_modargs[] = {
     "format",
     "channels",
     "channel_map",
+    "remix",
     NULL
 };
 
@@ -179,10 +179,36 @@ static void sink_input_update_max_rewind_cb(pa_sink_input *i, size_t nbytes) {
     pa_sink_input_assert_ref(i);
     pa_assert_se(u = i->userdata);
 
-    if (!u->sink || !PA_SINK_IS_OPENED(u->sink->thread_info.state))
+    if (!u->sink || !PA_SINK_IS_LINKED(u->sink->thread_info.state))
         return;
 
     pa_sink_set_max_rewind(u->sink, nbytes);
+}
+
+/* Called from I/O thread context */
+static void sink_input_update_max_request_cb(pa_sink_input *i, size_t nbytes) {
+    struct userdata *u;
+
+    pa_sink_input_assert_ref(i);
+    pa_assert_se(u = i->userdata);
+
+    if (!u->sink || !PA_SINK_IS_LINKED(u->sink->thread_info.state))
+        return;
+
+    pa_sink_set_max_request(u->sink, nbytes);
+}
+
+/* Called from I/O thread context */
+static void sink_input_update_sink_latency_range_cb(pa_sink_input *i) {
+    struct userdata *u;
+
+    pa_sink_input_assert_ref(i);
+    pa_assert_se(u = i->userdata);
+
+    if (!u->sink || !PA_SINK_IS_LINKED(u->sink->thread_info.state))
+        return;
+
+    pa_sink_update_latency_range(u->sink, i->sink->thread_info.min_latency, i->sink->thread_info.max_latency);
 }
 
 /* Called from I/O thread context */
@@ -192,7 +218,7 @@ static void sink_input_detach_cb(pa_sink_input *i) {
     pa_sink_input_assert_ref(i);
     pa_assert_se(u = i->userdata);
 
-    if (!u->sink || !PA_SINK_IS_OPENED(u->sink->thread_info.state))
+    if (!u->sink || !PA_SINK_IS_LINKED(u->sink->thread_info.state))
         return;
 
     pa_sink_detach_within_thread(u->sink);
@@ -207,14 +233,14 @@ static void sink_input_attach_cb(pa_sink_input *i) {
     pa_sink_input_assert_ref(i);
     pa_assert_se(u = i->userdata);
 
-    if (!u->sink || !PA_SINK_IS_OPENED(u->sink->thread_info.state))
+    if (!u->sink || !PA_SINK_IS_LINKED(u->sink->thread_info.state))
         return;
 
     pa_sink_set_asyncmsgq(u->sink, i->sink->asyncmsgq);
     pa_sink_set_rtpoll(u->sink, i->sink->rtpoll);
     pa_sink_attach_within_thread(u->sink);
 
-    pa_sink_set_latency_range(u->sink, u->master->min_latency, u->master->max_latency);
+    pa_sink_update_latency_range(u->sink, u->master->thread_info.min_latency, u->master->thread_info.max_latency);
 }
 
 /* Called from main context */
@@ -260,6 +286,7 @@ int pa__init(pa_module*m) {
     pa_sink *master;
     pa_sink_input_new_data sink_input_data;
     pa_sink_new_data sink_data;
+    pa_bool_t remix = TRUE;
 
     pa_assert(m);
 
@@ -282,7 +309,7 @@ int pa__init(pa_module*m) {
 
     stream_map = sink_map;
     if (pa_modargs_get_channel_map(ma, "master_channel_map", &stream_map) < 0) {
-        pa_log("Invalid master hannel map");
+        pa_log("Invalid master channel map");
         goto fail;
     }
 
@@ -293,6 +320,11 @@ int pa__init(pa_module*m) {
 
     if (pa_channel_map_equal(&stream_map, &master->channel_map))
         pa_log_warn("No remapping configured, proceeding nonetheless!");
+
+    if (pa_modargs_get_value_boolean(ma, "remix", &remix) < 0) {
+        pa_log("Invalid boolean remix parameter");
+        goto fail;
+    }
 
     u = pa_xnew0(struct userdata, 1);
     u->core = m->core;
@@ -342,7 +374,7 @@ int pa__init(pa_module*m) {
     pa_sink_input_new_data_set_sample_spec(&sink_input_data, &ss);
     pa_sink_input_new_data_set_channel_map(&sink_input_data, &stream_map);
 
-    u->sink_input = pa_sink_input_new(m->core, &sink_input_data, PA_SINK_INPUT_DONT_MOVE);
+    u->sink_input = pa_sink_input_new(m->core, &sink_input_data, PA_SINK_INPUT_DONT_MOVE | (remix ? 0 : PA_SINK_INPUT_NO_REMIX));
     pa_sink_input_new_data_done(&sink_input_data);
 
     if (!u->sink_input)
@@ -351,9 +383,11 @@ int pa__init(pa_module*m) {
     u->sink_input->pop = sink_input_pop_cb;
     u->sink_input->process_rewind = sink_input_process_rewind_cb;
     u->sink_input->update_max_rewind = sink_input_update_max_rewind_cb;
-    u->sink_input->kill = sink_input_kill_cb;
+    u->sink_input->update_max_request = sink_input_update_max_request_cb;
+    u->sink_input->update_sink_latency_range = sink_input_update_sink_latency_range_cb;
     u->sink_input->attach = sink_input_attach_cb;
     u->sink_input->detach = sink_input_detach_cb;
+    u->sink_input->kill = sink_input_kill_cb;
     u->sink_input->state_change = sink_input_state_change_cb;
     u->sink_input->userdata = u;
 

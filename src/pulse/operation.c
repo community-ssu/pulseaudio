@@ -1,5 +1,3 @@
-/* $Id: operation.c 2067 2007-11-21 01:30:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

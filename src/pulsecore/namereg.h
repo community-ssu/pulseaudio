@@ -1,8 +1,6 @@
 #ifndef foonamereghfoo
 #define foonamereghfoo
 
-/* $Id: namereg.h 1981 2007-10-29 20:01:49Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

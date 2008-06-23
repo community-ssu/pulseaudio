@@ -1,5 +1,3 @@
-/* $Id: bt-proximity-helper.c 2178 2008-03-27 23:41:34Z lennart $ */
-
 /*
  * Small SUID helper that allows us to ping a BT device. Borrows
  * heavily from bluez-utils' l2ping, which is licensed as GPL2+

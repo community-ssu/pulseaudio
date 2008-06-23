@@ -1,8 +1,6 @@
 #ifndef fooidxsethfoo
 #define fooidxsethfoo
 
-/* $Id: idxset.h 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

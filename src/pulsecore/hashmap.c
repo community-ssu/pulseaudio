@@ -1,5 +1,3 @@
-/* $Id: hashmap.c 2192 2008-03-30 00:38:47Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
