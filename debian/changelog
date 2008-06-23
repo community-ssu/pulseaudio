@@ -1,3 +1,9 @@
+pulseaudio (0.9.11~git8885dd-0maemo1) unstable; urgency=low
+
+  * Import git master 8885dd (0.9.11).
+
+ -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Mon, 23 Jun 2008 15:14:34 +0300
+
 pulseaudio (0.9.11~svn2521-0maemo1) unstable; urgency=low
 
   * Import trunk r2521.
