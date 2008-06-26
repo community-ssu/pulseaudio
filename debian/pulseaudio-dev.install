@@ -1,3 +1,4 @@
-usr/lib/libpulsecore.so
-usr/lib/libpulsecore.a
-usr/include/pulsecore/*
+../../src/.libs/libpulsecore.so usr/lib
+../../src/.libs/libpulsecore.a usr/lib
+../../src/pulsecore/*.h usr/include/pulse/pulsecore
+../../src/modules/*.h usr/include/pulse/modules
