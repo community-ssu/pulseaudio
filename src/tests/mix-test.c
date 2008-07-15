@@ -22,6 +22,7 @@
 #endif
 
 #include <stdio.h>
+#include <getopt.h>
 
 #include <pulse/sample.h>
 #include <pulse/volume.h>
@@ -193,18 +194,54 @@ static pa_memblock* generate_block(pa_mempool *pool, const pa_sample_spec *ss) {
     return r;
 }
 
+/* Argument codes for getopt_long() */
+enum {
+  ARG_HELP = 256,
+  ARG_START
+};
+
+static const struct option long_options[] = {
+  {"help",                        0, 0, ARG_HELP},
+  {NULL, 0, 0, 0}
+};
+
 int main(int argc, char *argv[]) {
     pa_mempool *pool;
     pa_sample_spec a;
     pa_cvolume v;
+    int c;
+
+    pa_assert(argc > 0);
+    pa_assert(argv);
+
+    a.channels = 1;
+    a.rate = 44100;
+
+    while ((c = getopt_long(argc, argv, "hr:c:", long_options, NULL)) != -1) {
+      switch (c) {
+      case ARG_HELP:
+      case 'h':
+	printf("%s -r nrate -c nchannels\n", argv[0]);
+	exit(1);
+	break;
+
+      case 'r':
+	a.rate = atoi(optarg);
+	break;
+
+      case 'c':
+	a.channels = atoi(optarg);
+	break;
+
+      default:
+	exit(1);
+      }
+    }
 
     oil_init();
     pa_log_set_maximal_level(PA_LOG_DEBUG);
 
     pa_assert_se(pool = pa_mempool_new(FALSE));
-
-    a.channels = 1;
-    a.rate = 44100;
 
     v.channels = a.channels;
     v.values[0] = pa_sw_volume_from_linear(0.9);
