@@ -3,6 +3,7 @@ pulseaudio (0.9.11~git8885dd-0maemo1) unstable; urgency=low
   * Import git master 8885dd (0.9.11).
   * Add me as Maintainer, and move Debian maitainer to the
     XSBC-Original-Maintainer.
+  * Update libpulsecore SOVERSION to 6 (oups)
 
  -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Thu, 26 Jun 2008 19:59:34 +0300
 
