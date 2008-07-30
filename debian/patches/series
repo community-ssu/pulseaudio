@@ -4,3 +4,5 @@
 0004-Use-int-instead-of-pa_bool_t-in-atomic.h.patch
 0005-volume-hooks.patch
 0006-flat-volume-thingy.patch
+0007-Define-MKDIR_P-if-undefined-by-autofoo.patch
+0008-Add-CFLAGS-information-on-start-up.patch

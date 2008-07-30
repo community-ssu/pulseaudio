@@ -1,0 +1,36 @@
+From 49c0df53d4248664b21cdf9a1b9aa57064437941 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=E9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Wed, 30 Jul 2008 18:22:18 +0300
+Subject: [PATCH] Add CFLAGS information on start-up
+
+---
+ configure.ac      |    2 ++
+ src/daemon/main.c |    2 ++
+ 2 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index ad4f1c5..3103b1f 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -428,6 +428,8 @@ else
+     AC_MSG_RESULT([no])
+ fi
+ 
++AC_DEFINE_UNQUOTED(PA_CFLAGS,"$CFLAGS", [The CFLAGS used during compilation])
++
+ #### Large File-Support (LFS) ####
+ 
+ AC_SYS_LARGEFILE
+diff --git a/src/daemon/main.c b/src/daemon/main.c
+index 78b4487..6c40682 100644
+--- a/src/daemon/main.c
++++ b/src/daemon/main.c
+@@ -743,6 +743,8 @@ int main(int argc, char *argv[]) {
+     pa_set_env("PULSE_SYSTEM", conf->system_instance ? "1" : "0");
+ 
+     pa_log_info("This is PulseAudio " PACKAGE_VERSION);
++    pa_log_info("Compilation CFLAGS: " PA_CFLAGS);
++
+     pa_log_info("Page size is %lu bytes", (unsigned long) PA_PAGE_SIZE);
+     if (!(s = pa_get_runtime_dir()))
+         goto finish;
