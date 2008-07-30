@@ -514,7 +514,7 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
         case PA_SINK_MESSAGE_SET_STATE: {
             int r;
 
-            if ((r = pa_sink_process_msg(o, code, data, offset, chunk)) >= 0)
+            if ((r = pa_source_process_msg(o, code, data, offset, chunk)) >= 0)
                 stream_cork_within_thread(u, u->source->state == PA_SOURCE_SUSPENDED);
 
             return r;
@@ -604,6 +604,12 @@ static void thread_func(void *userdata) {
 
     for (;;) {
         int ret;
+
+#ifdef TUNNEL_SINK
+        if (PA_SINK_IS_OPENED(u->sink->thread_info.state))
+            if (u->sink->thread_info.rewind_requested)
+                pa_sink_process_rewind(u->sink, 0);
+#endif
 
         if ((ret = pa_rtpoll_run(u->rtpoll, TRUE)) < 0)
             goto fail;

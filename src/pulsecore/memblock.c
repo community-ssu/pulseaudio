@@ -693,7 +693,7 @@ pa_mempool* pa_mempool_new(pa_bool_t shared) {
     PA_LLIST_HEAD_INIT(pa_memimport, p->imports);
     PA_LLIST_HEAD_INIT(pa_memexport, p->exports);
 
-    p->free_slots = pa_flist_new(p->n_blocks*2);
+    p->free_slots = pa_flist_new(p->n_blocks);
 
     return p;
 }
@@ -747,7 +747,7 @@ void pa_mempool_vacuum(pa_mempool *p) {
 
     pa_assert(p);
 
-    list = pa_flist_new(p->n_blocks*2);
+    list = pa_flist_new(p->n_blocks);
 
     while ((slot = pa_flist_pop(p->free_slots)))
         while (pa_flist_push(list, slot) < 0)
@@ -845,7 +845,7 @@ void pa_memimport_free(pa_memimport *i) {
 
     pa_mutex_lock(i->mutex);
 
-    while ((b = pa_hashmap_get_first(i->blocks)))
+    while ((b = pa_hashmap_first(i->blocks)))
         memblock_replace_import(b);
 
     pa_assert(pa_hashmap_size(i->segments) == 0);

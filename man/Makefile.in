@@ -49,9 +49,6 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@am__append_1 = \
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	$(man_MANS)
-
 subdir = man
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -72,6 +69,7 @@ MANS = $(man_MANS)
 DATA = $(noinst_DATA)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
+ALLOCA = @ALLOCA@
 AMTAR = @AMTAR@
 AR = @AR@
 AS = @AS@
@@ -155,6 +153,8 @@ LIBSAMPLERATE_CFLAGS = @LIBSAMPLERATE_CFLAGS@
 LIBSAMPLERATE_LIBS = @LIBSAMPLERATE_LIBS@
 LIBSNDFILE_CFLAGS = @LIBSNDFILE_CFLAGS@
 LIBSNDFILE_LIBS = @LIBSNDFILE_LIBS@
+LIBSPEEX_CFLAGS = @LIBSPEEX_CFLAGS@
+LIBSPEEX_LIBS = @LIBSPEEX_LIBS@
 LIBTOOL = @LIBTOOL@
 LIBWRAP_LIBS = @LIBWRAP_LIBS@
 LIRC_CFLAGS = @LIRC_CFLAGS@
@@ -231,7 +231,6 @@ docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 have_pkg_config = @have_pkg_config@
-have_xmltoman = @have_xmltoman@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -260,6 +259,7 @@ srcdir = @srcdir@
 subdirs = @subdirs@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
+top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 pulseconfdir = $(sysconfdir)/pulse
@@ -293,7 +293,7 @@ pulseconfdir = $(sysconfdir)/pulse
 @BUILD_MANPAGES_TRUE@	pulse-client.conf.5.xml \
 @BUILD_MANPAGES_TRUE@	default.pa.5.xml
 
-@BUILD_MANPAGES_TRUE@CLEANFILES = $(noinst_DATA) $(am__append_1)
+@BUILD_MANPAGES_TRUE@CLEANFILES = $(noinst_DATA) $(man_MANS)
 EXTRA_DIST = \
 	$(man_MANS) \
 	pulseaudio.1.xml.in \
@@ -309,6 +309,7 @@ EXTRA_DIST = \
 	pulse-daemon.conf.5.xml.in \
 	pulse-client.conf.5.xml.in \
 	default.pa.5.xml.in \
+	xmltoman \
 	xmltoman.css \
 	xmltoman.xsl \
 	xmltoman.dtd
@@ -643,49 +644,49 @@ uninstall-man: uninstall-man1 uninstall-man5
 @BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
 @BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
 
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pulseaudio.1: pulseaudio.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
+@BUILD_MANPAGES_TRUE@pulseaudio.1: pulseaudio.1.xml Makefile
+@BUILD_MANPAGES_TRUE@	perl xmltoman $< > $@ || rm -f $@
 
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@esdcompat.1: esdcompat.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
+@BUILD_MANPAGES_TRUE@esdcompat.1: esdcompat.1.xml Makefile
+@BUILD_MANPAGES_TRUE@	perl xmltoman $< > $@ || rm -f $@
 
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pax11publish.1: pax11publish.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
+@BUILD_MANPAGES_TRUE@pax11publish.1: pax11publish.1.xml Makefile
+@BUILD_MANPAGES_TRUE@	perl xmltoman $< > $@ || rm -f $@
 
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@paplay.1: paplay.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
+@BUILD_MANPAGES_TRUE@paplay.1: paplay.1.xml Makefile
+@BUILD_MANPAGES_TRUE@	perl xmltoman $< > $@ || rm -f $@
 
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pacat.1: pacat.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
+@BUILD_MANPAGES_TRUE@pacat.1: pacat.1.xml Makefile
+@BUILD_MANPAGES_TRUE@	perl xmltoman $< > $@ || rm -f $@
 
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pacmd.1: pacmd.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
+@BUILD_MANPAGES_TRUE@pacmd.1: pacmd.1.xml Makefile
+@BUILD_MANPAGES_TRUE@	perl xmltoman $< > $@ || rm -f $@
 
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pactl.1: pactl.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
+@BUILD_MANPAGES_TRUE@pactl.1: pactl.1.xml Makefile
+@BUILD_MANPAGES_TRUE@	perl xmltoman $< > $@ || rm -f $@
 
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pasuspender.1: pasuspender.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
+@BUILD_MANPAGES_TRUE@pasuspender.1: pasuspender.1.xml Makefile
+@BUILD_MANPAGES_TRUE@	perl xmltoman $< > $@ || rm -f $@
 
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@padsp.1: padsp.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
+@BUILD_MANPAGES_TRUE@padsp.1: padsp.1.xml Makefile
+@BUILD_MANPAGES_TRUE@	perl xmltoman $< > $@ || rm -f $@
 
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pabrowse.1: pabrowse.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
+@BUILD_MANPAGES_TRUE@pabrowse.1: pabrowse.1.xml Makefile
+@BUILD_MANPAGES_TRUE@	perl xmltoman $< > $@ || rm -f $@
 
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pulse-daemon.conf.5: pulse-daemon.conf.5.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
+@BUILD_MANPAGES_TRUE@pulse-daemon.conf.5: pulse-daemon.conf.5.xml Makefile
+@BUILD_MANPAGES_TRUE@	perl xmltoman $< > $@ || rm -f $@
 
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pulse-client.conf.5: pulse-client.conf.5.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
+@BUILD_MANPAGES_TRUE@pulse-client.conf.5: pulse-client.conf.5.xml Makefile
+@BUILD_MANPAGES_TRUE@	perl xmltoman $< > $@ || rm -f $@
 
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@default.pa.5: default.pa.5.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@ || rm -f $@
+@BUILD_MANPAGES_TRUE@default.pa.5: default.pa.5.xml Makefile
+@BUILD_MANPAGES_TRUE@	perl xmltoman $< > $@ || rm -f $@
 
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@xmllint: $(noinst_DATA)
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	for f in $(noinst_DATA) ; do \
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@			xmllint --noout --valid "$$f" || exit 1 ; \
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	done
+@BUILD_MANPAGES_TRUE@xmllint: $(noinst_DATA)
+@BUILD_MANPAGES_TRUE@	for f in $(noinst_DATA) ; do \
+@BUILD_MANPAGES_TRUE@			xmllint --noout --valid "$$f" || exit 1 ; \
+@BUILD_MANPAGES_TRUE@	done
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

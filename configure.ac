@@ -34,7 +34,7 @@ AM_INIT_AUTOMAKE([foreign -Wall])
 AC_SUBST(PA_MAJORMINOR, "PA_MAJOR.PA_MINOR")
 AC_SUBST(PACKAGE_URL, [http://pulseaudio.org/])
 
-AC_SUBST(PA_API_VERSION, 11)
+AC_SUBST(PA_API_VERSION, 12)
 AC_SUBST(PA_PROTOCOL_VERSION, 13)
 
 # The stable ABI for client applications, for the version info x:y:z
@@ -376,7 +376,7 @@ AC_SEARCH_LIBS([connect], [socket])
 AC_CHECK_FUNCS([getopt_long], [], [AC_CHECK_LIB([iberty], [getopt_long])])
 
 AC_CHECK_LIB(gdbm, gdbm_open)
-AC_CHECK_HEADERS(gdbm.h)
+AC_CHECK_HEADERS(gdbm.h, [], [AC_MSG_ERROR([gdbm.h not found])])
 
 #### Check for functions ####
 
@@ -410,6 +410,8 @@ AC_CHECK_FUNCS([lstat])
 # Non-standard
 
 AC_CHECK_FUNCS([setresuid setresgid setreuid setregid seteuid setegid ppoll strsignal sig2str strtof_l])
+
+AC_FUNC_ALLOCA
 
 AC_MSG_CHECKING([for PTHREAD_PRIO_INHERIT])
 AC_LANG_CONFTEST([AC_LANG_SOURCE([[
@@ -493,6 +495,10 @@ PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES(LIBSNDFILE, [ sndfile >= 1.0.10 ])
 AC_SUBST(LIBSNDFILE_CFLAGS)
 AC_SUBST(LIBSNDFILE_LIBS)
+
+PKG_CHECK_MODULES(LIBSPEEX, [ speexdsp >= 1.2 ])
+AC_SUBST(LIBSPEEX_CFLAGS)
+AC_SUBST(LIBSPEEX_LIBS)
 
 #### atomic-ops ###
 
@@ -593,7 +599,7 @@ AC_ARG_ENABLE([alsa],
         [alsa=auto])
 
 if test "x${alsa}" != xno ; then
-    PKG_CHECK_MODULES(ASOUNDLIB, [ alsa >= 1.0.16 ],
+    PKG_CHECK_MODULES(ASOUNDLIB, [ alsa >= 1.0.17 ],
         [
             HAVE_ALSA=1
             AC_DEFINE([HAVE_ALSA], 1, [Have ALSA?])
@@ -687,7 +693,7 @@ AC_ARG_ENABLE([gconf],
                 *) AC_MSG_ERROR(bad value ${enableval} for --disable-gconf) ;;
             esac
         ],
-        [glib=auto])
+        [gconf=auto])
 
 if test "x${gconf}" != xno ; then
     PKG_CHECK_MODULES(GCONF, [ gconf-2.0 >= 2.4.0 ],
@@ -1009,32 +1015,6 @@ AC_ARG_ENABLE(manpages,
   *) AC_MSG_ERROR([bad value ${enableval} for --disable-manpages]) ;;
 esac],[manpages=yes])
 
-if test x$manpages = xyes ; then
-    #
-    # XMLTOMAN manpage generation
-    #
-    AC_ARG_ENABLE(xmltoman,
-    AS_HELP_STRING([--disable-xmltoman],[Enable rebuilding of man pages with xmltoman]),
-    [case "${enableval}" in
-      yes) xmltoman=yes ;;
-      no)  xmltoman=no ;;
-      *) AC_MSG_ERROR([bad value ${enableval} for --disable-xmltoman]) ;;
-    esac],[xmltoman=yes])
-
-    if test x$xmltoman = xyes ; then
-        AC_CHECK_PROG(have_xmltoman, xmltoman, yes, no)
-    fi
-
-    if test x$have_xmltoman = xno -o x$xmltoman = xno; then
-        if ! test -e man/pulseaudio.1 ; then
-            AC_MSG_ERROR([*** xmltoman was not found or was disabled, it is required to build the manpages as they have not been pre-built, install xmltoman, pass --disable-manpages or dont pass --disable-xmltoman])
-            exit 1
-        fi
-        AC_MSG_WARN([*** Not rebuilding man pages as xmltoman is not found ***])
-        xmltoman=no
-    fi
-fi
-AM_CONDITIONAL([USE_XMLTOMAN], [test "x$xmltoman" = xyes])
 AM_CONDITIONAL([BUILD_MANPAGES], [test "x$manpages" = xyes])
 
 #### PulseAudio system group & user  #####

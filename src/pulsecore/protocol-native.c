@@ -100,7 +100,8 @@ typedef struct playback_stream {
 
     pa_sink_input *sink_input;
     pa_memblockq *memblockq;
-    pa_bool_t drain_request;
+    pa_bool_t is_underrun:1;
+    pa_bool_t drain_request:1;
     uint32_t drain_tag;
     uint32_t syncid;
 
@@ -210,7 +211,7 @@ static void sink_input_suspend_cb(pa_sink_input *i, pa_bool_t suspend);
 static void sink_input_moved_cb(pa_sink_input *i);
 static void sink_input_process_rewind_cb(pa_sink_input *i, size_t nbytes);
 static void sink_input_update_max_rewind_cb(pa_sink_input *i, size_t nbytes);
-
+static void sink_input_update_max_request_cb(pa_sink_input *i, size_t nbytes);
 
 static void send_memblock(connection *c);
 static void request_bytes(struct playback_stream*s);
@@ -474,11 +475,15 @@ static void fix_record_buffer_attr_pre(record_stream *s, pa_bool_t adjust_latenc
     pa_assert(maxlength);
     pa_assert(fragsize);
 
-    if (*maxlength <= 0 || *maxlength > MAX_MEMBLOCKQ_LENGTH)
+    if (*maxlength == (uint32_t) -1 || *maxlength > MAX_MEMBLOCKQ_LENGTH)
         *maxlength = MAX_MEMBLOCKQ_LENGTH;
+    if (*maxlength <= 0)
+        *maxlength = pa_frame_size(&s->source_output->sample_spec);
 
-    if (*fragsize <= 0)
+    if (*fragsize == (uint32_t) -1)
         *fragsize = pa_usec_to_bytes(DEFAULT_FRAGSIZE_MSEC*PA_USEC_PER_MSEC, &s->source_output->sample_spec);
+    if (*fragsize <= 0)
+        *fragsize = pa_frame_size(&s->source_output->sample_spec);
 
     if (adjust_latency) {
         pa_usec_t fragsize_usec;
@@ -729,16 +734,23 @@ static void fix_playback_buffer_attr_pre(playback_stream *s, pa_bool_t adjust_la
     pa_assert(prebuf);
     pa_assert(minreq);
 
-    if (*maxlength <= 0 || *maxlength > MAX_MEMBLOCKQ_LENGTH)
-        *maxlength = MAX_MEMBLOCKQ_LENGTH;
-    if (*tlength <= 0)
-        *tlength = pa_usec_to_bytes(DEFAULT_TLENGTH_MSEC*PA_USEC_PER_MSEC, &s->sink_input->sample_spec);
-    if (*minreq <= 0)
-        *minreq = pa_usec_to_bytes(DEFAULT_PROCESS_MSEC*PA_USEC_PER_MSEC, &s->sink_input->sample_spec);
-
     frame_size = pa_frame_size(&s->sink_input->sample_spec);
+
+    if (*maxlength == (uint32_t) -1 || *maxlength > MAX_MEMBLOCKQ_LENGTH)
+        *maxlength = MAX_MEMBLOCKQ_LENGTH;
+    if (*maxlength <= 0)
+        *maxlength = frame_size;
+
+    if (*tlength == (uint32_t) -1)
+        *tlength = pa_usec_to_bytes(DEFAULT_TLENGTH_MSEC*PA_USEC_PER_MSEC, &s->sink_input->sample_spec);
+    if (*tlength <= 0)
+        *tlength = frame_size;
+
+    if (*minreq == (uint32_t) -1)
+        *minreq = pa_usec_to_bytes(DEFAULT_PROCESS_MSEC*PA_USEC_PER_MSEC, &s->sink_input->sample_spec);
     if (*minreq <= 0)
         *minreq = frame_size;
+
     if (*tlength < *minreq+frame_size)
         *tlength = *minreq+frame_size;
 
@@ -796,6 +808,8 @@ static void fix_playback_buffer_attr_pre(playback_stream *s, pa_bool_t adjust_la
             tlength_usec -= s->sink_latency;
     }
 
+    /* FIXME: This is actually larger than necessary, since not all of
+     * the sink latency is actually rewritable. */
     if (tlength_usec < s->sink_latency + 2*minreq_usec)
         tlength_usec = s->sink_latency + 2*minreq_usec;
 
@@ -810,7 +824,7 @@ static void fix_playback_buffer_attr_pre(playback_stream *s, pa_bool_t adjust_la
     if (*tlength <= *minreq)
         *tlength =  *minreq*2 + frame_size;
 
-    if (*prebuf <= 0 || *prebuf > *tlength)
+    if (*prebuf == (uint32_t) -1 || *prebuf > *tlength)
         *prebuf = *tlength;
 }
 
@@ -909,11 +923,15 @@ static playback_stream* playback_stream_new(
     s->connection = c;
     s->syncid = syncid;
     s->sink_input = sink_input;
+    s->is_underrun = TRUE;
+    s->drain_request = FALSE;
+    pa_atomic_store(&s->missing, 0);
 
     s->sink_input->parent.process_msg = sink_input_process_msg;
     s->sink_input->pop = sink_input_pop_cb;
     s->sink_input->process_rewind = sink_input_process_rewind_cb;
     s->sink_input->update_max_rewind = sink_input_update_max_rewind_cb;
+    s->sink_input->update_max_request = sink_input_update_max_request_cb;
     s->sink_input->kill = sink_input_kill_cb;
     s->sink_input->moved = sink_input_moved_cb;
     s->sink_input->suspend = sink_input_suspend_cb;
@@ -941,9 +959,6 @@ static playback_stream* playback_stream_new(
 
     *ss = s->sink_input->sample_spec;
     *map = s->sink_input->channel_map;
-
-    pa_atomic_store(&s->missing, 0);
-    s->drain_request = FALSE;
 
     pa_idxset_put(c->output_streams, s, &s->index);
 
@@ -1196,7 +1211,7 @@ static int sink_input_process_msg(pa_msgobject *o, int code, void *userdata, int
 
             switch  (code) {
                 case SINK_INPUT_MESSAGE_FLUSH:
-                    func = pa_memblockq_flush;
+                    func = pa_memblockq_flush_write;
                     break;
 
                 case SINK_INPUT_MESSAGE_PREBUF_FORCE:
@@ -1286,24 +1301,28 @@ static int sink_input_pop_cb(pa_sink_input *i, size_t nbytes, pa_memchunk *chunk
     playback_stream_assert_ref(s);
     pa_assert(chunk);
 
-    if (pa_memblockq_peek(s->memblockq, chunk) < 0) {
+/*     pa_log("%s, pop(): %lu", pa_proplist_gets(i->proplist, PA_PROP_MEDIA_NAME), (unsigned long) pa_memblockq_get_length(s->memblockq)); */
 
-/*         pa_log("UNDERRUN: %lu", (unsigned long) pa_memblockq_get_length(s->memblockq)); */
+    if (pa_memblockq_is_readable(s->memblockq))
+        s->is_underrun = FALSE;
+    else {
+/*         pa_log("%s, UNDERRUN: %lu", pa_proplist_gets(i->proplist, PA_PROP_MEDIA_NAME), (unsigned long) pa_memblockq_get_length(s->memblockq)); */
 
         if (s->drain_request && pa_sink_input_safe_to_remove(i)) {
             s->drain_request = FALSE;
             pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(s), PLAYBACK_STREAM_MESSAGE_DRAIN_ACK, PA_UINT_TO_PTR(s->drain_tag), 0, NULL, NULL);
-        } else if (i->thread_info.playing_for > 0)
+        } else if (!s->is_underrun)
             pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(s), PLAYBACK_STREAM_MESSAGE_UNDERFLOW, NULL, 0, NULL, NULL);
 
-/*         pa_log("adding %llu bytes", (unsigned long long) nbytes); */
+        s->is_underrun = TRUE;
 
         request_bytes(s);
-
-        return -1;
     }
 
-/*     pa_log("NOTUNDERRUN %lu", (unsigned long) chunk->length); */
+    /* This call will not fail with prebuf=0, hence we check for
+       underrun explicitly above */
+    if (pa_memblockq_peek(s->memblockq, chunk) < 0)
+        return -1;
 
     chunk->length = PA_MIN(nbytes, chunk->length);
 
@@ -1338,6 +1357,20 @@ static void sink_input_update_max_rewind_cb(pa_sink_input *i, size_t nbytes) {
     playback_stream_assert_ref(s);
 
     pa_memblockq_set_maxrewind(s->memblockq, nbytes);
+}
+
+static void sink_input_update_max_request_cb(pa_sink_input *i, size_t nbytes) {
+    playback_stream *s;
+    size_t tlength;
+
+    pa_sink_input_assert_ref(i);
+    s = PLAYBACK_STREAM(i->userdata);
+    playback_stream_assert_ref(s);
+
+    tlength = nbytes+2*pa_memblockq_get_minreq(s->memblockq);
+
+    if (pa_memblockq_get_tlength(s->memblockq) < tlength)
+        pa_memblockq_set_tlength(s->memblockq, tlength);
 }
 
 /* Called from main context */
@@ -3072,7 +3105,7 @@ static void command_flush_record_stream(PA_GCC_UNUSED pa_pdispatch *pd, PA_GCC_U
     s = pa_idxset_get_by_index(c->record_streams, idx);
     CHECK_VALIDITY(c->pstream, s, tag, PA_ERR_NOENTITY);
 
-    pa_memblockq_flush(s->memblockq);
+    pa_memblockq_flush_read(s->memblockq);
     pa_pstream_send_simple_ack(c->pstream, tag);
 }
 

@@ -286,6 +286,10 @@ static void thread_func(void *userdata) {
     for (;;) {
         int ret;
 
+        if (PA_SINK_IS_OPENED(u->sink->thread_info.state))
+            if (u->sink->thread_info.rewind_requested)
+                pa_sink_process_rewind(u->sink, 0);
+
         /* If no outputs are connected, render some data and drop it immediately. */
         if (PA_SINK_IS_OPENED(u->sink->thread_info.state) && !u->thread_info.active_outputs) {
             pa_usec_t now;
@@ -410,7 +414,6 @@ static void sink_input_process_rewind_cb(pa_sink_input *i, size_t nbytes) {
     struct output *o;
 
     pa_sink_input_assert_ref(i);
-    pa_assert(nbytes > 0);
     pa_assert_se(o = i->userdata);
 
     pa_memblockq_rewind(o->memblockq, nbytes);
@@ -525,7 +528,7 @@ static int sink_input_process_msg(pa_msgobject *obj, int code, void *data, int64
             if (PA_SINK_IS_OPENED(o->sink_input->sink->thread_info.state))
                 pa_memblockq_push_align(o->memblockq, chunk);
             else
-                pa_memblockq_flush(o->memblockq);
+                pa_memblockq_flush_write(o->memblockq);
 
             return 0;
     }
@@ -555,7 +558,7 @@ static void enable_output(struct output *o) {
 
     if (output_create_sink_input(o) >= 0) {
 
-        pa_memblockq_flush(o->memblockq);
+        pa_memblockq_flush_write(o->memblockq);
 
         pa_sink_input_put(o->sink_input);
 

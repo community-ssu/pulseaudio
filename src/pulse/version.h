@@ -44,7 +44,7 @@ const char* pa_get_library_version(void);
 /** The current API version. Version 6 relates to Polypaudio
  * 0.6. Prior versions (i.e. Polypaudio 0.5.1 and older) have
  * PA_API_VERSION undefined.  */
-#define PA_API_VERSION 11
+#define PA_API_VERSION 12
 
 /** The current protocol version. Version 8 relates to Polypaudio
  * 0.8/PulseAudio 0.9. */
