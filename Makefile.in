@@ -110,6 +110,7 @@ GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
 ACLOCAL = @ACLOCAL@
+ALLOCA = @ALLOCA@
 AMTAR = @AMTAR@
 AR = @AR@
 AS = @AS@
@@ -193,6 +194,8 @@ LIBSAMPLERATE_CFLAGS = @LIBSAMPLERATE_CFLAGS@
 LIBSAMPLERATE_LIBS = @LIBSAMPLERATE_LIBS@
 LIBSNDFILE_CFLAGS = @LIBSNDFILE_CFLAGS@
 LIBSNDFILE_LIBS = @LIBSNDFILE_LIBS@
+LIBSPEEX_CFLAGS = @LIBSPEEX_CFLAGS@
+LIBSPEEX_LIBS = @LIBSPEEX_LIBS@
 LIBTOOL = @LIBTOOL@
 LIBWRAP_LIBS = @LIBWRAP_LIBS@
 LIRC_CFLAGS = @LIRC_CFLAGS@
@@ -269,7 +272,6 @@ docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 have_pkg_config = @have_pkg_config@
-have_xmltoman = @have_xmltoman@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -298,6 +300,7 @@ srcdir = @srcdir@
 subdirs = @subdirs@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
+top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 EXTRA_DIST = bootstrap.sh LICENSE GPL LGPL doxygen/Makefile.am doxygen/Makefile.in doxygen/doxygen.conf.in README todo
@@ -807,13 +810,13 @@ untabify:
 	find \( -name '*.c' -o -name '*.h' \) -exec perl -i -pe 's/\t/        /g;' \{\} \;
 
 fedora-snapshot: dist
-	cp $(distdir).tar.gz $$HOME/cvs.fedora/pulseaudio/devel/$(distdir).svn`date +%Y%m%d`.tar.gz
+	cp $(distdir).tar.gz $$HOME/cvs.fedora/pulseaudio/devel/$(distdir).git`date +%Y%m%d`.tar.gz
 
 dist-hook:
-	if test -d .svn ; then \
-		svn update ; \
+	if test -d .git ; then \
+		git pull ; \
 		chmod u+w ${distdir}/ChangeLog || true ; \
-		svn2cl -o ${distdir}/ChangeLog ; \
+		git-changelog.perl > ${distdir}/ChangeLog ; \
 	fi
 
 .PHONY: homepage distcleancheck doxygen

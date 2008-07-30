@@ -596,8 +596,7 @@ libpulsecore_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	libspeex-resampler-fixed.la libspeex-resampler-float.la \
-	libffmpeg-resampler.la
+	$(am__DEPENDENCIES_1) libffmpeg-resampler.la
 am__libpulsecore_la_SOURCES_DIST = pulse/channelmap.c \
 	pulse/channelmap.h pulse/error.c pulse/error.h \
 	pulse/mainloop.c pulse/mainloop.h pulse/mainloop-api.c \
@@ -769,16 +768,6 @@ libsocket_util_la_OBJECTS = $(am_libsocket_util_la_OBJECTS)
 libsocket_util_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libsocket_util_la_LDFLAGS) $(LDFLAGS) -o $@
-libspeex_resampler_fixed_la_LIBADD =
-am_libspeex_resampler_fixed_la_OBJECTS =  \
-	libspeex_resampler_fixed_la-resample.lo
-libspeex_resampler_fixed_la_OBJECTS =  \
-	$(am_libspeex_resampler_fixed_la_OBJECTS)
-libspeex_resampler_float_la_LIBADD =
-am_libspeex_resampler_float_la_OBJECTS =  \
-	libspeex_resampler_float_la-resample.lo
-libspeex_resampler_float_la_OBJECTS =  \
-	$(am_libspeex_resampler_float_la_OBJECTS)
 libstrlist_la_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
 am_libstrlist_la_OBJECTS = strlist.lo
 libstrlist_la_OBJECTS = $(am_libstrlist_la_OBJECTS)
@@ -1757,8 +1746,6 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauthkey_prop_la_SOURCES) \
 	$(libpulsecore_la_SOURCES) $(libpulsedsp_la_SOURCES) \
 	$(librtp_la_SOURCES) $(libsocket_client_la_SOURCES) \
 	$(libsocket_server_la_SOURCES) $(libsocket_util_la_SOURCES) \
-	$(libspeex_resampler_fixed_la_SOURCES) \
-	$(libspeex_resampler_float_la_SOURCES) \
 	$(libstrlist_la_SOURCES) $(libtagstruct_la_SOURCES) \
 	$(libx11prop_la_SOURCES) $(libx11wrap_la_SOURCES) \
 	$(module_alsa_sink_la_SOURCES) \
@@ -1846,12 +1833,9 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) \
 	$(am__libpulsecore_la_SOURCES_DIST) \
 	$(am__libpulsedsp_la_SOURCES_DIST) $(librtp_la_SOURCES) \
 	$(libsocket_client_la_SOURCES) $(libsocket_server_la_SOURCES) \
-	$(libsocket_util_la_SOURCES) \
-	$(libspeex_resampler_fixed_la_SOURCES) \
-	$(libspeex_resampler_float_la_SOURCES) \
-	$(libstrlist_la_SOURCES) $(libtagstruct_la_SOURCES) \
-	$(libx11prop_la_SOURCES) $(libx11wrap_la_SOURCES) \
-	$(module_alsa_sink_la_SOURCES) \
+	$(libsocket_util_la_SOURCES) $(libstrlist_la_SOURCES) \
+	$(libtagstruct_la_SOURCES) $(libx11prop_la_SOURCES) \
+	$(libx11wrap_la_SOURCES) $(module_alsa_sink_la_SOURCES) \
 	$(module_alsa_source_la_SOURCES) \
 	$(module_always_sink_la_SOURCES) \
 	$(module_bt_proximity_la_SOURCES) \
@@ -1967,6 +1951,7 @@ ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
+ALLOCA = @ALLOCA@
 AMTAR = @AMTAR@
 AR = @AR@
 AS = @AS@
@@ -2050,6 +2035,8 @@ LIBSAMPLERATE_CFLAGS = @LIBSAMPLERATE_CFLAGS@
 LIBSAMPLERATE_LIBS = @LIBSAMPLERATE_LIBS@
 LIBSNDFILE_CFLAGS = @LIBSNDFILE_CFLAGS@
 LIBSNDFILE_LIBS = @LIBSNDFILE_LIBS@
+LIBSPEEX_CFLAGS = @LIBSPEEX_CFLAGS@
+LIBSPEEX_LIBS = @LIBSPEEX_LIBS@
 LIBTOOL = @LIBTOOL@
 LIBWRAP_LIBS = @LIBWRAP_LIBS@
 LIRC_CFLAGS = @LIRC_CFLAGS@
@@ -2126,7 +2113,6 @@ docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 have_pkg_config = @have_pkg_config@
-have_xmltoman = @have_xmltoman@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -2155,6 +2141,7 @@ srcdir = @srcdir@
 subdirs = @subdirs@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
+top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 pulseincludedir = $(includedir)/pulse
@@ -2179,7 +2166,8 @@ AM_CFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src/modules \
 	-I$(top_builddir)/src/modules/rtp \
 	-I$(top_builddir)/src/modules/gconf $(PTHREAD_CFLAGS) \
 	-D_POSIX_PTHREAD_SEMANTICS $(LTDLINCL) $(LIBSAMPLERATE_CFLAGS) \
-	$(LIBSNDFILE_CFLAGS) -DPA_DLSEARCHPATH=\"$(modlibexecdir)\" \
+	$(LIBSNDFILE_CFLAGS) $(LIBSPEEX_CFLAGS) \
+	-DPA_DLSEARCHPATH=\"$(modlibexecdir)\" \
 	-DPA_DEFAULT_CONFIG_DIR=\"$(PA_DEFAULT_CONFIG_DIR)\" \
 	-DPA_BINARY=\"$(PA_BINARY)\" \
 	-DPA_SYSTEM_RUNTIME_PATH=\"$(PA_SYSTEM_RUNTIME_PATH)\" \
@@ -2210,8 +2198,8 @@ AM_LDFLAGS = -Wl,-no-undefined -Wl,--gc-sections $(am__append_1)
 EXTRA_DIST = pulse/client.conf.in pulse/version.h.in \
 	daemon/daemon.conf.in daemon/default.pa.in \
 	daemon/default.pa.win32 depmod.py daemon/esdcompat.in \
-	utils/padsp modules/module-defs.h.m4 \
-	daemon/pulseaudio-module-xsmp.desktop map-file \
+	daemon/start-pulseaudio-x11.in utils/padsp \
+	modules/module-defs.h.m4 daemon/pulseaudio.desktop map-file \
 	daemon/org.pulseaudio.policy $(SYMDEF_FILES)
 pulseconf_DATA = \
 		default.pa \
@@ -2219,7 +2207,7 @@ pulseconf_DATA = \
 		client.conf
 
 @HAVE_X11_TRUE@xdgautostart_DATA = \
-@HAVE_X11_TRUE@		daemon/pulseaudio-module-xsmp.desktop
+@HAVE_X11_TRUE@		daemon/pulseaudio.desktop
 
 BUILT_SOURCES = pulse/version.h $(SYMDEF_FILES)
 pulseaudio_SOURCES = daemon/caps.h daemon/caps.c daemon/cmdline.c \
@@ -2228,12 +2216,13 @@ pulseaudio_SOURCES = daemon/caps.h daemon/caps.c daemon/cmdline.c \
 	daemon/dumpmodules.h daemon/ltdl-bind-now.c \
 	daemon/ltdl-bind-now.h daemon/main.c $(am__append_2)
 pulseaudio_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS) \
-	$(LIBSAMPLERATE_CFLAGS) $(LIBSNDFILE_CFLAGS) $(CAP_CFLAGS) \
-	$(LIBOIL_CFLAGS) $(DBUS_CFLAGS) $(am__append_3)
+	$(LIBSAMPLERATE_CFLAGS) $(LIBSPEEX_CFLAGS) \
+	$(LIBSNDFILE_CFLAGS) $(CAP_CFLAGS) $(LIBOIL_CFLAGS) \
+	$(DBUS_CFLAGS) $(am__append_3)
 pulseaudio_CPPFLAGS = $(AM_CPPFLAGS)
 pulseaudio_LDADD = $(AM_LDADD) libpulsecore.la $(LIBLTDL) \
-	$(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(CAP_LIBS) \
-	$(LIBOIL_LIBS) $(DBUS_LIBS) $(am__append_4)
+	$(LIBSAMPLERATE_LIBS) $(LIBSPEEX_LIBS) $(LIBSNDFILE_LIBS) \
+	$(CAP_LIBS) $(LIBOIL_LIBS) $(DBUS_LIBS) $(am__append_4)
 # This is needed because automake doesn't properly expand the foreach below
 pulseaudio_DEPENDENCIES = libpulsecore.la $(PREOPEN_LIBS)
 @PREOPEN_MODS_FALSE@PREOPEN_LIBS = $(modlibexec_LTLIBRARIES)
@@ -2241,7 +2230,7 @@ pulseaudio_DEPENDENCIES = libpulsecore.la $(PREOPEN_LIBS)
 @FORCE_PREOPEN_FALSE@pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlopen force $(foreach f,$(PREOPEN_LIBS),-dlopen $(f))
 @FORCE_PREOPEN_TRUE@pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlpreopen force $(foreach f,$(PREOPEN_LIBS),-dlpreopen $(f))
 @HAVE_POLKIT_TRUE@policy_DATA = daemon/org.pulseaudio.policy
-bin_SCRIPTS = esdcompat $(am__append_21)
+bin_SCRIPTS = esdcompat start-pulseaudio-x11 $(am__append_21)
 pacat_SOURCES = utils/pacat.c
 pacat_LDADD = $(AM_LDADD) libpulse.la
 pacat_CFLAGS = $(AM_CFLAGS)
@@ -2515,13 +2504,9 @@ libpulsedsp_la_LIBADD = $(AM_LIBADD) libpulse.la
 libpulsedsp_la_LDFLAGS = -avoid-version
 
 ###################################
-#      Speex Resampler            #
+#      ffmpeg resampler           #
 ###################################
-noinst_LTLIBRARIES = libspeex-resampler-fixed.la libspeex-resampler-float.la libffmpeg-resampler.la
-libspeex_resampler_fixed_la_CPPFLAGS = $(AM_CPPFLAGS) -DRANDOM_PREFIX=paspfx -DOUTSIDE_SPEEX -DFIXED_POINT
-libspeex_resampler_fixed_la_SOURCES = pulsecore/speex/resample.c pulsecore/speex/speex_resampler.h pulsecore/speex/arch.h pulsecore/speex/fixed_generic.h pulsecore/speexwrap.h
-libspeex_resampler_float_la_CPPFLAGS = $(AM_CPPFLAGS) -DRANDOM_PREFIX=paspfl -DOUTSIDE_SPEEX -DFLOATING_POINT
-libspeex_resampler_float_la_SOURCES = pulsecore/speex/resample.c pulsecore/speex/speex_resampler.h pulsecore/speex/arch.h
+noinst_LTLIBRARIES = libffmpeg-resampler.la
 libffmpeg_resampler_la_CPPFLAGS = $(AM_CPPFLAGS)
 libffmpeg_resampler_la_SOURCES = pulsecore/ffmpeg/resample2.c pulsecore/ffmpeg/avcodec.h pulsecore/ffmpeg/dsputil.h
 
@@ -2631,7 +2616,7 @@ libpulsecore_la_SOURCES = pulse/channelmap.c pulse/channelmap.h \
 	pulsecore/proplist-util.h $(PA_THREAD_OBJS) $(am__append_22)
 libpulsecore_la_CPPFLAGS = $(AM_CPPFLAGS) $(LIBOIL_CFLAGS)
 libpulsecore_la_LDFLAGS = -version-info $(LIBPULSECORE_VERSION_INFO)
-libpulsecore_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(WINSOCK_LIBS) $(LIBOIL_LIBS) $(LIBICONV) libspeex-resampler-fixed.la libspeex-resampler-float.la libffmpeg-resampler.la
+libpulsecore_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(LIBSPEEX_LIBS) $(WINSOCK_LIBS) $(LIBOIL_LIBS) $(LIBICONV) libffmpeg-resampler.la
 
 ### Warning! Due to an obscure bug in libtool/automake it is required
 ### that the libraries in modlibexec_LTLIBRARIES are specified in-order,
@@ -3092,7 +3077,7 @@ bt_proximity_helper_SOURCES = modules/bt-proximity-helper.c
 bt_proximity_helper_LDADD = $(AM_LDADD) $(BLUEZ_LIBS)
 bt_proximity_helper_CFLAGS = $(AM_CFLAGS) $(BLUEZ_CFLAGS)
 bt_proximity_helper_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
-CLEANFILES = esdcompat client.conf default.pa daemon.conf
+CLEANFILES = esdcompat client.conf default.pa daemon.conf start-pulseaudio-x11
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -3252,10 +3237,6 @@ libsocket-server.la: $(libsocket_server_la_OBJECTS) $(libsocket_server_la_DEPEND
 	$(libsocket_server_la_LINK) -rpath $(modlibexecdir) $(libsocket_server_la_OBJECTS) $(libsocket_server_la_LIBADD) $(LIBS)
 libsocket-util.la: $(libsocket_util_la_OBJECTS) $(libsocket_util_la_DEPENDENCIES) 
 	$(libsocket_util_la_LINK) -rpath $(modlibexecdir) $(libsocket_util_la_OBJECTS) $(libsocket_util_la_LIBADD) $(LIBS)
-libspeex-resampler-fixed.la: $(libspeex_resampler_fixed_la_OBJECTS) $(libspeex_resampler_fixed_la_DEPENDENCIES) 
-	$(LINK)  $(libspeex_resampler_fixed_la_OBJECTS) $(libspeex_resampler_fixed_la_LIBADD) $(LIBS)
-libspeex-resampler-float.la: $(libspeex_resampler_float_la_OBJECTS) $(libspeex_resampler_float_la_DEPENDENCIES) 
-	$(LINK)  $(libspeex_resampler_float_la_OBJECTS) $(libspeex_resampler_float_la_LIBADD) $(LIBS)
 libstrlist.la: $(libstrlist_la_OBJECTS) $(libstrlist_la_DEPENDENCIES) 
 	$(libstrlist_la_LINK) -rpath $(modlibexecdir) $(libstrlist_la_OBJECTS) $(libstrlist_la_LIBADD) $(LIBS)
 libtagstruct.la: $(libtagstruct_la_OBJECTS) $(libtagstruct_la_DEPENDENCIES) 
@@ -3815,8 +3796,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsedsp_la-thread-posix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsedsp_la-thread-win32.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsocket_client_la-socket-client.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libspeex_resampler_fixed_la-resample.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libspeex_resampler_float_la-resample.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libx11prop_la-x11prop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libx11wrap_la-x11wrap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mainloop_test-mainloop-test.Po@am__quote@
@@ -5541,20 +5520,6 @@ socket-util.lo: pulsecore/socket-util.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/socket-util.c' object='socket-util.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o socket-util.lo `test -f 'pulsecore/socket-util.c' || echo '$(srcdir)/'`pulsecore/socket-util.c
-
-libspeex_resampler_fixed_la-resample.lo: pulsecore/speex/resample.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libspeex_resampler_fixed_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libspeex_resampler_fixed_la-resample.lo -MD -MP -MF $(DEPDIR)/libspeex_resampler_fixed_la-resample.Tpo -c -o libspeex_resampler_fixed_la-resample.lo `test -f 'pulsecore/speex/resample.c' || echo '$(srcdir)/'`pulsecore/speex/resample.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libspeex_resampler_fixed_la-resample.Tpo $(DEPDIR)/libspeex_resampler_fixed_la-resample.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/speex/resample.c' object='libspeex_resampler_fixed_la-resample.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libspeex_resampler_fixed_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libspeex_resampler_fixed_la-resample.lo `test -f 'pulsecore/speex/resample.c' || echo '$(srcdir)/'`pulsecore/speex/resample.c
-
-libspeex_resampler_float_la-resample.lo: pulsecore/speex/resample.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libspeex_resampler_float_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libspeex_resampler_float_la-resample.lo -MD -MP -MF $(DEPDIR)/libspeex_resampler_float_la-resample.Tpo -c -o libspeex_resampler_float_la-resample.lo `test -f 'pulsecore/speex/resample.c' || echo '$(srcdir)/'`pulsecore/speex/resample.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libspeex_resampler_float_la-resample.Tpo $(DEPDIR)/libspeex_resampler_float_la-resample.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/speex/resample.c' object='libspeex_resampler_float_la-resample.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libspeex_resampler_float_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libspeex_resampler_float_la-resample.lo `test -f 'pulsecore/speex/resample.c' || echo '$(srcdir)/'`pulsecore/speex/resample.c
 
 strlist.lo: pulsecore/strlist.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT strlist.lo -MD -MP -MF $(DEPDIR)/strlist.Tpo -c -o strlist.lo `test -f 'pulsecore/strlist.c' || echo '$(srcdir)/'`pulsecore/strlist.c
@@ -7679,6 +7644,11 @@ esdcompat: daemon/esdcompat.in Makefile
 		-e 's,@PA_BINARY\@,$(PA_BINARY),g' < $< > $@
 	chmod +x esdcompat
 
+start-pulseaudio-x11: daemon/start-pulseaudio-x11.in Makefile
+	sed -e 's,@PA_BINARY\@,$(PA_BINARY),g' \
+		-e 's,@PACTL_BINARY\@,$(bindir)/pactl,g' < $< > $@
+	chmod +x start-pulseaudio-x11
+
 client.conf: pulse/client.conf.in Makefile
 	sed -e 's,@PA_BINARY\@,$(PA_BINARY),g' < $< > $@
 
@@ -7705,12 +7675,6 @@ install-exec-hook:
 
 massif: pulseaudio
 	libtool --mode=execute valgrind --tool=massif --depth=6  --alloc-fn=pa_xmalloc --alloc-fn=pa_xmalloc0 --alloc-fn=pa_xrealloc --alloc-fn=dbus_realloc --alloc-fn=pa_xnew0_internal --alloc-fn=pa_xnew_internal ./pulseaudio
-
-update-speex:
-	wget -O pulsecore/speex/speex_resampler.h http://svn.xiph.org/trunk/speex/include/speex/speex_resampler.h
-	wget -O pulsecore/speex/resample.c http://svn.xiph.org/trunk/speex/libspeex/resample.c
-	wget -O pulsecore/speex/arch.h http://svn.xiph.org/trunk/speex/libspeex/arch.h
-	wget -O pulsecore/speex/fixed_generic.h http://svn.xiph.org/trunk/speex/libspeex/fixed_generic.h
 
 update-ffmpeg:
 	wget -O pulsecore/ffmpeg/resample2.c http://svn.mplayerhq.hu/ffmpeg/trunk/libavcodec/resample2.c?view=co

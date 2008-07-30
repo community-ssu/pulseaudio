@@ -54,7 +54,7 @@ Kill an already running PulseAudio daemon of the calling user (Equivalent to sen
 Return 0 as return code when the PulseAudio daemon is already running for the calling user.
 .TP
 \fB--system\f1\fI[=BOOL]\f1
-Run as system-wide instance instead of per-user. Please not that this disables certain features of PulseAudio and is generally not recommended unless the system knows no local users (e.g. is a thin client). This feature needs special configuration and a dedicated UNIX user set up. It is highly recommended to combine this with \fB--disallow-module-loading\f1 (see below).
+Run as system-wide instance instead of per-user. Please note that this disables certain features of PulseAudio and is generally not recommended unless the system knows no local users (e.g. is a thin client). This feature needs special configuration and a dedicated UNIX user set up. It is highly recommended to combine this with \fB--disallow-module-loading\f1 (see below).
 .TP
 \fB-D | --daemon\f1\fI[=BOOL]\f1
 Daemonize after startup, i.e. detach from the terminal.

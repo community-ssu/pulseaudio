@@ -48,7 +48,7 @@ endif
 AM_CFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src/modules -I$(top_builddir)/src/modules/rtp -I$(top_builddir)/src/modules/gconf
 AM_CFLAGS += $(PTHREAD_CFLAGS) -D_POSIX_PTHREAD_SEMANTICS
 AM_CFLAGS += $(LTDLINCL)
-AM_CFLAGS += $(LIBSAMPLERATE_CFLAGS) $(LIBSNDFILE_CFLAGS)
+AM_CFLAGS += $(LIBSAMPLERATE_CFLAGS) $(LIBSNDFILE_CFLAGS) $(LIBSPEEX_CFLAGS)
 AM_CFLAGS += -DPA_DLSEARCHPATH=\"$(modlibexecdir)\"
 AM_CFLAGS += -DPA_DEFAULT_CONFIG_DIR=\"$(PA_DEFAULT_CONFIG_DIR)\"
 AM_CFLAGS += -DPA_BINARY=\"$(PA_BINARY)\"
@@ -99,9 +99,10 @@ EXTRA_DIST = \
 		daemon/default.pa.win32 \
 		depmod.py \
 		daemon/esdcompat.in \
+		daemon/start-pulseaudio-x11.in \
 		utils/padsp \
 		modules/module-defs.h.m4 \
-		daemon/pulseaudio-module-xsmp.desktop \
+		daemon/pulseaudio.desktop \
 		map-file \
 		daemon/org.pulseaudio.policy
 
@@ -112,7 +113,7 @@ pulseconf_DATA = \
 
 if HAVE_X11
 xdgautostart_DATA = \
-		daemon/pulseaudio-module-xsmp.desktop
+		daemon/pulseaudio.desktop
 endif
 
 BUILT_SOURCES = \
@@ -133,9 +134,9 @@ pulseaudio_SOURCES = \
 		daemon/ltdl-bind-now.c daemon/ltdl-bind-now.h \
 		daemon/main.c
 
-pulseaudio_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS) $(LIBSAMPLERATE_CFLAGS) $(LIBSNDFILE_CFLAGS) $(CAP_CFLAGS) $(LIBOIL_CFLAGS) $(DBUS_CFLAGS)
+pulseaudio_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS) $(LIBSAMPLERATE_CFLAGS) $(LIBSPEEX_CFLAGS) $(LIBSNDFILE_CFLAGS) $(CAP_CFLAGS) $(LIBOIL_CFLAGS) $(DBUS_CFLAGS)
 pulseaudio_CPPFLAGS = $(AM_CPPFLAGS)
-pulseaudio_LDADD = $(AM_LDADD) libpulsecore.la $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(CAP_LIBS) $(LIBOIL_LIBS) $(DBUS_LIBS)
+pulseaudio_LDADD = $(AM_LDADD) libpulsecore.la $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSPEEX_LIBS) $(LIBSNDFILE_LIBS) $(CAP_LIBS) $(LIBOIL_LIBS) $(DBUS_LIBS)
 # This is needed because automake doesn't properly expand the foreach below
 pulseaudio_DEPENDENCIES = libpulsecore.la $(PREOPEN_LIBS)
 
@@ -184,7 +185,7 @@ if HAVE_AVAHI
 bin_PROGRAMS += pabrowse
 endif
 
-bin_SCRIPTS = esdcompat
+bin_SCRIPTS = esdcompat start-pulseaudio-x11
 
 pacat_SOURCES = utils/pacat.c
 pacat_LDADD = $(AM_LDADD) libpulse.la
@@ -643,16 +644,10 @@ libpulsedsp_la_LIBADD = $(AM_LIBADD) libpulse.la
 libpulsedsp_la_LDFLAGS = -avoid-version
 
 ###################################
-#      Speex Resampler            #
+#      ffmpeg resampler           #
 ###################################
 
-noinst_LTLIBRARIES = libspeex-resampler-fixed.la libspeex-resampler-float.la libffmpeg-resampler.la
-
-libspeex_resampler_fixed_la_CPPFLAGS = $(AM_CPPFLAGS) -DRANDOM_PREFIX=paspfx -DOUTSIDE_SPEEX -DFIXED_POINT
-libspeex_resampler_fixed_la_SOURCES = pulsecore/speex/resample.c pulsecore/speex/speex_resampler.h pulsecore/speex/arch.h pulsecore/speex/fixed_generic.h pulsecore/speexwrap.h
-
-libspeex_resampler_float_la_CPPFLAGS = $(AM_CPPFLAGS) -DRANDOM_PREFIX=paspfl -DOUTSIDE_SPEEX -DFLOATING_POINT
-libspeex_resampler_float_la_SOURCES = pulsecore/speex/resample.c pulsecore/speex/speex_resampler.h pulsecore/speex/arch.h
+noinst_LTLIBRARIES = libffmpeg-resampler.la
 
 libffmpeg_resampler_la_CPPFLAGS = $(AM_CPPFLAGS)
 libffmpeg_resampler_la_SOURCES = pulsecore/ffmpeg/resample2.c pulsecore/ffmpeg/avcodec.h pulsecore/ffmpeg/dsputil.h
@@ -807,7 +802,7 @@ endif
 
 libpulsecore_la_CPPFLAGS = $(AM_CPPFLAGS) $(LIBOIL_CFLAGS)
 libpulsecore_la_LDFLAGS = -version-info $(LIBPULSECORE_VERSION_INFO)
-libpulsecore_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(WINSOCK_LIBS) $(LIBOIL_LIBS) $(LIBICONV) libspeex-resampler-fixed.la libspeex-resampler-float.la libffmpeg-resampler.la
+libpulsecore_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(LIBSPEEX_LIBS) $(WINSOCK_LIBS) $(LIBOIL_LIBS) $(LIBICONV) libffmpeg-resampler.la
 
 ###################################
 #   Plug-in support libraries     #
@@ -1548,13 +1543,18 @@ suid: pulseaudio .libs/lt-pulseaudio
 	chown root $^
 	chmod u+s $^
 
-CLEANFILES = esdcompat client.conf default.pa daemon.conf
+CLEANFILES = esdcompat client.conf default.pa daemon.conf start-pulseaudio-x11
 
 esdcompat: daemon/esdcompat.in Makefile
 	sed -e 's,@PACKAGE_VERSION\@,$(PACKAGE_VERSION),g' \
 		-e 's,@PACKAGE_NAME\@,$(PACKAGE_NAME),g' \
 		-e 's,@PA_BINARY\@,$(PA_BINARY),g' < $< > $@
 	chmod +x esdcompat
+
+start-pulseaudio-x11: daemon/start-pulseaudio-x11.in Makefile
+	sed -e 's,@PA_BINARY\@,$(PA_BINARY),g' \
+		-e 's,@PACTL_BINARY\@,$(bindir)/pactl,g' < $< > $@
+	chmod +x start-pulseaudio-x11
 
 client.conf: pulse/client.conf.in Makefile
 	sed -e 's,@PA_BINARY\@,$(PA_BINARY),g' < $< > $@
@@ -1585,12 +1585,6 @@ install-exec-hook:
 
 massif: pulseaudio
 	libtool --mode=execute valgrind --tool=massif --depth=6  --alloc-fn=pa_xmalloc --alloc-fn=pa_xmalloc0 --alloc-fn=pa_xrealloc --alloc-fn=dbus_realloc --alloc-fn=pa_xnew0_internal --alloc-fn=pa_xnew_internal ./pulseaudio
-
-update-speex:
-	wget -O pulsecore/speex/speex_resampler.h http://svn.xiph.org/trunk/speex/include/speex/speex_resampler.h
-	wget -O pulsecore/speex/resample.c http://svn.xiph.org/trunk/speex/libspeex/resample.c
-	wget -O pulsecore/speex/arch.h http://svn.xiph.org/trunk/speex/libspeex/arch.h
-	wget -O pulsecore/speex/fixed_generic.h http://svn.xiph.org/trunk/speex/libspeex/fixed_generic.h
 
 update-ffmpeg:
 	wget -O pulsecore/ffmpeg/resample2.c http://svn.mplayerhq.hu/ffmpeg/trunk/libavcodec/resample2.c?view=co

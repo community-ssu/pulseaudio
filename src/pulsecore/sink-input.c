@@ -491,12 +491,6 @@ int pa_sink_input_peek(pa_sink_input *i, size_t slength /* in sink frames */, pa
               i->thread_info.state == PA_SINK_INPUT_CORKED ||
               i->thread_info.state == PA_SINK_INPUT_DRAINED);
 
-    /* If there's still some rewrite request the handle, but the sink
-    didn't do this for us, we do it here. However, since the sink
-    apparently doesn't support rewinding, we pass 0 here. This still
-    allows rewinding through the render buffer. */
-    pa_sink_input_process_rewind(i, 0);
-
     block_size_max_sink_input = i->thread_info.resampler ?
         pa_resampler_max_block_size(i->thread_info.resampler) :
         pa_frame_align(pa_mempool_block_size_max(i->sink->core->mempool), &i->sample_spec);
@@ -633,18 +627,13 @@ void pa_sink_input_drop(pa_sink_input *i, size_t nbytes /* in sink sample spec *
 
 /*     pa_log_debug("dropping %lu", (unsigned long) nbytes); */
 
-    /* If there's still some rewrite request the handle, but the sink
-    didn't do this for us, we do it here. However, since the sink
-    apparently doesn't support rewinding, we pass 0 here. This still
-    allows rewinding through the render buffer. */
-    pa_sink_input_process_rewind(i, 0);
-
     pa_memblockq_drop(i->thread_info.render_memblockq, nbytes);
 }
 
 /* Called from thread context */
 void pa_sink_input_process_rewind(pa_sink_input *i, size_t nbytes /* in sink sample spec */) {
     size_t lbq;
+    pa_bool_t called;
     pa_sink_input_assert_ref(i);
 
     pa_assert(PA_SINK_INPUT_IS_LINKED(i->thread_info.state));
@@ -664,7 +653,7 @@ void pa_sink_input_process_rewind(pa_sink_input *i, size_t nbytes /* in sink sam
         /* We were asked to drop all buffered data, and rerequest new
          * data from implementor the next time push() is called */
 
-        pa_memblockq_flush(i->thread_info.render_memblockq);
+        pa_memblockq_flush_write(i->thread_info.render_memblockq);
 
     } else if (i->thread_info.rewrite_nbytes > 0) {
         size_t max_rewrite, amount;
@@ -685,6 +674,7 @@ void pa_sink_input_process_rewind(pa_sink_input *i, size_t nbytes /* in sink sam
             /* Tell the implementor */
             if (i->process_rewind)
                 i->process_rewind(i, amount);
+            called = TRUE;
 
             /* Convert back to to sink domain */
             if (i->thread_info.resampler)
@@ -702,6 +692,10 @@ void pa_sink_input_process_rewind(pa_sink_input *i, size_t nbytes /* in sink sam
                 pa_resampler_reset(i->thread_info.resampler);
         }
     }
+
+    if (!called)
+        if (i->process_rewind)
+            i->process_rewind(i, 0);
 
     i->thread_info.rewrite_nbytes = 0;
     i->thread_info.rewrite_flush = FALSE;
@@ -1010,6 +1004,7 @@ int pa_sink_input_move_to(pa_sink_input *i, pa_sink *dest) {
 
 /* Called from IO thread context */
 void pa_sink_input_set_state_within_thread(pa_sink_input *i, pa_sink_input_state_t state) {
+    pa_bool_t corking, uncorking;
     pa_sink_input_assert_ref(i);
 
     if (state == i->thread_info.state)
@@ -1019,23 +1014,30 @@ void pa_sink_input_set_state_within_thread(pa_sink_input *i, pa_sink_input_state
         !(i->thread_info.state == PA_SINK_INPUT_DRAINED || i->thread_info.state != PA_SINK_INPUT_RUNNING))
         pa_atomic_store(&i->thread_info.drained, 1);
 
-    if (state == PA_SINK_INPUT_CORKED && i->thread_info.state != PA_SINK_INPUT_CORKED) {
-
-        /* This will tell the implementing sink input driver to rewind
-         * so that the unplayed already mixed data is not lost */
-        pa_sink_input_request_rewind(i, 0, TRUE, TRUE);
-
-    } else if (i->thread_info.state == PA_SINK_INPUT_CORKED && state != PA_SINK_INPUT_CORKED) {
-
-        /* OK, we're being uncorked. Make sure we're not rewound when
-         * the hw buffer is remixed and request a remix. */
-        pa_sink_input_request_rewind(i, 0, FALSE, TRUE);
-    }
+    corking = state == PA_SINK_INPUT_CORKED && i->thread_info.state == PA_SINK_INPUT_RUNNING;
+    uncorking = i->thread_info.state == PA_SINK_INPUT_CORKED && state == PA_SINK_INPUT_RUNNING;
 
     if (i->state_change)
         i->state_change(i, state);
 
     i->thread_info.state = state;
+
+    if (corking) {
+
+        pa_log_debug("Requesting rewind due to corking");
+
+        /* This will tell the implementing sink input driver to rewind
+         * so that the unplayed already mixed data is not lost */
+        pa_sink_input_request_rewind(i, 0, TRUE, TRUE);
+
+    } else if (uncorking) {
+
+        pa_log_debug("Requesting rewind due to uncorking");
+
+        /* OK, we're being uncorked. Make sure we're not rewound when
+         * the hw buffer is remixed and request a remix. */
+        pa_sink_input_request_rewind(i, 0, FALSE, TRUE);
+    }
 }
 
 /* Called from thread context, except when it is not. */
@@ -1143,6 +1145,8 @@ void pa_sink_input_request_rewind(pa_sink_input *i, size_t nbytes  /* in our sam
     pa_sink_input_assert_ref(i);
     pa_assert(i->thread_info.rewrite_nbytes == 0);
 
+/*     pa_log_debug("request rewrite %lu", (unsigned long) nbytes); */
+
     /* We don't take rewind requests while we are corked */
     if (i->thread_info.state == PA_SINK_INPUT_CORKED)
         return;
@@ -1184,6 +1188,9 @@ void pa_sink_input_request_rewind(pa_sink_input *i, size_t nbytes  /* in our sam
 
     if (nbytes > lbq)
         pa_sink_request_rewind(i->sink, nbytes - lbq);
+    else
+        /* This call will make sure process_rewind() is called later */
+        pa_sink_request_rewind(i->sink, 0);
 }
 
 /* Called from main context */
