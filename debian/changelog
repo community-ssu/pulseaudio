@@ -1,3 +1,9 @@
+pulseaudio (0.9.11-0maemo1) unstable; urgency=low
+
+  * New Upstream Version
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Wed, 30 Jul 2008 16:51:10 +0300
+
 pulseaudio (0.9.11~git8885dd-0maemo1) unstable; urgency=low
 
   * Import git master 8885dd (0.9.11).

@@ -1,0 +1,292 @@
+From b13e8713415913f9b8ec2405bf7f3bfd5f9413ea Mon Sep 17 00:00:00 2001
+From: Marc-Andre Lureau <marcandre.lureau@gmail.com>
+Date: Thu, 5 Jun 2008 21:47:17 +0300
+Subject: [PATCH] flat-volume thingy
+
+---
+ src/Makefile.am                  |   10 ++-
+ src/modules/module-flat-volume.c |  240 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 249 insertions(+), 1 deletions(-)
+ create mode 100644 src/modules/module-flat-volume.c
+
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 98d06aa..2775dfb 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -1008,6 +1008,7 @@ libavahi_wrap_la_LIBADD = $(AM_LIBADD) $(AVAHI_CFLAGS) libpulsecore.la
+ ###################################
+ 
+ modlibexec_LTLIBRARIES += \
++		module-flat-volume.la \
+ 		module-cli.la \
+ 		module-cli-protocol-tcp.la \
+ 		module-simple-protocol-tcp.la \
+@@ -1203,7 +1204,8 @@ SYMDEF_FILES = \
+ 		modules/module-bt-proximity-symdef.h \
+ 		modules/gconf/module-gconf-symdef.h \
+ 		modules/module-position-event-sounds-symdef.h \
+-		modules/module-console-kit-symdef.h
++		modules/module-console-kit-symdef.h \
++		modules/module-flat-volume-symdef.h
+ 
+ EXTRA_DIST += $(SYMDEF_FILES)
+ BUILT_SOURCES += $(SYMDEF_FILES)
+@@ -1214,6 +1216,12 @@ $(SYMDEF_FILES): modules/module-defs.h.m4
+ 	$(MKDIR_P) modules/rtp
+ 	$(M4) -Dfname="$@" $< > $@
+ 
++# Flat volume
++
++module_flat_volume_la_SOURCES = modules/module-flat-volume.c
++module_flat_volume_la_LDFLAGS = -module -avoid-version
++module_flat_volume_la_LIBADD = $(AM_LIBADD) libpulsecore.la
++
+ # Simple protocol
+ 
+ module_simple_protocol_tcp_la_SOURCES = modules/module-protocol-stub.c
+diff --git a/src/modules/module-flat-volume.c b/src/modules/module-flat-volume.c
+new file mode 100644
+index 0000000..fb7f1ef
+--- /dev/null
++++ b/src/modules/module-flat-volume.c
+@@ -0,0 +1,240 @@
++/* $Id$ */
++
++/***
++  This file is part of PulseAudio.
++
++  Copyright (C) 2008 Nokia Corporation and/or its subsidiary(-ies).
++  Copyright 2004-2006, 2008 Lennart Poettering
++
++  Contact: Marc-Andre Lureau <marc-andre.lureau@nokia.com>
++
++  PulseAudio is free software; you can redistribute it and/or modify
++  it under the terms of the GNU Lesser General Public License as published
++  by the Free Software Foundation; either version 2 of the License,
++  or (at your option) any later version.
++
++  PulseAudio is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  General Public License for more details.
++
++  You should have received a copy of the GNU Lesser General Public License
++  along with PulseAudio; if not, write to the Free Software
++  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
++  USA.
++***/
++
++#ifdef HAVE_CONFIG_H
++#include <config.h>
++#endif
++
++#include <unistd.h>
++#include <string.h>
++#include <errno.h>
++#include <sys/types.h>
++#include <regex.h>
++#include <stdio.h>
++#include <stdlib.h>
++
++#include <pulse/xmalloc.h>
++
++#include <pulsecore/core-error.h>
++#include <pulsecore/module.h>
++#include <pulsecore/core-util.h>
++#include <pulsecore/log.h>
++#include <pulsecore/sink-input.h>
++#include <pulsecore/core-util.h>
++#include <pulsecore/macro.h>
++
++#include "module-flat-volume-symdef.h"
++
++PA_MODULE_AUTHOR("Marc-Andre Lureau");
++PA_MODULE_DESCRIPTION("Flat volume");
++PA_MODULE_VERSION(PACKAGE_VERSION);
++PA_MODULE_LOAD_ONCE(TRUE);
++PA_MODULE_USAGE("");
++
++struct userdata {
++    pa_hook_slot *sink_input_set_volume_hook_slot;
++    pa_hook_slot *sink_input_fixate_hook_slot;
++    pa_hook_slot *sink_set_volume_hook_slot;
++};
++
++static pa_volume_t _volume_multiply(pa_volume_t a, pa_volume_t b) {
++    a = PA_MIN(a, a - 1);
++
++    return (a * b) / PA_VOLUME_NORM;
++}
++
++static pa_volume_t _volume_divide(pa_volume_t a, pa_volume_t b) {
++    pa_volume_t vol;
++
++    a = PA_MIN(a, a - 1);
++    b = PA_MAX(b, b + 1);
++
++    vol = (a * PA_VOLUME_NORM) / b;
++
++    return PA_MIN(vol, PA_VOLUME_NORM);
++}
++
++static pa_cvolume *pa_sw_cvolume_divide_dB(pa_cvolume *dest, const pa_cvolume *a, const pa_cvolume *b) {
++    unsigned i;
++
++    pa_assert(dest);
++    pa_assert(a);
++    pa_assert(b);
++
++    for (i = 0; i < a->channels && i < b->channels && i < PA_CHANNELS_MAX; i++) {
++
++        dest->values[i] = _volume_divide(
++                i < a->channels ? a->values[i] : PA_VOLUME_NORM,
++                i < b->channels ? b->values[i] : PA_VOLUME_NORM);
++    }
++
++    dest->channels = i;
++
++    return dest;
++}
++
++static pa_cvolume *pa_sw_cvolume_multiply_dB(pa_cvolume *dest, const pa_cvolume *a, const pa_cvolume *b) {
++    unsigned i;
++
++    pa_assert(dest);
++    pa_assert(a);
++    pa_assert(b);
++
++    for (i = 0; i < a->channels && i < b->channels && i < PA_CHANNELS_MAX; i++) {
++
++        dest->values[i] = _volume_multiply(
++                i < a->channels ? a->values[i] : PA_VOLUME_NORM,
++                i < b->channels ? b->values[i] : PA_VOLUME_NORM);
++    }
++
++    dest->channels = i;
++
++    return dest;
++}
++
++
++static void sink_input_normalize_volume(pa_cvolume *volume, const pa_cvolume *virtual_volume, const pa_cvolume *sink_volume) {
++    pa_assert(volume);
++    pa_assert(virtual_volume);
++    pa_assert(sink_volume);
++
++    pa_sw_cvolume_divide_dB(volume, virtual_volume, sink_volume);
++}
++
++static void process_input_volume_change(pa_cvolume *volume, const pa_cvolume *virtual_volume, pa_sink *s, pa_sink_input *this) {
++    pa_sink_input *i;
++    uint32_t idx;
++    pa_cvolume max_volume;
++
++    pa_assert(s);
++
++    max_volume = *virtual_volume;
++    pa_log_debug("=> max %f", pa_sw_volume_to_dB(pa_cvolume_avg(&max_volume)));
++    for (i = PA_SINK_INPUT(pa_idxset_first(s->inputs, &idx)); i; i = PA_SINK_INPUT(pa_idxset_next(s->inputs, &idx))) {
++        if (this && i == this)
++            continue;
++
++        if (pa_cvolume_avg(&i->virtual_volume) > pa_cvolume_avg(&max_volume))
++            max_volume = i->virtual_volume;
++        pa_log_debug("max %f, idx %d", pa_sw_volume_to_dB(pa_cvolume_avg(&max_volume)), i->index);
++    }
++
++    /* Set the master volume */
++    if (!pa_cvolume_equal(&max_volume, &s->volume)) { /* FIXME: inline func from sink.h ? */
++        s->volume = max_volume;
++        if (s->set_volume && s->set_volume(s) < 0)
++            s->set_volume = NULL;
++
++        if (!s->set_volume)
++            pa_asyncmsgq_post(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SET_VOLUME, pa_xnewdup(struct pa_cvolume, &max_volume, 1), 0, NULL, pa_xfree);
++
++        pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
++
++        for (i = PA_SINK_INPUT(pa_idxset_first(s->inputs, &idx)); i; i = PA_SINK_INPUT(pa_idxset_next(s->inputs, &idx))) {
++            if (this && i == this)
++                continue;
++
++            sink_input_normalize_volume(&i->volume, &i->virtual_volume, pa_sink_get_volume(s));
++	    pa_log_debug("normalized %d, vol %f, vvol %f, sink %f",
++			 i->index,
++			 pa_sw_volume_to_dB(pa_cvolume_avg(&i->volume)),
++			 pa_sw_volume_to_dB(pa_cvolume_avg(&i->virtual_volume)),
++			 pa_sw_volume_to_dB(pa_cvolume_avg(&i->sink->volume)));
++	    pa_asyncmsgq_post(i->sink->asyncmsgq, PA_MSGOBJECT(i), PA_SINK_INPUT_MESSAGE_SET_VOLUME, pa_xnewdup(struct pa_cvolume, &i->volume, 1), 0, NULL, pa_xfree);
++        }
++    }
++
++    /* normalize the request */
++    sink_input_normalize_volume(volume, virtual_volume, &s->volume);
++}
++
++static pa_hook_result_t sink_input_set_volume_hook_callback(pa_core *c, pa_sink_input_set_volume_data *this, struct userdata *u) {
++    pa_assert(this);
++    pa_assert(this->sink_input);
++
++    process_input_volume_change(&this->volume, &this->virtual_volume, this->sink_input->sink, this->sink_input);
++
++    return PA_HOOK_OK;
++}
++
++static pa_hook_result_t sink_set_volume_hook_callback(pa_core *core, pa_sink_set_volume_data *this, struct userdata *u) {
++    pa_sink_input *i;
++    uint32_t idx;
++
++    pa_assert(this);
++    pa_assert(this->sink);
++
++    for (i = PA_SINK_INPUT(pa_idxset_first(this->sink->inputs, &idx)); i; i = PA_SINK_INPUT(pa_idxset_next(this->sink->inputs, &idx))) {
++        pa_sw_cvolume_multiply_dB(&i->virtual_volume, &i->volume, &this->volume);
++        pa_subscription_post(i->sink->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
++    }
++
++    return PA_HOOK_OK;
++}
++
++static pa_hook_result_t sink_input_fixate_hook_callback(pa_core *core, pa_sink_input_new_data *this, struct userdata *u) {
++    pa_assert(this);
++    pa_assert(this->sink);
++
++    process_input_volume_change(&this->volume, &this->virtual_volume, this->sink, NULL);
++
++    return PA_HOOK_OK;
++}
++
++int pa__init(pa_module*m) {
++    struct userdata *u;
++
++    pa_assert(m);
++
++    u = pa_xnew(struct userdata, 1);
++    m->userdata = u;
++
++    u->sink_input_fixate_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_INPUT_FIXATE], PA_HOOK_LATE, (pa_hook_cb_t) sink_input_fixate_hook_callback, u);
++    u->sink_input_set_volume_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_INPUT_SET_VOLUME], PA_HOOK_LATE, (pa_hook_cb_t) sink_input_set_volume_hook_callback, u);
++    u->sink_set_volume_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_SET_VOLUME], PA_HOOK_EARLY, (pa_hook_cb_t) sink_set_volume_hook_callback, u);
++
++    return 0;
++}
++
++void pa__done(pa_module*m) {
++    struct userdata* u;
++
++    pa_assert(m);
++
++    if (!(u = m->userdata))
++        return;
++
++    if (u->sink_input_set_volume_hook_slot)
++      pa_hook_slot_free(u->sink_input_set_volume_hook_slot);
++
++    if (u->sink_set_volume_hook_slot)
++        pa_hook_slot_free(u->sink_set_volume_hook_slot);
++
++    if (u->sink_input_fixate_hook_slot)
++      pa_hook_slot_free(u->sink_input_fixate_hook_slot);
++
++    pa_xfree(u);
++}

@@ -1,0 +1,202 @@
+From 00cc31978c02c529a68917f001fcc2b6449d015b Mon Sep 17 00:00:00 2001
+From: Marc-Andre Lureau <marcandre.lureau@gmail.com>
+Date: Thu, 5 Jun 2008 21:46:50 +0300
+Subject: [PATCH] volume hooks
+
+---
+ src/pulsecore/core.h            |    2 ++
+ src/pulsecore/protocol-native.c |    2 +-
+ src/pulsecore/sink-input.c      |   30 +++++++++++++++++++++++-------
+ src/pulsecore/sink-input.h      |   10 ++++++++++
+ src/pulsecore/sink.c            |   12 ++++++++++--
+ src/pulsecore/sink.h            |    5 +++++
+ 6 files changed, 51 insertions(+), 10 deletions(-)
+
+diff --git a/src/pulsecore/core.h b/src/pulsecore/core.h
+index 14a2c78..1405c16 100644
+--- a/src/pulsecore/core.h
++++ b/src/pulsecore/core.h
+@@ -49,6 +49,7 @@ typedef enum pa_core_hook {
+     PA_CORE_HOOK_SINK_UNLINK_POST,
+     PA_CORE_HOOK_SINK_STATE_CHANGED,
+     PA_CORE_HOOK_SINK_PROPLIST_CHANGED,
++    PA_CORE_HOOK_SINK_SET_VOLUME,
+     PA_CORE_HOOK_SOURCE_NEW,
+     PA_CORE_HOOK_SOURCE_FIXATE,
+     PA_CORE_HOOK_SOURCE_PUT,
+@@ -65,6 +66,7 @@ typedef enum pa_core_hook {
+     PA_CORE_HOOK_SINK_INPUT_MOVE_POST,
+     PA_CORE_HOOK_SINK_INPUT_STATE_CHANGED,
+     PA_CORE_HOOK_SINK_INPUT_PROPLIST_CHANGED,
++    PA_CORE_HOOK_SINK_INPUT_SET_VOLUME,
+     PA_CORE_HOOK_SOURCE_OUTPUT_NEW,
+     PA_CORE_HOOK_SOURCE_OUTPUT_FIXATE,
+     PA_CORE_HOOK_SOURCE_OUTPUT_PUT,
+diff --git a/src/pulsecore/protocol-native.c b/src/pulsecore/protocol-native.c
+index e130359..ee4dff5 100644
+--- a/src/pulsecore/protocol-native.c
++++ b/src/pulsecore/protocol-native.c
+@@ -2582,7 +2582,7 @@ static void sink_input_fill_tagstruct(connection *c, pa_tagstruct *t, pa_sink_in
+     pa_tagstruct_putu32(t, s->sink->index);
+     pa_tagstruct_put_sample_spec(t, &fixed_ss);
+     pa_tagstruct_put_channel_map(t, &s->channel_map);
+-    pa_tagstruct_put_cvolume(t, &s->volume);
++    pa_tagstruct_put_cvolume(t, pa_sink_input_get_volume(s));
+     pa_tagstruct_put_usec(t, pa_sink_input_get_latency(s, &sink_latency));
+     pa_tagstruct_put_usec(t, sink_latency);
+     pa_tagstruct_puts(t, pa_resample_method_to_string(pa_sink_input_get_resample_method(s)));
+diff --git a/src/pulsecore/sink-input.c b/src/pulsecore/sink-input.c
+index dedcf95..f2337a1 100644
+--- a/src/pulsecore/sink-input.c
++++ b/src/pulsecore/sink-input.c
+@@ -75,7 +75,7 @@ void pa_sink_input_new_data_set_volume(pa_sink_input_new_data *data, const pa_cv
+     pa_assert(data);
+ 
+     if ((data->volume_is_set = !!volume))
+-        data->volume = *volume;
++        data->volume = data->virtual_volume = *volume;
+ }
+ 
+ void pa_sink_input_new_data_set_muted(pa_sink_input_new_data *data, pa_bool_t mute) {
+@@ -156,6 +156,8 @@ pa_sink_input* pa_sink_input_new(
+     pa_return_null_if_fail(pa_cvolume_valid(&data->volume));
+     pa_return_null_if_fail(data->volume.channels == data->sample_spec.channels);
+ 
++    data->virtual_volume = data->volume;
++
+     if (!data->muted_is_set)
+         data->muted = FALSE;
+ 
+@@ -226,7 +228,8 @@ pa_sink_input* pa_sink_input_new(
+     i->sample_spec = data->sample_spec;
+     i->channel_map = data->channel_map;
+ 
+-    i->volume = data->volume;
++    i->virtual_volume = i->volume = data->volume;
++
+     i->muted = data->muted;
+ 
+     if (data->sync_base) {
+@@ -786,17 +789,30 @@ pa_usec_t pa_sink_input_get_requested_latency(pa_sink_input *i) {
+ 
+ /* Called from main context */
+ void pa_sink_input_set_volume(pa_sink_input *i, const pa_cvolume *volume) {
++    pa_sink_input_set_volume_data data;
++
+     pa_sink_input_assert_ref(i);
+     pa_assert(PA_SINK_INPUT_IS_LINKED(i->state));
+     pa_assert(volume);
+ 
+-    if (pa_cvolume_equal(&i->volume, volume))
++    data.sink_input = i;
++    data.virtual_volume = *volume;
++    data.volume = *volume;
++
++    if (pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_SET_VOLUME], &data) < 0) {
+         return;
++    }
+ 
+-    i->volume = *volume;
++    if (!pa_cvolume_equal(&i->volume, &data.volume)) {
++        i->volume = data.volume;
++	pa_assert_se(pa_asyncmsgq_send(i->sink->asyncmsgq, PA_MSGOBJECT(i), PA_SINK_INPUT_MESSAGE_SET_VOLUME, &data.volume, 0, NULL) == 0);
++        return;
++    }
+ 
+-    pa_assert_se(pa_asyncmsgq_send(i->sink->asyncmsgq, PA_MSGOBJECT(i), PA_SINK_INPUT_MESSAGE_SET_VOLUME, &i->volume, 0, NULL) == 0);
+-    pa_subscription_post(i->sink->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
++    if (!pa_cvolume_equal(&i->virtual_volume, &data.virtual_volume)) {
++        i->virtual_volume = data.virtual_volume;
++        pa_subscription_post(i->sink->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
++    }
+ }
+ 
+ /* Called from main context */
+@@ -804,7 +820,7 @@ const pa_cvolume *pa_sink_input_get_volume(pa_sink_input *i) {
+     pa_sink_input_assert_ref(i);
+     pa_assert(PA_SINK_INPUT_IS_LINKED(i->state));
+ 
+-    return &i->volume;
++    return &i->virtual_volume;
+ }
+ 
+ /* Called from main context */
+diff --git a/src/pulsecore/sink-input.h b/src/pulsecore/sink-input.h
+index c07a740..cf06b71 100644
+--- a/src/pulsecore/sink-input.h
++++ b/src/pulsecore/sink-input.h
+@@ -89,6 +89,8 @@ struct pa_sink_input {
+ 
+     pa_sink_input *sync_prev, *sync_next;
+ 
++    pa_cvolume virtual_volume;
++
+     pa_cvolume volume;
+     pa_bool_t muted;
+ 
+@@ -217,6 +219,8 @@ typedef struct pa_sink_input_new_data {
+     pa_channel_map channel_map;
+     pa_bool_t channel_map_is_set;
+ 
++    pa_cvolume virtual_volume;
++
+     pa_cvolume volume;
+     pa_bool_t volume_is_set;
+     pa_bool_t muted;
+@@ -239,6 +243,12 @@ typedef struct pa_sink_input_move_hook_data {
+     pa_sink *destination;
+ } pa_sink_input_move_hook_data;
+ 
++typedef struct pa_sink_set_input_volume_data {
++  pa_sink_input *sink_input;
++  pa_cvolume virtual_volume;
++  pa_cvolume volume;
++} pa_sink_input_set_volume_data;
++
+ /* To be called by the implementing module only */
+ 
+ pa_sink_input* pa_sink_input_new(
+diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
+index 4102f31..102e1de 100644
+--- a/src/pulsecore/sink.c
++++ b/src/pulsecore/sink.c
+@@ -844,13 +844,21 @@ pa_usec_t pa_sink_get_latency(pa_sink *s) {
+ /* Called from main thread */
+ void pa_sink_set_volume(pa_sink *s, const pa_cvolume *volume) {
+     pa_bool_t changed;
++    pa_sink_set_volume_data data;
+ 
+     pa_sink_assert_ref(s);
+     pa_assert(PA_SINK_IS_LINKED(s->state));
+     pa_assert(volume);
+ 
+-    changed = !pa_cvolume_equal(volume, &s->volume);
+-    s->volume = *volume;
++    data.sink = s;
++    data.volume = *volume;
++
++    changed = !pa_cvolume_equal(&data.volume, &s->volume);
++
++    if (changed && pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SINK_SET_VOLUME], &data) < 0)
++        return;
++
++    s->volume = data.volume;
+ 
+     if (s->set_volume && s->set_volume(s) < 0)
+         s->set_volume = NULL;
+diff --git a/src/pulsecore/sink.h b/src/pulsecore/sink.h
+index 604be26..9da80b5 100644
+--- a/src/pulsecore/sink.h
++++ b/src/pulsecore/sink.h
+@@ -205,6 +205,11 @@ void pa_sink_new_data_set_volume(pa_sink_new_data *data, const pa_cvolume *volum
+ void pa_sink_new_data_set_muted(pa_sink_new_data *data, pa_bool_t mute);
+ void pa_sink_new_data_done(pa_sink_new_data *data);
+ 
++typedef struct pa_sink_set_volume_data {
++  pa_sink *sink;
++  pa_cvolume volume;
++} pa_sink_set_volume_data;
++
+ /* To be called exclusively by the sink driver, from main context */
+ 
+ pa_sink* pa_sink_new(

@@ -1,4 +1,4 @@
-From c262c3fb90529add82881feb9794305296da2bd7 Mon Sep 17 00:00:00 2001
+From d35d20f356b452cd6bd27d25f462b49bb46a60e8 Mon Sep 17 00:00:00 2001
 From: Marc-Andre Lureau <marcandre.lureau@gmail.com>
 Date: Thu, 12 Jun 2008 20:43:39 +0300
 Subject: [PATCH] Use int instead of pa_bool_t in atomic.h
@@ -8,10 +8,10 @@ Subject: [PATCH] Use int instead of pa_bool_t in atomic.h
  1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/src/pulsecore/atomic.h b/src/pulsecore/atomic.h
-index 339275d..01c5aa5 100644
+index a91c4d5..58910db 100644
 --- a/src/pulsecore/atomic.h
 +++ b/src/pulsecore/atomic.h
-@@ -380,7 +380,7 @@ static inline int pa_atomic_dec(pa_atomic_t *a) {
+@@ -379,7 +379,7 @@ static inline int pa_atomic_dec(pa_atomic_t *a) {
  
  /* Returns non-zero when the operation was successful. */
  static inline int pa_atomic_cmpxchg(pa_atomic_t *a, int old_i, int new_i) {
@@ -20,7 +20,7 @@ index 339275d..01c5aa5 100644
      do {
        failed = !!__kernel_cmpxchg(old_i, new_i, &a->value);
      } while(failed && a->value == old_i);
-@@ -404,7 +404,7 @@ static inline void pa_atomic_ptr_store(pa_atomic_ptr_t *a, void *p) {
+@@ -403,7 +403,7 @@ static inline void pa_atomic_ptr_store(pa_atomic_ptr_t *a, void *p) {
  }
  
  static inline int pa_atomic_ptr_cmpxchg(pa_atomic_ptr_t *a, void *old_p, void* new_p) {

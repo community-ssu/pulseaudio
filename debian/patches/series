@@ -1,5 +1,6 @@
 0001-Set-ESD-socket-to-tmp-.esd-socket-to-match-up-with.patch
-0002-load-module-gconf-earlier.patch
-0003-Reduce-RT-prio-logging-severity.patch
-0004-Fine-tune-ffmpeg-resampler-parameters-for-maemo.patch
-0005-Use-int-instead-of-pa_bool_t-in-atomic.h.patch
+0002-Reduce-RT-prio-logging-severity.patch
+0003-Fine-tune-ffmpeg-resampler-parameters-for-maemo.patch
+0004-Use-int-instead-of-pa_bool_t-in-atomic.h.patch
+0005-volume-hooks.patch
+0006-flat-volume-thingy.patch
