@@ -1,6 +1,9 @@
 pulseaudio (0.9.11-0maemo1) unstable; urgency=low
 
   * New Upstream Version
+  * Start the PulseAudio sound server in system mode.
+  * Use custom maemo configuration files.
+  * Give "user" pulse-access permissions.
 
  -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Wed, 30 Jul 2008 16:51:10 +0300
 

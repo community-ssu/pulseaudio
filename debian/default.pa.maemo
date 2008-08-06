@@ -1,0 +1,5 @@
+load-module module-alsa-sink device=hw:0 rate=48000 sink_name=hardis.si
+load-module module-alsa-source device=hw:0 rate=48000 source_name=hardis.so
+
+load-module module-cli-protocol-tcp
+load-module module-native-protocol-unix

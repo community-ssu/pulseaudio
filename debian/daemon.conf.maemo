@@ -1,0 +1,3 @@
+realtime-scheduling = yes
+realtime-priority = 5
+resample-method = ffmpeg

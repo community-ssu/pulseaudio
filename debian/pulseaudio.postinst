@@ -29,6 +29,9 @@ case "$1" in
     if ! getent group pulse-access >/dev/null; then
 #      addgroup --quiet --system pulse-access
 	groupadd -g 670 pulse-access
+# FIXME: this is not good
+	usermod -G `awk -F : '/[\:\,]user/ { printf("%s,", $1); } END { print "pulse-access" }' < /etc/group` user 
+	usermod -G `awk -F : '/[\:\,]user/ { printf("%s,", $1); } END { print "pulse-access" }' < /etc/group` root 
     fi
     if ! getent group pulse-rt >/dev/null; then
 #      addgroup --quiet --system pulse-rt
