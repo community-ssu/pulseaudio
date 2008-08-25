@@ -6,3 +6,4 @@
 0006-flat-volume-thingy.patch
 0007-Define-MKDIR_P-if-undefined-by-autofoo.patch
 0008-Add-CFLAGS-information-on-start-up.patch
+0009-Fix-the-busy-loop-on-arm.patch
