@@ -1,14 +1,14 @@
-From 24209c8f7056e9d3aa4f5e7c5274ac0051f3bec8 Mon Sep 17 00:00:00 2001
+From 7dfe0a71203f6f8ff83bdf444ccd6f55f6da8de3 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Mon, 25 Aug 2008 18:51:01 +0300
 Subject: [PATCH] Fix the busy loop on arm
 
 ---
- src/modules/module-alsa-sink.c |   14 ++++++++++++--
- 1 files changed, 12 insertions(+), 2 deletions(-)
+ src/modules/module-alsa-sink.c |   16 +++++++++++++---
+ 1 files changed, 13 insertions(+), 3 deletions(-)
 
 diff --git a/src/modules/module-alsa-sink.c b/src/modules/module-alsa-sink.c
-index 8e66f79..d365bfa 100644
+index 8e66f79..0135a0b 100644
 --- a/src/modules/module-alsa-sink.c
 +++ b/src/modules/module-alsa-sink.c
 @@ -69,7 +69,8 @@ PA_MODULE_USAGE(
@@ -38,6 +38,15 @@ index 8e66f79..d365bfa 100644
  
  static void fix_tsched_watermark(struct userdata *u) {
 @@ -278,7 +281,7 @@ static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec) {
+             if (pa_bytes_to_usec(left_to_play, &u->sink->sample_spec) > process_usec+max_sleep_usec/2)
+                 break;
+ 
+-        if (PA_UNLIKELY(n <= u->hwbuf_unused_frames))
++        if (PA_UNLIKELY(n <= u->hwbuf_min_frames_to_write || n <= u->hwbuf_unused_frames))
+             break;
+ 
+         n -= u->hwbuf_unused_frames;
+@@ -390,7 +393,7 @@ static int unix_write(struct userdata *u, pa_usec_t *sleep_usec) {
              if (pa_bytes_to_usec(left_to_play, &u->sink->sample_spec) > process_usec+max_sleep_usec/2)
                  break;
  

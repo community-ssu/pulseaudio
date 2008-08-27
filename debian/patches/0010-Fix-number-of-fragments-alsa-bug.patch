@@ -1,0 +1,35 @@
+From 1755794112f67968ca32c289da90c393b8d823ae Mon Sep 17 00:00:00 2001
+From: Jyri Sarha <jyri.sarha@nokia.com>
+Date: Wed, 27 Aug 2008 16:04:07 +0300
+Subject: [PATCH] Fix number of fragments (alsa bug?)
+
+---
+ src/modules/alsa-util.c |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/src/modules/alsa-util.c b/src/modules/alsa-util.c
+index 8abf834..64b4eff 100644
+--- a/src/modules/alsa-util.c
++++ b/src/modules/alsa-util.c
+@@ -369,12 +369,15 @@ int pa_alsa_set_hw_params(
+         goto finish;
+ 
+     if (_periods > 0) {
+-        dir = 1;
+-        if ((ret = snd_pcm_hw_params_set_periods_near(pcm_handle, hwparams, &_periods, &dir)) < 0) {
+-            dir = -1;
+-            if ((ret = snd_pcm_hw_params_set_periods_near(pcm_handle, hwparams, &_periods, &dir)) < 0)
+-                goto finish;
+-        }
++	dir = 0;
++	if ((ret = snd_pcm_hw_params_set_periods_near(pcm_handle, hwparams, &_periods, &dir)) < 0) {
++	    dir = 1;
++	    if ((ret = snd_pcm_hw_params_set_periods_near(pcm_handle, hwparams, &_periods, &dir)) < 0) {
++		dir = -1;
++		if ((ret = snd_pcm_hw_params_set_periods_near(pcm_handle, hwparams, &_periods, &dir)) < 0)
++		    goto finish;
++	    }
++	}
+     }
+ 
+     if (_period_size > 0)
