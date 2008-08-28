@@ -22,11 +22,6 @@ ifneq (,$(findstring thumb,$(DEB_BUILD_OPTIONS)))
 	CFLAGS += -mthumb
 endif
 
-post-patches:: debian/stamp-bootstrap
-debian/stamp-bootstrap:
-	NOCONFIGURE=yes ./bootstrap.sh
-	touch debian/stamp-bootstrap
-
 common-build-arch::
 	grep -v -e alsa -e evdev debian/pulseaudio.install > \
 	    debian/pulseaudio.install.kfreebsd-i386
