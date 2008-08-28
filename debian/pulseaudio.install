@@ -4,6 +4,8 @@ usr/bin/pulseaudio
 usr/lib/pulse-*/modules/libalsa-util.so
 usr/lib/pulse-*/modules/libauthkey-prop.so
 usr/lib/pulse-*/modules/libauthkey.so
+usr/lib/pulse-*/modules/libbt-ipc.so
+usr/lib/pulse-*/modules/libbt-sbc.so
 usr/lib/pulse-*/modules/libcli.so
 usr/lib/pulse-*/modules/libiochannel.so
 usr/lib/pulse-*/modules/libioline.so
@@ -27,6 +29,9 @@ usr/lib/pulse-*/modules/libtagstruct.so
 usr/lib/pulse-*/modules/module-alsa-sink.so
 usr/lib/pulse-*/modules/module-alsa-sink-old.so
 usr/lib/pulse-*/modules/module-alsa-source.so
+usr/lib/pulse-*/modules/module-bt-device.so
+usr/lib/pulse-*/modules/module-bt-discover.so
+usr/lib/pulse-*/modules/module-bt-proximity.so
 usr/lib/pulse-*/modules/module-cli-protocol-tcp.so
 usr/lib/pulse-*/modules/module-cli-protocol-unix.so
 usr/lib/pulse-*/modules/module-cli.so
@@ -34,6 +39,7 @@ usr/lib/pulse-*/modules/module-combine.so
 usr/lib/pulse-*/modules/module-default-device-restore.so
 usr/lib/pulse-*/modules/module-detect.so
 usr/lib/pulse-*/modules/module-esound-sink.so
+usr/lib/pulse-*/modules/module-flat-volume.so
 usr/lib/pulse-*/modules/module-http-protocol-tcp.so
 usr/lib/pulse-*/modules/module-http-protocol-unix.so
 usr/lib/pulse-*/modules/module-ladspa-sink.so
