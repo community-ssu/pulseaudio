@@ -8,6 +8,6 @@
 0008-Add-CFLAGS-information-on-start-up.patch
 0009-Fix-the-busy-loop-on-arm.patch
 0010-Fix-number-of-fragments-alsa-bug.patch
-0011-Add-module-alsa-sink-old-backported-from-0.9.10.patch
+0011-Add-module-alsa-sink-src-old-backported-from-0.9.patch
 0012-Apply-diff-from-gitorious-bt-branch.patch
 0013-autofoo.patch

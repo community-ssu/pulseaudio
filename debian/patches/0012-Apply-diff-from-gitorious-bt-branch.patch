@@ -1,4 +1,4 @@
-From 9379d678e6aa39ae34b1f34a7dbb5f9500cf6038 Mon Sep 17 00:00:00 2001
+From 0dbf007856599332c0b036bf33abcba971bc1c91 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=E9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 28 Aug 2008 16:05:03 +0300
 Subject: [PATCH] Apply diff from gitorious bt branch
@@ -26,10 +26,10 @@ Subject: [PATCH] Apply diff from gitorious bt branch
  create mode 100644 src/modules/module-bt-discover.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 2cba5d8..ebac6b8 100644
+index b83f42c..a247ccd 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -1145,7 +1145,11 @@ endif
+@@ -1147,7 +1147,11 @@ endif
  
  if HAVE_BLUEZ
  modlibexec_LTLIBRARIES += \
@@ -42,7 +42,7 @@ index 2cba5d8..ebac6b8 100644
  
  pulselibexec_PROGRAMS += \
  		bt-proximity-helper
-@@ -1205,6 +1209,8 @@ SYMDEF_FILES = \
+@@ -1208,6 +1212,8 @@ SYMDEF_FILES = \
  		modules/module-suspend-on-idle-symdef.h \
  		modules/module-hal-detect-symdef.h \
  		modules/module-bt-proximity-symdef.h \
@@ -50,8 +50,8 @@ index 2cba5d8..ebac6b8 100644
 +		modules/module-bt-device-symdef.h \
  		modules/gconf/module-gconf-symdef.h \
  		modules/module-position-event-sounds-symdef.h \
- 		modules/module-console-kit-symdef.h
-@@ -1544,6 +1550,28 @@ bt_proximity_helper_LDADD = $(AM_LDADD) $(BLUEZ_LIBS)
+ 		modules/module-console-kit-symdef.h \
+@@ -1559,6 +1565,28 @@ bt_proximity_helper_LDADD = $(AM_LDADD) $(BLUEZ_LIBS)
  bt_proximity_helper_CFLAGS = $(AM_CFLAGS) $(BLUEZ_CFLAGS)
  bt_proximity_helper_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
  
