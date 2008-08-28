@@ -1,6 +1,6 @@
-From 903805b547a6dc49dba26c6e826a889814a6208c Mon Sep 17 00:00:00 2001
+From 8c0112cbe1d204eb89b30a2f79c8e6d473d803e5 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=E9=20Lureau?= <marcandre.lureau@gmail.com>
-Date: Wed, 27 Aug 2008 19:59:51 +0300
+Date: Thu, 28 Aug 2008 16:08:26 +0300
 Subject: [PATCH] autofoo
 
 ---
@@ -9,8 +9,8 @@ Subject: [PATCH] autofoo
  config.h.in     |    3 +
  configure       |  587 ++++++++++++++++++++++++++++++++-----------------------
  ltmain.sh       |   12 +-
- src/Makefile.in |   34 +++-
- 6 files changed, 430 insertions(+), 265 deletions(-)
+ src/Makefile.in |  147 ++++++++++++++-
+ 6 files changed, 541 insertions(+), 267 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
 index 0237d4c..f580ac8 100644
@@ -1535,7 +1535,7 @@ index 2bcb848..0bf3848 100644
  	  ;;
  	no)
 diff --git a/src/Makefile.in b/src/Makefile.in
-index ec85868..ee29b4a 100644
+index ec85868..dc1dc88 100644
 --- a/src/Makefile.in
 +++ b/src/Makefile.in
 @@ -184,6 +184,7 @@ noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
@@ -1546,7 +1546,41 @@ index ec85868..ee29b4a 100644
  @HAVE_ALSA_TRUE@		module-alsa-source.la
  
  @HAVE_SOLARIS_TRUE@am__append_36 = \
-@@ -799,6 +800,18 @@ libx11wrap_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+@@ -224,7 +225,11 @@ pulselibexec_PROGRAMS = $(am__EXEEXT_6) $(am__EXEEXT_7)
+ @HAVE_DBUS_TRUE@		module-console-kit.la
+ 
+ @HAVE_BLUEZ_TRUE@am__append_45 = \
+-@HAVE_BLUEZ_TRUE@		module-bt-proximity.la
++@HAVE_BLUEZ_TRUE@		module-bt-proximity.la \
++@HAVE_BLUEZ_TRUE@		module-bt-discover.la \
++@HAVE_BLUEZ_TRUE@		libbt-ipc.la \
++@HAVE_BLUEZ_TRUE@		libbt-sbc.la \
++@HAVE_BLUEZ_TRUE@		module-bt-device.la
+ 
+ @HAVE_BLUEZ_TRUE@am__append_46 = \
+ @HAVE_BLUEZ_TRUE@		bt-proximity-helper
+@@ -287,6 +292,20 @@ libavahi_wrap_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+ 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libavahi_wrap_la_CFLAGS) \
+ 	$(CFLAGS) $(libavahi_wrap_la_LDFLAGS) $(LDFLAGS) -o $@
+ @HAVE_AVAHI_TRUE@am_libavahi_wrap_la_rpath = -rpath $(modlibexecdir)
++libbt_ipc_la_DEPENDENCIES = $(am__DEPENDENCIES_2)
++am_libbt_ipc_la_OBJECTS = libbt_ipc_la-bt-ipc.lo
++libbt_ipc_la_OBJECTS = $(am_libbt_ipc_la_OBJECTS)
++libbt_ipc_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
++	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libbt_ipc_la_CFLAGS) \
++	$(CFLAGS) $(libbt_ipc_la_LDFLAGS) $(LDFLAGS) -o $@
++@HAVE_BLUEZ_TRUE@am_libbt_ipc_la_rpath = -rpath $(modlibexecdir)
++libbt_sbc_la_DEPENDENCIES = $(am__DEPENDENCIES_2)
++am_libbt_sbc_la_OBJECTS = libbt_sbc_la-bt-sbc.lo
++libbt_sbc_la_OBJECTS = $(am_libbt_sbc_la_OBJECTS)
++libbt_sbc_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
++	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libbt_sbc_la_CFLAGS) \
++	$(CFLAGS) $(libbt_sbc_la_LDFLAGS) $(LDFLAGS) -o $@
++@HAVE_BLUEZ_TRUE@am_libbt_sbc_la_rpath = -rpath $(modlibexecdir)
+ libcli_la_DEPENDENCIES = $(am__DEPENDENCIES_2) libiochannel.la \
+ 	libioline.la libpulsecore.la
+ am_libcli_la_OBJECTS = libcli_la-cli.lo
+@@ -799,6 +818,18 @@ libx11wrap_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
  	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libx11wrap_la_CFLAGS) \
  	$(CFLAGS) $(libx11wrap_la_LDFLAGS) $(LDFLAGS) -o $@
  @HAVE_X11_TRUE@am_libx11wrap_la_rpath = -rpath $(modlibexecdir)
@@ -1565,7 +1599,45 @@ index ec85868..ee29b4a 100644
  module_alsa_sink_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
  	$(am__DEPENDENCIES_1) libalsa-util.la libpulsecore.la
  am_module_alsa_sink_la_OBJECTS =  \
-@@ -1748,6 +1761,7 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauthkey_prop_la_SOURCES) \
+@@ -829,6 +860,29 @@ module_always_sink_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+ 	$(LIBTOOLFLAGS) --mode=link $(CCLD) \
+ 	$(module_always_sink_la_CFLAGS) $(CFLAGS) \
+ 	$(module_always_sink_la_LDFLAGS) $(LDFLAGS) -o $@
++module_bt_device_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
++	$(am__DEPENDENCIES_1) libpulsecore.la libdbus-util.la \
++	libbt-ipc.la libbt-sbc.la
++am_module_bt_device_la_OBJECTS =  \
++	module_bt_device_la-module-bt-device.lo
++module_bt_device_la_OBJECTS = $(am_module_bt_device_la_OBJECTS)
++module_bt_device_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
++	$(LIBTOOLFLAGS) --mode=link $(CCLD) \
++	$(module_bt_device_la_CFLAGS) $(CFLAGS) \
++	$(module_bt_device_la_LDFLAGS) $(LDFLAGS) -o $@
++@HAVE_BLUEZ_TRUE@am_module_bt_device_la_rpath = -rpath \
++@HAVE_BLUEZ_TRUE@	$(modlibexecdir)
++module_bt_discover_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
++	$(am__DEPENDENCIES_1) libpulsecore.la libdbus-util.la
++am_module_bt_discover_la_OBJECTS =  \
++	module_bt_discover_la-module-bt-discover.lo
++module_bt_discover_la_OBJECTS = $(am_module_bt_discover_la_OBJECTS)
++module_bt_discover_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
++	$(LIBTOOLFLAGS) --mode=link $(CCLD) \
++	$(module_bt_discover_la_CFLAGS) $(CFLAGS) \
++	$(module_bt_discover_la_LDFLAGS) $(LDFLAGS) -o $@
++@HAVE_BLUEZ_TRUE@am_module_bt_discover_la_rpath = -rpath \
++@HAVE_BLUEZ_TRUE@	$(modlibexecdir)
+ module_bt_proximity_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+ 	$(am__DEPENDENCIES_1) libpulsecore.la libdbus-util.la
+ am_module_bt_proximity_la_OBJECTS =  \
+@@ -1731,6 +1785,7 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+ 	$(LDFLAGS) -o $@
+ SOURCES = $(libalsa_util_la_SOURCES) $(libauthkey_prop_la_SOURCES) \
+ 	$(libauthkey_la_SOURCES) $(libavahi_wrap_la_SOURCES) \
++	$(libbt_ipc_la_SOURCES) $(libbt_sbc_la_SOURCES) \
+ 	$(libcli_la_SOURCES) $(libdbus_util_la_SOURCES) \
+ 	$(libffmpeg_resampler_la_SOURCES) $(libiochannel_la_SOURCES) \
+ 	$(libioline_la_SOURCES) $(libipacl_la_SOURCES) \
+@@ -1748,9 +1803,12 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauthkey_prop_la_SOURCES) \
  	$(libsocket_server_la_SOURCES) $(libsocket_util_la_SOURCES) \
  	$(libstrlist_la_SOURCES) $(libtagstruct_la_SOURCES) \
  	$(libx11prop_la_SOURCES) $(libx11wrap_la_SOURCES) \
@@ -1573,7 +1645,22 @@ index ec85868..ee29b4a 100644
  	$(module_alsa_sink_la_SOURCES) \
  	$(module_alsa_source_la_SOURCES) \
  	$(module_always_sink_la_SOURCES) \
-@@ -1835,7 +1849,8 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) \
++	$(module_bt_device_la_SOURCES) \
++	$(module_bt_discover_la_SOURCES) \
+ 	$(module_bt_proximity_la_SOURCES) \
+ 	$(module_cli_protocol_tcp_la_SOURCES) \
+ 	$(module_cli_protocol_unix_la_SOURCES) \
+@@ -1815,7 +1873,8 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauthkey_prop_la_SOURCES) \
+ 	$(thread_test_SOURCES) $(utf8_test_SOURCES) $(voltest_SOURCES)
+ DIST_SOURCES = $(libalsa_util_la_SOURCES) \
+ 	$(libauthkey_prop_la_SOURCES) $(libauthkey_la_SOURCES) \
+-	$(libavahi_wrap_la_SOURCES) $(libcli_la_SOURCES) \
++	$(libavahi_wrap_la_SOURCES) $(libbt_ipc_la_SOURCES) \
++	$(libbt_sbc_la_SOURCES) $(libcli_la_SOURCES) \
+ 	$(libdbus_util_la_SOURCES) $(libffmpeg_resampler_la_SOURCES) \
+ 	$(libiochannel_la_SOURCES) $(libioline_la_SOURCES) \
+ 	$(libipacl_la_SOURCES) $(liboss_util_la_SOURCES) \
+@@ -1835,9 +1894,12 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) \
  	$(libsocket_client_la_SOURCES) $(libsocket_server_la_SOURCES) \
  	$(libsocket_util_la_SOURCES) $(libstrlist_la_SOURCES) \
  	$(libtagstruct_la_SOURCES) $(libx11prop_la_SOURCES) \
@@ -1582,8 +1669,12 @@ index ec85868..ee29b4a 100644
 +	$(module_alsa_sink_la_SOURCES) \
  	$(module_alsa_source_la_SOURCES) \
  	$(module_always_sink_la_SOURCES) \
++	$(module_bt_device_la_SOURCES) \
++	$(module_bt_discover_la_SOURCES) \
  	$(module_bt_proximity_la_SOURCES) \
-@@ -2781,6 +2796,7 @@ SYMDEF_FILES = \
+ 	$(module_cli_protocol_tcp_la_SOURCES) \
+ 	$(module_cli_protocol_unix_la_SOURCES) \
+@@ -2781,6 +2843,7 @@ SYMDEF_FILES = \
  		modules/module-x11-xsmp-symdef.h \
  		modules/module-oss-symdef.h \
  		modules/module-alsa-sink-symdef.h \
@@ -1591,7 +1682,16 @@ index ec85868..ee29b4a 100644
  		modules/module-alsa-source-symdef.h \
  		modules/module-solaris-symdef.h \
  		modules/module-waveout-symdef.h \
-@@ -2937,6 +2953,10 @@ module_alsa_sink_la_SOURCES = modules/module-alsa-sink.c
+@@ -2797,6 +2860,8 @@ SYMDEF_FILES = \
+ 		modules/module-suspend-on-idle-symdef.h \
+ 		modules/module-hal-detect-symdef.h \
+ 		modules/module-bt-proximity-symdef.h \
++		modules/module-bt-discover-symdef.h \
++		modules/module-bt-device-symdef.h \
+ 		modules/gconf/module-gconf-symdef.h \
+ 		modules/module-position-event-sounds-symdef.h \
+ 		modules/module-console-kit-symdef.h
+@@ -2937,6 +3002,10 @@ module_alsa_sink_la_SOURCES = modules/module-alsa-sink.c
  module_alsa_sink_la_LDFLAGS = -module -avoid-version
  module_alsa_sink_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore.la
  module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
@@ -1602,7 +1702,45 @@ index ec85868..ee29b4a 100644
  module_alsa_source_la_SOURCES = modules/module-alsa-source.c
  module_alsa_source_la_LDFLAGS = -module -avoid-version
  module_alsa_source_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore.la
-@@ -3245,6 +3265,8 @@ libx11prop.la: $(libx11prop_la_OBJECTS) $(libx11prop_la_DEPENDENCIES)
+@@ -3077,6 +3146,26 @@ bt_proximity_helper_SOURCES = modules/bt-proximity-helper.c
+ bt_proximity_helper_LDADD = $(AM_LDADD) $(BLUEZ_LIBS)
+ bt_proximity_helper_CFLAGS = $(AM_CFLAGS) $(BLUEZ_CFLAGS)
+ bt_proximity_helper_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
++
++# Bluetooth discover
++module_bt_discover_la_SOURCES = modules/module-bt-discover.c
++module_bt_discover_la_LDFLAGS = -module -avoid-version
++module_bt_discover_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la
++module_bt_discover_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
++
++# Bluetooth device
++libbt_sbc_la_SOURCES = modules/bt-sbc.c modules/bt-sbc.h modules/bt-sbc_tables.h modules/bt-sbc_math.h
++libbt_sbc_la_LDFLAGS = -avoid-version
++libbt_sbc_la_LIBADD = $(AM_LIBADD)
++libbt_sbc_la_CFLAGS = $(AM_CFLAGS)
++libbt_ipc_la_SOURCES = modules/bt-ipc.c modules/bt-ipc.h
++libbt_ipc_la_LDFLAGS = -avoid-version
++libbt_ipc_la_LIBADD = $(AM_LIBADD)
++libbt_ipc_la_CFLAGS = $(AM_CFLAGS)
++module_bt_device_la_SOURCES = modules/module-bt-device.c
++module_bt_device_la_LDFLAGS = -module -avoid-version
++module_bt_device_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la libbt-ipc.la libbt-sbc.la
++module_bt_device_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
+ CLEANFILES = esdcompat client.conf default.pa daemon.conf start-pulseaudio-x11
+ all: $(BUILT_SOURCES)
+ 	$(MAKE) $(AM_MAKEFLAGS) all-am
+@@ -3183,6 +3272,10 @@ libauthkey.la: $(libauthkey_la_OBJECTS) $(libauthkey_la_DEPENDENCIES)
+ 	$(libauthkey_la_LINK) -rpath $(modlibexecdir) $(libauthkey_la_OBJECTS) $(libauthkey_la_LIBADD) $(LIBS)
+ libavahi-wrap.la: $(libavahi_wrap_la_OBJECTS) $(libavahi_wrap_la_DEPENDENCIES) 
+ 	$(libavahi_wrap_la_LINK) $(am_libavahi_wrap_la_rpath) $(libavahi_wrap_la_OBJECTS) $(libavahi_wrap_la_LIBADD) $(LIBS)
++libbt-ipc.la: $(libbt_ipc_la_OBJECTS) $(libbt_ipc_la_DEPENDENCIES) 
++	$(libbt_ipc_la_LINK) $(am_libbt_ipc_la_rpath) $(libbt_ipc_la_OBJECTS) $(libbt_ipc_la_LIBADD) $(LIBS)
++libbt-sbc.la: $(libbt_sbc_la_OBJECTS) $(libbt_sbc_la_DEPENDENCIES) 
++	$(libbt_sbc_la_LINK) $(am_libbt_sbc_la_rpath) $(libbt_sbc_la_OBJECTS) $(libbt_sbc_la_LIBADD) $(LIBS)
+ libcli.la: $(libcli_la_OBJECTS) $(libcli_la_DEPENDENCIES) 
+ 	$(libcli_la_LINK) -rpath $(modlibexecdir) $(libcli_la_OBJECTS) $(libcli_la_LIBADD) $(LIBS)
+ libdbus-util.la: $(libdbus_util_la_OBJECTS) $(libdbus_util_la_DEPENDENCIES) 
+@@ -3245,12 +3338,18 @@ libx11prop.la: $(libx11prop_la_OBJECTS) $(libx11prop_la_DEPENDENCIES)
  	$(libx11prop_la_LINK) $(am_libx11prop_la_rpath) $(libx11prop_la_OBJECTS) $(libx11prop_la_LIBADD) $(LIBS)
  libx11wrap.la: $(libx11wrap_la_OBJECTS) $(libx11wrap_la_DEPENDENCIES) 
  	$(libx11wrap_la_LINK) $(am_libx11wrap_la_rpath) $(libx11wrap_la_OBJECTS) $(libx11wrap_la_LIBADD) $(LIBS)
@@ -1611,15 +1749,59 @@ index ec85868..ee29b4a 100644
  module-alsa-sink.la: $(module_alsa_sink_la_OBJECTS) $(module_alsa_sink_la_DEPENDENCIES) 
  	$(module_alsa_sink_la_LINK) $(am_module_alsa_sink_la_rpath) $(module_alsa_sink_la_OBJECTS) $(module_alsa_sink_la_LIBADD) $(LIBS)
  module-alsa-source.la: $(module_alsa_source_la_OBJECTS) $(module_alsa_source_la_DEPENDENCIES) 
-@@ -3820,6 +3842,7 @@ distclean-compile:
+ 	$(module_alsa_source_la_LINK) $(am_module_alsa_source_la_rpath) $(module_alsa_source_la_OBJECTS) $(module_alsa_source_la_LIBADD) $(LIBS)
+ module-always-sink.la: $(module_always_sink_la_OBJECTS) $(module_always_sink_la_DEPENDENCIES) 
+ 	$(module_always_sink_la_LINK) -rpath $(modlibexecdir) $(module_always_sink_la_OBJECTS) $(module_always_sink_la_LIBADD) $(LIBS)
++module-bt-device.la: $(module_bt_device_la_OBJECTS) $(module_bt_device_la_DEPENDENCIES) 
++	$(module_bt_device_la_LINK) $(am_module_bt_device_la_rpath) $(module_bt_device_la_OBJECTS) $(module_bt_device_la_LIBADD) $(LIBS)
++module-bt-discover.la: $(module_bt_discover_la_OBJECTS) $(module_bt_discover_la_DEPENDENCIES) 
++	$(module_bt_discover_la_LINK) $(am_module_bt_discover_la_rpath) $(module_bt_discover_la_OBJECTS) $(module_bt_discover_la_LIBADD) $(LIBS)
+ module-bt-proximity.la: $(module_bt_proximity_la_OBJECTS) $(module_bt_proximity_la_DEPENDENCIES) 
+ 	$(module_bt_proximity_la_LINK) $(am_module_bt_proximity_la_rpath) $(module_bt_proximity_la_OBJECTS) $(module_bt_proximity_la_LIBADD) $(LIBS)
+ module-cli-protocol-tcp.la: $(module_cli_protocol_tcp_la_OBJECTS) $(module_cli_protocol_tcp_la_DEPENDENCIES) 
+@@ -3600,6 +3699,8 @@ distclean-compile:
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ipacl_test-ipacl.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalsa_util_la-alsa-util.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libavahi_wrap_la-avahi-wrap.Plo@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libbt_ipc_la-bt-ipc.Plo@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libbt_sbc_la-bt-sbc.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcli_la-cli.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libdbus_util_la-dbus-util.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libffmpeg_resampler_la-resample2.Plo@am__quote@
+@@ -3820,8 +3921,11 @@ distclean-compile:
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-solaris.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-tunnel.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Plo@am__quote@
 +@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_alsa_sink_old_la-module-alsa-sink-old.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_alsa_source_la-module-alsa-source.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_always_sink_la-module-always-sink.Plo@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_bt_device_la-module-bt-device.Plo@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_bt_discover_la-module-bt-discover.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_bt_proximity_la-module-bt-proximity.Plo@am__quote@
-@@ -5549,6 +5572,13 @@ libx11wrap_la-x11wrap.lo: pulsecore/x11wrap.c
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_cli_protocol_tcp_la-module-protocol-stub.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_cli_protocol_unix_la-module-protocol-stub.Plo@am__quote@
+@@ -4002,6 +4106,20 @@ libavahi_wrap_la-avahi-wrap.lo: pulsecore/avahi-wrap.c
+ @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+ @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libavahi_wrap_la_CFLAGS) $(CFLAGS) -c -o libavahi_wrap_la-avahi-wrap.lo `test -f 'pulsecore/avahi-wrap.c' || echo '$(srcdir)/'`pulsecore/avahi-wrap.c
+ 
++libbt_ipc_la-bt-ipc.lo: modules/bt-ipc.c
++@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libbt_ipc_la_CFLAGS) $(CFLAGS) -MT libbt_ipc_la-bt-ipc.lo -MD -MP -MF $(DEPDIR)/libbt_ipc_la-bt-ipc.Tpo -c -o libbt_ipc_la-bt-ipc.lo `test -f 'modules/bt-ipc.c' || echo '$(srcdir)/'`modules/bt-ipc.c
++@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libbt_ipc_la-bt-ipc.Tpo $(DEPDIR)/libbt_ipc_la-bt-ipc.Plo
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/bt-ipc.c' object='libbt_ipc_la-bt-ipc.lo' libtool=yes @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libbt_ipc_la_CFLAGS) $(CFLAGS) -c -o libbt_ipc_la-bt-ipc.lo `test -f 'modules/bt-ipc.c' || echo '$(srcdir)/'`modules/bt-ipc.c
++
++libbt_sbc_la-bt-sbc.lo: modules/bt-sbc.c
++@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libbt_sbc_la_CFLAGS) $(CFLAGS) -MT libbt_sbc_la-bt-sbc.lo -MD -MP -MF $(DEPDIR)/libbt_sbc_la-bt-sbc.Tpo -c -o libbt_sbc_la-bt-sbc.lo `test -f 'modules/bt-sbc.c' || echo '$(srcdir)/'`modules/bt-sbc.c
++@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libbt_sbc_la-bt-sbc.Tpo $(DEPDIR)/libbt_sbc_la-bt-sbc.Plo
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/bt-sbc.c' object='libbt_sbc_la-bt-sbc.lo' libtool=yes @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libbt_sbc_la_CFLAGS) $(CFLAGS) -c -o libbt_sbc_la-bt-sbc.lo `test -f 'modules/bt-sbc.c' || echo '$(srcdir)/'`modules/bt-sbc.c
++
+ libcli_la-cli.lo: pulsecore/cli.c
+ @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcli_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libcli_la-cli.lo -MD -MP -MF $(DEPDIR)/libcli_la-cli.Tpo -c -o libcli_la-cli.lo `test -f 'pulsecore/cli.c' || echo '$(srcdir)/'`pulsecore/cli.c
+ @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcli_la-cli.Tpo $(DEPDIR)/libcli_la-cli.Plo
+@@ -5549,6 +5667,13 @@ libx11wrap_la-x11wrap.lo: pulsecore/x11wrap.c
  @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
  @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libx11wrap_la_CFLAGS) $(CFLAGS) -c -o libx11wrap_la-x11wrap.lo `test -f 'pulsecore/x11wrap.c' || echo '$(srcdir)/'`pulsecore/x11wrap.c
  
@@ -1633,7 +1815,28 @@ index ec85868..ee29b4a 100644
  module_alsa_sink_la-module-alsa-sink.lo: modules/module-alsa-sink.c
  @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_alsa_sink_la_CFLAGS) $(CFLAGS) -MT module_alsa_sink_la-module-alsa-sink.lo -MD -MP -MF $(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Tpo -c -o module_alsa_sink_la-module-alsa-sink.lo `test -f 'modules/module-alsa-sink.c' || echo '$(srcdir)/'`modules/module-alsa-sink.c
  @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Tpo $(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Plo
-@@ -7624,6 +7654,8 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
+@@ -5570,6 +5695,20 @@ module_always_sink_la-module-always-sink.lo: modules/module-always-sink.c
+ @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+ @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_always_sink_la_CFLAGS) $(CFLAGS) -c -o module_always_sink_la-module-always-sink.lo `test -f 'modules/module-always-sink.c' || echo '$(srcdir)/'`modules/module-always-sink.c
+ 
++module_bt_device_la-module-bt-device.lo: modules/module-bt-device.c
++@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_bt_device_la_CFLAGS) $(CFLAGS) -MT module_bt_device_la-module-bt-device.lo -MD -MP -MF $(DEPDIR)/module_bt_device_la-module-bt-device.Tpo -c -o module_bt_device_la-module-bt-device.lo `test -f 'modules/module-bt-device.c' || echo '$(srcdir)/'`modules/module-bt-device.c
++@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_bt_device_la-module-bt-device.Tpo $(DEPDIR)/module_bt_device_la-module-bt-device.Plo
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-bt-device.c' object='module_bt_device_la-module-bt-device.lo' libtool=yes @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_bt_device_la_CFLAGS) $(CFLAGS) -c -o module_bt_device_la-module-bt-device.lo `test -f 'modules/module-bt-device.c' || echo '$(srcdir)/'`modules/module-bt-device.c
++
++module_bt_discover_la-module-bt-discover.lo: modules/module-bt-discover.c
++@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_bt_discover_la_CFLAGS) $(CFLAGS) -MT module_bt_discover_la-module-bt-discover.lo -MD -MP -MF $(DEPDIR)/module_bt_discover_la-module-bt-discover.Tpo -c -o module_bt_discover_la-module-bt-discover.lo `test -f 'modules/module-bt-discover.c' || echo '$(srcdir)/'`modules/module-bt-discover.c
++@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_bt_discover_la-module-bt-discover.Tpo $(DEPDIR)/module_bt_discover_la-module-bt-discover.Plo
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-bt-discover.c' object='module_bt_discover_la-module-bt-discover.lo' libtool=yes @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_bt_discover_la_CFLAGS) $(CFLAGS) -c -o module_bt_discover_la-module-bt-discover.lo `test -f 'modules/module-bt-discover.c' || echo '$(srcdir)/'`modules/module-bt-discover.c
++
+ module_bt_proximity_la-module-bt-proximity.lo: modules/module-bt-proximity.c
+ @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_bt_proximity_la_CFLAGS) $(CFLAGS) -MT module_bt_proximity_la-module-bt-proximity.lo -MD -MP -MF $(DEPDIR)/module_bt_proximity_la-module-bt-proximity.Tpo -c -o module_bt_proximity_la-module-bt-proximity.lo `test -f 'modules/module-bt-proximity.c' || echo '$(srcdir)/'`modules/module-bt-proximity.c
+ @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_bt_proximity_la-module-bt-proximity.Tpo $(DEPDIR)/module_bt_proximity_la-module-bt-proximity.Plo
+@@ -7624,6 +7763,8 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
  	uninstall-xdgautostartDATA
  
  
