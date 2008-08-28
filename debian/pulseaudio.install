@@ -25,6 +25,7 @@ usr/lib/pulse-*/modules/libsocket-util.so
 usr/lib/pulse-*/modules/libstrlist.so
 usr/lib/pulse-*/modules/libtagstruct.so
 usr/lib/pulse-*/modules/module-alsa-sink.so
+usr/lib/pulse-*/modules/module-alsa-sink-old.so
 usr/lib/pulse-*/modules/module-alsa-source.so
 usr/lib/pulse-*/modules/module-cli-protocol-tcp.so
 usr/lib/pulse-*/modules/module-cli-protocol-unix.so
