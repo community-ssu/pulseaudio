@@ -1,7 +1,7 @@
 # glitch-free is off by default
 # load-module module-alsa-sink device=hw:0 rate=48000 sink_name=hardis.si fragment_size=960 fragments=4 tsched=0 hwbuf_min_frames_to_write=32
 
-load-module module-alsa-sink-old device=hw:0 rate=48000 sink_name=hardis.si fragment_size=960 fragments=4 hwbuf_min_frames_to_write=32
+load-module module-alsa-sink-old device=hw:0 rate=48000 sink_name=hardis.si fragment_size=960 fragments=4
 load-module module-alsa-source device=hw:0 rate=48000 source_name=hardis.so fragment_size=960 fragments=4
 
 load-module module-cli-protocol-tcp
