@@ -119,13 +119,13 @@ pulseaudio (0.9.10-2maemo1) unstable; urgency=low
 
  -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Wed, 04 Jun 2008 16:21:08 +0300
 
-pulseaudio (0.9.10-3) UNRELEASED; urgency=low
+pulseaudio (0.9.10-3) unstable; urgency=low
 
   * debian/patches/0006-fix-iteration-over-random-devices.patch
     - Added. Iterate over the various random devices if opening fails
       (Closes: #491270)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 03 Aug 2008 13:01:38 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 30 Aug 2008 14:24:51 +0100
 
 pulseaudio (0.9.10-2) unstable; urgency=low
 
