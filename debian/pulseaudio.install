@@ -29,6 +29,7 @@ usr/lib/pulse-*/modules/libtagstruct.so
 usr/lib/pulse-*/modules/module-alsa-sink.so
 usr/lib/pulse-*/modules/module-alsa-sink-old.so
 usr/lib/pulse-*/modules/module-alsa-source.so
+usr/lib/pulse-*/modules/module-alsa-source-old.so
 usr/lib/pulse-*/modules/module-bt-device.so
 usr/lib/pulse-*/modules/module-bt-discover.so
 usr/lib/pulse-*/modules/module-bt-proximity.so

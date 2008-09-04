@@ -1,3 +1,9 @@
+pulseaudio (0.9.11-0maemo2) unstable; urgency=low
+
+  * Add missing alsa-source-old.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Thu, 04 Sep 2008 17:17:28 +0300
+
 pulseaudio (0.9.11-0maemo1) unstable; urgency=low
 
   * New Upstream Version
