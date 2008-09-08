@@ -1,3 +1,12 @@
+pulseaudio (0.9.11-0maemo3) unstable; urgency=low
+
+  [ Jyri Sarha ]
+  * pulseaudio-dev.install:
+    + install pulscore/*.h in /usr/include/pulsecore
+    + install modules*-util.h in /usr/include/pulsecore/modules
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Mon, 08 Sep 2008 16:49:48 +0300
+
 pulseaudio (0.9.11-0maemo2) unstable; urgency=low
 
   * Add missing alsa-source-old.
