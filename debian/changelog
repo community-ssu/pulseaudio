@@ -8,6 +8,8 @@ pulseaudio (0.9.11-0maemo3) unstable; urgency=low
   [ Marc-Andre Lureau ]
   * pulseaudio.install, pulseaudio-module-hal.install:
     + move libdbus-util.so to pulseaudio package.
+  * default.pa.maemo:
+    + updates according to Jyri voice configuration.
 
  -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Mon, 08 Sep 2008 16:49:48 +0300
 
