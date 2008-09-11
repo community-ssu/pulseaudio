@@ -1,3 +1,9 @@
+pulseaudio (0.9.11-0maemo4) unstable; urgency=low
+
+  * pulseaudio-dev depends on pulseaudio (for modules library)
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Thu, 11 Sep 2008 16:26:05 +0300
+
 pulseaudio (0.9.11-0maemo3) unstable; urgency=low
 
   [ Jyri Sarha ]
