@@ -1,4 +1,5 @@
 etc/pulse/default.pa
+etc/pulse/system.pa
 etc/pulse/daemon.conf
 usr/bin/pulseaudio
 usr/lib/pulse-*/modules/libalsa-util.so

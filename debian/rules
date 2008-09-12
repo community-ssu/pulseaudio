@@ -34,6 +34,7 @@ common-install-arch::
 	cp -a $(CURDIR)/debian/overrides $(CURDIR)/debian/tmp/usr/share/lintian
 	cp -a $(CURDIR)/debian/daemon.conf.maemo $(CURDIR)/debian/tmp/etc/pulse/daemon.conf
 	cp -a $(CURDIR)/debian/default.pa.maemo $(CURDIR)/debian/tmp/etc/pulse/default.pa
+	cp -a $(CURDIR)/debian/default.pa.maemo $(CURDIR)/debian/tmp/etc/pulse/system.pa
 
 common-binary-post-install-arch:: list-missing
 
