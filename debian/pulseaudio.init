@@ -13,7 +13,7 @@
 ### END INIT INFO
 
 DAEMON=/usr/bin/pulseaudio
-PIDFILE=/var/run/pulse/pid 
+PIDFILE=/var/run/pulse/pid
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 test -x $DAEMON || exit 0

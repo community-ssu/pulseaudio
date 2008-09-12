@@ -1,3 +1,9 @@
+pulseaudio (0.9.11-0maemo6) UNRELEASED; urgency=low
+
+  * post-release update.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Fri, 12 Sep 2008 21:50:18 +0300
+
 pulseaudio (0.9.11-0maemo5) unstable; urgency=low
 
   * Add missing system.pa, now should start fine.
