@@ -40,6 +40,9 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <dirent.h>
+#include <regex.h>
+#include <langinfo.h>
+#include <sys/utsname.h>
 
 #ifdef HAVE_STRTOF_L
 #include <locale.h>
@@ -111,6 +114,8 @@ int pa_set_root(HANDLE handle) {
 
     strcpy(library_path, PULSE_ROOTENV "=");
 
+    /* FIXME: Needs to set errno */
+
     if (!GetModuleFileName(handle, library_path + sizeof(PULSE_ROOTENV), MAX_PATH))
         return 0;
 
@@ -168,7 +173,7 @@ void pa_make_fd_cloexec(int fd) {
 /** Creates a directory securely */
 int pa_make_secure_dir(const char* dir, mode_t m, uid_t uid, gid_t gid) {
     struct stat st;
-    int r;
+    int r, saved_errno;
 
     pa_assert(dir);
 
@@ -177,7 +182,7 @@ int pa_make_secure_dir(const char* dir, mode_t m, uid_t uid, gid_t gid) {
 #else
     {
     mode_t u;
-    u = umask(~m);
+    u = umask((~m) & 0777);
     r = mkdir(dir, m);
     umask(u);
     }
@@ -220,7 +225,10 @@ int pa_make_secure_dir(const char* dir, mode_t m, uid_t uid, gid_t gid) {
     return 0;
 
 fail:
+    saved_errno = errno;
     rmdir(dir);
+    errno = saved_errno;
+
     return -1;
 }
 
@@ -230,6 +238,7 @@ char *pa_parent_dir(const char *fn) {
 
     if ((slash = (char*) pa_path_get_filename(dir)) == dir) {
         pa_xfree(dir);
+        errno = ENOENT;
         return NULL;
     }
 
@@ -337,7 +346,7 @@ ssize_t pa_loop_read(int fd, void*data, size_t size, int *type) {
 
         ret += r;
         data = (uint8_t*) data + r;
-        size -= r;
+        size -= (size_t) r;
     }
 
     return ret;
@@ -368,7 +377,7 @@ ssize_t pa_loop_write(int fd, const void*data, size_t size, int *type) {
 
         ret += r;
         data = (const uint8_t*) data + r;
-        size -= r;
+        size -= (size_t) r;
     }
 
     return ret;
@@ -390,7 +399,15 @@ int pa_close(int fd) {
     }
 #endif
 
-    return close(fd);
+    for (;;) {
+        int r;
+
+        if ((r = close(fd)) >= 0)
+            return r;
+
+        if (errno != EINTR)
+            return r;
+    }
 }
 
 /* Print a warning messages in case that the given signal is not
@@ -437,7 +454,7 @@ void pa_check_signal_is_blocked(int sig) {
 /* The following function is based on an example from the GNU libc
  * documentation. This function is similar to GNU's asprintf(). */
 char *pa_sprintf_malloc(const char *format, ...) {
-    int  size = 100;
+    size_t  size = 100;
     char *c = NULL;
 
     pa_assert(format);
@@ -454,11 +471,11 @@ char *pa_sprintf_malloc(const char *format, ...) {
 
         c[size-1] = 0;
 
-        if (r > -1 && r < size)
+        if (r > -1 && (size_t) r < size)
             return c;
 
         if (r > -1)    /* glibc 2.1 */
-            size = r+1;
+            size = (size_t) r+1;
         else           /* glibc 2.0 */
             size *= 2;
     }
@@ -467,7 +484,7 @@ char *pa_sprintf_malloc(const char *format, ...) {
 /* Same as the previous function, but use a va_list instead of an
  * ellipsis */
 char *pa_vsprintf_malloc(const char *format, va_list ap) {
-    int  size = 100;
+    size_t  size = 100;
     char *c = NULL;
 
     pa_assert(format);
@@ -484,11 +501,11 @@ char *pa_vsprintf_malloc(const char *format, va_list ap) {
 
         c[size-1] = 0;
 
-        if (r > -1 && r < size)
+        if (r > -1 && (size_t) r < size)
             return c;
 
         if (r > -1)    /* glibc 2.1 */
-            size = r+1;
+            size = (size_t) r+1;
         else           /* glibc 2.0 */
             size *= 2;
     }
@@ -546,6 +563,8 @@ int pa_make_realtime(int rtprio) {
     pa_log_info("Successfully enabled SCHED_FIFO scheduling for thread, with priority %i.", sp.sched_priority);
     return 0;
 #else
+
+    errno = ENOTSUP;
     return -1;
 #endif
 }
@@ -653,6 +672,7 @@ int pa_raise_priority(int nice_level) {
     if (nice_level < 0) {
         if (!SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS)) {
             pa_log_warn("SetPriorityClass() failed: 0x%08X", GetLastError());
+            errno = EPERM;
             return .-1;
         } else
             pa_log_info("Successfully gained high priority class.");
@@ -679,15 +699,55 @@ void pa_reset_priority(void) {
 #endif
 }
 
+static int match(const char *expr, const char *v) {
+    int k;
+    regex_t re;
+    int r;
+
+    if (regcomp(&re, expr, REG_NOSUB|REG_EXTENDED) != 0) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if ((k = regexec(&re, v, 0, NULL, 0)) == 0)
+        r = 1;
+    else if (k == REG_NOMATCH)
+        r = 0;
+    else
+        r = -1;
+
+    regfree(&re);
+
+    if (r < 0)
+        errno = EINVAL;
+
+    return r;
+}
+
 /* Try to parse a boolean string value.*/
 int pa_parse_boolean(const char *v) {
+    const char *expr;
+    int r;
     pa_assert(v);
 
+    /* First we check language independant */
     if (!strcmp(v, "1") || v[0] == 'y' || v[0] == 'Y' || v[0] == 't' || v[0] == 'T' || !strcasecmp(v, "on"))
         return 1;
     else if (!strcmp(v, "0") || v[0] == 'n' || v[0] == 'N' || v[0] == 'f' || v[0] == 'F' || !strcasecmp(v, "off"))
         return 0;
 
+    /* And then we check language dependant */
+    if ((expr = nl_langinfo(YESEXPR)))
+        if (expr[0])
+            if ((r = match(expr, v)) > 0)
+                return 1;
+
+    if ((expr = nl_langinfo(NOEXPR)))
+        if (expr[0])
+            if ((r = match(expr, v)) > 0)
+                return 0;
+
+    errno = EINVAL;
     return -1;
 }
 
@@ -875,11 +935,18 @@ static int is_group(gid_t gid, const char *name) {
 #else
     n = -1;
 #endif
-    if (n < 0) n = 512;
-    data = pa_xmalloc(n);
+    if (n < 0)
+        n = 512;
 
-    if (getgrgid_r(gid, &group, data, n, &result) < 0 || !result) {
-        pa_log("getgrgid_r(%u): %s", (unsigned)gid, pa_cstrerror(errno));
+    data = pa_xmalloc((size_t) n);
+
+    errno = 0;
+    if (getgrgid_r(gid, &group, data, (size_t) n, &result) < 0 || !result) {
+        pa_log("getgrgid_r(%u): %s", (unsigned) gid, pa_cstrerror(errno));
+
+        if (!errno)
+            errno = ENOENT;
+
         goto finish;
     }
 
@@ -890,8 +957,14 @@ finish:
 #else
     /* XXX Not thread-safe, but needed on OSes (e.g. FreeBSD 4.X) that do not
      * support getgrgid_r. */
+
+    errno = 0;
     if ((result = getgrgid(gid)) == NULL) {
         pa_log("getgrgid(%u): %s", gid, pa_cstrerror(errno));
+
+        if (!errno)
+            errno = ENOENT;
+
         goto finish;
     }
 
@@ -906,27 +979,32 @@ finish:
 /* Check the current user is member of the specified group */
 int pa_own_uid_in_group(const char *name, gid_t *gid) {
     GETGROUPS_T *gids, tgid;
-    int n = sysconf(_SC_NGROUPS_MAX);
-    int r = -1, i;
+    long n = sysconf(_SC_NGROUPS_MAX);
+    int r = -1, i, k;
 
     pa_assert(n > 0);
 
-    gids = pa_xmalloc(sizeof(GETGROUPS_T)*n);
+    gids = pa_xmalloc(sizeof(GETGROUPS_T) * (size_t) n);
 
-    if ((n = getgroups(n, gids)) < 0) {
+    if ((n = getgroups((int) n, gids)) < 0) {
         pa_log("getgroups(): %s", pa_cstrerror(errno));
         goto finish;
     }
 
     for (i = 0; i < n; i++) {
-        if (is_group(gids[i], name) > 0) {
+
+        if ((k = is_group(gids[i], name)) < 0)
+            goto finish;
+        else if (k > 0) {
             *gid = gids[i];
             r = 1;
             goto finish;
         }
     }
 
-    if (is_group(tgid = getgid(), name) > 0) {
+    if ((k = is_group(tgid = getgid(), name)) < 0)
+        goto finish;
+    else if (k > 0) {
         *gid = tgid;
         r = 1;
         goto finish;
@@ -949,18 +1027,25 @@ int pa_uid_in_group(uid_t uid, const char *name) {
     int r = -1;
 
     g_n = sysconf(_SC_GETGR_R_SIZE_MAX);
-    g_buf = pa_xmalloc(g_n);
+    g_buf = pa_xmalloc((size_t) g_n);
 
     p_n = sysconf(_SC_GETPW_R_SIZE_MAX);
-    p_buf = pa_xmalloc(p_n);
+    p_buf = pa_xmalloc((size_t) p_n);
 
-    if (getgrnam_r(name, &grbuf, g_buf, (size_t) g_n, &gr) != 0 || !gr)
+    errno = 0;
+    if (getgrnam_r(name, &grbuf, g_buf, (size_t) g_n, &gr) != 0 || !gr) {
+
+        if (!errno)
+            errno = ENOENT;
+
         goto finish;
+    }
 
     r = 0;
     for (i = gr->gr_mem; *i; i++) {
         struct passwd pwbuf, *pw;
 
+        errno = 0;
         if (getpwnam_r(*i, &pwbuf, p_buf, (size_t) p_n, &pw) != 0 || !pw)
             continue;
 
@@ -985,10 +1070,16 @@ gid_t pa_get_gid_of_group(const char *name) {
     struct group grbuf, *gr;
 
     g_n = sysconf(_SC_GETGR_R_SIZE_MAX);
-    g_buf = pa_xmalloc(g_n);
+    g_buf = pa_xmalloc((size_t) g_n);
 
-    if (getgrnam_r(name, &grbuf, g_buf, (size_t) g_n, &gr) != 0 || !gr)
+    errno = 0;
+    if (getgrnam_r(name, &grbuf, g_buf, (size_t) g_n, &gr) != 0 || !gr) {
+
+        if (!errno)
+            errno = ENOENT;
+
         goto finish;
+    }
 
     ret = gr->gr_gid;
 
@@ -1014,19 +1105,23 @@ int pa_check_in_group(gid_t g) {
 #else /* HAVE_GRP_H */
 
 int pa_own_uid_in_group(const char *name, gid_t *gid) {
+    errno = ENOSUP;
     return -1;
 
 }
 
 int pa_uid_in_group(uid_t uid, const char *name) {
+    errno = ENOSUP;
     return -1;
 }
 
 gid_t pa_get_gid_of_group(const char *name) {
+    errno = ENOSUP;
     return (gid_t) -1;
 }
 
 int pa_check_in_group(gid_t g) {
+    errno = ENOSUP;
     return -1;
 }
 
@@ -1040,7 +1135,7 @@ int pa_lock_fd(int fd, int b) {
 
     /* Try a R/W lock first */
 
-    flock.l_type = b ? F_WRLCK : F_UNLCK;
+    flock.l_type = (short) (b ? F_WRLCK : F_UNLCK);
     flock.l_whence = SEEK_SET;
     flock.l_start = 0;
     flock.l_len = 0;
@@ -1067,6 +1162,8 @@ int pa_lock_fd(int fd, int b) {
         return 0;
 
     pa_log("%slock failed: 0x%08X", !b ? "un" : "", GetLastError());
+
+    /* FIXME: Needs to set errno! */
 #endif
 
     return -1;
@@ -1133,8 +1230,11 @@ int pa_lock_lockfile(const char *fn) {
 
 fail:
 
-    if (fd >= 0)
+    if (fd >= 0) {
+        int saved_errno = errno;
         pa_close(fd);
+        errno = saved_errno;
+    }
 
     return -1;
 }
@@ -1164,48 +1264,250 @@ int pa_unlock_lockfile(const char *fn, int fd) {
     return r;
 }
 
-static char *get_dir(mode_t m, const char *env_name) {
-    const char *e;
-    char *d;
+static char *get_pulse_home(void) {
+    char h[PATH_MAX];
+    struct stat st;
 
-    if ((e = getenv(env_name)))
-        d = pa_xstrdup(e);
-    else {
-        char h[PATH_MAX];
-        struct stat st;
-
-        if (!pa_get_home_dir(h, sizeof(h))) {
-            pa_log_error("Failed to get home directory.");
-            return NULL;
-        }
-
-        if (stat(h, &st) < 0) {
-            pa_log_error("Failed to stat home directory %s: %s", h, pa_cstrerror(errno));
-            return NULL;
-        }
-
-        if (st.st_uid != getuid()) {
-            pa_log_error("Home directory %s not ours.", d);
-            return NULL;
-        }
-
-        d = pa_sprintf_malloc("%s" PA_PATH_SEP ".pulse", h);
+    if (!pa_get_home_dir(h, sizeof(h))) {
+        pa_log_error("Failed to get home directory.");
+        return NULL;
     }
 
-    if (pa_make_secure_dir(d, m, (pid_t) -1, (pid_t) -1) < 0)  {
+    if (stat(h, &st) < 0) {
+        pa_log_error("Failed to stat home directory %s: %s", h, pa_cstrerror(errno));
+        return NULL;
+    }
+
+    if (st.st_uid != getuid()) {
+        pa_log_error("Home directory %s not ours.", h);
+        errno = EACCES;
+        return NULL;
+    }
+
+    return pa_sprintf_malloc("%s" PA_PATH_SEP ".pulse", h);
+}
+
+char *pa_get_state_dir(void) {
+    char *d;
+
+    /* The state directory shall contain dynamic data that should be
+     * kept across reboots, and is private to this user */
+
+    if (!(d = pa_xstrdup(getenv("PULSE_STATE_PATH"))))
+        if (!(d = get_pulse_home()))
+            return NULL;
+
+    /* If PULSE_STATE_PATH and PULSE_RUNTIME_PATH point to the same
+     * dir then this will break. */
+
+    if (pa_make_secure_dir(d, 0700U, (uid_t) -1, (gid_t) -1) < 0)  {
         pa_log_error("Failed to create secure directory: %s", pa_cstrerror(errno));
+        pa_xfree(d);
         return NULL;
     }
 
     return d;
 }
 
-char *pa_get_runtime_dir(void) {
-    return get_dir(pa_in_system_mode() ? 0755 : 0700, "PULSE_RUNTIME_PATH");
+static char* make_random_dir(mode_t m) {
+    static const char table[] =
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "0123456789";
+
+    char fn[24] = "/tmp/pulse-";
+
+    fn[sizeof(fn)-1] = 0;
+
+    for (;;) {
+        unsigned i;
+        int r;
+        mode_t u;
+        int saved_errno;
+
+        for (i = 11; i < sizeof(fn)-1; i++)
+            fn[i] = table[rand() % (sizeof(table)-1)];
+
+        u = umask((~m) & 0777);
+        r = mkdir(fn, m);
+        saved_errno = errno;
+        umask(u);
+
+        if (r >= 0)
+            return pa_xstrdup(fn);
+
+        errno = saved_errno;
+
+        if (errno != EEXIST) {
+            pa_log_error("Failed to create random directory %s: %s", fn, pa_cstrerror(errno));
+            return NULL;
+        }
+    }
 }
 
-char *pa_get_state_dir(void) {
-    return get_dir(0700, "PULSE_STATE_PATH");
+static int make_random_dir_and_link(mode_t m, const char *k) {
+    char *p;
+
+    if (!(p = make_random_dir(m)))
+        return -1;
+
+    if (symlink(p, k) < 0) {
+        int saved_errno = errno;
+
+        if (errno != EEXIST)
+            pa_log_error("Failed to symlink %s to %s: %s", k, p, pa_cstrerror(errno));
+
+        rmdir(p);
+        pa_xfree(p);
+
+        errno = saved_errno;
+        return -1;
+    }
+
+    return 0;
+}
+
+char *pa_get_runtime_dir(void) {
+    char *d, *k = NULL, *p = NULL, *t = NULL, *mid;
+    struct stat st;
+    mode_t m;
+
+    /* The runtime directory shall contain dynamic data that needs NOT
+     * to be kept accross reboots and is usuallly private to the user,
+     * except in system mode, where it might be accessible by other
+     * users, too. Since we need POSIX locking and UNIX sockets in
+     * this directory, we link it to a random subdir in /tmp, if it
+     * was not explicitly configured. */
+
+    m = pa_in_system_mode() ? 0755U : 0700U;
+
+    if ((d = getenv("PULSE_RUNTIME_PATH"))) {
+
+        if (pa_make_secure_dir(d, m, (uid_t) -1, (gid_t) -1) < 0)  {
+            pa_log_error("Failed to create secure directory: %s", pa_cstrerror(errno));
+            goto fail;
+        }
+
+        return pa_xstrdup(d);
+    }
+
+    if (!(d = get_pulse_home()))
+        goto fail;
+
+    if (pa_make_secure_dir(d, m, (uid_t) -1, (gid_t) -1) < 0)  {
+        pa_log_error("Failed to create secure directory: %s", pa_cstrerror(errno));
+        goto fail;
+    }
+
+    if (!(mid = pa_machine_id())) {
+        pa_xfree(d);
+        goto fail;
+    }
+
+    k = pa_sprintf_malloc("%s" PA_PATH_SEP "%s:runtime", d, mid);
+    pa_xfree(d);
+    pa_xfree(mid);
+
+    for (;;) {
+        /* OK, first let's check if the "runtime" symlink is already
+         * existant */
+
+        if (!(p = pa_readlink(k))) {
+
+            if (errno != ENOENT) {
+                pa_log_error("Failed to stat runtime directory %s: %s", k, pa_cstrerror(errno));
+                goto fail;
+            }
+
+            /* Hmm, so the runtime directory didn't exist yet, so let's
+             * create one in /tmp and symlink that to it */
+
+            if (make_random_dir_and_link(0700, k) < 0) {
+
+                /* Mhmm, maybe another process was quicker than us,
+                 * let's check if that was valid */
+                if (errno == EEXIST)
+                    continue;
+
+                goto fail;
+            }
+
+            return k;
+        }
+
+        /* Make sure that this actually makes sense */
+        if (!pa_is_path_absolute(p)) {
+            pa_log_error("Path %s in link %s is not absolute.", p, k);
+            errno = ENOENT;
+            goto fail;
+        }
+
+        /* Hmm, so this symlink is still around, make sure nobody fools
+         * us */
+
+        if (lstat(p, &st) < 0) {
+
+            if (errno != ENOENT) {
+                pa_log_error("Failed to stat runtime directory %s: %s", p, pa_cstrerror(errno));
+                goto fail;
+            }
+
+        } else {
+
+            if (S_ISDIR(st.st_mode) &&
+                (st.st_uid == getuid()) &&
+                ((st.st_mode & 0777) == 0700)) {
+
+                pa_xfree(p);
+                return k;
+            }
+
+            pa_log_info("Hmm, runtime path exists, but points to an invalid directory. Changing runtime directory.");
+        }
+
+        pa_xfree(p);
+        p = NULL;
+
+        /* Hmm, so the link points to some nonexisting or invalid
+         * dir. Let's replace it by a new link. We first create a
+         * temporary link and then rename that to allow concurrent
+         * execution of this function. */
+
+        t = pa_sprintf_malloc("%s.tmp", k);
+
+        if (make_random_dir_and_link(0700, t) < 0) {
+
+            if (errno != EEXIST) {
+                pa_log_error("Failed to symlink %s: %s", t, pa_cstrerror(errno));
+                goto fail;
+            }
+
+            pa_xfree(t);
+            t = NULL;
+
+            /* Hmm, someone lese was quicker then us. Let's give
+             * him some time to finish, and retry. */
+            pa_msleep(10);
+            continue;
+        }
+
+        /* OK, we succeeded in creating the temporary symlink, so
+         * let's rename it */
+        if (rename(t, k) < 0) {
+            pa_log_error("Failed to rename %s to %s: %s", t, k, pa_cstrerror(errno));
+            goto fail;
+        }
+
+        pa_xfree(t);
+        return k;
+    }
+
+fail:
+    pa_xfree(p);
+    pa_xfree(k);
+    pa_xfree(t);
+
+    return NULL;
 }
 
 /* Try to open a configuration file. If "env" is specified, open the
@@ -1228,6 +1530,7 @@ FILE *pa_open_config_file(const char *global, const char *local, const char *env
 
 #ifdef OS_IS_WIN32
         if (!ExpandEnvironmentStrings(fn, buf, PATH_MAX))
+            /* FIXME: Needs to set errno! */
             return NULL;
         fn = buf;
 #endif
@@ -1253,9 +1556,12 @@ FILE *pa_open_config_file(const char *global, const char *local, const char *env
             fn = lfn = pa_sprintf_malloc("%s" PA_PATH_SEP "%s", e, local);
         else if (pa_get_home_dir(h, sizeof(h)))
             fn = lfn = pa_sprintf_malloc("%s" PA_PATH_SEP ".pulse" PA_PATH_SEP "%s", h, local);
+        else
+            return NULL;
 
 #ifdef OS_IS_WIN32
         if (!ExpandEnvironmentStrings(lfn, buf, PATH_MAX)) {
+            /* FIXME: Needs to set errno! */
             pa_xfree(lfn);
             return NULL;
         }
@@ -1284,6 +1590,7 @@ FILE *pa_open_config_file(const char *global, const char *local, const char *env
 
 #ifdef OS_IS_WIN32
         if (!ExpandEnvironmentStrings(global, buf, PATH_MAX))
+            /* FIXME: Needs to set errno! */
             return NULL;
         global = buf;
 #endif
@@ -1295,9 +1602,9 @@ FILE *pa_open_config_file(const char *global, const char *local, const char *env
 
             return f;
         }
-    } else
-        errno = ENOENT;
+    }
 
+    errno = ENOENT;
     return NULL;
 }
 
@@ -1311,8 +1618,10 @@ char *pa_find_config_file(const char *global, const char *local, const char *env
 #endif
 
     if (env && (fn = getenv(env))) {
+
 #ifdef OS_IS_WIN32
         if (!ExpandEnvironmentStrings(fn, buf, PATH_MAX))
+            /* FIXME: Needs to set errno! */
             return NULL;
         fn = buf;
 #endif
@@ -1333,9 +1642,12 @@ char *pa_find_config_file(const char *global, const char *local, const char *env
             fn = lfn = pa_sprintf_malloc("%s" PA_PATH_SEP "%s", e, local);
         else if (pa_get_home_dir(h, sizeof(h)))
             fn = lfn = pa_sprintf_malloc("%s" PA_PATH_SEP ".pulse" PA_PATH_SEP "%s", h, local);
+        else
+            return NULL;
 
 #ifdef OS_IS_WIN32
         if (!ExpandEnvironmentStrings(lfn, buf, PATH_MAX)) {
+            /* FIXME: Needs to set errno! */
             pa_xfree(lfn);
             return NULL;
         }
@@ -1360,14 +1672,16 @@ char *pa_find_config_file(const char *global, const char *local, const char *env
     if (global) {
 #ifdef OS_IS_WIN32
         if (!ExpandEnvironmentStrings(global, buf, PATH_MAX))
+            /* FIXME: Needs to set errno! */
             return NULL;
         global = buf;
 #endif
 
-        if (access(fn, R_OK) == 0)
+        if (access(global, R_OK) == 0)
             return pa_xstrdup(global);
-    } else
-        errno = ENOENT;
+    }
+
+    errno = ENOENT;
 
     return NULL;
 }
@@ -1404,6 +1718,7 @@ static int hexc(char c) {
     if (c >= 'a' && c <= 'f')
         return c - 'a' + 10;
 
+    errno = EINVAL;
     return -1;
 }
 
@@ -1490,7 +1805,7 @@ char *pa_make_path_absolute(const char *p) {
 /* if fn is null return the PulseAudio run time path in s (~/.pulse)
  * if fn is non-null and starts with / return fn
  * otherwise append fn to the run time path and return it */
-static char *get_path(const char *fn, pa_bool_t rt) {
+static char *get_path(const char *fn, pa_bool_t prependmid, pa_bool_t rt) {
     char *rtp;
 
     if (pa_is_path_absolute(fn))
@@ -1503,7 +1818,20 @@ static char *get_path(const char *fn, pa_bool_t rt) {
 
     if (fn) {
         char *r;
-        r = pa_sprintf_malloc("%s" PA_PATH_SEP "%s", rtp, fn);
+
+        if (prependmid) {
+            char *mid;
+
+            if (!(mid = pa_machine_id())) {
+                pa_xfree(rtp);
+                return NULL;
+            }
+
+            r = pa_sprintf_malloc("%s" PA_PATH_SEP "%s:%s", rtp, mid, fn);
+            pa_xfree(mid);
+        } else
+            r = pa_sprintf_malloc("%s" PA_PATH_SEP "%s", rtp, fn);
+
         pa_xfree(rtp);
         return r;
     } else
@@ -1511,11 +1839,11 @@ static char *get_path(const char *fn, pa_bool_t rt) {
 }
 
 char *pa_runtime_path(const char *fn) {
-    return get_path(fn, 1);
+    return get_path(fn, FALSE, TRUE);
 }
 
-char *pa_state_path(const char *fn) {
-    return get_path(fn, 0);
+char *pa_state_path(const char *fn, pa_bool_t appendmid) {
+    return get_path(fn, appendmid, FALSE);
 }
 
 /* Convert the string s to a signed integer in *ret_i */
@@ -1529,11 +1857,16 @@ int pa_atoi(const char *s, int32_t *ret_i) {
     errno = 0;
     l = strtol(s, &x, 0);
 
-    if (!x || *x || errno != 0)
+    if (!x || *x || errno) {
+        if (!errno)
+            errno = EINVAL;
         return -1;
+    }
 
-    if ((int32_t) l != l)
+    if ((int32_t) l != l) {
+        errno = ERANGE;
         return -1;
+    }
 
     *ret_i = (int32_t) l;
 
@@ -1551,11 +1884,16 @@ int pa_atou(const char *s, uint32_t *ret_u) {
     errno = 0;
     l = strtoul(s, &x, 0);
 
-    if (!x || *x || errno != 0)
+    if (!x || *x || errno) {
+        if (!errno)
+            errno = EINVAL;
         return -1;
+    }
 
-    if ((uint32_t) l != l)
+    if ((uint32_t) l != l) {
+        errno = ERANGE;
         return -1;
+    }
 
     *ret_u = (uint32_t) l;
 
@@ -1573,7 +1911,6 @@ static void c_locale_destroy(void) {
 int pa_atod(const char *s, double *ret_d) {
     char *x = NULL;
     double f;
-    int r = 0;
 
     pa_assert(s);
     pa_assert(ret_d);
@@ -1599,17 +1936,20 @@ int pa_atod(const char *s, double *ret_d) {
         f = strtod(s, &x);
     }
 
-    if (!x || *x || errno != 0)
-        r =  -1;
-    else
-        *ret_d = f;
+    if (!x || *x || errno) {
+        if (!errno)
+            errno = EINVAL;
+        return -1;
+    }
 
-    return r;
+    *ret_d = f;
+
+    return 0;
 }
 
 /* Same as snprintf, but guarantees NUL-termination on every platform */
-int pa_snprintf(char *str, size_t size, const char *format, ...) {
-    int ret;
+size_t pa_snprintf(char *str, size_t size, const char *format, ...) {
+    size_t ret;
     va_list ap;
 
     pa_assert(str);
@@ -1624,7 +1964,7 @@ int pa_snprintf(char *str, size_t size, const char *format, ...) {
 }
 
 /* Same as vsnprintf, but guarantees NUL-termination on every platform */
-int pa_vsnprintf(char *str, size_t size, const char *format, va_list ap) {
+size_t pa_vsnprintf(char *str, size_t size, const char *format, va_list ap) {
     int ret;
 
     pa_assert(str);
@@ -1636,9 +1976,12 @@ int pa_vsnprintf(char *str, size_t size, const char *format, va_list ap) {
     str[size-1] = 0;
 
     if (ret < 0)
-        ret = strlen(str);
+        return strlen(str);
 
-    return PA_MIN((int) size-1, ret);
+    if ((size_t) ret > size-1)
+        return size-1;
+
+    return (size_t) ret;
 }
 
 /* Truncate the specified string, but guarantee that the string
@@ -1662,7 +2005,7 @@ char *pa_getcwd(void) {
     size_t l = 128;
 
     for (;;) {
-        char *p = pa_xnew(char, l);
+        char *p = pa_xmalloc(l);
         if (getcwd(p, l))
             return p;
 
@@ -1687,7 +2030,7 @@ void *pa_will_need(const void *p, size_t l) {
     pa_assert(l > 0);
 
     a = PA_PAGE_ALIGN_PTR(p);
-    size = (const uint8_t*) p + l - (const uint8_t*) a;
+    size = (size_t) ((const uint8_t*) p + l - (const uint8_t*) a);
 
 #ifdef HAVE_POSIX_MADVISE
     if ((r = posix_madvise((void*) a, size, POSIX_MADV_WILLNEED)) == 0) {
@@ -1708,10 +2051,11 @@ void *pa_will_need(const void *p, size_t l) {
 
     if (rlim.rlim_cur < PA_PAGE_SIZE) {
         pa_log_debug("posix_madvise() failed (or doesn't exist), resource limits don't allow mlock(), can't page in data: %s", pa_cstrerror(r));
+        errno = EPERM;
         return (void*) p;
     }
 
-    bs = PA_PAGE_ALIGN(rlim.rlim_cur);
+    bs = PA_PAGE_ALIGN((size_t) rlim.rlim_cur);
 #else
     bs = PA_PAGE_SIZE*4;
 #endif
@@ -1763,7 +2107,7 @@ char *pa_readlink(const char *p) {
         char *c;
         ssize_t n;
 
-        c = pa_xnew(char, l);
+        c = pa_xmalloc(l);
 
         if ((n = readlink(p, c, l-1)) < 0) {
             pa_xfree(c);
@@ -1782,8 +2126,8 @@ char *pa_readlink(const char *p) {
 
 int pa_close_all(int except_fd, ...) {
     va_list ap;
-    int n = 0, i, r;
-    int *p;
+    unsigned n = 0, i;
+    int r, *p;
 
     va_start(ap, except_fd);
 
@@ -1887,17 +2231,21 @@ int pa_close_allv(const int except_fds[]) {
     if (getrlimit(RLIMIT_NOFILE, &rl) < 0)
         return -1;
 
-    for (fd = 0; fd < (int) rl.rlim_max; fd++) {
+    for (fd = 3; fd < (int) rl.rlim_max; fd++) {
         int i;
+        pa_bool_t found;
 
-        if (fd <= 3)
+        found = FALSE;
+        for (i = 0; except_fds[i] >= 0; i++)
+            if (except_fds[i] == fd) {
+                found = TRUE;
+                break;
+            }
+
+        if (found)
             continue;
 
-        for (i = 0; except_fds[i] >= 0; i++)
-            if (except_fds[i] == fd)
-                continue;
-
-        if (close(fd) < 0 && errno != EBADF)
+        if (pa_close(fd) < 0 && errno != EBADF)
             return -1;
     }
 
@@ -1906,8 +2254,8 @@ int pa_close_allv(const int except_fds[]) {
 
 int pa_unblock_sigs(int except, ...) {
     va_list ap;
-    int n = 0, i, r;
-    int *p;
+    unsigned n = 0, i;
+    int r, *p;
 
     va_start(ap, except);
 
@@ -1955,8 +2303,8 @@ int pa_unblock_sigsv(const int except[]) {
 
 int pa_reset_sigs(int except, ...) {
     va_list ap;
-    int n = 0, i, r;
-    int *p;
+    unsigned n = 0, i;
+    int *p, r;
 
     va_start(ap, except);
 
@@ -1972,10 +2320,11 @@ int pa_reset_sigs(int except, ...) {
 
     i = 0;
     if (except >= 1) {
+        int sig;
         p[i++] = except;
 
-        while ((p[i++] = va_arg(ap, int)) >= 0)
-            ;
+        while ((sig = va_arg(ap, int)) >= 0)
+            sig = p[i++];
     }
     p[i] = -1;
 
@@ -2042,4 +2391,72 @@ pa_bool_t pa_in_system_mode(void) {
         return FALSE;
 
     return !!atoi(e);
+}
+
+char *pa_machine_id(void) {
+    FILE *f;
+    size_t l;
+
+    /* The returned value is supposed be some kind of ascii identifier
+     * that is unique and stable across reboots. */
+
+    /* First we try the D-Bus UUID, which is the best option we have,
+     * since it fits perfectly our needs and is not as volatile as the
+     * hostname which might be set from dhcp. */
+
+    if ((f = fopen(PA_MACHINE_ID, "r"))) {
+        char ln[34] = "", *r;
+
+        r = fgets(ln, sizeof(ln)-1, f);
+        fclose(f);
+
+        pa_strip_nl(ln);
+
+        if (ln[0])
+            return pa_xstrdup(ln);
+    }
+
+    /* The we fall back to the host name. It supposed to be somewhat
+     * unique, at least in a network, but may change. */
+
+    l = 100;
+    for (;;) {
+        char *c;
+
+        c = pa_xmalloc(l);
+
+        if (!pa_get_host_name(c, l)) {
+
+            if (errno != EINVAL && errno != ENAMETOOLONG)
+                break;
+
+        } else if (strlen(c) < l-1) {
+
+            if (*c == 0) {
+                pa_xfree(c);
+                break;
+            }
+
+            return c;
+        }
+
+        /* Hmm, the hostname is as long the space we offered the
+         * function, we cannot know if it fully fit in, so let's play
+         * safe and retry. */
+
+        pa_xfree(c);
+        l *= 2;
+    }
+
+    /* If no hostname was set we use the POSIX hostid. It's usually
+     * the IPv4 address.  Mit not be that stable. */
+    return pa_sprintf_malloc("%08lx", (unsigned long) gethostid);
+}
+
+char *pa_uname_string(void) {
+    struct utsname u;
+
+    pa_assert_se(uname(&u) == 0);
+
+    return pa_sprintf_malloc("%s %s %s %s", u.sysname, u.machine, u.release, u.version);
 }

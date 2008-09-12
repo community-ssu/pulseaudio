@@ -856,18 +856,29 @@ void pa_sink_set_volume(pa_sink *s, const pa_cvolume *volume) {
         s->set_volume = NULL;
 
     if (!s->set_volume)
-        pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SET_VOLUME, volume, 0, NULL);
+        pa_sink_set_soft_volume(s, volume);
 
     if (changed)
         pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
 }
 
 /* Called from main thread */
-const pa_cvolume *pa_sink_get_volume(pa_sink *s) {
+void pa_sink_set_soft_volume(pa_sink *s, const pa_cvolume *volume) {
+    pa_sink_assert_ref(s);
+    pa_assert(volume);
+
+    if (PA_SINK_IS_LINKED(s->state))
+        pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SET_VOLUME, volume, 0, NULL);
+    else
+        s->thread_info.soft_volume = *volume;
+}
+
+/* Called from main thread */
+const pa_cvolume *pa_sink_get_volume(pa_sink *s, pa_bool_t force_refresh) {
     pa_sink_assert_ref(s);
     pa_assert(PA_SINK_IS_LINKED(s->state));
 
-    if (s->refresh_volume) {
+    if (s->refresh_volume || force_refresh) {
         struct pa_cvolume old_volume = s->volume;
 
         if (s->get_volume && s->get_volume(s) < 0)
@@ -904,12 +915,12 @@ void pa_sink_set_mute(pa_sink *s, pa_bool_t mute) {
 }
 
 /* Called from main thread */
-pa_bool_t pa_sink_get_mute(pa_sink *s) {
+pa_bool_t pa_sink_get_mute(pa_sink *s, pa_bool_t force_refresh) {
 
     pa_sink_assert_ref(s);
     pa_assert(PA_SINK_IS_LINKED(s->state));
 
-    if (s->refresh_muted) {
+    if (s->refresh_muted || force_refresh) {
         pa_bool_t old_muted = s->muted;
 
         if (s->get_mute && s->get_mute(s) < 0)
@@ -1031,10 +1042,14 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
 
             pa_sink_input_set_state_within_thread(i, i->state);
 
+            /* The requested latency of the sink input needs to be
+             * fixed up and then configured on the sink */
+
+            if (i->thread_info.requested_sink_latency != (pa_usec_t) -1)
+                pa_sink_input_set_requested_latency_within_thread(i, i->thread_info.requested_sink_latency);
+
             pa_sink_input_update_max_rewind(i, s->thread_info.max_rewind);
             pa_sink_input_update_max_request(i, s->thread_info.max_request);
-
-            pa_sink_invalidate_requested_latency(s);
 
             /* We don't rewind here automatically. This is left to the
              * sink input implementor because some sink inputs need a
@@ -1147,10 +1162,11 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
             if (i->attach)
                 i->attach(i);
 
+            if (i->thread_info.requested_sink_latency != (pa_usec_t) -1)
+                pa_sink_input_set_requested_latency_within_thread(i, i->thread_info.requested_sink_latency);
+
             pa_sink_input_update_max_rewind(i, s->thread_info.max_rewind);
             pa_sink_input_update_max_request(i, s->thread_info.max_request);
-
-            pa_sink_input_set_requested_latency_within_thread(i, i->thread_info.requested_sink_latency);
 
             if (i->thread_info.state != PA_SINK_INPUT_CORKED) {
                 pa_usec_t usec = 0;
@@ -1413,7 +1429,6 @@ void pa_sink_set_max_rewind(pa_sink *s, size_t max_rewind) {
 
 /* Called from IO thread */
 void pa_sink_set_max_request(pa_sink *s, size_t max_request) {
-    pa_sink_input *i;
     void *state = NULL;
 
     pa_sink_assert_ref(s);
@@ -1424,6 +1439,8 @@ void pa_sink_set_max_request(pa_sink *s, size_t max_request) {
     s->thread_info.max_request = max_request;
 
     if (PA_SINK_IS_LINKED(s->thread_info.state)) {
+        pa_sink_input *i;
+
         while ((i = pa_hashmap_iterate(s->thread_info.inputs, &state, NULL)))
             pa_sink_input_update_max_request(i, s->thread_info.max_request);
     }

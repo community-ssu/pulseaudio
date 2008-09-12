@@ -22,6 +22,7 @@
 ; daemonize = no
 ; fail = yes
 ; disallow-module-loading = no
+; disallow-exit = no
 ; use-pid-file = yes
 ; system-instance = no
 ; disable-shm = no
@@ -46,6 +47,7 @@
 
 ; resample-method = speex-float-3
 ; disable-remixing = no
+; disable-lfe-remixing = yes
 
 ; no-cpu-limit = no
 

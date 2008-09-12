@@ -28,7 +28,12 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/types.h>
+
+#include <pulse/i18n.h>
+
 #include <pulsecore/macro.h>
+#include <pulsecore/core-error.h>
+#include <pulsecore/log.h>
 
 #ifdef HAVE_SYS_CAPABILITY_H
 #include <sys/capability.h>
@@ -36,10 +41,6 @@
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
-
-#include <pulsecore/core-error.h>
-
-#include <pulsecore/log.h>
 
 #include "caps.h"
 
@@ -58,7 +59,7 @@ void pa_drop_root(void) {
     if (uid == 0 || geteuid() != 0)
         return;
 
-    pa_log_info("Dropping root priviliges.");
+    pa_log_info(_("Dropping root priviliges."));
 
 #if defined(HAVE_SETRESUID)
     pa_assert_se(setresuid(uid, uid, uid) >= 0);
@@ -98,7 +99,7 @@ void pa_limit_caps(void) {
          * that */
         pa_drop_caps();
     else
-        pa_log_info("Limited capabilities successfully to CAP_SYS_NICE.");
+        pa_log_info(_("Limited capabilities successfully to CAP_SYS_NICE."));
 
     pa_assert_se(cap_free(caps) == 0);
 
@@ -108,6 +109,14 @@ void pa_limit_caps(void) {
 /* Drop all capabilities, effectively becoming a normal user */
 void pa_drop_caps(void) {
     cap_t caps;
+
+#ifndef __OPTIMIZE__
+    /* Valgrind doesn't not know set_caps, so we bypass it here -- but
+     *  only in development builts.*/
+
+    if (getenv("VALGRIND") && !pa_have_caps())
+        return;
+#endif
 
     pa_assert_se(prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0) == 0);
 
@@ -123,7 +132,12 @@ pa_bool_t pa_have_caps(void) {
     cap_t caps;
     cap_flag_value_t flag = CAP_CLEAR;
 
+#ifdef __OPTIMIZE__
     pa_assert_se(caps = cap_get_proc());
+#else
+    if (!(caps = cap_get_proc()))
+        return FALSE;
+#endif
     pa_assert_se(cap_get_flag(caps, CAP_SYS_NICE, CAP_EFFECTIVE, &flag) >= 0);
     pa_assert_se(cap_free(caps) == 0);
 

@@ -32,6 +32,7 @@
 
 #include <pulse/xmalloc.h>
 #include <pulse/timeval.h>
+#include <pulse/i18n.h>
 
 #include <pulsecore/core-error.h>
 #include <pulsecore/core-util.h>
@@ -62,6 +63,7 @@ static const pa_daemon_conf default_conf = {
     .realtime_scheduling = FALSE,
     .realtime_priority = 5,  /* Half of JACK's default rtprio */
     .disallow_module_loading = FALSE,
+    .disallow_exit = FALSE,
     .exit_idle_time = 20,
     .module_idle_time = 20,
     .scache_idle_time = 20,
@@ -74,6 +76,7 @@ static const pa_daemon_conf default_conf = {
     .log_level = PA_LOG_NOTICE,
     .resample_method = PA_RESAMPLER_AUTO,
     .disable_remixing = FALSE,
+    .disable_lfe_remixing = TRUE,
     .config_file = NULL,
     .use_pid_file = TRUE,
     .system_instance = FALSE,
@@ -189,7 +192,7 @@ int pa_daemon_conf_set_resample_method(pa_daemon_conf *c, const char *string) {
     return 0;
 }
 
-static int parse_log_target(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
+static int parse_log_target(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
     pa_daemon_conf *c = data;
 
     pa_assert(filename);
@@ -198,14 +201,14 @@ static int parse_log_target(const char *filename, unsigned line, const char *lva
     pa_assert(data);
 
     if (pa_daemon_conf_set_log_target(c, rvalue) < 0) {
-        pa_log("[%s:%u] Invalid log target '%s'.", filename, line, rvalue);
+        pa_log(_("[%s:%u] Invalid log target '%s'."), filename, line, rvalue);
         return -1;
     }
 
     return 0;
 }
 
-static int parse_log_level(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
+static int parse_log_level(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
     pa_daemon_conf *c = data;
 
     pa_assert(filename);
@@ -214,14 +217,14 @@ static int parse_log_level(const char *filename, unsigned line, const char *lval
     pa_assert(data);
 
     if (pa_daemon_conf_set_log_level(c, rvalue) < 0) {
-        pa_log("[%s:%u] Invalid log level '%s'.", filename, line, rvalue);
+        pa_log(_("[%s:%u] Invalid log level '%s'."), filename, line, rvalue);
         return -1;
     }
 
     return 0;
 }
 
-static int parse_resample_method(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
+static int parse_resample_method(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
     pa_daemon_conf *c = data;
 
     pa_assert(filename);
@@ -230,14 +233,14 @@ static int parse_resample_method(const char *filename, unsigned line, const char
     pa_assert(data);
 
     if (pa_daemon_conf_set_resample_method(c, rvalue) < 0) {
-        pa_log("[%s:%u] Invalid resample method '%s'.", filename, line, rvalue);
+        pa_log(_("[%s:%u] Invalid resample method '%s'."), filename, line, rvalue);
         return -1;
     }
 
     return 0;
 }
 
-static int parse_rlimit(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
+static int parse_rlimit(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
 #ifdef HAVE_SYS_RESOURCE_H
     struct pa_rlimit *r = data;
 
@@ -253,20 +256,20 @@ static int parse_rlimit(const char *filename, unsigned line, const char *lvalue,
     } else {
         int32_t k;
         if (pa_atoi(rvalue, &k) < 0) {
-            pa_log("[%s:%u] Invalid rlimit '%s'.", filename, line, rvalue);
+            pa_log(_("[%s:%u] Invalid rlimit '%s'."), filename, line, rvalue);
             return -1;
         }
         r->is_set = k >= 0;
         r->value = k >= 0 ? (rlim_t) k : 0;
     }
 #else
-    pa_log_warn("[%s:%u] rlimit not supported on this platform.", filename, line);
+    pa_log_warn(_("[%s:%u] rlimit not supported on this platform."), filename, line);
 #endif
 
     return 0;
 }
 
-static int parse_sample_format(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
+static int parse_sample_format(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
     pa_daemon_conf *c = data;
     pa_sample_format_t f;
 
@@ -276,7 +279,7 @@ static int parse_sample_format(const char *filename, unsigned line, const char *
     pa_assert(data);
 
     if ((f = pa_parse_sample_format(rvalue)) < 0) {
-        pa_log("[%s:%u] Invalid sample format '%s'.", filename, line, rvalue);
+        pa_log(_("[%s:%u] Invalid sample format '%s'."), filename, line, rvalue);
         return -1;
     }
 
@@ -284,17 +287,17 @@ static int parse_sample_format(const char *filename, unsigned line, const char *
     return 0;
 }
 
-static int parse_sample_rate(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
+static int parse_sample_rate(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
     pa_daemon_conf *c = data;
-    int32_t r;
+    uint32_t r;
 
     pa_assert(filename);
     pa_assert(lvalue);
     pa_assert(rvalue);
     pa_assert(data);
 
-    if (pa_atoi(rvalue, &r) < 0 || r > (int32_t) PA_RATE_MAX || r <= 0) {
-        pa_log("[%s:%u] Invalid sample rate '%s'.", filename, line, rvalue);
+    if (pa_atou(rvalue, &r) < 0 || r > (uint32_t) PA_RATE_MAX || r <= 0) {
+        pa_log(_("[%s:%u] Invalid sample rate '%s'."), filename, line, rvalue);
         return -1;
     }
 
@@ -302,7 +305,7 @@ static int parse_sample_rate(const char *filename, unsigned line, const char *lv
     return 0;
 }
 
-static int parse_sample_channels(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
+static int parse_sample_channels(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
     pa_daemon_conf *c = data;
     int32_t n;
 
@@ -312,7 +315,7 @@ static int parse_sample_channels(const char *filename, unsigned line, const char
     pa_assert(data);
 
     if (pa_atoi(rvalue, &n) < 0 || n > (int32_t) PA_CHANNELS_MAX || n <= 0) {
-        pa_log("[%s:%u] Invalid sample channels '%s'.", filename, line, rvalue);
+        pa_log(_("[%s:%u] Invalid sample channels '%s'."), filename, line, rvalue);
         return -1;
     }
 
@@ -320,7 +323,7 @@ static int parse_sample_channels(const char *filename, unsigned line, const char
     return 0;
 }
 
-static int parse_fragments(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
+static int parse_fragments(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
     pa_daemon_conf *c = data;
     int32_t n;
 
@@ -330,7 +333,7 @@ static int parse_fragments(const char *filename, unsigned line, const char *lval
     pa_assert(data);
 
     if (pa_atoi(rvalue, &n) < 0 || n < 2) {
-        pa_log("[%s:%u] Invalid number of fragments '%s'.", filename, line, rvalue);
+        pa_log(_("[%s:%u] Invalid number of fragments '%s'."), filename, line, rvalue);
         return -1;
     }
 
@@ -338,7 +341,7 @@ static int parse_fragments(const char *filename, unsigned line, const char *lval
     return 0;
 }
 
-static int parse_fragment_size_msec(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
+static int parse_fragment_size_msec(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
     pa_daemon_conf *c = data;
     int32_t n;
 
@@ -348,7 +351,7 @@ static int parse_fragment_size_msec(const char *filename, unsigned line, const c
     pa_assert(data);
 
     if (pa_atoi(rvalue, &n) < 0 || n < 1) {
-        pa_log("[%s:%u] Invalid fragment size '%s'.", filename, line, rvalue);
+        pa_log(_("[%s:%u] Invalid fragment size '%s'."), filename, line, rvalue);
         return -1;
     }
 
@@ -356,7 +359,7 @@ static int parse_fragment_size_msec(const char *filename, unsigned line, const c
     return 0;
 }
 
-static int parse_nice_level(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
+static int parse_nice_level(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
     pa_daemon_conf *c = data;
     int32_t level;
 
@@ -366,7 +369,7 @@ static int parse_nice_level(const char *filename, unsigned line, const char *lva
     pa_assert(data);
 
     if (pa_atoi(rvalue, &level) < 0 || level < -20 || level > 19) {
-        pa_log("[%s:%u] Invalid nice level '%s'.", filename, line, rvalue);
+        pa_log(_("[%s:%u] Invalid nice level '%s'."), filename, line, rvalue);
         return -1;
     }
 
@@ -374,7 +377,7 @@ static int parse_nice_level(const char *filename, unsigned line, const char *lva
     return 0;
 }
 
-static int parse_rtprio(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
+static int parse_rtprio(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
     pa_daemon_conf *c = data;
     int32_t rtprio;
 
@@ -402,6 +405,7 @@ int pa_daemon_conf_load(pa_daemon_conf *c, const char *filename) {
         { "high-priority",              pa_config_parse_bool,     NULL },
         { "realtime-scheduling",        pa_config_parse_bool,     NULL },
         { "disallow-module-loading",    pa_config_parse_bool,     NULL },
+        { "disallow-exit",              pa_config_parse_bool,     NULL },
         { "use-pid-file",               pa_config_parse_bool,     NULL },
         { "system-instance",            pa_config_parse_bool,     NULL },
         { "no-cpu-limit",               pa_config_parse_bool,     NULL },
@@ -423,6 +427,7 @@ int pa_daemon_conf_load(pa_daemon_conf *c, const char *filename) {
         { "default-fragment-size-msec", parse_fragment_size_msec, NULL },
         { "nice-level",                 parse_nice_level,         NULL },
         { "disable-remixing",           pa_config_parse_bool,     NULL },
+        { "disable-lfe-remixing",       pa_config_parse_bool,     NULL },
         { "load-default-script-file",   pa_config_parse_bool,     NULL },
 #ifdef HAVE_SYS_RESOURCE_H
         { "rlimit-fsize",               parse_rlimit,             NULL },
@@ -465,17 +470,17 @@ int pa_daemon_conf_load(pa_daemon_conf *c, const char *filename) {
     table[2].data = &c->high_priority;
     table[3].data = &c->realtime_scheduling;
     table[4].data = &c->disallow_module_loading;
-    table[5].data = &c->use_pid_file;
-    table[6].data = &c->system_instance;
-    table[7].data = &c->no_cpu_limit;
-    table[8].data = &c->disable_shm;
-    table[9].data = &c->exit_idle_time;
-    table[10].data = &c->module_idle_time;
-    table[11].data = &c->scache_idle_time;
-    table[12].data = c;
-    table[13].data = &c->dl_search_path;
-    table[14].data = &c->default_script_file;
-    table[15].data = c;
+    table[5].data = &c->disallow_exit;
+    table[6].data = &c->use_pid_file;
+    table[7].data = &c->system_instance;
+    table[8].data = &c->no_cpu_limit;
+    table[9].data = &c->disable_shm;
+    table[10].data = &c->exit_idle_time;
+    table[11].data = &c->module_idle_time;
+    table[12].data = &c->scache_idle_time;
+    table[13].data = c;
+    table[14].data = &c->dl_search_path;
+    table[15].data = &c->default_script_file;
     table[16].data = c;
     table[17].data = c;
     table[18].data = c;
@@ -485,67 +490,69 @@ int pa_daemon_conf_load(pa_daemon_conf *c, const char *filename) {
     table[22].data = c;
     table[23].data = c;
     table[24].data = c;
-    table[25].data = &c->disable_remixing;
-    table[26].data = &c->load_default_script_file;
+    table[25].data = c;
+    table[26].data = &c->disable_remixing;
+    table[27].data = &c->disable_lfe_remixing;
+    table[28].data = &c->load_default_script_file;
 #ifdef HAVE_SYS_RESOURCE_H
-    table[27].data = &c->rlimit_fsize;
-    table[28].data = &c->rlimit_data;
-    table[29].data = &c->rlimit_stack;
-    table[30].data = &c->rlimit_as;
-    table[31].data = &c->rlimit_core;
-    table[32].data = &c->rlimit_nofile;
-    table[33].data = &c->rlimit_as;
+    table[29].data = &c->rlimit_fsize;
+    table[30].data = &c->rlimit_data;
+    table[31].data = &c->rlimit_stack;
+    table[32].data = &c->rlimit_as;
+    table[33].data = &c->rlimit_core;
+    table[34].data = &c->rlimit_nofile;
+    table[35].data = &c->rlimit_as;
 #ifdef RLIMIT_NPROC
-    table[34].data = &c->rlimit_nproc;
+    table[36].data = &c->rlimit_nproc;
 #endif
 
 #ifdef RLIMIT_MEMLOCK
 #ifndef RLIMIT_NPROC
 #error "Houston, we have a numbering problem!"
 #endif
-    table[35].data = &c->rlimit_memlock;
+    table[37].data = &c->rlimit_memlock;
 #endif
 
 #ifdef RLIMIT_LOCKS
 #ifndef RLIMIT_MEMLOCK
 #error "Houston, we have a numbering problem!"
 #endif
-    table[36].data = &c->rlimit_locks;
+    table[38].data = &c->rlimit_locks;
 #endif
 
 #ifdef RLIMIT_SIGPENDING
 #ifndef RLIMIT_LOCKS
 #error "Houston, we have a numbering problem!"
 #endif
-    table[37].data = &c->rlimit_sigpending;
+    table[39].data = &c->rlimit_sigpending;
 #endif
 
 #ifdef RLIMIT_MSGQUEUE
 #ifndef RLIMIT_SIGPENDING
 #error "Houston, we have a numbering problem!"
 #endif
-    table[38].data = &c->rlimit_msgqueue;
+    table[40].data = &c->rlimit_msgqueue;
 #endif
 
 #ifdef RLIMIT_NICE
 #ifndef RLIMIT_MSGQUEUE
 #error "Houston, we have a numbering problem!"
 #endif
-    table[39].data = &c->rlimit_nice;
+    table[41].data = &c->rlimit_nice;
 #endif
 
 #ifdef RLIMIT_RTPRIO
 #ifndef RLIMIT_NICE
 #error "Houston, we have a numbering problem!"
 #endif
-    table[40].data = &c->rlimit_rtprio;
+    table[42].data = &c->rlimit_rtprio;
 #endif
 
 #ifdef RLIMIT_RTTIME
 #ifndef RLIMIT_RTTIME
 #error "Houston, we have a numbering problem!"
 #endif
-    table[41].data = &c->rlimit_rttime;
+    table[43].data = &c->rlimit_rttime;
 #endif
 #endif
 
@@ -557,7 +564,7 @@ int pa_daemon_conf_load(pa_daemon_conf *c, const char *filename) {
         pa_open_config_file(DEFAULT_CONFIG_FILE, DEFAULT_CONFIG_FILE_USER, ENV_CONFIG_FILE, &c->config_file);
 
     if (!f && errno != ENOENT) {
-        pa_log_warn("Failed to open configuration file: %s", pa_cstrerror(errno));
+        pa_log_warn(_("Failed to open configuration file: %s"), pa_cstrerror(errno));
         goto finish;
     }
 
@@ -631,7 +638,7 @@ char *pa_daemon_conf_dump(pa_daemon_conf *c) {
     s = pa_strbuf_new();
 
     if (c->config_file)
-        pa_strbuf_printf(s, "### Read from configuration file: %s ###\n", c->config_file);
+        pa_strbuf_printf(s, _("### Read from configuration file: %s ###\n"), c->config_file);
 
     pa_assert(c->log_level <= PA_LOG_LEVEL_MAX);
 
@@ -642,6 +649,7 @@ char *pa_daemon_conf_dump(pa_daemon_conf *c) {
     pa_strbuf_printf(s, "realtime-scheduling = %s\n", pa_yes_no(c->realtime_scheduling));
     pa_strbuf_printf(s, "realtime-priority = %i\n", c->realtime_priority);
     pa_strbuf_printf(s, "disallow-module-loading = %s\n", pa_yes_no(c->disallow_module_loading));
+    pa_strbuf_printf(s, "disallow-exit = %s\n", pa_yes_no(c->disallow_exit));
     pa_strbuf_printf(s, "use-pid-file = %s\n", pa_yes_no(c->use_pid_file));
     pa_strbuf_printf(s, "system-instance = %s\n", pa_yes_no(c->system_instance));
     pa_strbuf_printf(s, "no-cpu-limit = %s\n", pa_yes_no(c->no_cpu_limit));
@@ -656,6 +664,7 @@ char *pa_daemon_conf_dump(pa_daemon_conf *c) {
     pa_strbuf_printf(s, "log-level = %s\n", log_level_to_string[c->log_level]);
     pa_strbuf_printf(s, "resample-method = %s\n", pa_resample_method_to_string(c->resample_method));
     pa_strbuf_printf(s, "disable-remixing = %s\n", pa_yes_no(c->disable_remixing));
+    pa_strbuf_printf(s, "disable-lfe-remixing = %s\n", pa_yes_no(c->disable_lfe_remixing));
     pa_strbuf_printf(s, "default-sample-format = %s\n", pa_sample_format_to_string(c->default_sample_spec.format));
     pa_strbuf_printf(s, "default-sample-rate = %u\n", c->default_sample_spec.rate);
     pa_strbuf_printf(s, "default-sample-channels = %u\n", c->default_sample_spec.channels);

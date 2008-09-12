@@ -1,10 +1,14 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <assert.h>
 
 #include <pulse/channelmap.h>
 #include <pulse/gccmacro.h>
 
-int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char *argv[]) {
+int main(int argc, char *argv[]) {
     char cm[PA_CHANNEL_MAP_SNPRINT_MAX];
     pa_channel_map map, map2;
 

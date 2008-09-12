@@ -36,7 +36,7 @@
 #include "xmalloc.h"
 
 /* Make sure not to allocate more than this much memory. */
-#define MAX_ALLOC_SIZE (1024*1024*20) /* 20MB */
+#define MAX_ALLOC_SIZE (1024*1024*96) /* 96MB */
 
 /* #undef malloc */
 /* #undef free */
@@ -46,7 +46,7 @@
 
 static void oom(void) PA_GCC_NORETURN;
 
-/** called in case of an OOM situation. Prints an error message and
+/* called in case of an OOM situation. Prints an error message and
  * exits */
 static void oom(void) {
     static const char e[] = "Not enough memory\n";
@@ -113,7 +113,7 @@ char *pa_xstrndup(const char *s, size_t l) {
         return NULL;
 
     if ((e = memchr(s, 0, l)))
-        return pa_xmemdup(s, e-s+1);
+        return pa_xmemdup(s, (size_t) (e-s+1));
 
     r = pa_xmalloc(l+1);
     memcpy(r, s, l);

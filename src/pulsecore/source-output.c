@@ -171,7 +171,8 @@ pa_source_output* pa_source_output_new(
                       data->resample_method,
                       ((flags & PA_SOURCE_OUTPUT_VARIABLE_RATE) ? PA_RESAMPLER_VARIABLE_RATE : 0) |
                       ((flags & PA_SOURCE_OUTPUT_NO_REMAP) ? PA_RESAMPLER_NO_REMAP : 0) |
-                      (core->disable_remixing || (flags & PA_SOURCE_OUTPUT_NO_REMIX) ? PA_RESAMPLER_NO_REMIX : 0)))) {
+                      (core->disable_remixing || (flags & PA_SOURCE_OUTPUT_NO_REMIX) ? PA_RESAMPLER_NO_REMIX : 0) |
+                      (core->disable_lfe_remixing ? PA_RESAMPLER_NO_LFE : 0)))) {
             pa_log_warn("Unsupported resampling operation.");
             return NULL;
         }
@@ -397,7 +398,7 @@ void pa_source_output_push(pa_source_output *o, const pa_memchunk *chunk) {
 
     if (pa_memblockq_push(o->thread_info.delay_memblockq, chunk) < 0) {
         pa_log_debug("Delay queue overflow!");
-        pa_memblockq_seek(o->thread_info.delay_memblockq, chunk->length, PA_SEEK_RELATIVE);
+        pa_memblockq_seek(o->thread_info.delay_memblockq, (int64_t) chunk->length, PA_SEEK_RELATIVE);
     }
 
     limit = o->process_rewind ? 0 : o->source->thread_info.max_rewind;
@@ -441,7 +442,7 @@ void pa_source_output_push(pa_source_output *o, const pa_memchunk *chunk) {
 }
 
 /* Called from thread context */
-void pa_source_output_process_rewind(pa_source_output *o, size_t nbytes /* in sink sample spec */) {
+void pa_source_output_process_rewind(pa_source_output *o, size_t nbytes /* in source sample spec */) {
     pa_source_output_assert_ref(o);
 
     pa_assert(PA_SOURCE_OUTPUT_IS_LINKED(o->thread_info.state));
@@ -511,14 +512,11 @@ pa_usec_t pa_source_output_set_requested_latency(pa_source_output *o, pa_usec_t 
 
     if (PA_SOURCE_OUTPUT_IS_LINKED(o->state))
         pa_assert_se(pa_asyncmsgq_send(o->source->asyncmsgq, PA_MSGOBJECT(o), PA_SOURCE_OUTPUT_MESSAGE_SET_REQUESTED_LATENCY, &usec, 0, NULL) == 0);
-    else {
-        /* If this sink input is not realized yet, we have to touch
+    else
+        /* If this source output is not realized yet, we have to touch
          * the thread info data directly */
 
-        usec = fixup_latency(o->source, usec);
         o->thread_info.requested_source_latency = usec;
-        o->source->thread_info.requested_latency_valid = FALSE;
-    }
 
     return usec;
 }
@@ -532,7 +530,7 @@ pa_usec_t pa_source_output_get_requested_latency(pa_source_output *o) {
     if (PA_SOURCE_OUTPUT_IS_LINKED(o->state))
         pa_assert_se(pa_asyncmsgq_send(o->source->asyncmsgq, PA_MSGOBJECT(o), PA_SOURCE_OUTPUT_MESSAGE_GET_REQUESTED_LATENCY, &usec, 0, NULL) == 0);
     else
-        /* If this sink input is not realized yet, we have to touch
+        /* If this source output is not realized yet, we have to touch
          * the thread info data directly */
         usec = o->thread_info.requested_source_latency;
 
@@ -752,7 +750,7 @@ int pa_source_output_process_msg(pa_msgobject *mo, int code, void *userdata, int
             return 0;
         }
 
-        case PA_SINK_INPUT_MESSAGE_GET_REQUESTED_LATENCY: {
+        case PA_SOURCE_OUTPUT_MESSAGE_GET_REQUESTED_LATENCY: {
             pa_usec_t *r = userdata;
 
             *r = o->thread_info.requested_source_latency;

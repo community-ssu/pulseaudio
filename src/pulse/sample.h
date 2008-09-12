@@ -120,17 +120,38 @@ PA_C_DECL_BEGIN
 
 /** Sample format */
 typedef enum pa_sample_format {
-    PA_SAMPLE_U8,              /**< Unsigned 8 Bit PCM */
-    PA_SAMPLE_ALAW,            /**< 8 Bit a-Law */
-    PA_SAMPLE_ULAW,            /**< 8 Bit mu-Law */
-    PA_SAMPLE_S16LE,           /**< Signed 16 Bit PCM, little endian (PC) */
-    PA_SAMPLE_S16BE,           /**< Signed 16 Bit PCM, big endian */
-    PA_SAMPLE_FLOAT32LE,       /**< 32 Bit IEEE floating point, little endian, range -1 to 1 */
-    PA_SAMPLE_FLOAT32BE,       /**< 32 Bit IEEE floating point, big endian, range -1 to 1 */
-    PA_SAMPLE_S32LE,           /**< Signed 32 Bit PCM, little endian (PC) */
-    PA_SAMPLE_S32BE,           /**< Signed 32 Bit PCM, big endian (PC) */
-    PA_SAMPLE_MAX,             /**< Upper limit of valid sample types */
-    PA_SAMPLE_INVALID = -1     /**< An invalid value */
+    PA_SAMPLE_U8,
+    /**< Unsigned 8 Bit PCM */
+
+    PA_SAMPLE_ALAW,
+    /**< 8 Bit a-Law */
+
+    PA_SAMPLE_ULAW,
+    /**< 8 Bit mu-Law */
+
+    PA_SAMPLE_S16LE,
+    /**< Signed 16 Bit PCM, little endian (PC) */
+
+    PA_SAMPLE_S16BE,
+    /**< Signed 16 Bit PCM, big endian */
+
+    PA_SAMPLE_FLOAT32LE,
+    /**< 32 Bit IEEE floating point, little endian, range -1 to 1 */
+
+    PA_SAMPLE_FLOAT32BE,
+    /**< 32 Bit IEEE floating point, big endian, range -1 to 1 */
+
+    PA_SAMPLE_S32LE,
+    /**< Signed 32 Bit PCM, little endian (PC) */
+
+    PA_SAMPLE_S32BE,
+    /**< Signed 32 Bit PCM, big endian (PC) */
+
+    PA_SAMPLE_MAX,
+    /**< Upper limit of valid sample types */
+
+    PA_SAMPLE_INVALID = -1
+    /**< An invalid value */
 } pa_sample_format_t;
 
 #ifdef WORDS_BIGENDIAN
@@ -164,11 +185,29 @@ typedef enum pa_sample_format {
 /** A Shortcut for PA_SAMPLE_FLOAT32NE */
 #define PA_SAMPLE_FLOAT32 PA_SAMPLE_FLOAT32NE
 
+/** \cond fulldocs */
+/* Allow clients to check with #ifdef for thse sample formats */
+#define PA_SAMPLE_U8 PA_SAMPLE_U8
+#define PA_SAMPLE_ALAW PA_SAMPLE_ALAW
+#define PA_SAMPLE_ULAW PA_SAMPLE_ULAW
+#define PA_SAMPLE_S16LE PA_SAMPLE_S16LE
+#define PA_SAMPLE_S16BE PA_SAMPLE_S16BE
+#define PA_SAMPLE_FLOAT32LE PA_SAMPLE_FLOAT32LE
+#define PA_SAMPLE_FLOAT32BE PA_SAMPLE_FLOAT32BE
+#define PA_SAMPLE_S32LE PA_SAMPLE_S32LE
+#define PA_SAMPLE_S32BE PA_SAMPLE_S32BE
+/** \endcond */
+
 /** A sample format and attribute specification */
 typedef struct pa_sample_spec {
-    pa_sample_format_t format;     /**< The sample format */
-    uint32_t rate;                 /**< The sample rate. (e.g. 44100) */
-    uint8_t channels;              /**< Audio channels. (1 for mono, 2 for stereo, ...) */
+    pa_sample_format_t format;
+    /**< The sample format */
+
+    uint32_t rate;
+    /**< The sample rate. (e.g. 44100) */
+
+    uint8_t channels;
+    /**< Audio channels. (1 for mono, 2 for stereo, ...) */
 } pa_sample_spec;
 
 /** Type for usec specifications (unsigned). Always 64 bit. */
@@ -183,10 +222,14 @@ size_t pa_frame_size(const pa_sample_spec *spec) PA_GCC_PURE;
 /** Return the size of a sample with the specific sample type */
 size_t pa_sample_size(const pa_sample_spec *spec) PA_GCC_PURE;
 
-/** Calculate the time the specified bytes take to play with the specified sample type */
+/** Calculate the time the specified bytes take to play with the
+ * specified sample type. The return value will always be rounded
+ * down for non-integral return values. */
 pa_usec_t pa_bytes_to_usec(uint64_t length, const pa_sample_spec *spec) PA_GCC_PURE;
 
-/** Calculates the number of bytes that are required for the specified time. \since 0.9 */
+/** Calculates the number of bytes that are required for the specified
+ * time. The return value will always be rounded down for non-integral
+ * return values. \since 0.9 */
 size_t pa_usec_to_bytes(pa_usec_t t, const pa_sample_spec *spec) PA_GCC_PURE;
 
 /** Return non-zero when the sample type specification is valid */

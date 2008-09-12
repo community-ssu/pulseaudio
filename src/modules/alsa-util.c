@@ -39,7 +39,7 @@
 #include "alsa-util.h"
 
 struct pa_alsa_fdlist {
-    int num_fds;
+    unsigned num_fds;
     struct pollfd *fds;
     /* This is a temporary buffer used to avoid lots of mallocs */
     struct pollfd *work_fds;
@@ -50,16 +50,17 @@ struct pa_alsa_fdlist {
     pa_defer_event *defer;
     pa_io_event **ios;
 
-    int polled;
+    pa_bool_t polled;
 
     void (*cb)(void *userdata);
     void *userdata;
 };
 
-static void io_cb(pa_mainloop_api*a, pa_io_event* e, PA_GCC_UNUSED int fd, pa_io_event_flags_t events, void *userdata) {
+static void io_cb(pa_mainloop_api*a, pa_io_event* e, int fd, pa_io_event_flags_t events, void *userdata) {
 
     struct pa_alsa_fdlist *fdl = userdata;
-    int err, i;
+    int err;
+    unsigned i;
     unsigned short revents;
 
     pa_assert(a);
@@ -71,11 +72,11 @@ static void io_cb(pa_mainloop_api*a, pa_io_event* e, PA_GCC_UNUSED int fd, pa_io
     if (fdl->polled)
         return;
 
-    fdl->polled = 1;
+    fdl->polled = TRUE;
 
     memcpy(fdl->work_fds, fdl->fds, sizeof(struct pollfd) * fdl->num_fds);
 
-    for (i = 0;i < fdl->num_fds; i++) {
+    for (i = 0; i < fdl->num_fds; i++) {
         if (e == fdl->ios[i]) {
             if (events & PA_IO_EVENT_INPUT)
                 fdl->work_fds[i].revents |= POLLIN;
@@ -102,9 +103,10 @@ static void io_cb(pa_mainloop_api*a, pa_io_event* e, PA_GCC_UNUSED int fd, pa_io
         snd_mixer_handle_events(fdl->mixer);
 }
 
-static void defer_cb(pa_mainloop_api*a, PA_GCC_UNUSED pa_defer_event* e, void *userdata) {
+static void defer_cb(pa_mainloop_api*a, pa_defer_event* e, void *userdata) {
     struct pa_alsa_fdlist *fdl = userdata;
-    int num_fds, i, err;
+    unsigned num_fds, i;
+    int err;
     struct pollfd *temp;
 
     pa_assert(a);
@@ -113,8 +115,7 @@ static void defer_cb(pa_mainloop_api*a, PA_GCC_UNUSED pa_defer_event* e, void *u
 
     a->defer_enable(fdl->defer, 0);
 
-    num_fds = snd_mixer_poll_descriptors_count(fdl->mixer);
-    pa_assert(num_fds > 0);
+    num_fds = (unsigned) snd_mixer_poll_descriptors_count(fdl->mixer);
 
     if (num_fds != fdl->num_fds) {
         if (fdl->fds)
@@ -132,7 +133,7 @@ static void defer_cb(pa_mainloop_api*a, PA_GCC_UNUSED pa_defer_event* e, void *u
         return;
     }
 
-    fdl->polled = 0;
+    fdl->polled = FALSE;
 
     if (memcmp(fdl->fds, fdl->work_fds, sizeof(struct pollfd) * num_fds) == 0)
         return;
@@ -176,7 +177,7 @@ struct pa_alsa_fdlist *pa_alsa_fdlist_new(void) {
     fdl->m = NULL;
     fdl->defer = NULL;
     fdl->ios = NULL;
-    fdl->polled = 0;
+    fdl->polled = FALSE;
 
     return fdl;
 }
@@ -190,9 +191,9 @@ void pa_alsa_fdlist_free(struct pa_alsa_fdlist *fdl) {
     }
 
     if (fdl->ios) {
-        int i;
+        unsigned i;
         pa_assert(fdl->m);
-        for (i = 0;i < fdl->num_fds;i++)
+        for (i = 0; i < fdl->num_fds; i++)
             fdl->m->io_free(fdl->ios[i]);
         pa_xfree(fdl->ios);
     }
@@ -369,11 +370,18 @@ int pa_alsa_set_hw_params(
         goto finish;
 
     if (_periods > 0) {
-        dir = 1;
+
+        /* First we pass 0 as direction to get exactly what we asked
+         * for. That this is necessary is presumably a bug in ALSA */
+
+        dir = 0;
         if ((ret = snd_pcm_hw_params_set_periods_near(pcm_handle, hwparams, &_periods, &dir)) < 0) {
-            dir = -1;
-            if ((ret = snd_pcm_hw_params_set_periods_near(pcm_handle, hwparams, &_periods, &dir)) < 0)
-                goto finish;
+            dir = 1;
+            if ((ret = snd_pcm_hw_params_set_periods_near(pcm_handle, hwparams, &_periods, &dir)) < 0) {
+                dir = -1;
+                if ((ret = snd_pcm_hw_params_set_periods_near(pcm_handle, hwparams, &_periods, &dir)) < 0)
+                    goto finish;
+            }
         }
     }
 
@@ -403,7 +411,7 @@ int pa_alsa_set_hw_params(
     /* If the sample rate deviates too much, we need to resample */
     if (r < ss->rate*.95 || r > ss->rate*1.05)
         ss->rate = r;
-    ss->channels = c;
+    ss->channels = (uint8_t) c;
     ss->format = f;
 
     pa_assert(_periods > 0);
@@ -419,6 +427,8 @@ int pa_alsa_set_hw_params(
         *use_tsched = _use_tsched;
 
     ret = 0;
+
+    snd_pcm_nonblock(pcm_handle, 1);
 
 finish:
 
@@ -568,40 +578,60 @@ snd_pcm_t *pa_alsa_open_by_device_id(
             continue;
 
         d = pa_sprintf_malloc("%s:%s", device_table[i].name, dev_id);
-        pa_log_debug("Trying %s...", d);
 
-        if ((err = snd_pcm_open(&pcm_handle, d, mode,
-                                SND_PCM_NONBLOCK|
-                                SND_PCM_NO_AUTO_RESAMPLE|
-                                SND_PCM_NO_AUTO_CHANNELS|
-                                SND_PCM_NO_AUTO_FORMAT |
-                                SND_PCM_NO_SOFTVOL)) < 0) {
-            pa_log_info("Couldn't open PCM device %s: %s", d, snd_strerror(err));
-            pa_xfree(d);
-            continue;
+        for (;;) {
+            pa_log_debug("Trying %s...", d);
+
+            /* We don't pass SND_PCM_NONBLOCK here, since alsa-lib <=
+             * 1.0.17a would then ignore the SND_PCM_NO_xxx
+             * flags. Instead we enable nonblock mode afterwards via
+             * snd_pcm_nonblock(). Also see
+             * http://mailman.alsa-project.org/pipermail/alsa-devel/2008-August/010258.html */
+
+            if ((err = snd_pcm_open(&pcm_handle, d, mode,
+                                    /* SND_PCM_NONBLOCK| */
+                                    SND_PCM_NO_AUTO_RESAMPLE|
+                                    SND_PCM_NO_AUTO_CHANNELS|
+                                    SND_PCM_NO_AUTO_FORMAT)) < 0) {
+                pa_log_info("Couldn't open PCM device %s: %s", d, snd_strerror(err));
+                break;
+            }
+
+            try_ss.channels = device_table[i].map.channels;
+            try_ss.rate = ss->rate;
+            try_ss.format = ss->format;
+
+            if ((err = pa_alsa_set_hw_params(pcm_handle, &try_ss, nfrags, period_size, tsched_size, use_mmap, use_tsched, TRUE)) < 0) {
+
+                if (!pa_startswith(d, "plug:") && !pa_startswith(d, "plughw:")) {
+                    char *t;
+
+                    t = pa_sprintf_malloc("plug:%s", d);
+                    pa_xfree(d);
+                    d = t;
+
+                    snd_pcm_close(pcm_handle);
+                    continue;
+                }
+
+                pa_log_info("PCM device %s refused our hw parameters: %s", d, snd_strerror(err));
+                snd_pcm_close(pcm_handle);
+                break;
+            }
+
+            *ss = try_ss;
+            *map = device_table[i].map;
+            pa_assert(map->channels == ss->channels);
+            *dev = d;
+            return pcm_handle;
         }
 
-        try_ss.channels = device_table[i].map.channels;
-        try_ss.rate = ss->rate;
-        try_ss.format = ss->format;
-
-        if ((err = pa_alsa_set_hw_params(pcm_handle, &try_ss, nfrags, period_size, tsched_size, use_mmap, use_tsched, TRUE)) < 0) {
-            pa_log_info("PCM device %s refused our hw parameters: %s", d, snd_strerror(err));
-            pa_xfree(d);
-            snd_pcm_close(pcm_handle);
-            continue;
-        }
-
-        *ss = try_ss;
-        *map = device_table[i].map;
-        pa_assert(map->channels == ss->channels);
-        *dev = d;
-        return pcm_handle;
+        pa_xfree(d);
     }
 
     /* OK, we didn't find any good device, so let's try the raw plughw: stuff */
 
-    d = pa_sprintf_malloc("plughw:%s", dev_id);
+    d = pa_sprintf_malloc("hw:%s", dev_id);
     pa_log_debug("Trying %s as last resort...", d);
     pcm_handle = pa_alsa_open_by_device_string(d, dev, ss, map, mode, nfrags, period_size, tsched_size, use_mmap, use_tsched);
     pa_xfree(d);
@@ -635,8 +665,16 @@ snd_pcm_t *pa_alsa_open_by_device_string(
     d = pa_xstrdup(device);
 
     for (;;) {
+        pa_log_debug("Trying %s...", d);
 
-        if ((err = snd_pcm_open(&pcm_handle, d, mode, SND_PCM_NONBLOCK|
+        /* We don't pass SND_PCM_NONBLOCK here, since alsa-lib <=
+         * 1.0.17a would then ignore the SND_PCM_NO_xxx flags. Instead
+         * we enable nonblock mode afterwards via
+         * snd_pcm_nonblock(). Also see
+         * http://mailman.alsa-project.org/pipermail/alsa-devel/2008-August/010258.html */
+
+        if ((err = snd_pcm_open(&pcm_handle, d, mode,
+                                /*SND_PCM_NONBLOCK|*/
                                 SND_PCM_NO_AUTO_RESAMPLE|
                                 SND_PCM_NO_AUTO_CHANNELS|
                                 SND_PCM_NO_AUTO_FORMAT)) < 0) {
@@ -647,24 +685,23 @@ snd_pcm_t *pa_alsa_open_by_device_string(
 
         if ((err = pa_alsa_set_hw_params(pcm_handle, ss, nfrags, period_size, tsched_size, use_mmap, use_tsched, FALSE)) < 0) {
 
-            if (err == -EPERM) {
-                /* Hmm, some hw is very exotic, so we retry with plug, if without it didn't work */
+            /* Hmm, some hw is very exotic, so we retry with plug, if without it didn't work */
 
-                if (pa_startswith(d, "hw:")) {
-                    char *t = pa_sprintf_malloc("plughw:%s", d+3);
-                    pa_log_debug("Opening the device as '%s' didn't work, retrying with '%s'.", d, t);
-                    pa_xfree(d);
-                    d = t;
+            if (!pa_startswith(d, "plug:") && !pa_startswith(d, "plughw:")) {
+                char *t;
 
-                    snd_pcm_close(pcm_handle);
-                    continue;
-                }
-
-                pa_log("Failed to set hardware parameters on %s: %s", d, snd_strerror(err));
+                t = pa_sprintf_malloc("plug:%s", d);
                 pa_xfree(d);
+                d = t;
+
                 snd_pcm_close(pcm_handle);
-                return NULL;
+                continue;
             }
+
+            pa_log("Failed to set hardware parameters on %s: %s", d, snd_strerror(err));
+            pa_xfree(d);
+            snd_pcm_close(pcm_handle);
+            return NULL;
         }
 
         *dev = d;
@@ -808,7 +845,7 @@ int pa_alsa_calc_mixer_map(snd_mixer_elem_t *elem, const pa_channel_map *channel
     if (channel_map->channels > 1 &&
         ((playback && snd_mixer_selem_has_playback_volume_joined(elem)) ||
          (!playback && snd_mixer_selem_has_capture_volume_joined(elem)))) {
-        pa_log_info("ALSA device lacks independant volume controls for each channel, falling back to software volume control.");
+        pa_log_info("ALSA device lacks independant volume controls for each channel.");
         return -1;
     }
 
@@ -820,7 +857,7 @@ int pa_alsa_calc_mixer_map(snd_mixer_elem_t *elem, const pa_channel_map *channel
         id = alsa_channel_ids[channel_map->map[i]];
 
         if (!is_mono && id == SND_MIXER_SCHN_UNKNOWN) {
-            pa_log_info("Configured channel map contains channel '%s' that is unknown to the ALSA mixer. Falling back to software volume control.", pa_channel_position_to_string(channel_map->map[i]));
+            pa_log_info("Configured channel map contains channel '%s' that is unknown to the ALSA mixer.", pa_channel_position_to_string(channel_map->map[i]));
             return -1;
         }
 
@@ -832,7 +869,7 @@ int pa_alsa_calc_mixer_map(snd_mixer_elem_t *elem, const pa_channel_map *channel
         if ((playback && (!snd_mixer_selem_has_playback_channel(elem, id) || (is_mono && !snd_mixer_selem_is_playback_mono(elem)))) ||
             (!playback && (!snd_mixer_selem_has_capture_channel(elem, id) || (is_mono && !snd_mixer_selem_is_capture_mono(elem))))) {
 
-            pa_log_info("ALSA device lacks separate volumes control for channel '%s', falling back to software volume control.", pa_channel_position_to_string(channel_map->map[i]));
+            pa_log_info("ALSA device lacks separate volumes control for channel '%s'", pa_channel_position_to_string(channel_map->map[i]));
             return -1;
         }
 
@@ -848,56 +885,6 @@ int pa_alsa_calc_mixer_map(snd_mixer_elem_t *elem, const pa_channel_map *channel
     pa_log_info("All %u channels can be mapped to mixer channels.", channel_map->channels);
 
     return 0;
-}
-
-void pa_alsa_0dB_playback(snd_mixer_elem_t *elem) {
-    long min, max, v;
-
-    pa_assert(elem);
-
-    /* Try to enable 0 dB if possible. If ALSA cannot do dB, then use
-     * raw volume levels and fix them to 75% */
-
-    if (snd_mixer_selem_set_playback_dB_all(elem, 0, -1) >= 0)
-        return;
-
-    if (snd_mixer_selem_set_playback_dB_all(elem, 0, 1) >= 0)
-        return;
-
-    if (snd_mixer_selem_get_playback_volume_range(elem, &min, &max) < 0)
-        return;
-
-    v = min + ((max - min) * 3) / 4; /* 75% */
-
-    if (v <= min)
-        v = max;
-
-    snd_mixer_selem_set_playback_volume_all(elem, v);
-}
-
-void pa_alsa_0dB_capture(snd_mixer_elem_t *elem) {
-    long min, max, v;
-
-    pa_assert(elem);
-
-    /* Try to enable 0 dB if possible. If ALSA cannot do dB, then use
-     * raw volume levels and fix them to 75% */
-
-    if (snd_mixer_selem_set_capture_dB_all(elem, 0, -1) >= 0)
-        return;
-
-    if (snd_mixer_selem_set_capture_dB_all(elem, 0, 1) >= 0)
-        return;
-
-    if (snd_mixer_selem_get_capture_volume_range(elem, &min, &max) < 0)
-        return;
-
-    v = min + ((max - min) * 3) / 4; /* 75% */
-
-    if (v <= min)
-        v = max;
-
-    snd_mixer_selem_set_capture_volume_all(elem, v);
 }
 
 void pa_alsa_dump(snd_pcm_t *pcm) {
@@ -945,12 +932,17 @@ void pa_alsa_dump_status(snd_pcm_t *pcm) {
 
 static void alsa_error_handler(const char *file, int line, const char *function, int err, const char *fmt,...) {
     va_list ap;
+    char *alsa_file;
+
+    alsa_file = pa_sprintf_malloc("(alsa-lib)%s", file);
 
     va_start(ap, fmt);
 
-    pa_log_levelv_meta(PA_LOG_WARN, file, line, function, fmt, ap);
+    pa_log_levelv_meta(PA_LOG_INFO, alsa_file, line, function, fmt, ap);
 
     va_end(ap);
+
+    pa_xfree(alsa_file);
 }
 
 static pa_atomic_t n_error_handler_installed = PA_ATOMIC_INIT(0);
@@ -1106,14 +1098,38 @@ pa_rtpoll_item* pa_alsa_build_pollfd(snd_pcm_t *pcm, pa_rtpoll *rtpoll) {
         return NULL;
     }
 
-    item = pa_rtpoll_item_new(rtpoll, PA_RTPOLL_NEVER, n);
+    item = pa_rtpoll_item_new(rtpoll, PA_RTPOLL_NEVER, (unsigned) n);
     pollfd = pa_rtpoll_item_get_pollfd(item, NULL);
 
-    if ((err = snd_pcm_poll_descriptors(pcm, pollfd, n)) < 0) {
+    if ((err = snd_pcm_poll_descriptors(pcm, pollfd, (unsigned) n)) < 0) {
         pa_log("snd_pcm_poll_descriptors() failed: %s", snd_strerror(err));
         pa_rtpoll_item_free(item);
         return NULL;
     }
 
     return item;
+}
+
+pa_cvolume *pa_alsa_volume_divide(pa_cvolume *r, const pa_cvolume *t) {
+    unsigned i;
+
+    pa_assert(r);
+    pa_assert(t);
+    pa_assert(r->channels == t->channels);
+
+    for (i = 0; i < r->channels; i++) {
+        double a, b, c;
+
+        a = pa_sw_volume_to_linear(r->values[i]); /* the hw volume */
+        b = pa_sw_volume_to_linear(t->values[i]); /* the intended volume */
+
+        if (a <= 0)
+            c = 0;
+        else
+            c = b / a;
+
+        r->values[i] = pa_sw_volume_from_linear(c);
+    }
+
+    return r;
 }
