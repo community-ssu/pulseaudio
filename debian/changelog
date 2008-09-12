@@ -1,6 +1,8 @@
 pulseaudio (0.9.11-0maemo5) unstable; urgency=low
 
   * Add missing system.pa, now should start fine.
+  * debian/default.pa.maemo:
+    + Add Jyri configuration
 
  -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Fri, 12 Sep 2008 15:48:44 +0300
 
