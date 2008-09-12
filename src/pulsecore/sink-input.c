@@ -201,7 +201,8 @@ pa_sink_input* pa_sink_input_new(
                       data->resample_method,
                       ((flags & PA_SINK_INPUT_VARIABLE_RATE) ? PA_RESAMPLER_VARIABLE_RATE : 0) |
                       ((flags & PA_SINK_INPUT_NO_REMAP) ? PA_RESAMPLER_NO_REMAP : 0) |
-                      (core->disable_remixing || (flags & PA_SINK_INPUT_NO_REMIX) ? PA_RESAMPLER_NO_REMIX : 0)))) {
+                      (core->disable_remixing || (flags & PA_SINK_INPUT_NO_REMIX) ? PA_RESAMPLER_NO_REMIX : 0) |
+                      (core->disable_lfe_remixing ? PA_RESAMPLER_NO_LFE : 0)))) {
             pa_log_warn("Unsupported resampling operation.");
             return NULL;
         }
@@ -535,7 +536,7 @@ int pa_sink_input_peek(pa_sink_input *i, size_t slength /* in sink frames */, pa
              * data, so let's just hand out silence */
             pa_atomic_store(&i->thread_info.drained, 1);
 
-            pa_memblockq_seek(i->thread_info.render_memblockq, slength, PA_SEEK_RELATIVE);
+            pa_memblockq_seek(i->thread_info.render_memblockq, (int64_t) slength, PA_SEEK_RELATIVE);
             i->thread_info.playing_for = 0;
             if (i->thread_info.underrun_for != (uint64_t) -1)
                 i->thread_info.underrun_for += ilength;
@@ -633,7 +634,7 @@ void pa_sink_input_drop(pa_sink_input *i, size_t nbytes /* in sink sample spec *
 /* Called from thread context */
 void pa_sink_input_process_rewind(pa_sink_input *i, size_t nbytes /* in sink sample spec */) {
     size_t lbq;
-    pa_bool_t called;
+    pa_bool_t called = FALSE;
     pa_sink_input_assert_ref(i);
 
     pa_assert(PA_SINK_INPUT_IS_LINKED(i->thread_info.state));
@@ -756,14 +757,11 @@ pa_usec_t pa_sink_input_set_requested_latency(pa_sink_input *i, pa_usec_t usec) 
 
     if (PA_SINK_INPUT_IS_LINKED(i->state))
         pa_assert_se(pa_asyncmsgq_send(i->sink->asyncmsgq, PA_MSGOBJECT(i), PA_SINK_INPUT_MESSAGE_SET_REQUESTED_LATENCY, &usec, 0, NULL) == 0);
-    else {
+    else
         /* If this sink input is not realized yet, we have to touch
          * the thread info data directly */
 
-        usec = fixup_latency(i->sink, usec);
         i->thread_info.requested_sink_latency = usec;
-        i->sink->thread_info.requested_latency_valid = FALSE;
-    }
 
     return usec;
 }

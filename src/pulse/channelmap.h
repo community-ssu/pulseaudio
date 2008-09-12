@@ -142,21 +142,37 @@ typedef enum pa_channel_position {
 
 /** A list of channel mapping definitions for pa_channel_map_init_auto() */
 typedef enum pa_channel_map_def {
-    PA_CHANNEL_MAP_AIFF,   /**< The mapping from RFC3551, which is based on AIFF-C */
-    PA_CHANNEL_MAP_ALSA,   /**< The default mapping used by ALSA */
-    PA_CHANNEL_MAP_AUX,    /**< Only aux channels */
-    PA_CHANNEL_MAP_WAVEEX, /**< Microsoft's WAVEFORMATEXTENSIBLE mapping */
-    PA_CHANNEL_MAP_OSS,    /**< The default channel mapping used by OSS as defined in the OSS 4.0 API specs */
+    PA_CHANNEL_MAP_AIFF,
+    /**< The mapping from RFC3551, which is based on AIFF-C */
 
-    PA_CHANNEL_MAP_DEFAULT = PA_CHANNEL_MAP_AIFF /**< The default channel map */
+    PA_CHANNEL_MAP_ALSA,
+    /**< The default mapping used by ALSA */
+
+    PA_CHANNEL_MAP_AUX,
+    /**< Only aux channels */
+
+    PA_CHANNEL_MAP_WAVEEX,
+    /**< Microsoft's WAVEFORMATEXTENSIBLE mapping */
+
+    PA_CHANNEL_MAP_OSS,
+    /**< The default channel mapping used by OSS as defined in the OSS 4.0 API specs */
+
+    /**< Upper limit of valid channel mapping definitions */
+    PA_CHANNEL_MAP_DEF_MAX,
+
+    PA_CHANNEL_MAP_DEFAULT = PA_CHANNEL_MAP_AIFF
+    /**< The default channel map */
 } pa_channel_map_def_t;
 
 /** A channel map which can be used to attach labels to specific
  * channels of a stream. These values are relevant for conversion and
  * mixing of streams */
 typedef struct pa_channel_map {
-    uint8_t channels; /**< Number of channels */
-    pa_channel_position_t map[PA_CHANNELS_MAX]; /**< Channel labels */
+    uint8_t channels;
+    /**< Number of channels */
+
+    pa_channel_position_t map[PA_CHANNELS_MAX];
+    /**< Channel labels */
 } pa_channel_map;
 
 /** Initialize the specified channel map and return a pointer to it */
@@ -198,8 +214,12 @@ pa_channel_map *pa_channel_map_parse(pa_channel_map *map, const char *s);
 /** Compare two channel maps. Return 1 if both match. */
 int pa_channel_map_equal(const pa_channel_map *a, const pa_channel_map *b) PA_GCC_PURE;
 
-/** Return non-zero of the specified channel map is considered valid */
+/** Return non-zero if the specified channel map is considered valid */
 int pa_channel_map_valid(const pa_channel_map *map) PA_GCC_PURE;
+
+/** Return non-zero if the specified channel map is compatible with
+ * the specified sample spec. \since 0.9.12 */
+int pa_channel_map_compatible(const pa_channel_map *map, const pa_sample_spec *ss) PA_GCC_PURE;
 
 PA_C_DECL_END
 

@@ -16,11 +16,14 @@
 # along with PulseAudio; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 
+# This startup script is used only if PulseAudio is started per-user
+# (i.e. not in system mode)
+
 .nofail
 
 ### Load something into the sample cache
 #load-sample-lazy x11-bell /usr/share/sounds/gtk-events/activate.wav
-load-sample-lazy pulse-hotplug /usr/share/sounds/startup3.wav
+#load-sample-lazy pulse-hotplug /usr/share/sounds/startup3.wav
 #load-sample-lazy pulse-coldplug /usr/share/sounds/startup3.wav
 #load-sample-lazy pulse-access /usr/share/sounds/generic.wav
 
@@ -45,6 +48,11 @@ load-module module-hal-detect
 load-module module-detect
 .endif
 
+### Automatically load driver modules for Bluetooth hardware
+.ifexists module-bluetooth-discover@PA_SOEXT@
+load-module module-bluetooth-discover
+.endif
+
 ### Load several protocols
 .ifexists module-esound-protocol-unix@PA_SOEXT@
 load-module module-esound-protocol-unix
@@ -64,8 +72,9 @@ load-module module-native-protocol-unix
 #load-module module-null-sink sink_name=rtp format=s16be channels=2 rate=44100 description="RTP Multicast Sink"
 #load-module module-rtp-send source=rtp.monitor
 
-### Automatically restore the volume of playback streams
-load-module module-volume-restore
+### Automatically restore the volume of streams and devices
+load-module module-stream-restore
+load-module module-device-restore
 
 ### Automatically restore the default sink/source when changed by the user during runtime
 load-module module-default-device-restore

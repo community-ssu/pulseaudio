@@ -45,7 +45,7 @@ endif
 #     Compiler/linker flags       #
 ###################################
 
-AM_CFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src/modules -I$(top_builddir)/src/modules/rtp -I$(top_builddir)/src/modules/gconf
+AM_CFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src/modules -I$(top_builddir)/src/modules/rtp -I$(top_builddir)/src/modules/gconf -I$(top_builddir)/src/modules/bluetooth
 AM_CFLAGS += $(PTHREAD_CFLAGS) -D_POSIX_PTHREAD_SEMANTICS
 AM_CFLAGS += $(LTDLINCL)
 AM_CFLAGS += $(LIBSAMPLERATE_CFLAGS) $(LIBSNDFILE_CFLAGS) $(LIBSPEEX_CFLAGS)
@@ -56,6 +56,8 @@ AM_CFLAGS += -DPA_SYSTEM_RUNTIME_PATH=\"$(PA_SYSTEM_RUNTIME_PATH)\"
 AM_CFLAGS += -DPA_SYSTEM_CONFIG_PATH=\"$(PA_SYSTEM_CONFIG_PATH)\"
 AM_CFLAGS += -DPA_SYSTEM_STATE_PATH=\"$(PA_SYSTEM_STATE_PATH)\"
 AM_CFLAGS += -DAO_REQUIRE_CAS
+AM_CFLAGS += -DPULSE_LOCALEDIR=\"$(pulselocaledir)\"
+AM_CFLAGS += -DPA_MACHINE_ID=\"$(localstatedir)/lib/dbus/machine-id\"
 
 # This cool debug trap works on i386/gcc only
 AM_CFLAGS += '-DDEBUG_TRAP=__asm__("int $$3")'
@@ -96,6 +98,7 @@ EXTRA_DIST = \
 		pulse/version.h.in \
 		daemon/daemon.conf.in \
 		daemon/default.pa.in \
+		daemon/system.pa.in \
 		daemon/default.pa.win32 \
 		depmod.py \
 		daemon/esdcompat.in \
@@ -108,6 +111,7 @@ EXTRA_DIST = \
 
 pulseconf_DATA = \
 		default.pa \
+		system.pa \
 		daemon.conf \
 		client.conf
 
@@ -197,22 +201,22 @@ paplay_LDADD = $(AM_LDADD) libpulse.la $(LIBSNDFILE_LIBS)
 paplay_CFLAGS = $(AM_CFLAGS) $(LIBSNDFILE_CFLAGS)
 paplay_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
-pactl_SOURCES = utils/pactl.c pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
+pactl_SOURCES = utils/pactl.c pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h pulsecore/log.c pulsecore/log.h pulsecore/rtclock.c pulsecore/rtclock.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
 pactl_LDADD = $(AM_LDADD) libpulse.la $(LIBSNDFILE_LIBS)
 pactl_CFLAGS = $(AM_CFLAGS) $(LIBSNDFILE_CFLAGS)
 pactl_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
-pasuspender_SOURCES = utils/pasuspender.c pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
+pasuspender_SOURCES = utils/pasuspender.c pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h pulsecore/log.c pulsecore/log.h pulsecore/rtclock.c pulsecore/rtclock.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
 pasuspender_LDADD = $(AM_LDADD) libpulse.la $(LIBSNDFILE_LIBS)
 pasuspender_CFLAGS = $(AM_CFLAGS) $(LIBSNDFILE_CFLAGS)
 pasuspender_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
-pacmd_SOURCES = utils/pacmd.c pulsecore/pid.c pulsecore/pid.h pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
+pacmd_SOURCES = utils/pacmd.c pulsecore/pid.c pulsecore/pid.h pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h pulsecore/log.c pulsecore/log.h pulsecore/rtclock.c pulsecore/rtclock.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
 pacmd_CFLAGS = $(AM_CFLAGS)
 pacmd_LDADD = $(AM_LDADD) libpulse.la
 pacmd_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
-pax11publish_SOURCES = utils/pax11publish.c pulsecore/x11prop.c pulsecore/x11prop.h pulse/client-conf.c pulse/client-conf.h pulsecore/authkey.h pulsecore/authkey.c pulsecore/random.h pulsecore/random.c pulsecore/conf-parser.c pulsecore/conf-parser.h pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h  pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
+pax11publish_SOURCES = utils/pax11publish.c pulsecore/x11prop.c pulsecore/x11prop.h pulse/client-conf.c pulse/client-conf.h pulsecore/authkey.h pulsecore/authkey.c pulsecore/random.h pulsecore/random.c pulsecore/conf-parser.c pulsecore/rtclock.c pulsecore/rtclock.h pulsecore/conf-parser.h pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h  pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
 pax11publish_CFLAGS = $(AM_CFLAGS) $(X_CFLAGS)
 pax11publish_LDADD = $(AM_LDADD) libpulse.la $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS)
 pax11publish_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
@@ -258,7 +262,8 @@ noinst_PROGRAMS = \
 		envelope-test \
 		proplist-test \
 		rtstutter \
-		stripnul
+		stripnul \
+		lock-autospawn-test
 
 if HAVE_SIGXCPU
 noinst_PROGRAMS += \
@@ -448,6 +453,11 @@ stripnul_LDADD = $(AM_LDADD) libpulsecore.la
 stripnul_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
 stripnul_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
 
+lock_autospawn_test_SOURCES = tests/lock-autospawn-test.c
+lock_autospawn_test_LDADD = $(AM_LDADD) libpulsecore.la
+lock_autospawn_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
+lock_autospawn_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+
 ###################################
 #         Client library          #
 ###################################
@@ -477,7 +487,8 @@ pulseinclude_HEADERS = \
 		pulse/volume.h \
 		pulse/xmalloc.h \
 		pulse/proplist.h \
-		pulse/gccmacro.h
+		pulse/gccmacro.h \
+		pulse/ext-stream-restore.h
 
 if HAVE_AVAHI
 pulseinclude_HEADERS += \
@@ -528,7 +539,9 @@ libpulse_la_SOURCES = \
 		pulse/util.c pulse/util.h \
 		pulse/volume.c pulse/volume.h \
 		pulse/xmalloc.c pulse/xmalloc.h \
-		pulse/proplist.c pulse/proplist.h
+		pulse/proplist.c pulse/proplist.h \
+		pulse/ext-stream-restore.c pulse/ext-stream-restore.h \
+		pulse/i18n.c pulse/i18n.h
 
 # Internal stuff that is shared with libpulsecore
 libpulse_la_SOURCES += \
@@ -586,7 +599,7 @@ endif
 
 libpulse_la_CFLAGS = $(AM_CFLAGS)
 libpulse_la_LDFLAGS = -version-info $(LIBPULSE_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
-libpulse_la_LIBADD = $(AM_LIBADD) $(WINSOCK_LIBS) $(LIBICONV)
+libpulse_la_LIBADD = $(AM_LIBADD) $(WINSOCK_LIBS) $(LTLIBICONV)
 
 if HAVE_X11
 libpulse_la_CFLAGS += $(X_CFLAGS)
@@ -604,13 +617,14 @@ libpulse_simple_la_SOURCES = \
 		pulsecore/core-util.c pulsecore/core-util.h  \
 		pulsecore/core-error.c pulsecore/core-error.h \
 		pulsecore/once.c pulsecore/once.h \
+		pulsecore/rtclock.c pulsecore/rtclock.h \
 		$(PA_THREAD_OBJS)
 
 libpulse_simple_la_CFLAGS = $(AM_CFLAGS)
 libpulse_simple_la_LIBADD = $(AM_LIBADD) libpulse.la
 libpulse_simple_la_LDFLAGS = -version-info $(LIBPULSE_SIMPLE_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
 
-libpulse_browse_la_SOURCES = pulse/browser.c pulse/browser.h pulsecore/avahi-wrap.c pulsecore/avahi-wrap.h pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h  pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
+libpulse_browse_la_SOURCES = pulse/browser.c pulse/browser.h pulsecore/avahi-wrap.c pulsecore/avahi-wrap.h pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h  pulsecore/log.c pulsecore/log.h pulsecore/rtclock.c pulsecore/rtclock.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
 libpulse_browse_la_CFLAGS = $(AM_CFLAGS) $(AVAHI_CFLAGS)
 libpulse_browse_la_LIBADD = $(AM_LIBADD) libpulse.la $(AVAHI_LIBS)
 libpulse_browse_la_LDFLAGS = -version-info $(LIBPULSE_BROWSE_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
@@ -618,6 +632,7 @@ libpulse_browse_la_LDFLAGS = -version-info $(LIBPULSE_BROWSE_VERSION_INFO) -Wl,-
 libpulse_mainloop_glib_la_SOURCES = \
 		pulse/glib-mainloop.h pulse/glib-mainloop.c \
 		pulsecore/log.c pulsecore/log.h \
+		pulsecore/rtclock.c pulsecore/rtclock.h \
 		pulsecore/core-util.c pulsecore/core-util.h  \
 		pulsecore/core-error.c pulsecore/core-error.h \
 		pulsecore/once.c pulsecore/once.h \
@@ -684,7 +699,7 @@ noinst_HEADERS = \
 		pulsecore/pid.h \
 		pulsecore/play-memchunk.h \
 		pulsecore/play-memblockq.h \
-		pulsecore/props.h \
+		pulsecore/shared.h \
 		pulsecore/queue.h \
 		pulsecore/random.h \
 		pulsecore/resampler.h \
@@ -723,7 +738,8 @@ libpulsecore_la_SOURCES = \
 		pulse/util.c pulse/util.h \
 		pulse/volume.c pulse/volume.h \
 		pulse/xmalloc.c pulse/xmalloc.h \
-		pulse/proplist.c pulse/proplist.h
+		pulse/proplist.c pulse/proplist.h \
+		pulse/i18n.c pulse/i18n.h
 
 # Pure core stuff (some are shared in libpulse though).
 libpulsecore_la_SOURCES += \
@@ -756,7 +772,7 @@ libpulsecore_la_SOURCES += \
 		pulsecore/play-memchunk.c pulsecore/play-memchunk.h \
 		pulsecore/play-memblockq.c pulsecore/play-memblockq.h \
 		pulsecore/poll.c pulsecore/poll.h \
-		pulsecore/props.c pulsecore/props.h \
+		pulsecore/shared.c pulsecore/shared.h \
 		pulsecore/queue.c pulsecore/queue.h \
 		pulsecore/random.c pulsecore/random.h \
 		pulsecore/resampler.c pulsecore/resampler.h \
@@ -793,6 +809,7 @@ libpulsecore_la_SOURCES += \
 		pulsecore/start-child.c pulsecore/start-child.h \
 		pulsecore/envelope.c pulsecore/envelope.h \
 		pulsecore/proplist-util.c pulsecore/proplist-util.h \
+		pulsecore/lock-autospawn.c pulsecore/lock-autospawn.h \
 		$(PA_THREAD_OBJS)
 
 if OS_IS_WIN32
@@ -802,7 +819,7 @@ endif
 
 libpulsecore_la_CPPFLAGS = $(AM_CPPFLAGS) $(LIBOIL_CFLAGS)
 libpulsecore_la_LDFLAGS = -version-info $(LIBPULSECORE_VERSION_INFO)
-libpulsecore_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(LIBSPEEX_LIBS) $(WINSOCK_LIBS) $(LIBOIL_LIBS) $(LIBICONV) libffmpeg-resampler.la
+libpulsecore_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(LIBSPEEX_LIBS) $(WINSOCK_LIBS) $(LIBOIL_LIBS) $(LTLIBICONV) libffmpeg-resampler.la
 
 ###################################
 #   Plug-in support libraries     #
@@ -825,7 +842,7 @@ noinst_HEADERS += \
 		pulsecore/pstream-util.h \
 		pulsecore/pdispatch.h \
 		pulsecore/authkey.h \
-		pulsecore/authkey-prop.h \
+		pulsecore/auth-cookie.h \
 		pulsecore/strlist.h \
 		pulsecore/protocol-simple.h \
 		pulsecore/esound.h \
@@ -855,7 +872,7 @@ modlibexec_LTLIBRARIES = \
 		libpstream-util.la \
 		libpdispatch.la \
 		libauthkey.la \
-		libauthkey-prop.la \
+		libauth-cookie.la \
 		libstrlist.la \
 		libprotocol-simple.la \
 		libprotocol-http.la \
@@ -956,7 +973,7 @@ libprotocol_http_la_LIBADD = $(AM_LIBADD) libsocket-server.la libioline.la libpu
 
 libprotocol_native_la_SOURCES = pulsecore/protocol-native.c pulsecore/protocol-native.h pulsecore/native-common.h
 libprotocol_native_la_LDFLAGS = -avoid-version
-libprotocol_native_la_LIBADD = $(AM_LIBADD) libsocket-server.la libpstream.la libpstream-util.la libpdispatch.la libtagstruct.la libauthkey.la libauthkey-prop.la libstrlist.la libpulsecore.la libiochannel.la libipacl.la
+libprotocol_native_la_LIBADD = $(AM_LIBADD) libsocket-server.la libpstream.la libpstream-util.la libpdispatch.la libtagstruct.la libauthkey.la libauth-cookie.la libstrlist.la libpulsecore.la libiochannel.la libipacl.la
 
 libtagstruct_la_SOURCES = pulsecore/tagstruct.c pulsecore/tagstruct.h
 libtagstruct_la_LDFLAGS = -avoid-version
@@ -964,15 +981,15 @@ libtagstruct_la_LIBADD = $(AM_LIBADD) libpulsecore.la $(WINSOCK_LIBS)
 
 libprotocol_esound_la_SOURCES = pulsecore/protocol-esound.c pulsecore/protocol-esound.h pulsecore/esound.h
 libprotocol_esound_la_LDFLAGS = -avoid-version
-libprotocol_esound_la_LIBADD = $(AM_LIBADD) libsocket-server.la libiochannel.la libauthkey.la libpulsecore.la libipacl.la
+libprotocol_esound_la_LIBADD = $(AM_LIBADD) libsocket-server.la libiochannel.la libauthkey.la libauth-cookie.la libpulsecore.la libipacl.la
 
 libauthkey_la_SOURCES = pulsecore/authkey.c pulsecore/authkey.h
 libauthkey_la_LDFLAGS = -avoid-version
 libauthkey_la_LIBADD = $(AM_LIBADD) libpulsecore.la
 
-libauthkey_prop_la_SOURCES = pulsecore/authkey-prop.c pulsecore/authkey-prop.h
-libauthkey_prop_la_LDFLAGS = -avoid-version
-libauthkey_prop_la_LIBADD = $(AM_LIBADD) libpulsecore.la
+libauth_cookie_la_SOURCES = pulsecore/auth-cookie.c pulsecore/auth-cookie.h
+libauth_cookie_la_LDFLAGS = -avoid-version
+libauth_cookie_la_LIBADD = $(AM_LIBADD) libauthkey.la libpulsecore.la
 
 libsocket_util_la_SOURCES = \
 		pulsecore/inet_ntop.c pulsecore/inet_ntop.h \
@@ -1015,6 +1032,7 @@ modlibexec_LTLIBRARIES += \
 		module-detect.la \
 		module-volume-restore.la \
 		module-device-restore.la \
+		module-stream-restore.la \
 		module-default-device-restore.la \
 		module-always-sink.la \
 		module-rescue-streams.la \
@@ -1142,10 +1160,14 @@ endif
 
 if HAVE_BLUEZ
 modlibexec_LTLIBRARIES += \
-		module-bt-proximity.la
+		module-bluetooth-proximity.la \
+		module-bluetooth-discover.la \
+		libbluetooth-ipc.la \
+		libbluetooth-sbc.la \
+		module-bluetooth-device.la
 
 pulselibexec_PROGRAMS += \
-		bt-proximity-helper
+		proximity-helper
 endif
 
 # These are generated by a M4 script
@@ -1195,12 +1217,15 @@ SYMDEF_FILES = \
 		modules/module-jack-source-symdef.h \
 		modules/module-volume-restore-symdef.h \
 		modules/module-device-restore-symdef.h \
+		modules/module-stream-restore-symdef.h \
 		modules/module-default-device-restore-symdef.h \
 		modules/module-always-sink-symdef.h \
 		modules/module-rescue-streams-symdef.h \
 		modules/module-suspend-on-idle-symdef.h \
 		modules/module-hal-detect-symdef.h \
-		modules/module-bt-proximity-symdef.h \
+		modules/bluetooth/module-bluetooth-proximity-symdef.h \
+		modules/bluetooth/module-bluetooth-discover-symdef.h \
+		modules/bluetooth/module-bluetooth-device-symdef.h \
 		modules/gconf/module-gconf-symdef.h \
 		modules/module-position-event-sounds-symdef.h \
 		modules/module-console-kit-symdef.h
@@ -1212,6 +1237,7 @@ $(SYMDEF_FILES): modules/module-defs.h.m4
 	$(MKDIR_P) modules
 	$(MKDIR_P) modules/gconf
 	$(MKDIR_P) modules/rtp
+	$(MKDIR_P) modules/bluetooth
 	$(M4) -Dfname="$@" $< > $@
 
 # Simple protocol
@@ -1337,11 +1363,11 @@ module_match_la_LIBADD = $(AM_LIBADD) libpulsecore.la
 module_tunnel_sink_la_SOURCES = modules/module-tunnel.c
 module_tunnel_sink_la_CFLAGS = -DTUNNEL_SINK=1 $(AM_CFLAGS)
 module_tunnel_sink_la_LDFLAGS = -module -avoid-version
-module_tunnel_sink_la_LIBADD = $(AM_LIBADD) libpulsecore.la libsocket-client.la libpstream.la libpstream-util.la libpdispatch.la libtagstruct.la libauthkey.la libauthkey-prop.la libsocket-util.la libiochannel.la
+module_tunnel_sink_la_LIBADD = $(AM_LIBADD) libpulsecore.la libsocket-client.la libpstream.la libpstream-util.la libpdispatch.la libtagstruct.la libauthkey.la libauth-cookie.la libsocket-util.la libiochannel.la
 
 module_tunnel_source_la_SOURCES = modules/module-tunnel.c
 module_tunnel_source_la_LDFLAGS = -module -avoid-version
-module_tunnel_source_la_LIBADD = $(AM_LIBADD) libpulsecore.la libsocket-client.la libpstream.la libpstream-util.la libpdispatch.la libtagstruct.la libauthkey.la libauthkey-prop.la libsocket-util.la libiochannel.la
+module_tunnel_source_la_LIBADD = $(AM_LIBADD) libpulsecore.la libsocket-client.la libpstream.la libpstream-util.la libpdispatch.la libtagstruct.la libauthkey.la libauth-cookie.la libsocket-util.la libiochannel.la
 
 # X11
 
@@ -1353,7 +1379,7 @@ module_x11_bell_la_LIBADD = $(AM_LIBADD) $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA
 module_x11_publish_la_SOURCES = modules/module-x11-publish.c
 module_x11_publish_la_CFLAGS = $(AM_CFLAGS) $(X_CFLAGS)
 module_x11_publish_la_LDFLAGS = -module -avoid-version
-module_x11_publish_la_LIBADD = $(AM_LIBADD) $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS) libx11wrap.la libauthkey.la libauthkey-prop.la libx11prop.la libstrlist.la libpulsecore.la
+module_x11_publish_la_LIBADD = $(AM_LIBADD) $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS) libx11wrap.la libauthkey.la libauth-cookie.la libx11prop.la libstrlist.la libprotocol-native.la libpulsecore.la
 
 module_x11_xsmp_la_SOURCES = modules/module-x11-xsmp.c
 module_x11_xsmp_la_CFLAGS = $(AM_CFLAGS) $(X_CFLAGS)
@@ -1444,11 +1470,17 @@ module_position_event_sounds_la_LDFLAGS = -module -avoid-version
 module_position_event_sounds_la_LIBADD = $(AM_LIBADD) libpulsecore.la
 module_position_event_sounds_CFLAGS = $(AM_CFLAGS)
 
-# Device volume restore module
+# Device volume/muted restore module
 module_device_restore_la_SOURCES = modules/module-device-restore.c
 module_device_restore_la_LDFLAGS = -module -avoid-version
 module_device_restore_la_LIBADD = $(AM_LIBADD) libpulsecore.la -lgdbm
 module_device_restore_la_CFLAGS = $(AM_CFLAGS)
+
+# Stream volume/muted/device restore module
+module_stream_restore_la_SOURCES = modules/module-stream-restore.c
+module_stream_restore_la_LDFLAGS = -module -avoid-version
+module_stream_restore_la_LIBADD = $(AM_LIBADD) libtagstruct.la libprotocol-native.la libpulsecore.la -lgdbm
+module_stream_restore_la_CFLAGS = $(AM_CFLAGS)
 
 # Default sink/source restore module
 module_default_device_restore_la_SOURCES = modules/module-default-device-restore.c
@@ -1510,8 +1542,8 @@ module_hal_detect_la_CFLAGS = $(AM_CFLAGS) $(HAL_CFLAGS)
 
 module_console_kit_la_SOURCES = modules/module-console-kit.c
 module_console_kit_la_LDFLAGS = -module -avoid-version
-module_console_kit_la_LIBADD = $(AM_LIBADD) $(HAL_LIBS) libpulsecore.la libdbus-util.la
-module_console_kit_la_CFLAGS = $(AM_CFLAGS) $(HAL_CFLAGS)
+module_console_kit_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la
+module_console_kit_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
 
 # GConf support
 module_gconf_la_SOURCES = modules/gconf/module-gconf.c
@@ -1525,15 +1557,36 @@ gconf_helper_CFLAGS = $(AM_CFLAGS) $(GCONF_CFLAGS)
 gconf_helper_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 # Bluetooth proximity
-module_bt_proximity_la_SOURCES = modules/module-bt-proximity.c
-module_bt_proximity_la_LDFLAGS = -module -avoid-version
-module_bt_proximity_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la
-module_bt_proximity_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS) -DPA_BT_PROXIMITY_HELPER=\"$(pulselibexecdir)/bt-proximity-helper\"
+module_bluetooth_proximity_la_SOURCES = modules/bluetooth/module-bluetooth-proximity.c
+module_bluetooth_proximity_la_LDFLAGS = -module -avoid-version
+module_bluetooth_proximity_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la
+module_bluetooth_proximity_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS) -DPA_BT_PROXIMITY_HELPER=\"$(pulselibexecdir)/proximity-helper\"
 
-bt_proximity_helper_SOURCES = modules/bt-proximity-helper.c
-bt_proximity_helper_LDADD = $(AM_LDADD) $(BLUEZ_LIBS)
-bt_proximity_helper_CFLAGS = $(AM_CFLAGS) $(BLUEZ_CFLAGS)
-bt_proximity_helper_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
+proximity_helper_SOURCES = modules/bluetooth/proximity-helper.c
+proximity_helper_LDADD = $(AM_LDADD) $(BLUEZ_LIBS)
+proximity_helper_CFLAGS = $(AM_CFLAGS) $(BLUEZ_CFLAGS)
+proximity_helper_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
+
+# Bluetooth sink / source
+module_bluetooth_discover_la_SOURCES = modules/bluetooth/module-bluetooth-discover.c
+module_bluetooth_discover_la_LDFLAGS = -module -avoid-version
+module_bluetooth_discover_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la
+module_bluetooth_discover_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
+
+libbluetooth_sbc_la_SOURCES = modules/bluetooth/sbc.c modules/bluetooth/sbc.h modules/bluetooth/sbc_tables.h modules/bluetooth/sbc_math.h
+libbluetooth_sbc_la_LDFLAGS = -avoid-version
+libbluetooth_sbc_la_LIBADD = $(AM_LIBADD)
+libbluetooth_sbc_la_CFLAGS = $(AM_CFLAGS)
+
+libbluetooth_ipc_la_SOURCES = modules/bluetooth/ipc.c modules/bluetooth/ipc.h
+libbluetooth_ipc_la_LDFLAGS = -avoid-version
+libbluetooth_ipc_la_LIBADD = $(AM_LIBADD)
+libbluetooth_ipc_la_CFLAGS = $(AM_CFLAGS)
+
+module_bluetooth_device_la_SOURCES = modules/bluetooth/module-bluetooth-device.c
+module_bluetooth_device_la_LDFLAGS = -module -avoid-version
+module_bluetooth_device_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la libbluetooth-ipc.la libbluetooth-sbc.la libsocket-util.la
+module_bluetooth_device_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
 
 ###################################
 #        Some minor stuff         #
@@ -1543,7 +1596,7 @@ suid: pulseaudio .libs/lt-pulseaudio
 	chown root $^
 	chmod u+s $^
 
-CLEANFILES = esdcompat client.conf default.pa daemon.conf start-pulseaudio-x11
+CLEANFILES = esdcompat client.conf default.pa system.pa daemon.conf start-pulseaudio-x11
 
 esdcompat: daemon/esdcompat.in Makefile
 	sed -e 's,@PACKAGE_VERSION\@,$(PACKAGE_VERSION),g' \
@@ -1562,8 +1615,14 @@ client.conf: pulse/client.conf.in Makefile
 if OS_IS_WIN32
 default.pa: daemon/default.pa.win32
 	cp $< $@
+system.pa: daemon/default.pa.win32
+	cp $< $@
 else
 default.pa: daemon/default.pa.in Makefile
+	sed -e 's,@PA_BINARY\@,$(PA_BINARY),g' \
+            -e 's,@PA_DLSEARCHPATH\@,$(modlibexecdir),g' \
+	    -e 's,@PA_SOEXT\@,.so,g' < $< > $@
+system.pa: daemon/system.pa.in Makefile
 	sed -e 's,@PA_BINARY\@,$(PA_BINARY),g' \
             -e 's,@PA_DLSEARCHPATH\@,$(modlibexecdir),g' \
 	    -e 's,@PA_SOEXT\@,.so,g' < $< > $@
@@ -1576,7 +1635,7 @@ daemon.conf: daemon/daemon.conf.in Makefile
 install-exec-hook:
 	chown root $(DESTDIR)$(bindir)/pulseaudio ; true
 	chmod u+s $(DESTDIR)$(bindir)/pulseaudio
-	-chmod u+s $(DESTDIR)$(pulselibexecdir)/bt-proximity-helper
+	-chmod u+s $(DESTDIR)$(pulselibexecdir)/proximity-helper
 	ln -sf pacat $(DESTDIR)$(bindir)/parec
 	rm -f $(DESTDIR)$(modlibexecdir)/*.a
 	rm -f $(DESTDIR)$(libdir)/libpulsedsp.a
@@ -1593,7 +1652,7 @@ update-ffmpeg:
 update-map-file:
 	( echo "PULSE_0 {" ; \
 	  echo "global:" ; \
-	  ctags -I PA_GCC_PURE,PA_GCC_CONST -f - --c-kinds=p $(pulseinclude_HEADERS) | awk '/^pa_/ { print $$1 ";" }' | sort ; \
+	  ctags -I PA_GCC_MALLOC,PA_GCC_ALLOC_SIZE2,PA_GCC_ALLOC_SIZE,PA_GCC_PURE,PA_GCC_CONST,PA_GCC_DEPRECATED,PA_GCC_PRINTF_ATTR -f - --c-kinds=p $(pulseinclude_HEADERS) | awk '/^pa_/ { print $$1 ";" }' | sort ; \
 	  echo "local:" ;  \
 	  echo "*;" ; \
 	  echo "};" ) > $(srcdir)/map-file
