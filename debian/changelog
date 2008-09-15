@@ -1,8 +1,8 @@
-pulseaudio (0.9.11-0maemo6) UNRELEASED; urgency=low
+pulseaudio (0.9.12git~20080915-0maemo1) unstable; urgency=low
 
-  * post-release update.
+  * Imported git version 618873, including 0.9.12 + Bluez + fix.
 
- -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Fri, 12 Sep 2008 21:50:18 +0300
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Mon, 15 Sep 2008 12:03:37 +0300
 
 pulseaudio (0.9.11-0maemo5) unstable; urgency=low
 
