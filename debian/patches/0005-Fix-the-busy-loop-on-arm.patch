@@ -1,35 +1,37 @@
-From 04264812e56976eb391f04a316601b9ff9a6d4dd Mon Sep 17 00:00:00 2001
+From 0e530f516b4a0f838c98e6e5457f70ed0665227e Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Mon, 25 Aug 2008 18:51:01 +0300
 Subject: [PATCH] Fix the busy loop on arm
 
 ---
- src/modules/module-alsa-sink.c |   16 +++++++++++++---
- 1 files changed, 13 insertions(+), 3 deletions(-)
+ src/modules/module-alsa-sink.c |   23 ++++++++++++++++++++---
+ 1 files changed, 20 insertions(+), 3 deletions(-)
 
 diff --git a/src/modules/module-alsa-sink.c b/src/modules/module-alsa-sink.c
-index 8e66f79..0135a0b 100644
+index b8bef93..78840c5 100644
 --- a/src/modules/module-alsa-sink.c
 +++ b/src/modules/module-alsa-sink.c
-@@ -69,7 +69,8 @@ PA_MODULE_USAGE(
+@@ -72,7 +72,9 @@ PA_MODULE_USAGE(
+         "mmap=<enable memory mapping?> "
          "tsched=<enable system timer based scheduling mode?> "
          "tsched_buffer_size=<buffer size when using timer based scheduling> "
-         "tsched_buffer_watermark=<lower fill watermark> "
--        "mixer_reset=<reset hw volume and mute settings to sane defaults when falling back to software?>");
+-        "tsched_buffer_watermark=<lower fill watermark>");
++        "tsched_buffer_watermark=<lower fill watermark> "
 +        "mixer_reset=<reset hw volume and mute settings to sane defaults when falling back to software?>"
 +	"hwbuf_min_frames_to_write=<minimum number of available frames in hwbuf to fill>");
  
  static const char* const valid_modargs[] = {
      "sink_name",
-@@ -86,6 +87,7 @@ static const char* const valid_modargs[] = {
+@@ -88,6 +90,8 @@ static const char* const valid_modargs[] = {
+     "tsched",
      "tsched_buffer_size",
      "tsched_buffer_watermark",
-     "mixer_reset",
++    "mixer_reset",
 +    "hwbuf_min_frames_to_write",
      NULL
  };
  
-@@ -132,6 +134,7 @@ struct userdata {
+@@ -136,6 +140,7 @@ struct userdata {
      uint64_t since_start;
  
      snd_pcm_sframes_t hwbuf_unused_frames;
@@ -37,7 +39,7 @@ index 8e66f79..0135a0b 100644
  };
  
  static void fix_tsched_watermark(struct userdata *u) {
-@@ -278,7 +281,7 @@ static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec) {
+@@ -282,7 +287,7 @@ static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec) {
              if (pa_bytes_to_usec(left_to_play, &u->sink->sample_spec) > process_usec+max_sleep_usec/2)
                  break;
  
@@ -46,7 +48,7 @@ index 8e66f79..0135a0b 100644
              break;
  
          n -= u->hwbuf_unused_frames;
-@@ -390,7 +393,7 @@ static int unix_write(struct userdata *u, pa_usec_t *sleep_usec) {
+@@ -395,7 +400,7 @@ static int unix_write(struct userdata *u, pa_usec_t *sleep_usec) {
              if (pa_bytes_to_usec(left_to_play, &u->sink->sample_spec) > process_usec+max_sleep_usec/2)
                  break;
  
@@ -55,18 +57,23 @@ index 8e66f79..0135a0b 100644
              break;
  
          n -= u->hwbuf_unused_frames;
-@@ -1103,6 +1106,7 @@ int pa__init(pa_module*m) {
-     pa_bool_t use_mmap = TRUE, b, use_tsched = TRUE, d, mixer_reset = TRUE;
+@@ -1197,6 +1202,7 @@ int pa__init(pa_module*m) {
+     pa_bool_t use_mmap = TRUE, b, use_tsched = TRUE, d;
      pa_usec_t usec;
      pa_sink_new_data data;
 +    int32_t hwbuf_min_frames_to_write = 0;
  
      snd_pcm_info_alloca(&pcm_info);
  
-@@ -1162,6 +1166,11 @@ int pa__init(pa_module*m) {
-         goto fail;
+@@ -1251,6 +1257,16 @@ int pa__init(pa_module*m) {
+         use_tsched = FALSE;
      }
  
++    if (pa_modargs_get_value_boolean(ma, "mixer_reset", &mixer_reset) < 0) {
++        pa_log("Failed to parse mixer_reset argument.");
++        goto fail;
++    }
++
 +    if (pa_modargs_get_value_s32(ma, "hwbuf_min_frames_to_write", &hwbuf_min_frames_to_write) < 0) {
 +        pa_log("Failed to parse hwbuf_min_frames_to_write argument");
 +	goto fail;
@@ -75,8 +82,8 @@ index 8e66f79..0135a0b 100644
      u = pa_xnew0(struct userdata, 1);
      u->core = m->core;
      u->module = m;
-@@ -1316,6 +1325,7 @@ int pa__init(pa_module*m) {
-     u->fragment_size = frag_size = period_frames * frame_size;
+@@ -1405,6 +1421,7 @@ int pa__init(pa_module*m) {
+     u->fragment_size = frag_size = (uint32_t) (period_frames * frame_size);
      u->nfragments = nfrags;
      u->hwbuf_size = u->fragment_size * nfrags;
 +    u->hwbuf_min_frames_to_write = hwbuf_min_frames_to_write;

@@ -1,4 +1,4 @@
-From 59f7805a43e9e8099ecfb6f967df7eeaa6a3d1af Mon Sep 17 00:00:00 2001
+From ad139993f2f3f3b122d02e51746ef967a3d3a4ec Mon Sep 17 00:00:00 2001
 From: CJ van den Berg <cj@vdbonline.com>
 Date: Wed, 31 Oct 2007 13:59:31 +0100
 Subject: [PATCH] Set ESD socket to /tmp/.esd/socket to match up with libesd
@@ -8,10 +8,10 @@ Subject: [PATCH] Set ESD socket to /tmp/.esd/socket to match up with libesd
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/daemon/default.pa.in b/src/daemon/default.pa.in
-index 498499e..7b0d455 100755
+index 0af9931..5a7aea0 100755
 --- a/src/daemon/default.pa.in
 +++ b/src/daemon/default.pa.in
-@@ -47,7 +47,7 @@ load-module module-detect
+@@ -55,7 +55,7 @@ load-module module-bluetooth-discover
  
  ### Load several protocols
  .ifexists module-esound-protocol-unix@PA_SOEXT@

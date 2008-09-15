@@ -1,19 +1,19 @@
-From b13e8713415913f9b8ec2405bf7f3bfd5f9413ea Mon Sep 17 00:00:00 2001
+From 12dafd7135c8df43ad0c6ab04df7e46b29de6312 Mon Sep 17 00:00:00 2001
 From: Marc-Andre Lureau <marcandre.lureau@gmail.com>
 Date: Thu, 5 Jun 2008 21:47:17 +0300
 Subject: [PATCH] flat-volume thingy
 
 ---
  src/Makefile.am                  |   10 ++-
- src/modules/module-flat-volume.c |  240 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 249 insertions(+), 1 deletions(-)
+ src/modules/module-flat-volume.c |  233 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 242 insertions(+), 1 deletions(-)
  create mode 100644 src/modules/module-flat-volume.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 98d06aa..2775dfb 100644
+index 4c92f91..0dfa4f6 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -1008,6 +1008,7 @@ libavahi_wrap_la_LIBADD = $(AM_LIBADD) $(AVAHI_CFLAGS) libpulsecore.la
+@@ -1025,6 +1025,7 @@ libavahi_wrap_la_LIBADD = $(AM_LIBADD) $(AVAHI_CFLAGS) libpulsecore.la
  ###################################
  
  modlibexec_LTLIBRARIES += \
@@ -21,8 +21,8 @@ index 98d06aa..2775dfb 100644
  		module-cli.la \
  		module-cli-protocol-tcp.la \
  		module-simple-protocol-tcp.la \
-@@ -1203,7 +1204,8 @@ SYMDEF_FILES = \
- 		modules/module-bt-proximity-symdef.h \
+@@ -1228,7 +1229,8 @@ SYMDEF_FILES = \
+ 		modules/bluetooth/module-bluetooth-device-symdef.h \
  		modules/gconf/module-gconf-symdef.h \
  		modules/module-position-event-sounds-symdef.h \
 -		modules/module-console-kit-symdef.h
@@ -31,8 +31,8 @@ index 98d06aa..2775dfb 100644
  
  EXTRA_DIST += $(SYMDEF_FILES)
  BUILT_SOURCES += $(SYMDEF_FILES)
-@@ -1214,6 +1216,12 @@ $(SYMDEF_FILES): modules/module-defs.h.m4
- 	$(MKDIR_P) modules/rtp
+@@ -1240,6 +1242,12 @@ $(SYMDEF_FILES): modules/module-defs.h.m4
+ 	$(MKDIR_P) modules/bluetooth
  	$(M4) -Dfname="$@" $< > $@
  
 +# Flat volume
@@ -46,10 +46,10 @@ index 98d06aa..2775dfb 100644
  module_simple_protocol_tcp_la_SOURCES = modules/module-protocol-stub.c
 diff --git a/src/modules/module-flat-volume.c b/src/modules/module-flat-volume.c
 new file mode 100644
-index 0000000..fb7f1ef
+index 0000000..ff4f83f
 --- /dev/null
 +++ b/src/modules/module-flat-volume.c
-@@ -0,0 +1,240 @@
+@@ -0,0 +1,233 @@
 +/* $Id$ */
 +
 +/***
@@ -113,24 +113,18 @@ index 0000000..fb7f1ef
 +};
 +
 +static pa_volume_t _volume_multiply(pa_volume_t a, pa_volume_t b) {
-+    a = PA_MIN(a, a - 1);
-+
 +    return (a * b) / PA_VOLUME_NORM;
 +}
 +
 +static pa_volume_t _volume_divide(pa_volume_t a, pa_volume_t b) {
-+    pa_volume_t vol;
++    if (b == 0)
++        return PA_VOLUME_NORM;
 +
-+    a = PA_MIN(a, a - 1);
-+    b = PA_MAX(b, b + 1);
-+
-+    vol = (a * PA_VOLUME_NORM) / b;
-+
-+    return PA_MIN(vol, PA_VOLUME_NORM);
++    return (a * PA_VOLUME_NORM) / b;
 +}
 +
 +static pa_cvolume *pa_sw_cvolume_divide_dB(pa_cvolume *dest, const pa_cvolume *a, const pa_cvolume *b) {
-+    unsigned i;
++    uint8_t i;
 +
 +    pa_assert(dest);
 +    pa_assert(a);
@@ -149,7 +143,7 @@ index 0000000..fb7f1ef
 +}
 +
 +static pa_cvolume *pa_sw_cvolume_multiply_dB(pa_cvolume *dest, const pa_cvolume *a, const pa_cvolume *b) {
-+    unsigned i;
++    uint8_t i;
 +
 +    pa_assert(dest);
 +    pa_assert(a);
@@ -184,14 +178,13 @@ index 0000000..fb7f1ef
 +    pa_assert(s);
 +
 +    max_volume = *virtual_volume;
-+    pa_log_debug("=> max %f", pa_sw_volume_to_dB(pa_cvolume_avg(&max_volume)));
++    pa_log_debug("sink->virtual_volume max: %f", pa_sw_volume_to_dB(pa_cvolume_avg(&max_volume)));
 +    for (i = PA_SINK_INPUT(pa_idxset_first(s->inputs, &idx)); i; i = PA_SINK_INPUT(pa_idxset_next(s->inputs, &idx))) {
 +        if (this && i == this)
 +            continue;
 +
 +        if (pa_cvolume_avg(&i->virtual_volume) > pa_cvolume_avg(&max_volume))
 +            max_volume = i->virtual_volume;
-+        pa_log_debug("max %f, idx %d", pa_sw_volume_to_dB(pa_cvolume_avg(&max_volume)), i->index);
 +    }
 +
 +    /* Set the master volume */
@@ -209,8 +202,8 @@ index 0000000..fb7f1ef
 +            if (this && i == this)
 +                continue;
 +
-+            sink_input_normalize_volume(&i->volume, &i->virtual_volume, pa_sink_get_volume(s));
-+	    pa_log_debug("normalized %d, vol %f, vvol %f, sink %f",
++            sink_input_normalize_volume(&i->volume, &i->virtual_volume, pa_sink_get_volume(s, FALSE));
++	    pa_log_debug("normalized sink input %d: vol %f, vvol %f, sinkvol %f",
 +			 i->index,
 +			 pa_sw_volume_to_dB(pa_cvolume_avg(&i->volume)),
 +			 pa_sw_volume_to_dB(pa_cvolume_avg(&i->virtual_volume)),
@@ -251,7 +244,7 @@ index 0000000..fb7f1ef
 +    pa_assert(this);
 +    pa_assert(this->sink);
 +
-+    process_input_volume_change(&this->volume, &this->virtual_volume, this->sink, NULL);
++    //process_input_volume_change(&this->volume, &this->virtual_volume, this->sink, NULL);
 +
 +    return PA_HOOK_OK;
 +}
