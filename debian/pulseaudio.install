@@ -4,10 +4,10 @@ etc/pulse/daemon.conf
 usr/bin/pulseaudio
 usr/lib/pulse-*/modules/libalsa-util.so
 usr/lib/pulse-*/modules/libdbus-util.so
-usr/lib/pulse-*/modules/libauthkey-prop.so
+usr/lib/pulse-*/modules/libauth-cookie.so
 usr/lib/pulse-*/modules/libauthkey.so
-usr/lib/pulse-*/modules/libbt-ipc.so
-usr/lib/pulse-*/modules/libbt-sbc.so
+usr/lib/pulse-*/modules/libbluetooth-ipc.so
+usr/lib/pulse-*/modules/libbluetooth-sbc.so
 usr/lib/pulse-*/modules/libcli.so
 usr/lib/pulse-*/modules/libiochannel.so
 usr/lib/pulse-*/modules/libioline.so
@@ -32,9 +32,9 @@ usr/lib/pulse-*/modules/module-alsa-sink.so
 usr/lib/pulse-*/modules/module-alsa-sink-old.so
 usr/lib/pulse-*/modules/module-alsa-source.so
 usr/lib/pulse-*/modules/module-alsa-source-old.so
-usr/lib/pulse-*/modules/module-bt-device.so
-usr/lib/pulse-*/modules/module-bt-discover.so
-usr/lib/pulse-*/modules/module-bt-proximity.so
+usr/lib/pulse-*/modules/module-bluetooth-device.so
+usr/lib/pulse-*/modules/module-bluetooth-discover.so
+usr/lib/pulse-*/modules/module-bluetooth-proximity.so
 usr/lib/pulse-*/modules/module-cli-protocol-tcp.so
 usr/lib/pulse-*/modules/module-cli-protocol-unix.so
 usr/lib/pulse-*/modules/module-cli.so
