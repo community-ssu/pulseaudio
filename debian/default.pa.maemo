@@ -13,7 +13,7 @@ load-module module-nokia-voice master_sink=hardis.si master_source=hardis.so dbu
 
 .nofail
 
-.ifexists usr/lib/pulse-0.9/modules/module-nokia-EAP.so
+.ifexists /usr/lib/pulse-0.9/modules/module-nokia-EAP.so
 load-module module-nokia-EAP master_sink=raw_sink sink_name=music_sink
 .endif
 
