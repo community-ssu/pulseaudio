@@ -2,20 +2,26 @@
 .fail
 
 # glitch-free is off by default
-# load-module module-alsa-sink device=hw:0 rate=48000 sink_name=hardis.si fragment_size=960 fragments=4 tsched=0 hwbuf_min_frames_to_write=32
+# load-module module-alsa-sink sink_name=sink.rx51 device=hw:0 rate=48000 fragment_size=960 fragments=4 tsched=0 hwbuf_min_frames_to_write=32
 
-load-module module-alsa-sink-old device=hw:0 rate=48000 sink_name=hardis.si fragment_size=960 fragments=2
-load-module module-alsa-source-old device=hw:0 rate=48000 source_name=hardis.so fragment_size=960 fragments=2
+load-module module-alsa-sink-old sink_name=sink.rx51 device=hw:0 rate=48000 fragment_size=960 fragments=2
+load-module module-alsa-source-old source_name=source.rx51 device=hw:0 rate=48000 fragment_size=960 fragments=2
 
 .ifexists /usr/lib/pulse-0.9/modules/module-nokia-voice.so
-load-module module-nokia-voice master_sink=hardis.si master_source=hardis.so dbus_type=system
+load-module module-nokia-voice sink_name=sink.voice master_sink=sink.rx51 master_source=source.rx51 dbus_type=system
 .endif
 
 .nofail
 
 .ifexists /usr/lib/pulse-0.9/modules/module-nokia-EAP.so
-load-module module-nokia-EAP master_sink=raw_sink sink_name=music_sink
+load-module module-nokia-EAP sink_name=sink.music master_sink=sink.voice.raw
 .endif
 
 load-module module-cli-protocol-tcp
 load-module module-native-protocol-unix
+load-module module-flat-volume
+load-module module-rescue-streams
+load-module module-position-event-sounds
+
+# fail atm
+# load-module module-suspend-on-idle
