@@ -1,3 +1,12 @@
+pulseaudio (0.9.12git~20080915-0maemo3) UNRELEASED; urgency=low
+
+  * control, pulseaudio.install, pulseaudio-module-extra.install:
+    + Move some unused module to pulseaudio-module-extra package
+  * default.pa.maemo:
+    + Update configuration file.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Fri, 26 Sep 2008 20:41:39 +0300
+
 pulseaudio (0.9.12git~20080915-0maemo1) unstable; urgency=low
 
   * Imported git version 618873, including 0.9.12 + Bluez + fix.
