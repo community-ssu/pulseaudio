@@ -3,13 +3,13 @@
 load-module module-native-protocol-unix
 
 # glitch-free is off by default
-# load-module module-alsa-sink sink_name=sink.rx51 device=hw:0 rate=48000 fragment_size=960 fragments=4 tsched=0 hwbuf_min_frames_to_write=32
+# load-module module-alsa-sink sink_name=sink.hw0 device=hw:0 rate=48000 fragment_size=960 fragments=4 tsched=0 hwbuf_min_frames_to_write=32
 
-load-module module-alsa-sink-old sink_name=sink.rx51 device=hw:0 rate=48000 fragment_size=960 fragments=2
-load-module module-alsa-source-old source_name=source.rx51 device=hw:0 rate=48000 fragment_size=960 fragments=2
+load-module module-alsa-sink-old sink_name=sink.hw0 device=hw:0 rate=48000 fragment_size=960 fragments=2
+load-module module-alsa-source-old source_name=source.hw0 device=hw:0 rate=48000 fragment_size=960 fragments=2
 
 .ifexists module-nokia-voice.so
-load-module module-nokia-voice sink_name=sink.voice master_sink=sink.rx51 master_source=source.rx51 dbus_type=system
+load-module module-nokia-voice master_sink=sink.hw0 master_source=source.hw0 dbus_type=system
 .endif
 
 .nofail
@@ -35,7 +35,7 @@ load-module module-position-event-sounds
 .endif
 
 .ifexists module-esound-protocol-unix.so
-#load-module module-esound-protocol-unix socket=/tmp/.esd/socket
+load-module module-esound-protocol-unix auth-anonymous=1
 .endif
 
 .ifexists module-device-restore.so

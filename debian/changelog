@@ -1,9 +1,11 @@
-pulseaudio (0.9.12git~20080915-0maemo3) UNRELEASED; urgency=low
+pulseaudio (0.9.12git~20080915-0maemo2) unstable; urgency=low
 
   * control, pulseaudio.install, pulseaudio-module-extra.install:
     + Move some unused module to pulseaudio-module-extra package
   * default.pa.maemo:
     + Update configuration file.
+  * debian/rules:
+    + use --disable-per-user-esound-socket to create /tmp/.esd/socket
 
  -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Fri, 26 Sep 2008 20:41:39 +0300
 
