@@ -6,4 +6,5 @@
 0006-Add-module-alsa-sink-src-old-backported-from-0.9.patch
 0007--module-policy-enforcement-added.patch
 0008--first-version-of-support-for-external-configuratio.patch
-0009-autofoo-on-debian-unstable.patch
+0009-Add-pulsecore.pc.patch
+0010-autofoo-on-debian-unstable.patch

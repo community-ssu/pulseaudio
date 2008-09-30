@@ -6,6 +6,7 @@ pulseaudio (0.9.12git~20080930-0maemo1) unstable; urgency=low
   * default.pa.maemo:
     + Load module-policy-enforcement
     + Load module-simple-protocol-unix (used by Flash)
+  * Include pulsecore.pc from Ismo in pulseaudio-dev.
 
  -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Tue, 30 Sep 2008 12:03:06 +0300
 

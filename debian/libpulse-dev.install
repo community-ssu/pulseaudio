@@ -4,5 +4,5 @@ usr/lib/libpulse-simple.so
 usr/lib/libpulse-simple.a
 usr/lib/libpulse-mainloop-glib.so
 usr/lib/libpulse-mainloop-glib.a
-usr/lib/pkgconfig/*
+usr/lib/pkgconfig/libpulse*
 usr/include/pulse/*
