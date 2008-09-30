@@ -1,3 +1,4 @@
+prioq-test
 lock-autospawn-test
 *.lo
 *.o
@@ -8,7 +9,7 @@ Makefile
 Makefile.in
 asyncmsgq-test
 asyncq-test
-bt-proximity-helper
+proximity-helper
 channelmap-test
 client.conf
 close-test

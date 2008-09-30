@@ -1,4 +1,4 @@
-2008-09-13  gettextize  <bug-gnu-gettext@gnu.org>
+2008-09-30  gettextize  <bug-gnu-gettext@gnu.org>
 
 	* gettext.m4: New file, from gettext-0.17.
 	* iconv.m4: New file, from gettext-0.17.

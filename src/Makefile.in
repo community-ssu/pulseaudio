@@ -85,7 +85,8 @@ noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
 	resampler-test$(EXEEXT) smoother-test$(EXEEXT) \
 	mix-test$(EXEEXT) remix-test$(EXEEXT) envelope-test$(EXEEXT) \
 	proplist-test$(EXEEXT) rtstutter$(EXEEXT) stripnul$(EXEEXT) \
-	lock-autospawn-test$(EXEEXT) $(am__EXEEXT_4) $(am__EXEEXT_5)
+	lock-autospawn-test$(EXEEXT) prioq-test$(EXEEXT) \
+	$(am__EXEEXT_4) $(am__EXEEXT_5)
 @HAVE_SIGXCPU_TRUE@am__append_8 = \
 @HAVE_SIGXCPU_TRUE@		cpulimit-test \
 @HAVE_SIGXCPU_TRUE@		cpulimit-test2
@@ -650,12 +651,12 @@ am__libpulsecore_la_SOURCES_DIST = pulse/channelmap.c \
 	pulsecore/dynarray.c pulsecore/dynarray.h \
 	pulsecore/endianmacros.h pulsecore/g711.c pulsecore/g711.h \
 	pulsecore/hashmap.c pulsecore/hashmap.h pulsecore/idxset.c \
-	pulsecore/idxset.h pulsecore/log.c pulsecore/log.h \
-	pulsecore/mcalign.c pulsecore/mcalign.h pulsecore/memblock.c \
-	pulsecore/memblock.h pulsecore/memblockq.c \
-	pulsecore/memblockq.h pulsecore/memchunk.c \
-	pulsecore/memchunk.h pulsecore/modargs.c pulsecore/modargs.h \
-	pulsecore/modinfo.c pulsecore/modinfo.h \
+	pulsecore/idxset.h pulsecore/prioq.c pulsecore/prioq.h \
+	pulsecore/log.c pulsecore/log.h pulsecore/mcalign.c \
+	pulsecore/mcalign.h pulsecore/memblock.c pulsecore/memblock.h \
+	pulsecore/memblockq.c pulsecore/memblockq.h \
+	pulsecore/memchunk.c pulsecore/memchunk.h pulsecore/modargs.c \
+	pulsecore/modargs.h pulsecore/modinfo.c pulsecore/modinfo.h \
 	pulsecore/ltdl-helper.c pulsecore/ltdl-helper.h \
 	pulsecore/module.c pulsecore/module.h pulsecore/namereg.c \
 	pulsecore/namereg.h pulsecore/pid.c pulsecore/pid.h \
@@ -717,13 +718,13 @@ am_libpulsecore_la_OBJECTS = libpulsecore_la-channelmap.lo \
 	libpulsecore_la-core-subscribe.lo libpulsecore_la-core-util.lo \
 	libpulsecore_la-dynarray.lo libpulsecore_la-g711.lo \
 	libpulsecore_la-hashmap.lo libpulsecore_la-idxset.lo \
-	libpulsecore_la-log.lo libpulsecore_la-mcalign.lo \
-	libpulsecore_la-memblock.lo libpulsecore_la-memblockq.lo \
-	libpulsecore_la-memchunk.lo libpulsecore_la-modargs.lo \
-	libpulsecore_la-modinfo.lo libpulsecore_la-ltdl-helper.lo \
-	libpulsecore_la-module.lo libpulsecore_la-namereg.lo \
-	libpulsecore_la-pid.lo libpulsecore_la-pipe.lo \
-	libpulsecore_la-play-memchunk.lo \
+	libpulsecore_la-prioq.lo libpulsecore_la-log.lo \
+	libpulsecore_la-mcalign.lo libpulsecore_la-memblock.lo \
+	libpulsecore_la-memblockq.lo libpulsecore_la-memchunk.lo \
+	libpulsecore_la-modargs.lo libpulsecore_la-modinfo.lo \
+	libpulsecore_la-ltdl-helper.lo libpulsecore_la-module.lo \
+	libpulsecore_la-namereg.lo libpulsecore_la-pid.lo \
+	libpulsecore_la-pipe.lo libpulsecore_la-play-memchunk.lo \
 	libpulsecore_la-play-memblockq.lo libpulsecore_la-poll.lo \
 	libpulsecore_la-shared.lo libpulsecore_la-queue.lo \
 	libpulsecore_la-random.lo libpulsecore_la-resampler.lo \
@@ -1681,6 +1682,12 @@ pax11publish_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la \
 pax11publish_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(pax11publish_CFLAGS) \
 	$(CFLAGS) $(pax11publish_LDFLAGS) $(LDFLAGS) -o $@
+am_prioq_test_OBJECTS = prioq_test-prioq-test.$(OBJEXT)
+prioq_test_OBJECTS = $(am_prioq_test_OBJECTS)
+prioq_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
+prioq_test_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(prioq_test_CFLAGS) \
+	$(CFLAGS) $(prioq_test_LDFLAGS) $(LDFLAGS) -o $@
 am_proplist_test_OBJECTS = proplist_test-proplist-test.$(OBJEXT)
 proplist_test_OBJECTS = $(am_proplist_test_OBJECTS)
 proplist_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
@@ -1895,15 +1902,15 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
 	$(pabrowse_SOURCES) $(pacat_SOURCES) $(pacat_simple_SOURCES) \
 	$(pacmd_SOURCES) $(pactl_SOURCES) $(paplay_SOURCES) \
 	$(parec_simple_SOURCES) $(pasuspender_SOURCES) \
-	$(pax11publish_SOURCES) $(proplist_test_SOURCES) \
-	$(proximity_helper_SOURCES) $(pulseaudio_SOURCES) \
-	$(queue_test_SOURCES) $(remix_test_SOURCES) \
-	$(resampler_test_SOURCES) $(rtpoll_test_SOURCES) \
-	$(rtstutter_SOURCES) $(sig2str_test_SOURCES) \
-	$(smoother_test_SOURCES) $(stripnul_SOURCES) \
-	$(strlist_test_SOURCES) $(sync_playback_SOURCES) \
-	$(thread_mainloop_test_SOURCES) $(thread_test_SOURCES) \
-	$(utf8_test_SOURCES) $(voltest_SOURCES)
+	$(pax11publish_SOURCES) $(prioq_test_SOURCES) \
+	$(proplist_test_SOURCES) $(proximity_helper_SOURCES) \
+	$(pulseaudio_SOURCES) $(queue_test_SOURCES) \
+	$(remix_test_SOURCES) $(resampler_test_SOURCES) \
+	$(rtpoll_test_SOURCES) $(rtstutter_SOURCES) \
+	$(sig2str_test_SOURCES) $(smoother_test_SOURCES) \
+	$(stripnul_SOURCES) $(strlist_test_SOURCES) \
+	$(sync_playback_SOURCES) $(thread_mainloop_test_SOURCES) \
+	$(thread_test_SOURCES) $(utf8_test_SOURCES) $(voltest_SOURCES)
 DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
 	$(libauthkey_la_SOURCES) $(libavahi_wrap_la_SOURCES) \
 	$(libbluetooth_ipc_la_SOURCES) $(libbluetooth_sbc_la_SOURCES) \
@@ -1987,15 +1994,15 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
 	$(am__pacmd_SOURCES_DIST) $(am__pactl_SOURCES_DIST) \
 	$(paplay_SOURCES) $(parec_simple_SOURCES) \
 	$(am__pasuspender_SOURCES_DIST) \
-	$(am__pax11publish_SOURCES_DIST) $(proplist_test_SOURCES) \
-	$(proximity_helper_SOURCES) $(am__pulseaudio_SOURCES_DIST) \
-	$(queue_test_SOURCES) $(remix_test_SOURCES) \
-	$(resampler_test_SOURCES) $(rtpoll_test_SOURCES) \
-	$(rtstutter_SOURCES) $(sig2str_test_SOURCES) \
-	$(smoother_test_SOURCES) $(stripnul_SOURCES) \
-	$(strlist_test_SOURCES) $(sync_playback_SOURCES) \
-	$(thread_mainloop_test_SOURCES) $(thread_test_SOURCES) \
-	$(utf8_test_SOURCES) $(voltest_SOURCES)
+	$(am__pax11publish_SOURCES_DIST) $(prioq_test_SOURCES) \
+	$(proplist_test_SOURCES) $(proximity_helper_SOURCES) \
+	$(am__pulseaudio_SOURCES_DIST) $(queue_test_SOURCES) \
+	$(remix_test_SOURCES) $(resampler_test_SOURCES) \
+	$(rtpoll_test_SOURCES) $(rtstutter_SOURCES) \
+	$(sig2str_test_SOURCES) $(smoother_test_SOURCES) \
+	$(stripnul_SOURCES) $(strlist_test_SOURCES) \
+	$(sync_playback_SOURCES) $(thread_mainloop_test_SOURCES) \
+	$(thread_test_SOURCES) $(utf8_test_SOURCES) $(voltest_SOURCES)
 policyDATA_INSTALL = $(INSTALL_DATA)
 pulseconfDATA_INSTALL = $(INSTALL_DATA)
 xdgautostartDATA_INSTALL = $(INSTALL_DATA)
@@ -2548,6 +2555,10 @@ lock_autospawn_test_SOURCES = tests/lock-autospawn-test.c
 lock_autospawn_test_LDADD = $(AM_LDADD) libpulsecore.la
 lock_autospawn_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
 lock_autospawn_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+prioq_test_SOURCES = tests/prioq-test.c
+prioq_test_LDADD = $(AM_LDADD) libpulsecore.la
+prioq_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
+prioq_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
 
 ###################################
 #         Client library          #
@@ -2723,12 +2734,12 @@ libpulsecore_la_SOURCES = pulse/channelmap.c pulse/channelmap.h \
 	pulsecore/dynarray.c pulsecore/dynarray.h \
 	pulsecore/endianmacros.h pulsecore/g711.c pulsecore/g711.h \
 	pulsecore/hashmap.c pulsecore/hashmap.h pulsecore/idxset.c \
-	pulsecore/idxset.h pulsecore/log.c pulsecore/log.h \
-	pulsecore/mcalign.c pulsecore/mcalign.h pulsecore/memblock.c \
-	pulsecore/memblock.h pulsecore/memblockq.c \
-	pulsecore/memblockq.h pulsecore/memchunk.c \
-	pulsecore/memchunk.h pulsecore/modargs.c pulsecore/modargs.h \
-	pulsecore/modinfo.c pulsecore/modinfo.h \
+	pulsecore/idxset.h pulsecore/prioq.c pulsecore/prioq.h \
+	pulsecore/log.c pulsecore/log.h pulsecore/mcalign.c \
+	pulsecore/mcalign.h pulsecore/memblock.c pulsecore/memblock.h \
+	pulsecore/memblockq.c pulsecore/memblockq.h \
+	pulsecore/memchunk.c pulsecore/memchunk.h pulsecore/modargs.c \
+	pulsecore/modargs.h pulsecore/modinfo.c pulsecore/modinfo.h \
 	pulsecore/ltdl-helper.c pulsecore/ltdl-helper.h \
 	pulsecore/module.c pulsecore/module.h pulsecore/namereg.c \
 	pulsecore/namereg.h pulsecore/pid.c pulsecore/pid.h \
@@ -3688,6 +3699,9 @@ pasuspender$(EXEEXT): $(pasuspender_OBJECTS) $(pasuspender_DEPENDENCIES)
 pax11publish$(EXEEXT): $(pax11publish_OBJECTS) $(pax11publish_DEPENDENCIES) 
 	@rm -f pax11publish$(EXEEXT)
 	$(pax11publish_LINK) $(pax11publish_OBJECTS) $(pax11publish_LDADD) $(LIBS)
+prioq-test$(EXEEXT): $(prioq_test_OBJECTS) $(prioq_test_DEPENDENCIES) 
+	@rm -f prioq-test$(EXEEXT)
+	$(prioq_test_LINK) $(prioq_test_OBJECTS) $(prioq_test_LDADD) $(LIBS)
 proplist-test$(EXEEXT): $(proplist_test_OBJECTS) $(proplist_test_DEPENDENCIES) 
 	@rm -f proplist-test$(EXEEXT)
 	$(proplist_test_LINK) $(proplist_test_OBJECTS) $(proplist_test_LDADD) $(LIBS)
@@ -3948,6 +3962,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_la-play-memblockq.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_la-play-memchunk.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_la-poll.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_la-prioq.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_la-proplist-util.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_la-proplist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_la-queue.Plo@am__quote@
@@ -4123,6 +4138,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-thread-win32.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-x11prop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdispatch.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prioq_test-prioq-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proplist_test-proplist-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocol-cli.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocol-esound.Plo@am__quote@
@@ -5260,6 +5276,13 @@ libpulsecore_la-idxset.lo: pulsecore/idxset.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/idxset.c' object='libpulsecore_la-idxset.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpulsecore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpulsecore_la-idxset.lo `test -f 'pulsecore/idxset.c' || echo '$(srcdir)/'`pulsecore/idxset.c
+
+libpulsecore_la-prioq.lo: pulsecore/prioq.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpulsecore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpulsecore_la-prioq.lo -MD -MP -MF $(DEPDIR)/libpulsecore_la-prioq.Tpo -c -o libpulsecore_la-prioq.lo `test -f 'pulsecore/prioq.c' || echo '$(srcdir)/'`pulsecore/prioq.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libpulsecore_la-prioq.Tpo $(DEPDIR)/libpulsecore_la-prioq.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/prioq.c' object='libpulsecore_la-prioq.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpulsecore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpulsecore_la-prioq.lo `test -f 'pulsecore/prioq.c' || echo '$(srcdir)/'`pulsecore/prioq.c
 
 libpulsecore_la-log.lo: pulsecore/log.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpulsecore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpulsecore_la-log.lo -MD -MP -MF $(DEPDIR)/libpulsecore_la-log.Tpo -c -o libpulsecore_la-log.lo `test -f 'pulsecore/log.c' || echo '$(srcdir)/'`pulsecore/log.c
@@ -7367,6 +7390,20 @@ pax11publish-semaphore-win32.obj: pulsecore/semaphore-win32.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-win32.c' object='pax11publish-semaphore-win32.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-semaphore-win32.obj `if test -f 'pulsecore/semaphore-win32.c'; then $(CYGPATH_W) 'pulsecore/semaphore-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/semaphore-win32.c'; fi`
+
+prioq_test-prioq-test.o: tests/prioq-test.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(prioq_test_CFLAGS) $(CFLAGS) -MT prioq_test-prioq-test.o -MD -MP -MF $(DEPDIR)/prioq_test-prioq-test.Tpo -c -o prioq_test-prioq-test.o `test -f 'tests/prioq-test.c' || echo '$(srcdir)/'`tests/prioq-test.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/prioq_test-prioq-test.Tpo $(DEPDIR)/prioq_test-prioq-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tests/prioq-test.c' object='prioq_test-prioq-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(prioq_test_CFLAGS) $(CFLAGS) -c -o prioq_test-prioq-test.o `test -f 'tests/prioq-test.c' || echo '$(srcdir)/'`tests/prioq-test.c
+
+prioq_test-prioq-test.obj: tests/prioq-test.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(prioq_test_CFLAGS) $(CFLAGS) -MT prioq_test-prioq-test.obj -MD -MP -MF $(DEPDIR)/prioq_test-prioq-test.Tpo -c -o prioq_test-prioq-test.obj `if test -f 'tests/prioq-test.c'; then $(CYGPATH_W) 'tests/prioq-test.c'; else $(CYGPATH_W) '$(srcdir)/tests/prioq-test.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/prioq_test-prioq-test.Tpo $(DEPDIR)/prioq_test-prioq-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tests/prioq-test.c' object='prioq_test-prioq-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(prioq_test_CFLAGS) $(CFLAGS) -c -o prioq_test-prioq-test.obj `if test -f 'tests/prioq-test.c'; then $(CYGPATH_W) 'tests/prioq-test.c'; else $(CYGPATH_W) '$(srcdir)/tests/prioq-test.c'; fi`
 
 proplist_test-proplist-test.o: tests/proplist-test.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(proplist_test_CFLAGS) $(CFLAGS) -MT proplist_test-proplist-test.o -MD -MP -MF $(DEPDIR)/proplist_test-proplist-test.Tpo -c -o proplist_test-proplist-test.o `test -f 'tests/proplist-test.c' || echo '$(srcdir)/'`tests/proplist-test.c
