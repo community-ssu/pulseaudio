@@ -1,10 +1,10 @@
-From cbc7dd5dd6caa56328bffec82357f37a693d7e48 Mon Sep 17 00:00:00 2001
+From db4a2016dd108bf6022944fd5ef49bc9c18bb7b7 Mon Sep 17 00:00:00 2001
 From: Janos Kovacs <janos.f.kovacs@nokia.com>
 Date: Mon, 29 Sep 2008 16:24:34 +0300
 Subject: [PATCH] - module-policy-enforcement added
 
 ---
- src/Makefile.am                               |   21 +-
+ src/Makefile.am                               |   22 +-
  src/modules/maemo/classify.c                  |  360 +++++++++++++
  src/modules/maemo/classify.h                  |   42 ++
  src/modules/maemo/client-ext.c                |  249 +++++++++
@@ -19,7 +19,7 @@ Subject: [PATCH] - module-policy-enforcement added
  src/modules/maemo/sink-input-ext.c            |  153 ++++++
  src/modules/maemo/sink-input-ext.h            |   30 ++
  src/modules/maemo/userdata.h                  |   43 ++
- 15 files changed, 2551 insertions(+), 2 deletions(-)
+ 15 files changed, 2551 insertions(+), 3 deletions(-)
  create mode 100644 src/modules/maemo/classify.c
  create mode 100644 src/modules/maemo/classify.h
  create mode 100644 src/modules/maemo/client-ext.c
@@ -36,20 +36,28 @@ Subject: [PATCH] - module-policy-enforcement added
  create mode 100644 src/modules/maemo/userdata.h
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index af8938e..871a598 100644
+index af8938e..813494c 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -1056,7 +1056,8 @@ modlibexec_LTLIBRARIES += \
- 		module-esound-sink.la \
- 		module-tunnel-sink.la \
+@@ -1058,7 +1058,6 @@ modlibexec_LTLIBRARIES += \
  		module-tunnel-source.la \
--		module-position-event-sounds.la
-+		module-position-event-sounds.la \
-+		module-policy-enforcement.la
+ 		module-position-event-sounds.la
  
- 
+-
  # See comment at librtp.la above
-@@ -1241,7 +1242,8 @@ SYMDEF_FILES = \
+ if !OS_IS_WIN32
+ modlibexec_LTLIBRARIES += \
+@@ -1165,7 +1164,8 @@ endif
+ if HAVE_DBUS
+ modlibexec_LTLIBRARIES += \
+ 		libdbus-util.la \
+-		module-console-kit.la
++		module-console-kit.la \
++		module-policy-enforcement.la
+ endif
+ 
+ if HAVE_BLUEZ
+@@ -1241,7 +1241,8 @@ SYMDEF_FILES = \
  		modules/gconf/module-gconf-symdef.h \
  		modules/module-position-event-sounds-symdef.h \
  		modules/module-console-kit-symdef.h \
@@ -59,7 +67,7 @@ index af8938e..871a598 100644
  
  EXTRA_DIST += $(SYMDEF_FILES)
  BUILT_SOURCES += $(SYMDEF_FILES)
-@@ -1617,6 +1619,21 @@ module_bluetooth_device_la_LDFLAGS = -module -avoid-version
+@@ -1617,6 +1618,21 @@ module_bluetooth_device_la_LDFLAGS = -module -avoid-version
  module_bluetooth_device_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la libbluetooth-ipc.la libbluetooth-sbc.la libsocket-util.la
  module_bluetooth_device_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
  

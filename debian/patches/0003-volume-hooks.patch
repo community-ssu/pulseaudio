@@ -1,4 +1,4 @@
-From 22434cbf54c7f88442f0873533e5ea0e621e8aa2 Mon Sep 17 00:00:00 2001
+From 05fe83b48a45eca321d9cb2d5af16b79f4bd65c2 Mon Sep 17 00:00:00 2001
 From: Marc-Andre Lureau <marcandre.lureau@gmail.com>
 Date: Thu, 5 Jun 2008 21:46:50 +0300
 Subject: [PATCH] volume hooks

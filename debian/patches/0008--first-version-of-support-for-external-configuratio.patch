@@ -1,4 +1,4 @@
-From 081151cbf11c53503e0ddc8f6ac590fe33649ede Mon Sep 17 00:00:00 2001
+From 70401cc6cd9fc72dff53cbb1a738b5e57caf3af9 Mon Sep 17 00:00:00 2001
 From: Janos Kovacs <janos.f.kovacs@nokia.com>
 Date: Tue, 30 Sep 2008 10:38:33 +0300
 Subject: [PATCH] - first version of support for external configuration file
@@ -13,10 +13,10 @@ Subject: [PATCH] - first version of support for external configuration file
  create mode 100644 src/modules/maemo/config-file.h
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 871a598..243931e 100644
+index 813494c..f893142 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -1622,6 +1622,7 @@ module_bluetooth_device_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
+@@ -1621,6 +1621,7 @@ module_bluetooth_device_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
  # Policy Enforcement
  module_policy_enforcement_la_SOURCES = \
  			modules/maemo/module-policy-enforcement.c \
