@@ -34,6 +34,7 @@ usr/lib/pulse-*/modules/module-cli.so
 usr/lib/pulse-*/modules/module-device-restore.so
 usr/lib/pulse-*/modules/module-flat-volume.so
 usr/lib/pulse-*/modules/module-native-protocol-unix.so
+usr/lib/pulse-*/modules/module-policy-enforcement.so
 usr/lib/pulse-*/modules/module-position-event-sounds.so
 usr/lib/pulse-*/modules/module-rescue-streams.so
 usr/lib/pulse-*/modules/module-simple-protocol-unix.so

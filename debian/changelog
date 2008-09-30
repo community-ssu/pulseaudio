@@ -2,6 +2,10 @@ pulseaudio (0.9.12git~20080930-0maemo1) unstable; urgency=low
 
   * Import new version from git a84b72bf...
     + It should fix the automatic configuration of bluetooth devices
+  * Include module-policy-enforcement.
+  * default.pa.maemo:
+    + Load module-policy-enforcement
+    + Load module-simple-protocol-unix (used by Flash)
 
  -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Tue, 30 Sep 2008 12:03:06 +0300
 

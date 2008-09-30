@@ -4,3 +4,6 @@
 0004-flat-volume-thingy.patch
 0005-Fix-the-busy-loop-on-arm.patch
 0006-Add-module-alsa-sink-src-old-backported-from-0.9.patch
+0007--module-policy-enforcement-added.patch
+0008--first-version-of-support-for-external-configuratio.patch
+0009-autofoo-on-debian-unstable.patch

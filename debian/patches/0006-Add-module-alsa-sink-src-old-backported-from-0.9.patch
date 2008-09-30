@@ -1,4 +1,4 @@
-From d008d0d26cd33be26fb505426e0f37d94469c50e Mon Sep 17 00:00:00 2001
+From de4adf93650e21c7f81dccc544e98ea402880bf1 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Wed, 27 Aug 2008 19:54:48 +0300
 Subject: [PATCH] Add module-alsa-{sink,src}-old, backported from 0.9.10
@@ -18,10 +18,10 @@ Subject: [PATCH] Add module-alsa-{sink,src}-old, backported from 0.9.10
  create mode 100644 src/modules/module-alsa-source-old.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 0dfa4f6..d597fbf 100644
+index 5215a0c..af8938e 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -1102,7 +1102,9 @@ if HAVE_ALSA
+@@ -1109,7 +1109,9 @@ if HAVE_ALSA
  modlibexec_LTLIBRARIES += \
  		libalsa-util.la \
  		module-alsa-sink.la \
@@ -32,7 +32,7 @@ index 0dfa4f6..d597fbf 100644
  endif
  
  if HAVE_SOLARIS
-@@ -1208,7 +1210,9 @@ SYMDEF_FILES = \
+@@ -1215,7 +1217,9 @@ SYMDEF_FILES = \
  		modules/module-x11-xsmp-symdef.h \
  		modules/module-oss-symdef.h \
  		modules/module-alsa-sink-symdef.h \
@@ -42,7 +42,7 @@ index 0dfa4f6..d597fbf 100644
  		modules/module-solaris-symdef.h \
  		modules/module-waveout-symdef.h \
  		modules/module-detect-symdef.h \
-@@ -1416,11 +1420,21 @@ module_alsa_sink_la_LDFLAGS = -module -avoid-version
+@@ -1423,11 +1427,21 @@ module_alsa_sink_la_LDFLAGS = -module -avoid-version
  module_alsa_sink_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore.la
  module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
@@ -65,10 +65,10 @@ index 0dfa4f6..d597fbf 100644
  
  module_solaris_la_SOURCES = modules/module-solaris.c
 diff --git a/src/Makefile.in b/src/Makefile.in
-index a245ffd..0556796 100644
+index 13b7bd0..b6d8e60 100644
 --- a/src/Makefile.in
 +++ b/src/Makefile.in
-@@ -184,7 +184,9 @@ noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
+@@ -185,7 +185,9 @@ noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
  @HAVE_ALSA_TRUE@am__append_35 = \
  @HAVE_ALSA_TRUE@		libalsa-util.la \
  @HAVE_ALSA_TRUE@		module-alsa-sink.la \
@@ -79,7 +79,7 @@ index a245ffd..0556796 100644
  
  @HAVE_SOLARIS_TRUE@am__append_36 = \
  @HAVE_SOLARIS_TRUE@		module-solaris.la
-@@ -835,6 +837,18 @@ libx11wrap_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+@@ -836,6 +838,18 @@ libx11wrap_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
  	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libx11wrap_la_CFLAGS) \
  	$(CFLAGS) $(libx11wrap_la_LDFLAGS) $(LDFLAGS) -o $@
  @HAVE_X11_TRUE@am_libx11wrap_la_rpath = -rpath $(modlibexecdir)
@@ -98,7 +98,7 @@ index a245ffd..0556796 100644
  module_alsa_sink_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
  	$(am__DEPENDENCIES_1) libalsa-util.la libpulsecore.la
  am_module_alsa_sink_la_OBJECTS =  \
-@@ -845,6 +859,18 @@ module_alsa_sink_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+@@ -846,6 +860,18 @@ module_alsa_sink_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
  	$(module_alsa_sink_la_CFLAGS) $(CFLAGS) \
  	$(module_alsa_sink_la_LDFLAGS) $(LDFLAGS) -o $@
  @HAVE_ALSA_TRUE@am_module_alsa_sink_la_rpath = -rpath $(modlibexecdir)
@@ -117,7 +117,7 @@ index a245ffd..0556796 100644
  module_alsa_source_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
  	$(am__DEPENDENCIES_1) libalsa-util.la libpulsecore.la
  am_module_alsa_source_la_OBJECTS =  \
-@@ -1029,6 +1055,13 @@ module_esound_sink_la_OBJECTS = $(am_module_esound_sink_la_OBJECTS)
+@@ -1030,6 +1056,13 @@ module_esound_sink_la_OBJECTS = $(am_module_esound_sink_la_OBJECTS)
  module_esound_sink_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
  	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
  	$(module_esound_sink_la_LDFLAGS) $(LDFLAGS) -o $@
@@ -131,7 +131,7 @@ index a245ffd..0556796 100644
  module_gconf_la_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
  am_module_gconf_la_OBJECTS = module_gconf_la-module-gconf.lo
  module_gconf_la_OBJECTS = $(am_module_gconf_la_OBJECTS)
-@@ -1835,7 +1868,9 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
+@@ -1842,7 +1875,9 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
  	$(libsocket_server_la_SOURCES) $(libsocket_util_la_SOURCES) \
  	$(libstrlist_la_SOURCES) $(libtagstruct_la_SOURCES) \
  	$(libx11prop_la_SOURCES) $(libx11wrap_la_SOURCES) \
@@ -141,7 +141,7 @@ index a245ffd..0556796 100644
  	$(module_alsa_source_la_SOURCES) \
  	$(module_always_sink_la_SOURCES) \
  	$(module_bluetooth_device_la_SOURCES) \
-@@ -1852,7 +1887,8 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
+@@ -1859,7 +1894,8 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
  	$(module_esound_compat_spawnpid_la_SOURCES) \
  	$(module_esound_protocol_tcp_la_SOURCES) \
  	$(module_esound_protocol_unix_la_SOURCES) \
@@ -151,7 +151,7 @@ index a245ffd..0556796 100644
  	$(module_hal_detect_la_SOURCES) \
  	$(module_http_protocol_tcp_la_SOURCES) \
  	$(module_http_protocol_unix_la_SOURCES) \
-@@ -1926,7 +1962,9 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
+@@ -1933,7 +1969,9 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
  	$(libsocket_client_la_SOURCES) $(libsocket_server_la_SOURCES) \
  	$(libsocket_util_la_SOURCES) $(libstrlist_la_SOURCES) \
  	$(libtagstruct_la_SOURCES) $(libx11prop_la_SOURCES) \
@@ -162,7 +162,7 @@ index a245ffd..0556796 100644
  	$(module_alsa_source_la_SOURCES) \
  	$(module_always_sink_la_SOURCES) \
  	$(module_bluetooth_device_la_SOURCES) \
-@@ -1943,7 +1981,8 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
+@@ -1950,7 +1988,8 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
  	$(module_esound_compat_spawnpid_la_SOURCES) \
  	$(module_esound_protocol_tcp_la_SOURCES) \
  	$(module_esound_protocol_unix_la_SOURCES) \
@@ -172,7 +172,7 @@ index a245ffd..0556796 100644
  	$(module_hal_detect_la_SOURCES) \
  	$(module_http_protocol_tcp_la_SOURCES) \
  	$(module_http_protocol_unix_la_SOURCES) \
-@@ -2785,9 +2824,9 @@ modlibexec_LTLIBRARIES = libsocket-util.la libiochannel.la \
+@@ -2796,9 +2835,9 @@ modlibexec_LTLIBRARIES = libsocket-util.la libiochannel.la \
  	libauth-cookie.la libstrlist.la libprotocol-simple.la \
  	libprotocol-http.la libprotocol-native.la \
  	libprotocol-esound.la $(am__append_23) $(am__append_25) \
@@ -185,7 +185,7 @@ index a245ffd..0556796 100644
  	module-device-restore.la module-stream-restore.la \
  	module-default-device-restore.la module-always-sink.la \
  	module-rescue-streams.la module-suspend-on-idle.la \
-@@ -2933,7 +2972,9 @@ SYMDEF_FILES = \
+@@ -2944,7 +2983,9 @@ SYMDEF_FILES = \
  		modules/module-x11-xsmp-symdef.h \
  		modules/module-oss-symdef.h \
  		modules/module-alsa-sink-symdef.h \
@@ -195,7 +195,7 @@ index a245ffd..0556796 100644
  		modules/module-solaris-symdef.h \
  		modules/module-waveout-symdef.h \
  		modules/module-detect-symdef.h \
-@@ -2954,8 +2995,14 @@ SYMDEF_FILES = \
+@@ -2965,8 +3006,14 @@ SYMDEF_FILES = \
  		modules/bluetooth/module-bluetooth-device-symdef.h \
  		modules/gconf/module-gconf-symdef.h \
  		modules/module-position-event-sounds-symdef.h \
@@ -211,7 +211,7 @@ index a245ffd..0556796 100644
  
  # Simple protocol
  module_simple_protocol_tcp_la_SOURCES = modules/module-protocol-stub.c
-@@ -3092,10 +3139,18 @@ module_alsa_sink_la_SOURCES = modules/module-alsa-sink.c
+@@ -3103,10 +3150,18 @@ module_alsa_sink_la_SOURCES = modules/module-alsa-sink.c
  module_alsa_sink_la_LDFLAGS = -module -avoid-version
  module_alsa_sink_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore.la
  module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
@@ -230,7 +230,7 @@ index a245ffd..0556796 100644
  
  # Solaris
  module_solaris_la_SOURCES = modules/module-solaris.c
-@@ -3428,8 +3483,12 @@ libx11prop.la: $(libx11prop_la_OBJECTS) $(libx11prop_la_DEPENDENCIES)
+@@ -3439,8 +3494,12 @@ libx11prop.la: $(libx11prop_la_OBJECTS) $(libx11prop_la_DEPENDENCIES)
  	$(libx11prop_la_LINK) $(am_libx11prop_la_rpath) $(libx11prop_la_OBJECTS) $(libx11prop_la_LIBADD) $(LIBS)
  libx11wrap.la: $(libx11wrap_la_OBJECTS) $(libx11wrap_la_DEPENDENCIES) 
  	$(libx11wrap_la_LINK) $(am_libx11wrap_la_rpath) $(libx11wrap_la_OBJECTS) $(libx11wrap_la_LIBADD) $(LIBS)
@@ -243,7 +243,7 @@ index a245ffd..0556796 100644
  module-alsa-source.la: $(module_alsa_source_la_OBJECTS) $(module_alsa_source_la_DEPENDENCIES) 
  	$(module_alsa_source_la_LINK) $(am_module_alsa_source_la_rpath) $(module_alsa_source_la_OBJECTS) $(module_alsa_source_la_LIBADD) $(LIBS)
  module-always-sink.la: $(module_always_sink_la_OBJECTS) $(module_always_sink_la_DEPENDENCIES) 
-@@ -3466,6 +3525,8 @@ module-esound-protocol-unix.la: $(module_esound_protocol_unix_la_OBJECTS) $(modu
+@@ -3477,6 +3536,8 @@ module-esound-protocol-unix.la: $(module_esound_protocol_unix_la_OBJECTS) $(modu
  	$(module_esound_protocol_unix_la_LINK) $(am_module_esound_protocol_unix_la_rpath) $(module_esound_protocol_unix_la_OBJECTS) $(module_esound_protocol_unix_la_LIBADD) $(LIBS)
  module-esound-sink.la: $(module_esound_sink_la_OBJECTS) $(module_esound_sink_la_DEPENDENCIES) 
  	$(module_esound_sink_la_LINK) -rpath $(modlibexecdir) $(module_esound_sink_la_OBJECTS) $(module_esound_sink_la_LIBADD) $(LIBS)
@@ -252,7 +252,7 @@ index a245ffd..0556796 100644
  module-gconf.la: $(module_gconf_la_OBJECTS) $(module_gconf_la_DEPENDENCIES) 
  	$(module_gconf_la_LINK) $(am_module_gconf_la_rpath) $(module_gconf_la_OBJECTS) $(module_gconf_la_LIBADD) $(LIBS)
  module-hal-detect.la: $(module_hal_detect_la_OBJECTS) $(module_hal_detect_la_DEPENDENCIES) 
-@@ -4010,6 +4071,7 @@ distclean-compile:
+@@ -4025,6 +4086,7 @@ distclean-compile:
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-esound-compat-spawnfd.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-esound-compat-spawnpid.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-esound-sink.Plo@am__quote@
@@ -260,7 +260,7 @@ index a245ffd..0556796 100644
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-match.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-null-sink.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-oss.Plo@am__quote@
-@@ -4021,7 +4083,9 @@ distclean-compile:
+@@ -4036,7 +4098,9 @@ distclean-compile:
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-solaris.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-tunnel.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Plo@am__quote@
@@ -270,7 +270,7 @@ index a245ffd..0556796 100644
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_always_sink_la-module-always-sink.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_bluetooth_device_la-module-bluetooth-device.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_bluetooth_discover_la-module-bluetooth-discover.Plo@am__quote@
-@@ -5821,6 +5885,13 @@ libx11wrap_la-x11wrap.lo: pulsecore/x11wrap.c
+@@ -5844,6 +5908,13 @@ libx11wrap_la-x11wrap.lo: pulsecore/x11wrap.c
  @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
  @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libx11wrap_la_CFLAGS) $(CFLAGS) -c -o libx11wrap_la-x11wrap.lo `test -f 'pulsecore/x11wrap.c' || echo '$(srcdir)/'`pulsecore/x11wrap.c
  
@@ -284,7 +284,7 @@ index a245ffd..0556796 100644
  module_alsa_sink_la-module-alsa-sink.lo: modules/module-alsa-sink.c
  @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_alsa_sink_la_CFLAGS) $(CFLAGS) -MT module_alsa_sink_la-module-alsa-sink.lo -MD -MP -MF $(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Tpo -c -o module_alsa_sink_la-module-alsa-sink.lo `test -f 'modules/module-alsa-sink.c' || echo '$(srcdir)/'`modules/module-alsa-sink.c
  @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Tpo $(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Plo
-@@ -5828,6 +5899,13 @@ module_alsa_sink_la-module-alsa-sink.lo: modules/module-alsa-sink.c
+@@ -5851,6 +5922,13 @@ module_alsa_sink_la-module-alsa-sink.lo: modules/module-alsa-sink.c
  @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
  @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_alsa_sink_la_CFLAGS) $(CFLAGS) -c -o module_alsa_sink_la-module-alsa-sink.lo `test -f 'modules/module-alsa-sink.c' || echo '$(srcdir)/'`modules/module-alsa-sink.c
  
@@ -298,7 +298,7 @@ index a245ffd..0556796 100644
  module_alsa_source_la-module-alsa-source.lo: modules/module-alsa-source.c
  @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_alsa_source_la_CFLAGS) $(CFLAGS) -MT module_alsa_source_la-module-alsa-source.lo -MD -MP -MF $(DEPDIR)/module_alsa_source_la-module-alsa-source.Tpo -c -o module_alsa_source_la-module-alsa-source.lo `test -f 'modules/module-alsa-source.c' || echo '$(srcdir)/'`modules/module-alsa-source.c
  @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_alsa_source_la-module-alsa-source.Tpo $(DEPDIR)/module_alsa_source_la-module-alsa-source.Plo
-@@ -5954,6 +6032,13 @@ module-esound-sink.lo: modules/module-esound-sink.c
+@@ -5977,6 +6055,13 @@ module-esound-sink.lo: modules/module-esound-sink.c
  @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
  @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module-esound-sink.lo `test -f 'modules/module-esound-sink.c' || echo '$(srcdir)/'`modules/module-esound-sink.c
  
@@ -1365,7 +1365,7 @@ index 0000000..e752c12
 +    snd_config_update_free_global();
 +}
 diff --git a/src/modules/module-alsa-sink.c b/src/modules/module-alsa-sink.c
-index 78840c5..3822db9 100644
+index cc28f5e..4877396 100644
 --- a/src/modules/module-alsa-sink.c
 +++ b/src/modules/module-alsa-sink.c
 @@ -73,7 +73,6 @@ PA_MODULE_USAGE(

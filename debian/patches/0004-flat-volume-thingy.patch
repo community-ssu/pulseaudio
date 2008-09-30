@@ -1,4 +1,4 @@
-From 12dafd7135c8df43ad0c6ab04df7e46b29de6312 Mon Sep 17 00:00:00 2001
+From 83fc094ee95ab149f653b1317f74e3fe0c211a96 Mon Sep 17 00:00:00 2001
 From: Marc-Andre Lureau <marcandre.lureau@gmail.com>
 Date: Thu, 5 Jun 2008 21:47:17 +0300
 Subject: [PATCH] flat-volume thingy
@@ -10,10 +10,10 @@ Subject: [PATCH] flat-volume thingy
  create mode 100644 src/modules/module-flat-volume.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 4c92f91..0dfa4f6 100644
+index 14eb7f0..5215a0c 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -1025,6 +1025,7 @@ libavahi_wrap_la_LIBADD = $(AM_LIBADD) $(AVAHI_CFLAGS) libpulsecore.la
+@@ -1032,6 +1032,7 @@ libavahi_wrap_la_LIBADD = $(AM_LIBADD) $(AVAHI_CFLAGS) libpulsecore.la
  ###################################
  
  modlibexec_LTLIBRARIES += \
@@ -21,7 +21,7 @@ index 4c92f91..0dfa4f6 100644
  		module-cli.la \
  		module-cli-protocol-tcp.la \
  		module-simple-protocol-tcp.la \
-@@ -1228,7 +1229,8 @@ SYMDEF_FILES = \
+@@ -1235,7 +1236,8 @@ SYMDEF_FILES = \
  		modules/bluetooth/module-bluetooth-device-symdef.h \
  		modules/gconf/module-gconf-symdef.h \
  		modules/module-position-event-sounds-symdef.h \
@@ -31,7 +31,7 @@ index 4c92f91..0dfa4f6 100644
  
  EXTRA_DIST += $(SYMDEF_FILES)
  BUILT_SOURCES += $(SYMDEF_FILES)
-@@ -1240,6 +1242,12 @@ $(SYMDEF_FILES): modules/module-defs.h.m4
+@@ -1247,6 +1249,12 @@ $(SYMDEF_FILES): modules/module-defs.h.m4
  	$(MKDIR_P) modules/bluetooth
  	$(M4) -Dfname="$@" $< > $@
  

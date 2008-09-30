@@ -1,0 +1,206 @@
+From bdb58efbb0d4c815e302cc34eab94886900ff77e Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Tue, 30 Sep 2008 16:16:24 +0300
+Subject: [PATCH] autofoo on debian unstable
+
+---
+ po/ChangeLog    |    4 ++
+ src/Makefile.in |  115 +++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 112 insertions(+), 7 deletions(-)
+
+diff --git a/po/ChangeLog b/po/ChangeLog
+index aa3f3a0..d9fc96f 100644
+--- a/po/ChangeLog
++++ b/po/ChangeLog
+@@ -1,5 +1,9 @@
+ 2008-09-30  gettextize  <bug-gnu-gettext@gnu.org>
+ 
++	* Makefile.in.in: Upgrade to gettext-0.17.
++
++2008-09-30  gettextize  <bug-gnu-gettext@gnu.org>
++
+ 	* Makefile.in.in: New file, from gettext-0.17.
+ 	* boldquot.sed: New file, from gettext-0.17.
+ 	* en@boldquot.header: New file, from gettext-0.17.
+diff --git a/src/Makefile.in b/src/Makefile.in
+index b6d8e60..c4a4928 100644
+--- a/src/Makefile.in
++++ b/src/Makefile.in
+@@ -1226,6 +1226,23 @@ module_pipe_source_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+ 	$(module_pipe_source_la_LDFLAGS) $(LDFLAGS) -o $@
+ @HAVE_MKFIFO_TRUE@am_module_pipe_source_la_rpath = -rpath \
+ @HAVE_MKFIFO_TRUE@	$(modlibexecdir)
++module_policy_enforcement_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
++	$(am__DEPENDENCIES_1) libpulsecore.la libdbus-util.la
++am_module_policy_enforcement_la_OBJECTS =  \
++	module_policy_enforcement_la-module-policy-enforcement.lo \
++	module_policy_enforcement_la-config-file.lo \
++	module_policy_enforcement_la-client-ext.lo \
++	module_policy_enforcement_la-sink-ext.lo \
++	module_policy_enforcement_la-sink-input-ext.lo \
++	module_policy_enforcement_la-classify.lo \
++	module_policy_enforcement_la-policy-group.lo \
++	module_policy_enforcement_la-dbusif.lo
++module_policy_enforcement_la_OBJECTS =  \
++	$(am_module_policy_enforcement_la_OBJECTS)
++module_policy_enforcement_la_LINK = $(LIBTOOL) --tag=CC \
++	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
++	$(module_policy_enforcement_la_CFLAGS) $(CFLAGS) \
++	$(module_policy_enforcement_la_LDFLAGS) $(LDFLAGS) -o $@
+ module_position_event_sounds_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+ 	libpulsecore.la
+ am_module_position_event_sounds_la_OBJECTS =  \
+@@ -1909,6 +1926,7 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
+ 	$(module_null_sink_la_SOURCES) $(module_oss_la_SOURCES) \
+ 	$(module_pipe_sink_la_SOURCES) \
+ 	$(module_pipe_source_la_SOURCES) \
++	$(module_policy_enforcement_la_SOURCES) \
+ 	$(module_position_event_sounds_la_SOURCES) \
+ 	$(module_remap_sink_la_SOURCES) \
+ 	$(module_rescue_streams_la_SOURCES) \
+@@ -2003,6 +2021,7 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
+ 	$(module_null_sink_la_SOURCES) $(module_oss_la_SOURCES) \
+ 	$(module_pipe_sink_la_SOURCES) \
+ 	$(module_pipe_source_la_SOURCES) \
++	$(module_policy_enforcement_la_SOURCES) \
+ 	$(module_position_event_sounds_la_SOURCES) \
+ 	$(module_remap_sink_la_SOURCES) \
+ 	$(module_rescue_streams_la_SOURCES) \
+@@ -2847,12 +2866,12 @@ modlibexec_LTLIBRARIES = libsocket-util.la libiochannel.la \
+ 	module-remap-sink.la module-ladspa-sink.la \
+ 	module-esound-sink.la module-tunnel-sink.la \
+ 	module-tunnel-source.la module-position-event-sounds.la \
+-	$(am__append_28) $(am__append_29) $(am__append_30) \
+-	$(am__append_31) $(am__append_32) $(am__append_33) \
+-	$(am__append_34) $(am__append_35) $(am__append_36) \
+-	$(am__append_37) $(am__append_38) $(am__append_39) \
+-	$(am__append_40) $(am__append_41) $(am__append_43) \
+-	$(am__append_44) $(am__append_45)
++	module-policy-enforcement.la $(am__append_28) $(am__append_29) \
++	$(am__append_30) $(am__append_31) $(am__append_32) \
++	$(am__append_33) $(am__append_34) $(am__append_35) \
++	$(am__append_36) $(am__append_37) $(am__append_38) \
++	$(am__append_39) $(am__append_40) $(am__append_41) \
++	$(am__append_43) $(am__append_44) $(am__append_45)
+ libprotocol_simple_la_SOURCES = pulsecore/protocol-simple.c pulsecore/protocol-simple.h
+ libprotocol_simple_la_LDFLAGS = -avoid-version
+ libprotocol_simple_la_LIBADD = $(AM_LIBADD) libpulsecore.la libsocket-server.la libiochannel.la
+@@ -3007,7 +3026,8 @@ SYMDEF_FILES = \
+ 		modules/gconf/module-gconf-symdef.h \
+ 		modules/module-position-event-sounds-symdef.h \
+ 		modules/module-console-kit-symdef.h \
+-		modules/module-flat-volume-symdef.h
++		modules/module-flat-volume-symdef.h \
++		modules/maemo/module-policy-enforcement-symdef.h
+ 
+ 
+ # Flat volume
+@@ -3322,6 +3342,21 @@ module_bluetooth_device_la_SOURCES = modules/bluetooth/module-bluetooth-device.c
+ module_bluetooth_device_la_LDFLAGS = -module -avoid-version
+ module_bluetooth_device_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la libbluetooth-ipc.la libbluetooth-sbc.la libsocket-util.la
+ module_bluetooth_device_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
++
++# Policy Enforcement
++module_policy_enforcement_la_SOURCES = \
++			modules/maemo/module-policy-enforcement.c \
++			modules/maemo/config-file.c \
++			modules/maemo/client-ext.c \
++			modules/maemo/sink-ext.c \
++			modules/maemo/sink-input-ext.c \
++			modules/maemo/classify.c \
++			modules/maemo/policy-group.c \
++			modules/maemo/dbusif.c
++
++module_policy_enforcement_la_LDFLAGS = -module -avoid-version
++module_policy_enforcement_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la
++module_policy_enforcement_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
+ CLEANFILES = esdcompat client.conf default.pa system.pa daemon.conf start-pulseaudio-x11
+ all: $(BUILT_SOURCES)
+ 	$(MAKE) $(AM_MAKEFLAGS) all-am
+@@ -3572,6 +3607,8 @@ module-pipe-sink.la: $(module_pipe_sink_la_OBJECTS) $(module_pipe_sink_la_DEPEND
+ 	$(module_pipe_sink_la_LINK) $(am_module_pipe_sink_la_rpath) $(module_pipe_sink_la_OBJECTS) $(module_pipe_sink_la_LIBADD) $(LIBS)
+ module-pipe-source.la: $(module_pipe_source_la_OBJECTS) $(module_pipe_source_la_DEPENDENCIES) 
+ 	$(module_pipe_source_la_LINK) $(am_module_pipe_source_la_rpath) $(module_pipe_source_la_OBJECTS) $(module_pipe_source_la_LIBADD) $(LIBS)
++module-policy-enforcement.la: $(module_policy_enforcement_la_OBJECTS) $(module_policy_enforcement_la_DEPENDENCIES) 
++	$(module_policy_enforcement_la_LINK) -rpath $(modlibexecdir) $(module_policy_enforcement_la_OBJECTS) $(module_policy_enforcement_la_LIBADD) $(LIBS)
+ module-position-event-sounds.la: $(module_position_event_sounds_la_OBJECTS) $(module_position_event_sounds_la_DEPENDENCIES) 
+ 	$(module_position_event_sounds_la_LINK) -rpath $(modlibexecdir) $(module_position_event_sounds_la_OBJECTS) $(module_position_event_sounds_la_LIBADD) $(LIBS)
+ module-remap-sink.la: $(module_remap_sink_la_OBJECTS) $(module_remap_sink_la_DEPENDENCIES) 
+@@ -4125,6 +4162,14 @@ distclean-compile:
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_native_protocol_fd_la-module-native-protocol-fd.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_native_protocol_tcp_la-module-protocol-stub.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_native_protocol_unix_la-module-protocol-stub.Plo@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_policy_enforcement_la-classify.Plo@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_policy_enforcement_la-client-ext.Plo@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_policy_enforcement_la-config-file.Plo@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_policy_enforcement_la-dbusif.Plo@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_policy_enforcement_la-module-policy-enforcement.Plo@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_policy_enforcement_la-policy-group.Plo@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_policy_enforcement_la-sink-ext.Plo@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_policy_enforcement_la-sink-input-ext.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_rescue_streams_la-module-rescue-streams.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_rtp_recv_la-module-rtp-recv.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_rtp_send_la-module-rtp-send.Plo@am__quote@
+@@ -6181,6 +6226,62 @@ module-pipe-source.lo: modules/module-pipe-source.c
+ @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+ @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module-pipe-source.lo `test -f 'modules/module-pipe-source.c' || echo '$(srcdir)/'`modules/module-pipe-source.c
+ 
++module_policy_enforcement_la-module-policy-enforcement.lo: modules/maemo/module-policy-enforcement.c
++@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -MT module_policy_enforcement_la-module-policy-enforcement.lo -MD -MP -MF $(DEPDIR)/module_policy_enforcement_la-module-policy-enforcement.Tpo -c -o module_policy_enforcement_la-module-policy-enforcement.lo `test -f 'modules/maemo/module-policy-enforcement.c' || echo '$(srcdir)/'`modules/maemo/module-policy-enforcement.c
++@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_policy_enforcement_la-module-policy-enforcement.Tpo $(DEPDIR)/module_policy_enforcement_la-module-policy-enforcement.Plo
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/maemo/module-policy-enforcement.c' object='module_policy_enforcement_la-module-policy-enforcement.lo' libtool=yes @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -c -o module_policy_enforcement_la-module-policy-enforcement.lo `test -f 'modules/maemo/module-policy-enforcement.c' || echo '$(srcdir)/'`modules/maemo/module-policy-enforcement.c
++
++module_policy_enforcement_la-config-file.lo: modules/maemo/config-file.c
++@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -MT module_policy_enforcement_la-config-file.lo -MD -MP -MF $(DEPDIR)/module_policy_enforcement_la-config-file.Tpo -c -o module_policy_enforcement_la-config-file.lo `test -f 'modules/maemo/config-file.c' || echo '$(srcdir)/'`modules/maemo/config-file.c
++@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_policy_enforcement_la-config-file.Tpo $(DEPDIR)/module_policy_enforcement_la-config-file.Plo
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/maemo/config-file.c' object='module_policy_enforcement_la-config-file.lo' libtool=yes @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -c -o module_policy_enforcement_la-config-file.lo `test -f 'modules/maemo/config-file.c' || echo '$(srcdir)/'`modules/maemo/config-file.c
++
++module_policy_enforcement_la-client-ext.lo: modules/maemo/client-ext.c
++@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -MT module_policy_enforcement_la-client-ext.lo -MD -MP -MF $(DEPDIR)/module_policy_enforcement_la-client-ext.Tpo -c -o module_policy_enforcement_la-client-ext.lo `test -f 'modules/maemo/client-ext.c' || echo '$(srcdir)/'`modules/maemo/client-ext.c
++@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_policy_enforcement_la-client-ext.Tpo $(DEPDIR)/module_policy_enforcement_la-client-ext.Plo
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/maemo/client-ext.c' object='module_policy_enforcement_la-client-ext.lo' libtool=yes @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -c -o module_policy_enforcement_la-client-ext.lo `test -f 'modules/maemo/client-ext.c' || echo '$(srcdir)/'`modules/maemo/client-ext.c
++
++module_policy_enforcement_la-sink-ext.lo: modules/maemo/sink-ext.c
++@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -MT module_policy_enforcement_la-sink-ext.lo -MD -MP -MF $(DEPDIR)/module_policy_enforcement_la-sink-ext.Tpo -c -o module_policy_enforcement_la-sink-ext.lo `test -f 'modules/maemo/sink-ext.c' || echo '$(srcdir)/'`modules/maemo/sink-ext.c
++@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_policy_enforcement_la-sink-ext.Tpo $(DEPDIR)/module_policy_enforcement_la-sink-ext.Plo
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/maemo/sink-ext.c' object='module_policy_enforcement_la-sink-ext.lo' libtool=yes @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -c -o module_policy_enforcement_la-sink-ext.lo `test -f 'modules/maemo/sink-ext.c' || echo '$(srcdir)/'`modules/maemo/sink-ext.c
++
++module_policy_enforcement_la-sink-input-ext.lo: modules/maemo/sink-input-ext.c
++@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -MT module_policy_enforcement_la-sink-input-ext.lo -MD -MP -MF $(DEPDIR)/module_policy_enforcement_la-sink-input-ext.Tpo -c -o module_policy_enforcement_la-sink-input-ext.lo `test -f 'modules/maemo/sink-input-ext.c' || echo '$(srcdir)/'`modules/maemo/sink-input-ext.c
++@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_policy_enforcement_la-sink-input-ext.Tpo $(DEPDIR)/module_policy_enforcement_la-sink-input-ext.Plo
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/maemo/sink-input-ext.c' object='module_policy_enforcement_la-sink-input-ext.lo' libtool=yes @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -c -o module_policy_enforcement_la-sink-input-ext.lo `test -f 'modules/maemo/sink-input-ext.c' || echo '$(srcdir)/'`modules/maemo/sink-input-ext.c
++
++module_policy_enforcement_la-classify.lo: modules/maemo/classify.c
++@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -MT module_policy_enforcement_la-classify.lo -MD -MP -MF $(DEPDIR)/module_policy_enforcement_la-classify.Tpo -c -o module_policy_enforcement_la-classify.lo `test -f 'modules/maemo/classify.c' || echo '$(srcdir)/'`modules/maemo/classify.c
++@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_policy_enforcement_la-classify.Tpo $(DEPDIR)/module_policy_enforcement_la-classify.Plo
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/maemo/classify.c' object='module_policy_enforcement_la-classify.lo' libtool=yes @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -c -o module_policy_enforcement_la-classify.lo `test -f 'modules/maemo/classify.c' || echo '$(srcdir)/'`modules/maemo/classify.c
++
++module_policy_enforcement_la-policy-group.lo: modules/maemo/policy-group.c
++@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -MT module_policy_enforcement_la-policy-group.lo -MD -MP -MF $(DEPDIR)/module_policy_enforcement_la-policy-group.Tpo -c -o module_policy_enforcement_la-policy-group.lo `test -f 'modules/maemo/policy-group.c' || echo '$(srcdir)/'`modules/maemo/policy-group.c
++@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_policy_enforcement_la-policy-group.Tpo $(DEPDIR)/module_policy_enforcement_la-policy-group.Plo
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/maemo/policy-group.c' object='module_policy_enforcement_la-policy-group.lo' libtool=yes @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -c -o module_policy_enforcement_la-policy-group.lo `test -f 'modules/maemo/policy-group.c' || echo '$(srcdir)/'`modules/maemo/policy-group.c
++
++module_policy_enforcement_la-dbusif.lo: modules/maemo/dbusif.c
++@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -MT module_policy_enforcement_la-dbusif.lo -MD -MP -MF $(DEPDIR)/module_policy_enforcement_la-dbusif.Tpo -c -o module_policy_enforcement_la-dbusif.lo `test -f 'modules/maemo/dbusif.c' || echo '$(srcdir)/'`modules/maemo/dbusif.c
++@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_policy_enforcement_la-dbusif.Tpo $(DEPDIR)/module_policy_enforcement_la-dbusif.Plo
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/maemo/dbusif.c' object='module_policy_enforcement_la-dbusif.lo' libtool=yes @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_policy_enforcement_la_CFLAGS) $(CFLAGS) -c -o module_policy_enforcement_la-dbusif.lo `test -f 'modules/maemo/dbusif.c' || echo '$(srcdir)/'`modules/maemo/dbusif.c
++
+ module-position-event-sounds.lo: modules/module-position-event-sounds.c
+ @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module-position-event-sounds.lo -MD -MP -MF $(DEPDIR)/module-position-event-sounds.Tpo -c -o module-position-event-sounds.lo `test -f 'modules/module-position-event-sounds.c' || echo '$(srcdir)/'`modules/module-position-event-sounds.c
+ @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module-position-event-sounds.Tpo $(DEPDIR)/module-position-event-sounds.Plo
