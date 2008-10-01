@@ -8,3 +8,4 @@
 0008--first-version-of-support-for-external-configuratio.patch
 0009-Add-pulsecore.pc.patch
 0010-autofoo-on-debian-unstable.patch
+0011-Fix-supend.patch
