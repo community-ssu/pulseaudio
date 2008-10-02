@@ -1,3 +1,9 @@
+pulseaudio (0.9.12git~20080930-0maemo2) unstable; urgency=low
+
+  * Load module-policy-enforcement currently fails to load.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Thu, 02 Oct 2008 20:42:39 +0300
+
 pulseaudio (0.9.12git~20080930-0maemo1) unstable; urgency=low
 
   * Import new version from git a84b72bf...

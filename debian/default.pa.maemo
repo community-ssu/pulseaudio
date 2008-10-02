@@ -19,11 +19,11 @@ load-module module-nokia-voice master_sink=sink.hw0 master_source=source.hw0 dbu
 load-module module-nokia-EAP sink_name=sink.music master_sink=sink.voice.raw
 .endif
 
+.nofail
+
 .ifexists module-policy-enforcement.so
 load-module module-policy-enforcement
 .endif
-
-.nofail
 
 .ifexists module-bluetooth-discover.so
 load-module module-bluetooth-discover
