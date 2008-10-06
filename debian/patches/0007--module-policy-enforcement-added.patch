@@ -1,0 +1,2707 @@
+From db4a2016dd108bf6022944fd5ef49bc9c18bb7b7 Mon Sep 17 00:00:00 2001
+From: Janos Kovacs <janos.f.kovacs@nokia.com>
+Date: Mon, 29 Sep 2008 16:24:34 +0300
+Subject: [PATCH] - module-policy-enforcement added
+
+---
+ src/Makefile.am                               |   22 +-
+ src/modules/maemo/classify.c                  |  360 +++++++++++++
+ src/modules/maemo/classify.h                  |   42 ++
+ src/modules/maemo/client-ext.c                |  249 +++++++++
+ src/modules/maemo/client-ext.h                |   31 ++
+ src/modules/maemo/dbusif.c                    |  665 +++++++++++++++++++++++++
+ src/modules/maemo/dbusif.h                    |   23 +
+ src/modules/maemo/module-policy-enforcement.c |  164 ++++++
+ src/modules/maemo/policy-group.c              |  542 ++++++++++++++++++++
+ src/modules/maemo/policy-group.h              |   63 +++
+ src/modules/maemo/sink-ext.c                  |  148 ++++++
+ src/modules/maemo/sink-ext.h                  |   19 +
+ src/modules/maemo/sink-input-ext.c            |  153 ++++++
+ src/modules/maemo/sink-input-ext.h            |   30 ++
+ src/modules/maemo/userdata.h                  |   43 ++
+ 15 files changed, 2551 insertions(+), 3 deletions(-)
+ create mode 100644 src/modules/maemo/classify.c
+ create mode 100644 src/modules/maemo/classify.h
+ create mode 100644 src/modules/maemo/client-ext.c
+ create mode 100644 src/modules/maemo/client-ext.h
+ create mode 100644 src/modules/maemo/dbusif.c
+ create mode 100644 src/modules/maemo/dbusif.h
+ create mode 100644 src/modules/maemo/module-policy-enforcement.c
+ create mode 100644 src/modules/maemo/policy-group.c
+ create mode 100644 src/modules/maemo/policy-group.h
+ create mode 100644 src/modules/maemo/sink-ext.c
+ create mode 100644 src/modules/maemo/sink-ext.h
+ create mode 100644 src/modules/maemo/sink-input-ext.c
+ create mode 100644 src/modules/maemo/sink-input-ext.h
+ create mode 100644 src/modules/maemo/userdata.h
+
+diff --git a/src/Makefile.am b/src/Makefile.am
+index af8938e..813494c 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -1058,7 +1058,6 @@ modlibexec_LTLIBRARIES += \
+ 		module-tunnel-source.la \
+ 		module-position-event-sounds.la
+ 
+-
+ # See comment at librtp.la above
+ if !OS_IS_WIN32
+ modlibexec_LTLIBRARIES += \
+@@ -1165,7 +1164,8 @@ endif
+ if HAVE_DBUS
+ modlibexec_LTLIBRARIES += \
+ 		libdbus-util.la \
+-		module-console-kit.la
++		module-console-kit.la \
++		module-policy-enforcement.la
+ endif
+ 
+ if HAVE_BLUEZ
+@@ -1241,7 +1241,8 @@ SYMDEF_FILES = \
+ 		modules/gconf/module-gconf-symdef.h \
+ 		modules/module-position-event-sounds-symdef.h \
+ 		modules/module-console-kit-symdef.h \
+-		modules/module-flat-volume-symdef.h
++		modules/module-flat-volume-symdef.h \
++		modules/maemo/module-policy-enforcement-symdef.h
+ 
+ EXTRA_DIST += $(SYMDEF_FILES)
+ BUILT_SOURCES += $(SYMDEF_FILES)
+@@ -1617,6 +1618,21 @@ module_bluetooth_device_la_LDFLAGS = -module -avoid-version
+ module_bluetooth_device_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la libbluetooth-ipc.la libbluetooth-sbc.la libsocket-util.la
+ module_bluetooth_device_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
+ 
++# Policy Enforcement
++module_policy_enforcement_la_SOURCES = \
++			modules/maemo/module-policy-enforcement.c \
++			modules/maemo/client-ext.c \
++			modules/maemo/sink-ext.c \
++			modules/maemo/sink-input-ext.c \
++			modules/maemo/classify.c \
++			modules/maemo/policy-group.c \
++			modules/maemo/dbusif.c
++module_policy_enforcement_la_LDFLAGS = -module -avoid-version
++module_policy_enforcement_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la
++module_policy_enforcement_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
++
++
++
+ ###################################
+ #        Some minor stuff         #
+ ###################################
+diff --git a/src/modules/maemo/classify.c b/src/modules/maemo/classify.c
+new file mode 100644
+index 0000000..6038461
+--- /dev/null
++++ b/src/modules/maemo/classify.c
+@@ -0,0 +1,360 @@
++#include <stdio.h>
++
++#include <config.h>
++
++#include <pulsecore/log.h>
++#include <pulsecore/client.h>
++#include <pulsecore/sink-input.h>
++
++#include "classify.h"
++
++#define GROUP_DEFINITION_FILE "group.conf"
++
++
++struct sinkdef {const char *type, *sink; uint32_t sidx;};
++
++static struct sinkdef defs[] = {
++    { "earpiece" , "alsa_output.pci"      , PA_IDXSET_INVALID },
++    { "headset"  , "alsa_output.usb"      , PA_IDXSET_INVALID },
++    { "bluetooth", "alsa_output.bluetooth", PA_IDXSET_INVALID },
++    { "ihf"      , "alsa_output.pci"      , PA_IDXSET_INVALID },
++    { NULL       , NULL                   , PA_IDXSET_INVALID }
++};
++
++static char *find_group_for_client(struct userdata *, char *, char *, pid_t,
++                                   uid_t, gid_t, char *, int, char **);
++static char *arg_dump(int, char **, char *, int);
++
++static void  pid_hash_free(struct pa_classify_stream **);
++static void  pid_hash_insert(struct pa_classify_stream **, pid_t,
++                             const char *, const char *);
++static void  pid_hash_remove(struct pa_classify_stream **, pid_t,const char *);
++static char *pid_hash_get_group(struct pa_classify_stream **, pid_t,
++                                const char *);
++static struct pa_classify_stream *pid_hash_find(struct pa_classify_stream **,
++                                                pid_t, const char *,
++                                                struct pa_classify_stream **);
++
++
++struct pa_classify *pa_classify_new(struct userdata *u, const char *gdfile)
++{
++    struct pa_classify *cl;
++    char gdpath[PATH_MAX];
++
++    if (!gdfile)
++        gdfile = GROUP_DEFINITION_FILE;
++
++    pa_policy_file_path(gdfile, gdpath, PATH_MAX);
++    pa_log_info("%s: group definition file is '%s'", __FILE__, gdpath);
++
++    cl = pa_xnew0(struct pa_classify, 1);
++
++    return cl;
++}
++
++void pa_classify_free(struct pa_classify *cl)
++{
++    if (cl) {
++        pid_hash_free(cl->pid_hash);
++
++        pa_xfree(cl);
++    }
++}
++
++void pa_classify_register_pid(struct userdata *u, pid_t pid, char *stnam,
++                              char *group)
++{
++    struct pa_classify *classify;
++
++    pa_assert(u);
++    pa_assert((classify = u->classify));
++
++    if (group != NULL) {
++        pid_hash_insert(classify->pid_hash, pid, stnam, group);
++    }
++}
++
++void pa_classify_unregister_pid(struct userdata *u, pid_t pid, char *stnam)
++{
++    struct pa_classify *classify;
++    
++    pa_assert(u);
++    pa_assert((classify = u->classify));
++
++    pid_hash_remove(classify->pid_hash, pid, stnam);
++}
++
++char *pa_classify_sink_input(struct userdata *u, struct pa_sink_input *sinp)
++{
++    struct pa_client     *client;
++    struct pa_client_ext *cle;
++    char                 *clnam;  /* client's name in PA */
++    pid_t                 pid;    /* client processs PID */
++    uid_t                 uid;    /* client process user ID */
++    gid_t                 gid;    /* client process group ID */
++    char                 *exe;    /* client's binary path */
++    int                   argc;   /* client's argc */
++    char                **argv;   /* client's argv */
++    char                 *stnam;  /* stream name */
++    char                  buf[1024];
++    char                *group;
++
++    pa_assert(u);
++    pa_assert(sinp);
++
++    group = "othermedia";
++
++#if 0
++    if ((client = sinp->client) == NULL ||
++        (cle = pa_shadow_idxset_get_by_index(u->cexts,client->index)) == NULL){
++        clnam = " ";
++        pid   = 0;
++        uid   = -1;
++        gid   = -1;
++        exe   = " ";
++        argc  = 0;
++        argv  = NULL;
++        stnam = sinp->name;
++        group = NULL;
++    }
++    else {
++        clnam = pa_client_name(cle);
++        pid   = pa_client_pid(cle);
++        uid   = pa_client_uid(cle);
++        gid   = pa_client_gid(cle);
++        exe   = pa_client_exe(cle);
++        argc  = pa_client_argc(cle);
++        argv  = pa_client_argv(cle);
++        stnam = sinp->name;
++
++        group = find_group_for_client(u, clnam, stnam, pid, uid,gid,
++                                      exe, argc,argv);
++    }
++
++    pa_log_debug("%s: classify sink input (%s|%s|%d|%d|%d|%s|%s|%s) => %s",
++                 __FILE__, clnam, stnam, pid, uid,gid, exe?exe:"<null>",
++                 arg_dump(argc, argv, buf, sizeof(buf)),
++                 stnam, group?group:"<null>");
++#endif
++
++    return group;
++}
++
++int pa_classify_sink(struct userdata *u, uint32_t sidx, char *name,
++                     char *buf, int len)
++{
++    struct sinkdef *d;
++    int             i;
++    char           *p;
++    char           *e;
++    const char     *s;
++
++    pa_assert(u);
++    pa_assert(buf);
++    pa_assert(len > 0);
++    pa_assert(sidx != PA_IDXSET_INVALID);
++
++    e = (p = buf) + len;
++    p[0] = '\0';
++    s = "";
++        
++    for (d = defs, i = 0;  d->type;  d++) {
++        if ((name != NULL && !strncmp(name, d->sink, strlen(d->sink))) ||
++            (name == NULL && sidx == d->sidx))
++        {
++            p += snprintf(p, e-p, "%s%s", s, d->type);
++            s  = " ";
++            
++            if (p > e) {
++                pa_log("%s: %s() buffer overflow", __FILE__, __FUNCTION__);
++                *buf = '\0';
++                p = e;
++                break;
++            }
++            
++            d->sidx = name ? sidx : PA_IDXSET_INVALID;
++        }
++    }
++
++    return (e - p);
++}
++
++int pa_classify_is_sink_typeof(char *sink, char *type)
++{
++    struct sinkdef *d;
++
++    if (!sink || !type)
++        return FALSE;
++
++    for (d = defs;  d->type;  d++) {
++        if (!strcmp(type, d->type) && !strncmp(sink, d->sink, strlen(d->sink)))
++            return TRUE;
++    }
++
++    return FALSE;
++}
++
++
++static char *find_group_for_client(struct userdata *u,
++                                   char *clnam, char *stnam, pid_t pid,
++                                   uid_t uid, gid_t gid,
++                                   char *exe, int argc, char **argv)
++{
++    struct pa_classify *classify;
++    char               *group = NULL;
++
++    assert(u);
++    pa_assert((classify = u->classify));
++#if 0
++    pa_assert(classify->pid);
++
++    if ((group = pa_shadow_idxset_get_by_index(classify->pid, pid)) == NULL) {
++        
++        if (exe && !strcmp(exe, "/root/call-engine"))
++            group = "ringtone";
++    }
++#endif
++
++    return group;
++}
++
++
++static char *arg_dump(int argc, char **argv, char *buf, int len)
++{
++    char *p = buf;
++    int   i, l;
++    
++    if (argc <= 0 || argv == NULL)
++        snprintf(buf, len, "0 <null>");
++    else {
++        l = snprintf(p, len, "%d", argc);
++        
++        p   += l;
++        len -= l;
++        
++        for (i = 0;  i < argc && len > 0;  i++) {
++            l = snprintf(p, len, " [%d]=%s", i, argv[i]);
++            
++            p   += l;
++            len -= l;
++        }
++    }
++    
++    return buf;
++}
++
++static void pid_hash_free(struct pa_classify_stream **hash)
++{
++    struct pa_classify_stream *st;
++    int i;
++
++    assert(hash);
++
++    for (i = 0;   i < PA_POLICY_PID_HASH_MAX;   i++) {
++        while ((st = hash[i]) != NULL) {
++            hash[i] = st->next;
++
++            pa_xfree(st->stnam);
++            pa_xfree(st->group);
++
++            pa_xfree(st);
++        }
++    }
++}
++
++static void pid_hash_insert(struct pa_classify_stream **hash, pid_t pid,
++                            const char *stnam, const char *group)
++{
++    struct pa_classify_stream *st;
++    struct pa_classify_stream *prev;
++
++    pa_assert(hash);
++    pa_assert(group);
++
++
++    if ((st = pid_hash_find(hash, pid, stnam, &prev)) != NULL) {
++        pa_xfree(st->group);
++        st->group = pa_xstrdup(group);
++    }
++    else {
++        st  = pa_xnew0(struct pa_classify_stream, 1);
++
++        st->next  = NULL;
++        st->pid   = pid;
++        st->stnam = stnam ? pa_xstrdup(stnam) : NULL;
++        st->group = pa_xstrdup(group);
++
++        prev->next = st;
++    }
++}
++
++static void pid_hash_remove(struct pa_classify_stream **hash,
++                            pid_t pid, const char *stnam)
++{
++    struct pa_classify_stream *st;
++    struct pa_classify_stream *prev;
++
++    pa_assert(hash);
++
++    if ((st = pid_hash_find(hash, pid, stnam, &prev)) != NULL) {
++        prev->next = st->next;
++
++        pa_xfree(st->stnam);
++        pa_xfree(st->group);
++        
++        pa_xfree(st);
++    }
++}
++
++static char *pid_hash_get_group(struct pa_classify_stream **hash,
++                                pid_t pid, const char *stnam)
++{
++    struct pa_classify_stream *st;
++    const char *group;
++
++    pa_assert(hash);
++ 
++    if ((st = pid_hash_find(hash, pid, stnam, NULL)) == NULL)
++        group = (char *)PA_POLICY_DEFAULT_GROUP_NAME;
++    else
++        group = st->group;
++
++    return group;
++}
++
++static struct
++pa_classify_stream *pid_hash_find(struct pa_classify_stream **hash,
++                                  pid_t pid, const char *stnam,
++                                  struct pa_classify_stream **prev_ret)
++{
++    struct pa_classify_stream *st;
++    struct pa_classify_stream *prev;
++    int                        idx;
++
++    idx = pid & PA_POLICY_PID_HASH_MASK;
++
++    for (prev = (struct pa_classify_stream *)&hash[idx];
++         (st = prev->next) != NULL;
++         prev = prev->next)
++    {
++        if (pid == st->pid) {
++            if ((!stnam && !st->stnam) ||
++                ( stnam &&  st->stnam && !strcmp(stnam,st->stnam)))
++                break;
++        }
++    }
++
++    if (prev_ret)
++        *prev_ret = prev;
++
++    return st;
++}
++
++
++/*
++ * Local Variables:
++ * c-basic-offset: 4
++ * indent-tabs-mode: nil
++ * End:
++ *
++ */
+diff --git a/src/modules/maemo/classify.h b/src/modules/maemo/classify.h
+new file mode 100644
+index 0000000..e3f67d8
+--- /dev/null
++++ b/src/modules/maemo/classify.h
+@@ -0,0 +1,42 @@
++#ifndef fooclassifyfoo
++#define fooclassifyfoo
++
++#include "userdata.h"
++
++#define PA_POLICY_PID_HASH_BITS  6
++#define PA_POLICY_PID_HASH_MAX   (1 << PA_POLICY_PID_HASH_BITS)
++#define PA_POLICY_PID_HASH_MASK  (PA_POLICY_PID_HASH_MAX - 1)
++
++struct pa_sink_input;
++
++struct pa_classify_stream {
++    struct pa_classify_stream *next;
++    pid_t                      pid;     /* process id (or parent process id) */
++    char                      *stnam;   /* stream's name if any */
++    char                      *group;   /* policy group name */
++};
++
++struct pa_classify {
++    struct pa_classify_stream *pid_hash[PA_POLICY_PID_HASH_MAX];
++};
++
++
++struct pa_classify *pa_classify_new(struct userdata *, const char *);
++void  pa_classify_free(struct pa_classify *);
++void  pa_classify_register_pid(struct userdata *, pid_t, char *, char *);
++void  pa_classify_unregister_pid(struct userdata *, pid_t, char *);
++char *pa_classify_sink_input(struct userdata *, struct pa_sink_input *);
++int   pa_classify_sink(struct userdata *, uint32_t, char *, char *, int);
++int   pa_classify_is_sink_typeof(char *, char *);
++
++
++#endif
++
++
++/*
++ * Local Variables:
++ * c-basic-offset: 4
++ * indent-tabs-mode: nil
++ * End:
++ *
++ */
+diff --git a/src/modules/maemo/client-ext.c b/src/modules/maemo/client-ext.c
+new file mode 100644
+index 0000000..e066118
+--- /dev/null
++++ b/src/modules/maemo/client-ext.c
+@@ -0,0 +1,249 @@
++#include <stdio.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <unistd.h>
++#include <errno.h>
++
++#include <config.h>
++#include <pulse/def.h>
++
++#include "userdata.h"
++#include "client-ext.h"
++
++static void handle_client_events(pa_core *, pa_subscription_event_type_t,
++				 uint32_t, void *);
++
++static char *client_ext_dump(struct pa_client *, char *, int);
++
++
++pa_subscription *pa_client_ext_subscription(struct userdata *u)
++{
++    pa_subscription *subscr;
++    
++    pa_assert(u->core);
++    
++    subscr = pa_subscription_new(u->core, 1 << PA_SUBSCRIPTION_EVENT_CLIENT,
++                                 handle_client_events, (void *)u);
++    
++    return subscr;
++}
++
++char *pa_client_ext_name(struct pa_client *client)
++{
++    const char *name;
++
++    assert(client);
++
++    name = pa_proplist_gets(client->proplist, PA_PROP_APPLICATION_NAME);
++
++    return (char *)name;
++}
++
++char *pa_client_ext_id(struct pa_client *client)
++{
++    const char *id;
++
++    assert(client);
++
++    id = pa_proplist_gets(client->proplist, PA_PROP_APPLICATION_ID);
++
++    return (char *)id;
++}
++
++pid_t pa_client_ext_pid(struct pa_client *client)
++{
++    const char *pidstr;
++    pid_t       pid;
++    char       *e;
++
++    assert(client);
++
++    pid = 0;
++    pidstr = pa_proplist_gets(client->proplist,PA_PROP_APPLICATION_PROCESS_ID);
++
++    if (pidstr != NULL) {
++        pid = strtoul(pidstr, &e, 10);
++
++        if (*e != '\0')
++            pid = 0;
++    }
++
++    return pid;
++}
++
++uid_t pa_client_ext_uid(struct pa_client *client)
++{
++    const char *uidstr;
++    uid_t       uid;
++    char       *e;
++
++    assert(client);
++
++    uid = 0;
++    uidstr = pa_proplist_gets(client->proplist,
++                              PA_PROP_APPLICATION_PROCESS_USER);
++
++    if (uidstr != NULL) {
++        uid = strtoul(uidstr, &e, 10);
++
++        if (*e != '\0')
++            uid = 0;
++    }
++
++    return uid;
++}
++
++char *pa_client_ext_exe(struct pa_client *client)
++{
++    const char *exe;
++
++    assert(client);
++
++    exe = pa_proplist_gets(client->proplist,
++                           PA_PROP_APPLICATION_PROCESS_BINARY);
++
++    return (char *)exe;
++}
++
++char *pa_client_ext_args(struct pa_client *client)
++{
++    const char *args;
++
++    assert(client);
++
++    args = pa_proplist_gets(client->proplist,PA_PROP_APPLICATION_PROCESS_ARGS);
++
++    return (char *)args;
++}
++
++static void handle_client_events(pa_core *c,pa_subscription_event_type_t t,
++				 uint32_t idx, void *userdata)
++{
++    struct userdata  *udata  = userdata;
++    uint32_t          et     = t & PA_SUBSCRIPTION_EVENT_TYPE_MASK;
++    struct pa_client *client;
++    char              buf[1024];
++    
++    pa_assert(udata);
++    
++    switch (et) {
++        
++    case PA_SUBSCRIPTION_EVENT_NEW:
++        if ((client = pa_idxset_get_by_index(c->clients, idx)) != NULL) {
++            pa_log_debug("new client (idx=%d) %s", idx,
++                         client_ext_dump(client, buf, sizeof(buf)));
++        }
++        break;
++        
++    case PA_SUBSCRIPTION_EVENT_CHANGE:
++        if ((client = pa_idxset_get_by_index(c->clients, idx)) != NULL) {
++            
++            pa_log_debug("change client (idx=%d) %s", idx,
++                         client_ext_dump(client, buf, sizeof(buf)));
++        }
++        break;
++        
++    case PA_SUBSCRIPTION_EVENT_REMOVE:
++        pa_log_debug("client removed (idx=%d)", idx);
++        break;
++        
++    default:
++        pa_log("%s: unknown client event type %d", __FILE__, et);
++        break;
++    }
++    
++}
++
++static void client_ext_set_args(struct pa_client *client)
++{
++#if 0
++    char  path[256];
++    char  args[ARG_MAX];
++    int   argc;
++    char *argv[1024];
++    int   fd, len;
++    char *p, *e;
++    int   i, offs;
++    
++    snprintf(path, sizeof(path), "/proc/%d/cmdline", ext->pid);
++    
++    if ((fd = open(path, O_RDONLY)) < 0) {
++        pa_log("%s: Can't obtain command line", __FILE__);
++        return;
++    }
++    
++    for (;;) {
++        if ((len = read(fd, args, sizeof(args)-1)) < 0) {
++            if (errno == EINTR)
++                continue;
++            else
++                return;
++        }
++        
++        args[len] = '\0';
++        
++        break;
++    }
++    
++    for (e = (p = args) + len, argc = 0;   argc < 1024 && p < e;   argc++) {
++        argv[argc] = p;
++        
++        while (*p++ && p < e)
++            ;
++    }
++    
++    p = pa_xmalloc((argc * sizeof(char *)) + len);
++    
++    memcpy(p, argv, (argc * sizeof(char *)));
++    memcpy(p + (argc * sizeof(char *)), args, len);
++    
++    ext->argc = argc;
++    ext->argv = (char **)p;
++    
++    offs = (p + (argc * sizeof(char *))) - args;
++    
++    for (i = 0;  i < argc;  i++)
++        ext->argv[i] += offs;
++#endif
++}
++
++
++static char *client_ext_dump(struct pa_client *client, char *buf, int len)
++{
++    const char  *name;
++    const char  *id;
++    pid_t        pid;
++    uid_t        uid;
++    const char  *exe;
++    const char  *args;
++
++    if (client == NULL)
++        *buf = '\0';
++    else {
++        name = pa_client_ext_name(client);
++        id   = pa_client_ext_id(client);
++        pid  = pa_client_ext_pid(client);
++        uid  = pa_client_ext_uid(client);
++        exe  = pa_client_ext_exe(client);
++        args = pa_client_ext_args(client);
++
++        if (!name)  name = "<noname>";
++        if ( !id )  id   = "<noid>";
++        if (!exe )  exe  = "<noexe>";
++        if (!args)  args = "<noargs>";
++     
++        snprintf(buf, len, "(%s|%s|%d|%d|%s|%s)", name,id, pid, uid, exe,args);
++    }
++    
++    return buf;
++}
++
++
++/*
++ * Local Variables:
++ * c-basic-offset: 4
++ * indent-tabs-mode: nil
++ * End:
++ *
++ */
+diff --git a/src/modules/maemo/client-ext.h b/src/modules/maemo/client-ext.h
+new file mode 100644
+index 0000000..a1340d3
+--- /dev/null
++++ b/src/modules/maemo/client-ext.h
+@@ -0,0 +1,31 @@
++#ifndef fooclientextfoo
++#define fooclientextfoo
++
++#include <stdint.h>
++#include <sys/types.h>
++
++#include <pulsecore/client.h>
++#include <pulsecore/core-subscribe.h>
++
++#include "userdata.h"
++
++struct pa_client;
++
++pa_subscription *pa_client_ext_subscription(struct userdata *);
++char  *pa_client_ext_name(struct pa_client *);
++char  *pa_client_ext_id(struct pa_client *);
++pid_t  pa_client_ext_pid(struct pa_client *);
++uid_t  pa_client_ext_uid(struct pa_client *);
++char  *pa_client_ext_exe(struct pa_client *);
++char  *pa_client_ext_args(struct pa_client *);
++
++
++#endif
++
++/*
++ * Local Variables:
++ * c-basic-offset: 4
++ * indent-tabs-mode: nil
++ * End:
++ *
++ */
+diff --git a/src/modules/maemo/dbusif.c b/src/modules/maemo/dbusif.c
+new file mode 100644
+index 0000000..e9f08c5
+--- /dev/null
++++ b/src/modules/maemo/dbusif.c
+@@ -0,0 +1,665 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++
++#include <config.h>
++
++#include "userdata.h"
++#include "dbus-util.h"
++#include "dbusif.h"
++#include "classify.h"
++#include "policy-group.h"
++
++#define POLICY_DBUS_INTERFACE       "com.nokia.policy"
++#define POLICY_DBUS_MYPATH          "/com/nokia/policy/enforce/pulseaudio"
++#define POLICY_DBUS_MYNAME          "com.nokia.policy.pulseaudio"
++#define POLICY_DBUS_PDPATH          "/com/nokia/policy"
++#define POLICY_DBUS_PDNAME          "org.freedesktop.ohm"
++
++#define POLICY_DECISION             "decision"
++#define POLICY_INFO                 "info"
++#define POLICY_ACTIONS              "actions"
++#define POLICY_STATUS               "status"
++
++
++#define STRUCT_OFFSET(s,m) ((char *)&(((s *)0)->m) - (char *)0)
++
++struct pa_policy_dbusif {
++    pa_dbus_connection *conn;
++    char               *ifnam;   /* signal interface */
++    char               *mypath;  /* my signal path */
++    char               *pdpath;  /* policy daemon's signal path */
++    char               *pdnam;   /* policy daemon's D-Bus name */
++    char               *rule;    /* match rule to catch policy signals */
++    int                 regist;  /* wheter or not registered to policy daemon*/
++};
++
++struct actdsc {                 /* action descriptor */
++    const char         *name;
++    int               (*parser)(struct userdata *u, DBusMessageIter *iter);
++};
++
++struct argdsc {                 /* argument descriptor for actions */
++    const char         *name;
++    int                 offs;
++    int                 type;
++};
++
++struct argrt {                  /* audio_route arguments */
++    char               *type;
++    char               *device;
++};
++
++struct argvol {                 /* volume_limit arguments */
++    char               *group;
++    char               *limit;
++};
++
++struct argcork {                /* audio_cork arguments */
++    char               *group;
++    char               *cork;
++};
++
++static int action_parser(DBusMessageIter *, struct argdsc *, void *, int);
++static int audio_route_parser(struct userdata *, DBusMessageIter *);
++static int volume_limit_parser(struct userdata *, DBusMessageIter *);
++static int audio_cork_parser(struct userdata *, DBusMessageIter *);
++
++static DBusHandlerResult filter(DBusConnection *, DBusMessage *, void *);
++static void handle_info_message(struct userdata *, DBusMessage *);
++static void handle_action_message(struct userdata *, DBusMessage *);
++static void registration_cb(DBusPendingCall *, void *);
++static int  register_to_pdp(struct pa_policy_dbusif *, struct userdata *);
++static int  signal_status(struct userdata *, uint32_t, uint32_t);
++
++
++
++struct pa_policy_dbusif *pa_policy_dbusif_init(struct userdata *u,
++                                               const char      *ifnam,
++                                               const char      *mypath,
++                                               const char      *pdpath,
++                                               const char      *pdnam)
++{
++    pa_module               *m = u->module;
++    struct pa_policy_dbusif *dbusif = NULL;
++    DBusConnection          *dbusconn;
++    DBusError                error;
++    char                     rule[512];
++    
++    dbusif = pa_xnew0(struct pa_policy_dbusif, 1);
++
++    dbus_error_init(&error);
++    dbusif->conn = pa_dbus_bus_get(m->core, DBUS_BUS_SYSTEM, &error);
++
++    if (dbusif->conn == NULL || dbus_error_is_set(&error)) {
++        pa_log("%s: failed to get SYSTEM Bus: %s: %s",
++               __FILE__, error.name, error.message);
++        goto fail;
++    }
++
++    dbusconn = pa_dbus_connection_get(dbusif->conn);
++
++#if 0
++    flags  = DBUS_NAME_FLAG_REPLACE_EXISTING | DBUS_NAME_FLAG_DO_NOT_QUEUE;
++    result = dbus_bus_request_name(dbusconn, POLICY_DBUS_MYNAME, flags,&error);
++
++    if (result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER &&
++        result != DBUS_REQUEST_NAME_REPLY_ALREADY_OWNER    ) {
++        pa_log("%s: D-Bus name request failed: %s: %s",
++               __FILE__, error.name, error.message);
++        goto fail;
++    }
++#endif
++ 
++    if (!dbus_connection_add_filter(dbusconn, filter,u, NULL)) {
++        pa_log("%s: failed to add filter function", __FILE__);
++        goto fail;
++    }
++
++    if (!ifnam)
++        ifnam = POLICY_DBUS_INTERFACE;
++
++    if (!mypath)
++        mypath = POLICY_DBUS_MYPATH;
++
++    if (!pdpath)
++        pdpath = POLICY_DBUS_PDPATH;
++
++    if (!pdnam)
++        pdnam = POLICY_DBUS_PDNAME;
++
++    snprintf(rule, sizeof(rule), "type='signal',interface='%s',"
++             "path='%s/%s'", ifnam, pdpath, POLICY_DECISION);
++    dbus_bus_add_match(dbusconn, rule, &error);
++
++    if (dbus_error_is_set(&error)) {
++        pa_log("%s: unable to subscribe policy signals on %s: %s: %s",
++               __FILE__, ifnam, error.name, error.message);
++        goto fail;
++    }
++
++    pa_log_info("%s: subscribed policy signals on %s", __FILE__, ifnam);
++
++    dbusif->ifnam  = pa_xstrdup(ifnam);
++    dbusif->mypath = pa_xstrdup(mypath);
++    dbusif->pdpath = pa_xstrdup(pdpath);
++    dbusif->pdnam  = pa_xstrdup(pdnam);
++    dbusif->rule   = pa_xstrdup(rule);
++
++    register_to_pdp(dbusif, u);
++
++    return dbusif;
++
++ fail:
++    pa_policy_dbusif_done(u);
++    dbus_error_free(&error);
++    return NULL;
++}
++
++
++void pa_policy_dbusif_done(struct userdata *u)
++{
++    struct pa_policy_dbusif *dbusif;    
++    DBusConnection          *dbusconn;
++    
++    if (u && (dbusif = u->dbusif)) {
++        if (dbusif->conn) {
++            dbusconn = pa_dbus_connection_get(dbusif->conn);
++
++            dbus_connection_remove_filter(dbusconn, filter,u);
++            dbus_bus_remove_match(dbusconn, dbusif->rule, NULL);
++
++            pa_dbus_connection_unref(dbusif->conn);
++        }
++
++        pa_xfree(dbusif->ifnam);
++        pa_xfree(dbusif->mypath);
++        pa_xfree(dbusif->pdpath);
++        pa_xfree(dbusif->pdnam);
++        pa_xfree(dbusif->rule);
++
++        pa_xfree(dbusif);
++    }
++}
++
++void pa_policy_dbusif_send_device_state(struct userdata *u, char *state,
++                                        char **types, int ntype)
++{
++    static char             *path = (char *)"/com/nokia/policy/info";
++
++    struct pa_policy_dbusif *dbusif = u->dbusif;
++    DBusConnection          *conn   = pa_dbus_connection_get(dbusif->conn);
++    DBusMessage             *msg;
++    DBusMessageIter          mit;
++    DBusMessageIter          dit;
++    int                      i;
++    int                      sts;
++
++    if (!types || ntype < 1)
++        return;
++
++    msg = dbus_message_new_signal(path, dbusif->ifnam, "info");
++
++    if (msg == NULL) {
++        pa_log("%s: failed to make new info message", __FILE__);
++        goto fail;
++    }
++
++    dbus_message_iter_init_append(msg, &mit);
++
++    if (!dbus_message_iter_append_basic(&mit, DBUS_TYPE_STRING, &state) ||
++        !dbus_message_iter_open_container(&mit, DBUS_TYPE_ARRAY,"s", &dit)){
++        pa_log("%s: failed to build info message", __FILE__);
++        goto fail;
++    }
++
++    for (i = 0; i < ntype; i++) {
++        if (!dbus_message_iter_append_basic(&dit, DBUS_TYPE_STRING,&types[i])){
++            pa_log("%s: failed to build info message", __FILE__);
++            goto fail;
++        }
++    }
++
++    dbus_message_iter_close_container(&mit, &dit);
++
++    sts = dbus_connection_send(conn, msg, NULL);
++
++    if (!sts) {
++        pa_log("%s: Can't send status message: out of memory", __FILE__);
++    }
++
++ fail:
++    dbus_message_unref(msg);    /* should cope with NULL msg */
++}
++
++static DBusHandlerResult filter(DBusConnection *conn, DBusMessage *msg,
++                                void *arg)
++{
++    struct userdata  *u = arg;
++
++    if (dbus_message_is_signal(msg, POLICY_DBUS_INTERFACE, POLICY_INFO)) {
++        handle_info_message(u, msg);
++        return DBUS_HANDLER_RESULT_HANDLED;
++    }
++
++    if (dbus_message_is_signal(msg, POLICY_DBUS_INTERFACE, POLICY_ACTIONS)) {
++        handle_action_message(u, msg);
++        return DBUS_HANDLER_RESULT_HANDLED;
++    }
++
++    return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
++}
++
++static void handle_info_message(struct userdata *u, DBusMessage *msg)
++{
++    dbus_uint32_t  txid;
++    dbus_uint32_t  pid;
++    char          *oper;
++    char          *group;
++    char          *stnam;
++    int            success;
++
++    success = dbus_message_get_args(msg, NULL,
++                                    DBUS_TYPE_UINT32, &txid,
++                                    DBUS_TYPE_STRING, &oper,
++                                    DBUS_TYPE_STRING, &group,
++                                    DBUS_TYPE_UINT32, &pid,
++                                    DBUS_TYPE_STRING, &stnam,
++                                    DBUS_TYPE_INVALID);
++    if (!success) {
++        pa_log("%s: failed to parse message", __FILE__);
++        return;
++    }
++
++    if (!strcmp(oper, "register")) {
++
++        if (pa_policy_group_find(u, group) == NULL) {
++            pa_log_debug("%s: register client (%s|%u) failed: unknown group",
++                         __FILE__, group, pid);
++        }
++        else {
++            pa_log_debug("%s: register client (%s|%u|%s)",
++                         __FILE__, group, pid, stnam);
++            pa_classify_register_pid(u, pid, stnam, group);
++        }
++        
++    }
++    else if (!strcmp(oper, "unregister")) {
++        pa_log_debug("%s: unregister client (%s|%u)", __FILE__, group, pid);
++        pa_classify_unregister_pid(u, pid, stnam);
++    }
++    else {
++        pa_log("%s: invalid operation: '%s'", __FILE__, oper);
++    }
++}
++
++static void handle_action_message(struct userdata *u, DBusMessage *msg)
++{
++    static struct actdsc actions[] = {
++        { "audio_route" , audio_route_parser  },
++        { "volume_limit", volume_limit_parser },
++        { "audio_cork"  , audio_cork_parser   },
++        {     NULL      , NULL                }
++    };
++
++    struct actdsc   *act;
++    dbus_uint32_t    txid;
++    char            *actname;
++    DBusMessageIter  msgit;
++    DBusMessageIter  arrit;
++    DBusMessageIter  entit;
++    DBusMessageIter  actit;
++    int              success = TRUE;
++
++    pa_log_debug("%s: got policy actions", __FILE__);
++
++    dbus_message_iter_init(msg, &msgit);
++
++    if (dbus_message_iter_get_arg_type(&msgit) != DBUS_TYPE_UINT32)
++        return;
++
++    dbus_message_iter_get_basic(&msgit, (void *)&txid);
++
++    pa_log_debug("%s: got actions (txid:%d)", __FILE__, txid);
++
++    if (!dbus_message_iter_next(&msgit) ||
++        dbus_message_iter_get_arg_type(&msgit) != DBUS_TYPE_ARRAY) {
++        success = FALSE;
++        goto send_signal;
++    }
++
++    dbus_message_iter_recurse(&msgit, &arrit);
++
++    do {
++        if (dbus_message_iter_get_arg_type(&arrit) != DBUS_TYPE_DICT_ENTRY) {
++            success = FALSE;
++            continue;
++        }
++
++        dbus_message_iter_recurse(&arrit, &entit);
++
++        do {
++            if (dbus_message_iter_get_arg_type(&entit) != DBUS_TYPE_STRING) {
++                success = FALSE;
++                continue;
++            }
++            
++            dbus_message_iter_get_basic(&entit, (void *)&actname);
++            
++            if (!dbus_message_iter_next(&entit) ||
++                dbus_message_iter_get_arg_type(&entit) != DBUS_TYPE_ARRAY) {
++                success = FALSE;
++                continue;
++            }
++            
++            dbus_message_iter_recurse(&entit, &actit);
++            
++            if (dbus_message_iter_get_arg_type(&actit) != DBUS_TYPE_ARRAY) {
++                success = FALSE;
++                continue;
++            }
++            
++            for (act = actions;   act->name != NULL;   act++) {
++                if (!strcmp(actname, act->name))
++                    break;
++            }
++                                    
++            if (act->parser == NULL)
++                success &= FALSE;
++            else
++                success &= act->parser(u, &actit);
++
++        } while (dbus_message_iter_next(&entit));
++
++    } while (dbus_message_iter_next(&arrit));
++
++ send_signal:
++    signal_status(u, txid, success);
++}
++
++static int action_parser(DBusMessageIter *actit, struct argdsc *descs,
++                         void *args, int len)
++{
++    DBusMessageIter  cmdit;
++    DBusMessageIter  argit;
++    DBusMessageIter  valit;
++    struct argdsc   *desc;
++    char            *argname;
++    void            *argval;
++    
++    dbus_message_iter_recurse(actit, &cmdit);
++
++    memset(args, 0, len);
++
++    do {
++        if (dbus_message_iter_get_arg_type(&cmdit) != DBUS_TYPE_STRUCT)
++            return FALSE;
++
++        dbus_message_iter_recurse(&cmdit, &argit);
++
++        if (dbus_message_iter_get_arg_type(&argit) != DBUS_TYPE_STRING)
++            return FALSE;
++
++        dbus_message_iter_get_basic(&argit, (void *)&argname);
++            
++        if (!dbus_message_iter_next(&argit))
++            return FALSE;
++
++        if (dbus_message_iter_get_arg_type(&argit) != DBUS_TYPE_VARIANT)
++            return FALSE;
++
++        dbus_message_iter_recurse(&argit, &valit);
++                    
++        for (desc = descs;  desc->name != NULL;  desc++) {
++            if (!strcmp(argname, desc->name)) {
++                if (desc->offs + (int)sizeof(char *) > len) {
++                    pa_log("%s: %s() desc offset %d  is out of range %d",
++                           __FILE__, __FUNCTION__, desc->offs, len);
++                    return FALSE;
++                }
++                else {
++                    if (dbus_message_iter_get_arg_type(&valit) != desc->type)
++                        return FALSE;
++
++                    argval = (char *)args + desc->offs;
++
++                    dbus_message_iter_get_basic(&valit, argval);
++                }
++                break;
++            }
++        }
++
++    } while (dbus_message_iter_next(&cmdit));
++
++    return TRUE;
++}
++
++static int audio_route_parser(struct userdata *u, DBusMessageIter *actit)
++{
++    static struct argdsc descs[] = {
++        {"type"  , STRUCT_OFFSET(struct argrt, type)  , DBUS_TYPE_STRING },
++        {"device", STRUCT_OFFSET(struct argrt, device), DBUS_TYPE_STRING },
++        {  NULL  ,            0                       , DBUS_TYPE_INVALID}
++    };
++
++    struct argrt  args;
++    int           sink;
++    char         *target;
++
++    do {
++        if (!action_parser(actit, descs, &args, sizeof(args)))
++            return FALSE;
++
++        if (args.type == NULL || args.device == NULL)
++            return FALSE;
++
++        if (!strcmp(args.type, "sink"))
++            sink = 1;
++        else if (!strcmp(args.type, "source"))
++            sink = 0;
++        else
++            return FALSE;
++
++        target = args.device;
++
++        if (sink) {
++            pa_log_debug("%s: route sink to %s", __FILE__, target);
++
++            if (pa_policy_group_move_to(u, NULL, target) < 0) {
++                pa_log("%s: can't route to sink %s", __FILE__, target);
++                return FALSE;
++            }
++        }
++        else {
++            pa_log_debug("audio_route(source, %s) is ignored", target);
++        }
++
++    } while (dbus_message_iter_next(actit));
++
++    return TRUE;
++}
++
++static int volume_limit_parser(struct userdata *u, DBusMessageIter *actit)
++{
++    static struct argdsc descs[] = {
++        {"group", STRUCT_OFFSET(struct argvol, group), DBUS_TYPE_STRING },
++        {"limit", STRUCT_OFFSET(struct argvol, limit), DBUS_TYPE_STRING },
++        {  NULL ,            0                       , DBUS_TYPE_INVALID}
++    };
++
++    struct argvol  args;
++    char          *grp;
++    uint32_t       val;
++    char          *end;
++
++    do {
++        if (!action_parser(actit, descs, &args, sizeof(args)))
++            return FALSE;
++
++        if (args.group == NULL || args.limit == NULL)
++            return FALSE;
++
++        grp = args.group;
++        val = strtoul(args.limit, &end, 10);
++
++        if (*end || val > 100)
++            return FALSE;
++
++        pa_log_debug("%s: volume limit (%s|%d)", __FILE__, grp, val); 
++        pa_policy_group_volume_limit(u, grp, val);
++
++    } while (dbus_message_iter_next(actit));
++
++    return TRUE;
++}
++
++static int audio_cork_parser(struct userdata *u, DBusMessageIter *actit)
++{
++    static struct argdsc descs[] = {
++        {"group", STRUCT_OFFSET(struct argcork, group), DBUS_TYPE_STRING },
++        {"cork" , STRUCT_OFFSET(struct argcork, cork) , DBUS_TYPE_STRING },
++        { NULL  ,            0                        , DBUS_TYPE_INVALID}
++    };
++    
++    struct argcork  args;
++    char           *grp;
++    int             val;
++    
++    do {
++        if (!action_parser(actit, descs, &args, sizeof(args)))
++            return FALSE;
++
++        if (args.group == NULL || args.cork == NULL)
++            return FALSE;
++
++        grp = args.group;
++
++        if (!strcmp(args.cork, "corked"))
++            val = 1;
++        else if (!strcmp(args.cork, "uncorked"))
++            val = 0;
++        else
++            return FALSE;
++        
++        pa_log_debug("%s: cork stream (%s|%d)", __FILE__, grp, val);
++        pa_policy_group_cork(u, grp, val);
++
++    } while (dbus_message_iter_next(actit));
++    
++    return TRUE;
++}
++
++static void registration_cb(DBusPendingCall *pend, void *data)
++{
++    struct userdata *u = (struct userdata *)data;
++    DBusMessage     *reply;
++
++    if ((reply = dbus_pending_call_steal_reply(pend)) == NULL || u == NULL) {
++        pa_log("%s: registartion setting failed: invalid argument", __FILE__);
++        return;
++    }
++
++    pa_log_info("got reply to registration");
++
++    if (u->dbusif) {
++        u->dbusif->regist = 1;
++    }
++
++    dbus_message_unref(reply);
++}
++
++static int register_to_pdp(struct pa_policy_dbusif *dbusif, struct userdata *u)
++{
++    DBusConnection  *conn   = pa_dbus_connection_get(dbusif->conn);
++    DBusMessage     *msg;
++    DBusPendingCall *pend;
++    int              success;
++
++    pa_log_info("%s: registering to policy daemon: name='%s' path='%s' if='%s'"
++                , __FILE__, dbusif->pdnam, dbusif->pdpath, dbusif->ifnam);
++
++    msg = dbus_message_new_method_call(dbusif->pdnam, dbusif->pdpath,
++                                       dbusif->ifnam, "register");
++
++    if (msg == NULL) {
++        pa_log("%s: Failed to create D-Dbus message to register",
++               __FILE__);
++        goto failed;
++    }
++
++    success = dbus_connection_send_with_reply(conn, msg, &pend, 1000);
++    if (!success) {
++        pa_log("%s: Failed to register", __FILE__);
++        goto failed;
++    }
++
++    success = dbus_pending_call_set_notify(pend, registration_cb, u, NULL);
++
++    if (!success) {
++        pa_log("%s: Can't set notification for registartion", __FILE__);
++    }
++
++ failed:
++    dbus_message_unref(msg);
++    return success;
++}
++
++
++static int signal_status(struct userdata *u, uint32_t txid, uint32_t status)
++{
++    struct pa_policy_dbusif *dbusif = u->dbusif;
++    DBusConnection          *conn   = pa_dbus_connection_get(dbusif->conn);
++    DBusMessage             *msg;
++    char                     path[256];
++    int                      ret;
++
++    snprintf(path, sizeof(path), "%s/%s", dbusif->pdpath, POLICY_DECISION);
++
++    pa_log_debug("%s: sending signal to: path='%s', if='%s' member='%s' "
++                 "content: txid=%d status=%d", __FILE__, path, dbusif->ifnam,
++                 POLICY_STATUS, txid, status);
++
++    msg = dbus_message_new_signal(path, dbusif->ifnam, POLICY_STATUS);
++
++    if (msg == NULL) {
++        pa_log("%s: failed to make new status message", __FILE__);
++        goto fail;
++    }
++
++    ret = dbus_message_append_args(msg,
++            DBUS_TYPE_UINT32, &txid,
++            DBUS_TYPE_UINT32, &status,
++            DBUS_TYPE_INVALID);
++
++    if (!ret) {
++        pa_log("%s: Can't build D-Bus status message", __FILE__);
++        goto fail;
++    }
++
++    ret = dbus_connection_send(conn, msg, NULL);
++
++    if (!ret) {
++        pa_log("%s: Can't send status message: out of memory", __FILE__);
++        goto fail;
++    }
++
++    dbus_message_unref(msg);
++
++    return 0;
++
++ fail:
++    dbus_message_unref(msg);    /* should cope with NULL msg */
++
++    return -1;
++}
++
++
++/*
++ * Local Variables:
++ * c-basic-offset: 4
++ * indent-tabs-mode: nil
++ * End:
++ *
++ */
++
+diff --git a/src/modules/maemo/dbusif.h b/src/modules/maemo/dbusif.h
+new file mode 100644
+index 0000000..6087eb9
+--- /dev/null
++++ b/src/modules/maemo/dbusif.h
+@@ -0,0 +1,23 @@
++#ifndef foodbusiffoo
++#define foodbusiffoo
++
++#include "userdata.h"
++
++struct pa_policy_dbusif;
++
++struct pa_policy_dbusif *pa_policy_dbusif_init(struct userdata *, const char *,
++                                               const char *, const char *,
++                                               const char *);
++void pa_policy_dbusif_done(struct userdata *);
++void pa_policy_dbusif_send_device_state(struct userdata *,char *,char **,int);
++
++
++#endif
++
++/*
++ * Local Variables:
++ * c-basic-offset: 4
++ * indent-tabs-mode: nil
++ * End:
++ *
++ */
+diff --git a/src/modules/maemo/module-policy-enforcement.c b/src/modules/maemo/module-policy-enforcement.c
+new file mode 100644
+index 0000000..a908773
+--- /dev/null
++++ b/src/modules/maemo/module-policy-enforcement.c
+@@ -0,0 +1,164 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <sys/stat.h>
++#include <stdio.h>
++#include <errno.h>
++#include <string.h>
++#include <fcntl.h>
++#include <unistd.h>
++#include <limits.h>
++
++#include <sys/types.h>
++#include <sys/socket.h>
++
++#include <config.h>
++
++#include <pulse/timeval.h>
++#include <pulse/xmalloc.h>
++
++#include <pulsecore/macro.h>
++#include <pulsecore/module.h>
++#include <pulsecore/idxset.h>
++#include <pulsecore/client.h>
++#include <pulsecore/core-util.h>
++#include <pulsecore/core-error.h>
++#include <pulsecore/modargs.h>
++#include <pulsecore/log.h>
++
++#include "module-policy-enforcement-symdef.h"
++#include "userdata.h"
++#include "policy-group.h"
++#include "classify.h"
++#include "client-ext.h"
++#include "sink-ext.h"
++#include "sink-input-ext.h"
++#include "dbusif.h"
++
++#ifndef PA_DEFAULT_CONFIG_DIR
++#define PA_DEFAULT_CONFIG_DIR "/usr/local/etc/pulse"
++#endif
++
++PA_MODULE_AUTHOR("Janos Kovacs");
++PA_MODULE_DESCRIPTION("Policy enforcement module");
++PA_MODULE_VERSION(PACKAGE_VERSION);
++PA_MODULE_LOAD_ONCE(TRUE);
++PA_MODULE_USAGE(
++    "groupdefs=<group classification config file> "
++    "dbus_if_name=<policy dbus interface> "
++    "dbus_my_path=<our path> "
++    "dbus_policyd_path=<policy daemon's path>"
++    "dbus_policyd_name=<policy daemon's name>"
++);
++
++static const char* const valid_modargs[] = {
++    "groupdefs",
++    "dbus_if_name",
++    "dbus_my_path",
++    "dbus_policyd_path",
++    "dbus_policyd_name",
++    NULL
++};
++
++
++int pa__init(pa_module *m) {
++    struct userdata *u = NULL;
++    pa_modargs      *ma = NULL;
++    const char      *gdfile;
++    const char      *ifnam;
++    const char      *mypath;
++    const char      *pdpath;
++    const char      *pdnam;
++    
++    pa_assert(m);
++    
++    if (!(ma = pa_modargs_new(m->argument, valid_modargs))) {
++        pa_log("Failed to parse module arguments.");
++        goto fail;
++    }
++
++    gdfile = pa_modargs_get_value(ma, "groupdefs", NULL);
++    ifnam  = pa_modargs_get_value(ma, "dbus_if_name", NULL);
++    mypath = pa_modargs_get_value(ma, "dbus_my_path", NULL);
++    pdpath = pa_modargs_get_value(ma, "dbus_policyd_path", NULL);
++    pdnam  = pa_modargs_get_value(ma, "dbus_policyd_name", NULL);
++
++    
++    u = pa_xnew0(struct userdata, 1);
++    u->core     = m->core;
++    u->module   = m;
++    u->scl      = pa_client_ext_subscription(u);
++    u->ssnk     = pa_sink_ext_subscription(u);
++    u->ssi      = pa_sink_input_ext_subscription(u);
++    u->groups   = pa_policy_groupset_new(u);
++    u->classify = pa_classify_new(u, gdfile);
++    u->dbusif   = pa_policy_dbusif_init(u, ifnam, mypath, pdpath, pdnam);
++
++    pa_policy_groupset_update_default_sink(u, PA_IDXSET_INVALID);
++    pa_policy_groupset_create_default_group(u);
++    
++    m->userdata = u;
++    
++    if (u->scl == NULL || u->ssnk == NULL || u->ssi == NULL)
++        goto fail;
++        
++    pa_modargs_free(ma);
++
++#if 1
++    pa_policy_group_new(u, (char *)"player");
++    pa_policy_group_new(u, (char *)"ringtone");
++#endif
++    
++    return 0;
++    
++ fail:
++    
++    if (ma)
++        pa_modargs_free(ma);
++    
++    pa__done(m);
++    
++    return -1;
++}
++
++void pa__done(pa_module *m) {
++    struct userdata *u;
++    
++    pa_assert(m);
++    
++    if (!(u = m->userdata))
++        return;
++    
++    pa_policy_dbusif_done(u);
++
++    pa_subscription_free(u->scl);
++    pa_subscription_free(u->ssnk);
++    pa_subscription_free(u->ssi);
++    
++    pa_policy_groupset_free(u->groups);
++    pa_classify_free(u->classify);
++    
++    pa_xfree(u);
++}
++
++
++/*
++ * For the time being the prototype is in the userdata.h which is
++ * not the best possible place for it
++ */
++const char *pa_policy_file_path(const char *file, char *buf, int len)
++{
++    snprintf(buf, len, "%s/x%s", PA_DEFAULT_CONFIG_DIR, file);
++
++    return buf;
++}
++
++
++/*
++ * Local Variables:
++ * c-basic-offset: 4
++ * indent-tabs-mode: nil
++ * End:
++ *
++ */
++
++
+diff --git a/src/modules/maemo/policy-group.c b/src/modules/maemo/policy-group.c
+new file mode 100644
+index 0000000..f4765e4
+--- /dev/null
++++ b/src/modules/maemo/policy-group.c
+@@ -0,0 +1,542 @@
++
++#include <config.h>
++
++#include <pulsecore/namereg.h>
++
++#include "policy-group.h"
++#include "sink-input-ext.h"
++#include "classify.h"
++
++
++struct cursor {
++    int idx;
++    struct pa_policy_group *grp;
++};
++
++
++static struct pa_sink   *defsink;
++static uint32_t          defidx = PA_IDXSET_INVALID;
++
++static int move_group(struct pa_policy_group *, struct pa_sink *);
++static int cork_group(struct pa_policy_group *, int);
++static struct pa_policy_group *find_group_by_name(struct pa_policy_groupset *,
++                                                  char *, uint32_t *);
++static struct pa_sink *find_sink_by_type(struct userdata *, char *);
++
++static uint32_t hash_value(char *);
++
++
++struct pa_policy_groupset *pa_policy_groupset_new(struct userdata *u)
++{
++    struct pa_policy_groupset *gset;
++
++    pa_assert(u);
++    
++    gset = pa_xnew0(struct pa_policy_groupset, 1);
++
++    return gset;
++}
++
++void pa_policy_groupset_free(struct pa_policy_groupset *gset)
++{
++    pa_assert(gset);
++
++    pa_xfree(gset);
++}
++
++void pa_policy_groupset_update_default_sink(struct userdata *u, uint32_t idx)
++{
++    struct pa_policy_groupset *gset;
++    struct pa_policy_group    *group;
++    int                        i;
++
++    pa_assert(u);
++    pa_assert((gset = u->groups));
++
++    /*
++     * Remove the sink from all groups if idx were specified
++     * and equals to the default sink's index
++     */
++
++    if (defsink != NULL && defidx == idx) {
++        pa_log_debug("Unset default sink (idx=%d)", idx);
++
++        for (i = 0;   i < PA_POLICY_GROUP_HASH_DIM;   i++) {
++            for (group = gset->hash_tbl[i]; group; group = group->next) {
++                if (group->index == defidx) {
++                    group->sink  = NULL;
++                    group->index = PA_IDXSET_INVALID;
++                }
++            }
++        }
++        
++        defsink = NULL;
++        defidx  = PA_IDXSET_INVALID;
++    }
++
++    /*
++     * Try to find the default sink if we do not had any
++     */
++
++    if (defsink == NULL) {
++        defsink = pa_namereg_get(u->core, NULL, PA_NAMEREG_SINK, FALSE);
++
++        if (defsink != NULL) {
++            defidx = defsink->index;
++
++            pa_log_debug("Set default sink to '%s' (idx=%d)",
++                         pa_sink_ext_get_name(defsink), defidx);
++
++            for (i = 0;   i < PA_POLICY_GROUP_HASH_DIM;   i++) {
++                for (group = gset->hash_tbl[i]; group; group = group->next) {
++                    if (group->sink == NULL) {
++                        group->sink  = defsink;
++                        group->index = defidx;
++
++                        /* TODO: we should move the streams to defsink */
++                    }
++                }
++            }
++        }
++    }
++}
++
++
++void pa_policy_groupset_create_default_group(struct userdata *u)
++{
++    struct pa_policy_groupset *gset;
++    
++    pa_assert(u);
++    pa_assert((gset = u->groups));
++
++    gset->dflt = pa_policy_group_new(u, (char *)PA_POLICY_DEFAULT_GROUP_NAME);
++}
++
++
++
++struct pa_policy_group *pa_policy_group_new(struct userdata *u, char *name)
++{
++    struct pa_policy_groupset *gset;
++    struct pa_policy_group    *group;
++    uint32_t                   idx;
++
++    pa_assert(u);
++    pa_assert((gset = u->groups));
++
++    if ((group = find_group_by_name(gset, name, &idx)) != NULL)
++        return group;
++
++    group = pa_xnew0(struct pa_policy_group, 1);
++
++    group->next  = gset->hash_tbl[idx];
++    group->name  = pa_xstrdup(name);
++    group->limit = PA_VOLUME_NORM;
++    group->sink  = defsink;
++    group->index = defidx;
++
++    gset->hash_tbl[idx] = group;
++
++    pa_log_info("created group (%s|%d|%s)", group->name,
++                (group->limit * 100) / PA_VOLUME_NORM,
++                group->sink?group->sink->name:"<null>" );
++
++    return group;
++}
++
++void pa_policy_group_free(struct pa_policy_groupset *gset, char *name)
++{
++    struct pa_policy_group    *group;
++    struct pa_policy_group    *dflt;
++    struct pa_policy_group    *prev;
++    struct pa_sink_input      *sinp;
++    struct pa_sink_input_list *sl;
++    struct pa_sink_input_list *next;
++    char                      *dnam;
++    uint32_t                   idx;
++
++    pa_assert(gset);
++    pa_assert(name);
++
++    if ((group = find_group_by_name(gset, name, &idx)) != NULL) {
++        for (prev = (struct pa_policy_group *)&gset->hash_tbl[idx];
++             prev->next != NULL;
++             prev = prev->next)
++        {
++            if (group == prev->next) {
++                if (group->sinpls != NULL) {
++                    dflt = gset->dflt;
++
++                    if (group == dflt) {
++                        /*
++                         * If the default group is deleted,
++                         * release all sink-inputs
++                         */
++                        for (sl = group->sinpls;   sl;   sl = next) {
++                            next = sl->next;
++                            sinp = sl->sink_input;
++
++                            pa_sink_input_ext_set_policy_group(sinp, NULL);
++
++                            pa_xfree(sl);
++                        }
++                    }
++                    else {
++                        /*
++                         * Otherwise add the sink-inputs to the default group
++                         */
++                        dnam = dflt->name;
++
++                        for (sl = group->sinpls;   sl;   sl = sl->next) {
++                            sinp = sl->sink_input;
++
++                            pa_sink_input_ext_set_policy_group(sinp, dnam);
++                            
++                            if (sl->next == NULL)
++                                sl->next = dflt->sinpls;
++                        }
++                        
++                        dflt->sinpls = group->sinpls;
++                    }
++                } /* if group->sinp != NULL */
++
++                pa_xfree(group->name);
++
++                prev->next = group->next;
++
++                pa_xfree(group);
++
++                break;
++            } 
++        } /* for */
++    } /* if find_group */
++}
++
++struct pa_policy_group *pa_policy_group_find(struct userdata *u, char *name)
++{
++    struct pa_policy_groupset *gset;
++
++    assert(u);
++    assert((gset = u->groups));
++    assert(name);
++
++    return find_group_by_name(gset, name, NULL);
++}
++
++void pa_policy_group_insert_sink_input(struct userdata      *u,
++                                       char                 *name,
++                                       struct pa_sink_input *si)
++{
++    struct pa_policy_groupset *gset;
++    struct pa_policy_group    *group;
++    struct pa_sink_input_list *sl;
++
++
++    pa_assert(u);
++    pa_assert((gset = u->groups));
++    pa_assert(si);
++
++    if (name == NULL)
++        group = gset->dflt;
++    else
++        group = find_group_by_name(gset, name, NULL);
++
++    if (group != NULL) {
++        pa_sink_input_ext_set_policy_group(si, group->name);
++
++        sl = pa_xnew0(struct pa_sink_input_list, 1);
++        sl->next = group->sinpls;
++        sl->index = si->index;
++        sl->sink_input = si;
++
++        group->sinpls = sl;
++
++        if (group->sink != NULL) {
++            pa_sink_input_move_to(si, group->sink);
++            pa_sink_input_cork(si, group->corked);
++
++            pa_sink_input_ext_set_volume_limit(si, group->limit);
++        }
++
++        pa_log_debug("sink input '%s' added to group '%s'",
++                     pa_sink_input_ext_get_name(si), group->name);
++    }
++}
++
++
++void pa_policy_group_remove_sink_input(struct userdata *u, uint32_t idx)
++{
++    struct pa_policy_group    *group;
++    struct pa_sink_input_list *prev;
++    struct pa_sink_input_list *sl;
++    void                      *cursor = NULL;
++
++    pa_assert(u);
++    pa_assert(u->groups);
++
++    while ((group = pa_policy_group_scan(u->groups, &cursor)) != NULL) {
++        for (prev = (struct pa_sink_input_list *)&group->sinpls;
++             prev != NULL;
++             prev = prev->next)
++        {
++            if ((sl = prev->next) != NULL && idx == sl->index) {
++                prev->next = sl->next;
++
++                pa_xfree(sl);
++
++                pa_log_debug("sink input (idx=%d) removed from group '%s'",
++                             idx, group->name);
++
++                return;
++            }
++        }
++    }
++
++    pa_log("Can't remove sink input (idx=%d): not a member of any group", idx);
++}
++
++int pa_policy_group_move_to(struct userdata *u, char *name, char *type)
++{
++    struct pa_sink           *sink;
++    struct pa_policy_group   *grp;
++    void                     *curs;
++    int                       ret = -1;
++
++    pa_assert(u);
++
++    if ((sink = find_sink_by_type(u, type)) != NULL) {
++        if (name) {             /* move the specified group only */
++            if ((grp = find_group_by_name(u->groups, name, NULL)) != NULL) {
++                if ((ret = move_group(grp, sink)) >= 0)
++                    grp->sink = sink;
++            }
++        }
++        else {                  /* move all groups */
++            ret = 0;
++
++            for (curs = NULL; (grp = pa_policy_group_scan(u->groups, &curs));){
++                if (move_group(grp, sink) < 0)
++                    ret = -1;
++                else
++                    grp->sink = sink;
++                
++            }
++        }
++    }
++
++    return ret;
++}
++
++int pa_policy_group_cork(struct userdata *u, char *name, int corked)
++{
++    struct pa_policy_group *grp;
++    int                     ret;
++
++    pa_assert(u);
++
++    if ((grp = find_group_by_name(u->groups, name, NULL)) == NULL)
++        ret = -1;
++    else {
++        grp->corked = corked;
++        ret = cork_group(grp, corked);
++    }
++
++
++    return ret;
++}
++
++
++int pa_policy_group_volume_limit(struct userdata *u, char *name,uint32_t limit)
++{
++    struct pa_policy_groupset *gset;
++    struct pa_policy_group    *group;
++    struct pa_sink_input_list *sl;
++    struct pa_sink_input      *sinp;
++    pa_volume_t                newlim;
++    int                        ret;
++
++    pa_assert(u);
++    pa_assert((gset = u->groups));
++
++    if (name == NULL)
++        group = gset->dflt;
++    else
++        group = find_group_by_name(gset, name, NULL);
++
++    if (group == NULL) {
++        pa_log("%s: can't set volume limit: don't know group '%s'",
++               __FILE__, name ? name : PA_POLICY_DEFAULT_GROUP_NAME);
++        ret = -1;
++    }
++    else {
++        pa_log_debug("%s: setting volume limit %d for group '%s'",
++                     __FILE__, limit, group->name);
++
++        ret = 0;
++        newlim = ((limit > 100 ? 100 : limit) * PA_VOLUME_NORM) / 100;
++
++        if (newlim != group->limit) {
++            group->limit = newlim;
++
++            for (sl = group->sinpls;   sl != NULL;   sl = sl->next) {
++                sinp = sl->sink_input;
++
++                if (pa_sink_input_ext_set_volume_limit(sinp, group->limit) < 0)
++                    ret = -1;
++                else
++                    pa_log_debug("set volume limit %d for stream '%s'",
++                                 group->limit,
++                                 pa_sink_input_ext_get_name(sinp));
++            }
++        }
++    }
++
++    return ret;
++}
++
++struct pa_policy_group *pa_policy_group_scan(struct pa_policy_groupset *gset,
++                                             void **pcursor)
++{
++    struct cursor *cursor;
++    struct pa_policy_group *grp;
++
++    pa_assert(gset);
++    pa_assert(pcursor);
++
++    if ((cursor = *pcursor) == NULL) {
++        cursor = pa_xnew0(struct cursor, 1);
++        *pcursor = cursor;
++    }
++
++    
++    for (;;) {
++        if ((grp = cursor->grp) != NULL) {
++            cursor->grp = grp->next;
++            return grp;
++        }
++
++        if (cursor->idx >= PA_POLICY_GROUP_HASH_DIM) {
++            pa_xfree(cursor);
++            *pcursor = NULL;
++            return NULL;
++        }
++
++        while (cursor->idx < PA_POLICY_GROUP_HASH_DIM &&
++               (cursor->grp = gset->hash_tbl[cursor->idx++]) == NULL)
++            ;
++    }
++}
++
++
++static int move_group(struct pa_policy_group *group, struct pa_sink *sink)
++{
++    struct pa_sink_input_list *sl;
++    struct pa_sink_input *sinp;
++    int ret = 0;
++
++    for (sl = group->sinpls;    sl;   sl = sl->next) {
++        sinp = sl->sink_input;
++
++        if (pa_sink_input_move_to(sinp, sink) < 0) {
++            ret = -1;
++
++            pa_log("failed to move sink input '%s' to sink '%s'",
++                   pa_sink_input_ext_get_name(sinp),
++                   pa_sink_ext_get_name(sink));
++        }
++        else {
++            pa_log_debug("move sink input '%s' to sink '%s'",
++                         pa_sink_input_ext_get_name(sinp),
++                         pa_sink_ext_get_name(sink));
++        }
++    }
++
++    return ret;
++}
++
++
++static int cork_group(struct pa_policy_group *group, int corked)
++{
++    struct pa_sink_input_list *sl;
++    struct pa_sink_input *sinp;
++
++    for (sl = group->sinpls;    sl;   sl = sl->next) {
++        sinp = sl->sink_input;
++
++        pa_sink_input_cork(sinp, corked);
++
++        pa_log_debug("sink input '%s' %s",
++                     pa_sink_input_ext_get_name(sinp),
++                     corked?"corked":"uncorked");
++    }
++
++    return 0;
++}
++
++
++static struct pa_policy_group *
++find_group_by_name(struct pa_policy_groupset *gset, char *name, uint32_t *ridx)
++{
++    struct pa_policy_group *group = NULL;
++    uint32_t                idx   = hash_value(name);
++    
++    pa_assert(gset);
++    pa_assert(name);
++
++    for (group = gset->hash_tbl[idx];   group != NULL;   group = group->next) {
++        if (!strcmp(name, group->name))
++            break;
++    }    
++
++    if (ridx != NULL)
++        *ridx = idx;
++
++    return group;
++}
++
++
++static struct pa_sink *find_sink_by_type(struct userdata *u, char *type)
++{
++    void            *state = NULL;
++    pa_idxset       *idxset;
++    struct pa_sink  *sink;
++    char            *name;
++
++    assert(u);
++    assert(type);
++    assert((idxset = u->core->sinks));
++
++    while ((sink = pa_idxset_iterate(idxset, &state, NULL)) != NULL) {
++        if ((name = pa_sink_ext_get_name(sink)) != NULL) {
++            pa_log_debug("%s() sink '%s' type '%s'",
++                         __FUNCTION__, name, type);
++
++            if (pa_classify_is_sink_typeof(name, type))
++                break;
++        }
++    }
++
++    return sink;
++}
++
++static uint32_t hash_value(char *s)
++{
++    uint32_t hash = 0;
++    unsigned char c;
++
++    if (s) {
++        while ((c = *s++) != '\0') {
++            hash = 38501 * (hash + c);
++        }
++    }
++
++    return hash & PA_POLICY_GROUP_HASH_MASK;
++}
++
++
++/*
++ * Local Variables:
++ * c-basic-offset: 4
++ * indent-tabs-mode: nil
++ * End:
++ *
++ */
+diff --git a/src/modules/maemo/policy-group.h b/src/modules/maemo/policy-group.h
+new file mode 100644
+index 0000000..fb6a621
+--- /dev/null
++++ b/src/modules/maemo/policy-group.h
+@@ -0,0 +1,63 @@
++#ifndef foopolicygroupfoo
++#define foopolicygroupfoo
++
++#include <pulse/volume.h>
++#include <pulsecore/sink.h>
++
++#include "userdata.h"
++
++#define PA_POLICY_GROUP_HASH_BITS 6
++#define PA_POLICY_GROUP_HASH_DIM  (1 << PA_POLICY_GROUP_HASH_BITS)
++#define PA_POLICY_GROUP_HASH_MASK (PA_POLICY_GROUP_HASH_DIM - 1)
++
++struct pa_sink_input_list {
++    struct pa_sink_input_list *next;
++    uint32_t                   index;
++    struct pa_sink_input      *sink_input;
++};
++
++struct pa_policy_group {
++    struct pa_policy_group    *next;
++    char                      *name;   /* name of the policy group */
++    struct pa_sink            *sink;   /* default sink for the group */
++    uint32_t                   index;  /* index of the default sink */
++    pa_volume_t                limit;  /* volume limit for the group */
++    int                        corked;
++    struct pa_sink_input_list *sinpls; /* sink input list */
++};
++
++struct pa_policy_groupset {
++    struct pa_policy_group    *dflt;     /*  default group */
++    struct pa_policy_group    *hash_tbl[PA_POLICY_GROUP_HASH_DIM];
++};
++
++struct pa_policy_groupset *pa_policy_groupset_new(struct userdata *);
++void pa_policy_groupset_free(struct pa_policy_groupset *);
++void pa_policy_groupset_update_default_sink(struct userdata *, uint32_t);
++void pa_policy_groupset_create_default_group(struct userdata *);
++
++struct pa_policy_group *pa_policy_group_new(struct userdata *, char*);
++void pa_policy_group_free(struct pa_policy_groupset *, char *);
++struct pa_policy_group *pa_policy_group_find(struct userdata *, char *);
++
++
++void pa_policy_group_insert_sink_input(struct userdata *, char *,
++                                       struct pa_sink_input *);
++void pa_policy_group_remove_sink_input(struct userdata *, uint32_t);
++
++int  pa_policy_group_move_to(struct userdata *, char *, char *);
++int  pa_policy_group_cork(struct userdata *u, char *, int);
++int  pa_policy_group_volume_limit(struct userdata *, char *, uint32_t);
++struct pa_policy_group *pa_policy_group_scan(struct pa_policy_groupset *,
++                                             void **);
++
++
++#endif
++
++/*
++ * Local Variables:
++ * c-basic-offset: 4
++ * indent-tabs-mode: nil
++ * End:
++ *
++ */
+diff --git a/src/modules/maemo/sink-ext.c b/src/modules/maemo/sink-ext.c
+new file mode 100644
+index 0000000..d4fcb2a
+--- /dev/null
++++ b/src/modules/maemo/sink-ext.c
+@@ -0,0 +1,148 @@
++#include <stdio.h>
++#include <sys/types.h>
++#include <unistd.h>
++#include <errno.h>
++
++#include <config.h>
++#include <pulse/def.h>
++#include <pulsecore/sink.h>
++
++#include "sink-ext.h"
++#include "classify.h"
++#if 0
++#include "dbusif.h"
++#endif
++
++static void handle_sink_events(pa_core *, pa_subscription_event_type_t,
++                               uint32_t, void *);
++static void send_device_state(struct userdata *, const char *, char *);
++
++
++pa_subscription *pa_sink_ext_subscription(struct userdata *u)
++{
++    pa_subscription *subscr;
++    
++    pa_assert(u->core);
++    
++    subscr = pa_subscription_new(u->core, 1<<PA_SUBSCRIPTION_EVENT_SINK,
++                                 handle_sink_events, (void *)u);
++    
++    return subscr;
++}
++
++char *pa_sink_ext_get_name(struct pa_sink *sink)
++{
++    return sink->name ? sink->name : (char *)"<unknown>";
++}
++
++
++static void handle_sink_events(pa_core *c,pa_subscription_event_type_t t,
++                               uint32_t idx, void *userdata)
++{
++    struct userdata    *u = userdata;
++    uint32_t            et    = t & PA_SUBSCRIPTION_EVENT_TYPE_MASK;
++    struct pa_sink     *sink;
++    char               *name;
++    char                buf[1024];
++    int                 ret;
++
++    pa_assert(u);
++    
++    switch (et) {
++
++    case PA_SUBSCRIPTION_EVENT_NEW:
++        if ((sink = pa_idxset_get_by_index(c->sinks, idx)) != NULL) {
++            name = pa_sink_ext_get_name(sink);
++
++            if (pa_classify_sink(u, idx, name, buf, sizeof(buf)) <= 0)
++                pa_log_debug("new sink '%s' (idx=%d)", name, idx);
++            else {
++                ret = pa_proplist_sets(sink->proplist,
++                                       PA_PROP_POLICY_DEVTYPELIST, buf);
++
++                if (ret < 0) {
++                    pa_log("failed to set property '%s' on sink '%s'",
++                           PA_PROP_POLICY_DEVTYPELIST, name);
++                }
++                else {
++                    pa_log_debug("new sink '%s' (idx=%d) (type %s)",
++                                 name, idx, buf);
++                    pa_policy_groupset_update_default_sink(u,PA_IDXSET_INVALID);
++                    send_device_state(u, "1", buf);
++                }
++            }
++        }
++        break;
++        
++    case PA_SUBSCRIPTION_EVENT_CHANGE:
++        break;        
++        
++    case PA_SUBSCRIPTION_EVENT_REMOVE:
++        if (pa_classify_sink(u, idx, NULL, buf, sizeof(buf)) <= 0)
++            pa_log_debug("remove sink (idx=%d)", idx);
++        else {
++            pa_log_debug("remove sink %d (type=%s)", idx, buf);
++            
++            pa_policy_groupset_update_default_sink(u, idx);
++
++            send_device_state(u, "0", buf);
++        }
++        break;
++
++    default:
++        pa_log("unknown sink event type %d", et);
++        break;
++    }
++}
++
++static void send_device_state(struct userdata *u, const char *state,
++                              char *typelist) 
++{
++#define MAX_TYPE 256
++
++    char *types[MAX_TYPE];
++    int   ntype;
++    char  buf[1024];
++    char *p, *q, c;
++
++    ntype = 0;
++
++    p = typelist - 1;
++    q = buf;
++
++    do {
++        p++;
++
++        if (ntype < MAX_TYPE)
++            types[ntype] = q;
++        else {
++            pa_log("%s() list overflow", __FUNCTION__);
++            return;
++        }
++
++        while ((c = *p) != ' ' && c != '\0') {
++            if (q < buf + sizeof(buf)-1)
++                *q++ = *p++;
++            else {
++                pa_log("%s() buffer overflow", __FUNCTION__);
++                return;
++            }
++        }
++        *q++ = '\0';
++        ntype++;
++        
++    } while (*p);
++
++    pa_policy_dbusif_send_device_state(u, state, types, ntype);
++
++#undef MAX_TYPE
++}
++
++
++/*
++ * Local Variables:
++ * c-basic-offset: 4
++ * indent-tabs-mode: nil
++ * End:
++ *
++ */
+diff --git a/src/modules/maemo/sink-ext.h b/src/modules/maemo/sink-ext.h
+new file mode 100644
+index 0000000..52c6047
+--- /dev/null
++++ b/src/modules/maemo/sink-ext.h
+@@ -0,0 +1,19 @@
++#ifndef foosinkextfoo
++#define foosinkextfoo
++
++#include "userdata.h"
++
++struct pa_sink;
++
++pa_subscription *pa_sink_ext_subscription(struct userdata *);
++char *pa_sink_ext_get_name(struct pa_sink *);
++
++#endif /* foosinkextfoo */
++
++/*
++ * Local Variables:
++ * c-basic-offset: 4
++ * indent-tabs-mode: nil
++ * End:
++ *
++ */
+diff --git a/src/modules/maemo/sink-input-ext.c b/src/modules/maemo/sink-input-ext.c
+new file mode 100644
+index 0000000..1d996cc
+--- /dev/null
++++ b/src/modules/maemo/sink-input-ext.c
+@@ -0,0 +1,153 @@
++#include <stdio.h>
++#include <sys/types.h>
++#include <unistd.h>
++#include <errno.h>
++
++#include <config.h>
++#include <pulse/def.h>
++#include <pulse/proplist.h>
++#include <pulsecore/sink.h>
++#include <pulsecore/sink-input.h>
++
++#include "policy-group.h"
++#include "sink-input-ext.h"
++#include "classify.h"
++
++
++
++static void handle_sink_input_events(pa_core *, pa_subscription_event_type_t,
++				     uint32_t, void *);
++
++
++
++pa_subscription *pa_sink_input_ext_subscription(struct userdata *u)
++{
++    pa_subscription *subscr;
++    
++    pa_assert(u->core);
++    
++    subscr = pa_subscription_new(u->core, 1<<PA_SUBSCRIPTION_EVENT_SINK_INPUT,
++                                 handle_sink_input_events, (void *)u);
++    
++    return subscr;
++}
++
++int pa_sink_input_ext_set_policy_group(struct pa_sink_input *sinp,
++                                         char *group)
++{
++    int ret;
++
++    assert(sinp);
++
++    if (group) 
++        ret = pa_proplist_sets(sinp->proplist, PA_PROP_POLICY_GROUP, group);
++    else
++        ret = pa_proplist_unset(sinp->proplist, PA_PROP_POLICY_GROUP);
++
++    return ret;
++}
++
++char *pa_sink_input_ext_get_policy_group(struct pa_sink_input *sinp)
++{
++    const char *group;
++
++    assert(sinp);
++
++    group = pa_proplist_gets(sinp->proplist, PA_PROP_POLICY_GROUP);
++
++    if (group == NULL)
++        group = PA_POLICY_DEFAULT_GROUP_NAME;
++
++    return (char *)group;
++}
++
++char *pa_sink_input_ext_get_name(struct pa_sink_input *sinp)
++{
++    const char *name;
++
++    assert(sinp);
++
++    name = pa_proplist_gets(sinp->proplist, PA_PROP_MEDIA_NAME);
++
++    if (name == NULL)
++        name = "<unknown>";
++    
++    return (char *)name;
++}
++
++
++int pa_sink_input_ext_set_volume_limit(struct pa_sink_input *sinp,
++                                       pa_volume_t limit)
++{
++    pa_cvolume vol;
++    int        i;
++
++    pa_assert(sinp);
++
++    if (limit > PA_VOLUME_NORM)
++        limit = PA_VOLUME_NORM;
++
++    vol = sinp->volume;
++
++    pa_assert(vol.channels <= PA_CHANNELS_MAX);
++
++    for (i = 0;  i < vol.channels;  i++) {
++        if (vol.values[i] > limit)
++            vol.values[i] = limit;
++    }
++
++    pa_asyncmsgq_post(sinp->sink->asyncmsgq, PA_MSGOBJECT(sinp),
++                      PA_SINK_INPUT_MESSAGE_SET_VOLUME,
++                      pa_xnewdup(struct pa_cvolume,&vol,1), 0, NULL, pa_xfree);
++
++    return 0;
++}
++
++
++static void handle_sink_input_events(pa_core *c,pa_subscription_event_type_t t,
++				     uint32_t idx, void *userdata)
++{
++    struct userdata      *u  = userdata;
++    uint32_t              et = t & PA_SUBSCRIPTION_EVENT_TYPE_MASK;
++    struct pa_sink_input *sinp;
++    char                 *snam;
++    char                 *gnam;
++    
++    pa_assert(u);
++    
++    switch (et) {
++
++    case PA_SUBSCRIPTION_EVENT_NEW:
++        if ((sinp = pa_idxset_get_by_index(c->sink_inputs, idx)) != NULL) {
++            snam = pa_sink_input_ext_get_name(sinp);
++            gnam = pa_classify_sink_input(u, sinp);
++
++            pa_policy_group_insert_sink_input(u, gnam, sinp);
++
++            pa_log_debug("new sink_input %s (idx=%d) (group=%s)",
++                         snam, idx, gnam);
++        }
++        break;
++        
++    case PA_SUBSCRIPTION_EVENT_CHANGE:
++        break;
++        
++    case PA_SUBSCRIPTION_EVENT_REMOVE:
++        pa_policy_group_remove_sink_input(u, idx);
++        pa_log_debug("sink input removed (idx=%d)", idx);
++        break;
++        
++    default:
++        pa_log("%s: unknown sink input event type %d", __FILE__, et);
++        break;
++    }
++}
++
++
++/*
++ * Local Variables:
++ * c-basic-offset: 4
++ * indent-tabs-mode: nil
++ * End:
++ *
++ */
+diff --git a/src/modules/maemo/sink-input-ext.h b/src/modules/maemo/sink-input-ext.h
+new file mode 100644
+index 0000000..5418707
+--- /dev/null
++++ b/src/modules/maemo/sink-input-ext.h
+@@ -0,0 +1,30 @@
++#ifndef foosinkinputextfoo
++#define foosinkinputextfoo
++
++#include <stdint.h>
++#include <sys/types.h>
++
++#include <pulse/volume.h>
++#include <pulsecore/sink-input.h>
++#include <pulsecore/sink.h>
++#include <pulsecore/core-subscribe.h>
++
++
++#include "userdata.h"
++
++pa_subscription *pa_sink_input_ext_subscription(struct userdata *);
++
++int   pa_sink_input_ext_set_policy_group(struct pa_sink_input *, char *);
++char *pa_sink_input_ext_get_policy_group(struct pa_sink_input *);
++char *pa_sink_input_ext_get_name(struct pa_sink_input *);
++int   pa_sink_input_ext_set_volume_limit(struct pa_sink_input *, pa_volume_t);
++
++#endif
++
++/*
++ * Local Variables:
++ * c-basic-offset: 4
++ * indent-tabs-mode: nil
++ * End:
++ *
++ */
+diff --git a/src/modules/maemo/userdata.h b/src/modules/maemo/userdata.h
+new file mode 100644
+index 0000000..24b687d
+--- /dev/null
++++ b/src/modules/maemo/userdata.h
+@@ -0,0 +1,43 @@
++#ifndef foouserdatafoo
++#define foouserdatafoo
++
++#include <pulsecore/core.h>
++
++#define PA_POLICY_DEFAULT_GROUP_NAME     "othermedia"
++
++#define PA_PROP_APPLICATION_PROCESS_ARGS "application.process.args"
++#define PA_PROP_POLICY_GROUP             "policy.group"
++#define PA_PROP_POLICY_DEVTYPELIST       "policy.device.typelist"
++
++
++struct pa_policy_groupset;
++struct pa_classify;
++struct pa_policy_dbusif;
++
++struct userdata {
++    pa_core                   *core;
++    pa_module                 *module;
++    pa_subscription           *scl;       /* client event susbscription */
++    pa_subscription           *ssnk;      /* sink event subscription */
++    pa_subscription           *ssi;       /* sink input event susbscription */
++    struct pa_policy_groupset *groups;    /* policy groups */
++    struct pa_classify        *classify;  /* rules for classification */
++    struct pa_policy_dbusif   *dbusif;
++};
++
++
++/*
++ * Some day this should go to a better place
++ */
++const char *pa_policy_file_path(const char *file, char *buf, int len);
++
++
++#endif
++
++/*
++ * Local Variables:
++ * c-basic-offset: 4
++ * indent-tabs-mode: nil
++ * End:
++ *
++ */

@@ -1,0 +1,6 @@
+disable-shm = yes
+exit-idle-time = -1
+
+realtime-scheduling = yes
+realtime-priority = 5
+resample-method = ffmpeg
