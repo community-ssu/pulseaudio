@@ -51,6 +51,7 @@ static pa_bool_t is_valid_char(char c) {
         (c >= 'A' && c <= 'Z') ||
         (c >= '0' && c <= '9') ||
         c == '.' ||
+        c == '-' ||
         c == '_';
 }
 
@@ -97,7 +98,7 @@ void pa_namereg_free(pa_core *c) {
     pa_hashmap_free(c->namereg, NULL, NULL);
 }
 
-const char *pa_namereg_register(pa_core *c, const char *name, pa_namereg_type_t type, void *data, int fail) {
+const char *pa_namereg_register(pa_core *c, const char *name, pa_namereg_type_t type, void *data, pa_bool_t fail) {
     struct namereg_entry *e;
     char *n = NULL;
 

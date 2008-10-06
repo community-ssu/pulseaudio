@@ -80,6 +80,16 @@ size_t pa_usec_to_bytes(pa_usec_t t, const pa_sample_spec *spec) {
     return (size_t) (((t * spec->rate) / PA_USEC_PER_SEC)) * pa_frame_size(spec);
 }
 
+pa_sample_spec* pa_sample_spec_init(pa_sample_spec *spec) {
+    pa_assert(spec);
+
+    spec->format = PA_SAMPLE_INVALID;
+    spec->rate = 0;
+    spec->channels = 0;
+
+    return spec;
+}
+
 int pa_sample_spec_valid(const pa_sample_spec *spec) {
     pa_assert(spec);
 
@@ -131,7 +141,7 @@ char *pa_sample_spec_snprint(char *s, size_t l, const pa_sample_spec *spec) {
     pa_init_i18n();
 
     if (!pa_sample_spec_valid(spec))
-        pa_snprintf(s, l, _("Invalid"));
+        pa_snprintf(s, l, _("(invalid)"));
     else
         pa_snprintf(s, l, "%s %uch %uHz", pa_sample_format_to_string(spec->format), spec->channels, spec->rate);
 

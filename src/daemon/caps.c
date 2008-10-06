@@ -34,6 +34,7 @@
 #include <pulsecore/macro.h>
 #include <pulsecore/core-error.h>
 #include <pulsecore/log.h>
+#include <pulsecore/core-util.h>
 
 #ifdef HAVE_SYS_CAPABILITY_H
 #include <sys/capability.h>
@@ -112,9 +113,9 @@ void pa_drop_caps(void) {
 
 #ifndef __OPTIMIZE__
     /* Valgrind doesn't not know set_caps, so we bypass it here -- but
-     *  only in development builts.*/
+     * only in development builds.*/
 
-    if (getenv("VALGRIND") && !pa_have_caps())
+    if (pa_in_valgrind() && !pa_have_caps())
         return;
 #endif
 

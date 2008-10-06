@@ -2351,7 +2351,7 @@ int pa_reset_sigs(int except, ...) {
 int pa_reset_sigsv(const int except[]) {
     int sig;
 
-    for (sig = 1; sig < _NSIG; sig++) {
+    for (sig = 1; sig < NSIG; sig++) {
         pa_bool_t reset = TRUE;
 
         switch (sig) {
@@ -2472,3 +2472,18 @@ char *pa_uname_string(void) {
 
     return pa_sprintf_malloc("%s %s %s %s", u.sysname, u.machine, u.release, u.version);
 }
+
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+pa_bool_t pa_in_valgrind(void) {
+    static int b = 0;
+
+    /* To make heisenbugs a bit simpler to find we check for $VALGRIND
+     * here instead of really checking whether we run in valgrind or
+     * not. */
+
+    if (b < 1)
+        b = getenv("VALGRIND") ? 2 : 1;
+
+    return b > 1;
+}
+#endif

@@ -245,7 +245,8 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
 	$(top_srcdir)/m4/check_define.m4 $(top_srcdir)/m4/iconv.m4 \
 	$(top_srcdir)/m4/intltool.m4 $(top_srcdir)/m4/lib-ld.m4 \
 	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
-	$(top_srcdir)/m4/tls.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/nls.m4 $(top_srcdir)/m4/tls.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -267,7 +268,7 @@ modlibexecLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES) $(modlibexec_LTLIBRARIES) \
 	$(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 libalsa_util_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_1) libpulsecore.la
 am_libalsa_util_la_OBJECTS = libalsa_util_la-alsa-util.lo
@@ -754,8 +755,9 @@ libpulsedsp_la_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la
 am__libpulsedsp_la_SOURCES_DIST = utils/padsp.c pulsecore/core-util.c \
 	pulsecore/core-util.h pulsecore/core-error.c \
 	pulsecore/core-error.h pulsecore/log.c pulsecore/log.h \
-	pulsecore/once.c pulsecore/once.h pulsecore/mutex-posix.c \
-	pulsecore/mutex.h pulsecore/thread-posix.c pulsecore/thread.h \
+	pulsecore/rtclock.c pulsecore/rtclock.h pulsecore/once.c \
+	pulsecore/once.h pulsecore/mutex-posix.c pulsecore/mutex.h \
+	pulsecore/thread-posix.c pulsecore/thread.h \
 	pulsecore/semaphore-posix.c pulsecore/semaphore.h \
 	pulsecore/mutex-win32.c pulsecore/thread-win32.c \
 	pulsecore/semaphore-win32.c
@@ -767,7 +769,8 @@ am__libpulsedsp_la_SOURCES_DIST = utils/padsp.c pulsecore/core-util.c \
 @OS_IS_WIN32_TRUE@	libpulsedsp_la-semaphore-win32.lo
 am_libpulsedsp_la_OBJECTS = libpulsedsp_la-padsp.lo \
 	libpulsedsp_la-core-util.lo libpulsedsp_la-core-error.lo \
-	libpulsedsp_la-log.lo libpulsedsp_la-once.lo $(am__objects_9)
+	libpulsedsp_la-log.lo libpulsedsp_la-rtclock.lo \
+	libpulsedsp_la-once.lo $(am__objects_9)
 libpulsedsp_la_OBJECTS = $(am_libpulsedsp_la_OBJECTS)
 libpulsedsp_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libpulsedsp_la_CFLAGS) \
@@ -2322,8 +2325,8 @@ AM_CFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src/modules \
 	-DAO_REQUIRE_CAS -DPULSE_LOCALEDIR=\"$(pulselocaledir)\" \
 	-DPA_MACHINE_ID=\"$(localstatedir)/lib/dbus/machine-id\" \
 	'-DDEBUG_TRAP=__asm__("int $$3")'
-AM_LIBADD = $(PTHREAD_LIBS)
-AM_LDADD = $(PTHREAD_LIBS)
+AM_LIBADD = $(PTHREAD_LIBS) $(INTLLIBS)
+AM_LDADD = $(PTHREAD_LIBS) $(INTLLIBS)
 
 # Only required on some platforms but defined for all to avoid errors
 AM_LDFLAGS = -Wl,-no-undefined -Wl,--gc-sections $(am__append_1)
@@ -2658,7 +2661,7 @@ libpulse_mainloop_glib_la_SOURCES = \
 libpulse_mainloop_glib_la_CFLAGS = $(AM_CFLAGS) $(GLIB20_CFLAGS)
 libpulse_mainloop_glib_la_LIBADD = $(AM_LIBADD) libpulse.la $(GLIB20_LIBS)
 libpulse_mainloop_glib_la_LDFLAGS = -version-info $(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
-libpulsedsp_la_SOURCES = utils/padsp.c pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h  pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
+libpulsedsp_la_SOURCES = utils/padsp.c pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h  pulsecore/log.c pulsecore/log.h pulsecore/rtclock.c pulsecore/rtclock.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
 libpulsedsp_la_CFLAGS = $(AM_CFLAGS)
 libpulsedsp_la_LIBADD = $(AM_LIBADD) libpulse.la
 libpulsedsp_la_LDFLAGS = -avoid-version
@@ -3263,7 +3266,7 @@ libbluetooth_ipc_la_SOURCES = modules/bluetooth/ipc.c modules/bluetooth/ipc.h
 libbluetooth_ipc_la_LDFLAGS = -avoid-version
 libbluetooth_ipc_la_LIBADD = $(AM_LIBADD)
 libbluetooth_ipc_la_CFLAGS = $(AM_CFLAGS)
-module_bluetooth_device_la_SOURCES = modules/bluetooth/module-bluetooth-device.c
+module_bluetooth_device_la_SOURCES = modules/bluetooth/module-bluetooth-device.c modules/bluetooth/rtp.h
 module_bluetooth_device_la_LDFLAGS = -module -avoid-version
 module_bluetooth_device_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la libbluetooth-ipc.la libbluetooth-sbc.la libsocket-util.la
 module_bluetooth_device_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
@@ -4006,6 +4009,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsedsp_la-mutex-win32.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsedsp_la-once.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsedsp_la-padsp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsedsp_la-rtclock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsedsp_la-semaphore-posix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsedsp_la-semaphore-win32.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsedsp_la-thread-posix.Plo@am__quote@
@@ -5717,6 +5721,13 @@ libpulsedsp_la-log.lo: pulsecore/log.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/log.c' object='libpulsedsp_la-log.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsedsp_la_CFLAGS) $(CFLAGS) -c -o libpulsedsp_la-log.lo `test -f 'pulsecore/log.c' || echo '$(srcdir)/'`pulsecore/log.c
+
+libpulsedsp_la-rtclock.lo: pulsecore/rtclock.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsedsp_la_CFLAGS) $(CFLAGS) -MT libpulsedsp_la-rtclock.lo -MD -MP -MF $(DEPDIR)/libpulsedsp_la-rtclock.Tpo -c -o libpulsedsp_la-rtclock.lo `test -f 'pulsecore/rtclock.c' || echo '$(srcdir)/'`pulsecore/rtclock.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libpulsedsp_la-rtclock.Tpo $(DEPDIR)/libpulsedsp_la-rtclock.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/rtclock.c' object='libpulsedsp_la-rtclock.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsedsp_la_CFLAGS) $(CFLAGS) -c -o libpulsedsp_la-rtclock.lo `test -f 'pulsecore/rtclock.c' || echo '$(srcdir)/'`pulsecore/rtclock.c
 
 libpulsedsp_la-once.lo: pulsecore/once.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsedsp_la_CFLAGS) $(CFLAGS) -MT libpulsedsp_la-once.lo -MD -MP -MF $(DEPDIR)/libpulsedsp_la-once.Tpo -c -o libpulsedsp_la-once.lo `test -f 'pulsecore/once.c' || echo '$(srcdir)/'`pulsecore/once.c

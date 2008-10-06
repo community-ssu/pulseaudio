@@ -793,6 +793,8 @@ int main(int argc, char *argv[]) {
     pa_log_debug(_("Compiled with Valgrind support: no"));
 #endif
 
+    pa_log_debug(_("Running in valgrind mode: %s"), pa_yes_no(pa_in_valgrind()));
+
 #ifdef __OPTIMIZE__
     pa_log_debug(_("Optimized build: yes"));
 #else
@@ -854,7 +856,7 @@ int main(int argc, char *argv[]) {
 
     pa_assert_se(mainloop = pa_mainloop_new());
 
-    if (!(c = pa_core_new(pa_mainloop_get_api(mainloop), !conf->disable_shm))) {
+    if (!(c = pa_core_new(pa_mainloop_get_api(mainloop), !conf->disable_shm, conf->shm_size))) {
         pa_log(_("pa_core_new() failed."));
         goto finish;
     }

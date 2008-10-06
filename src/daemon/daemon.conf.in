@@ -26,6 +26,7 @@
 ; use-pid-file = yes
 ; system-instance = no
 ; disable-shm = no
+; shm-size-bytes = 0 # setting this 0 will use the system-default, usually 64 MiB
 
 ; high-priority = yes
 ; nice-level = -11
@@ -39,7 +40,7 @@
 
 ; dl-search-path = (depends on architecture)
 
-; load-defaul-script-file = yes
+; load-default-script-file = yes
 ; default-script-file = @PA_DEFAULT_CONFIG_FILE@
 
 ; log-target = auto

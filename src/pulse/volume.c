@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <pulse/i18n.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/macro.h>
 
@@ -44,6 +45,19 @@ int pa_cvolume_equal(const pa_cvolume *a, const pa_cvolume *b) {
             return 0;
 
     return 1;
+}
+
+pa_cvolume* pa_cvolume_init(pa_cvolume *a) {
+    unsigned c;
+
+    pa_assert(a);
+
+    a->channels = 0;
+
+    for (c = 0; c < PA_CHANNELS_MAX; c++)
+        a->values[c] = (pa_volume_t) -1;
+
+    return a;
 }
 
 pa_cvolume* pa_cvolume_set(pa_cvolume *a, unsigned channels, pa_volume_t v) {
@@ -87,7 +101,16 @@ pa_volume_t pa_cvolume_max(const pa_cvolume *a) {
 }
 
 pa_volume_t pa_sw_volume_multiply(pa_volume_t a, pa_volume_t b) {
-    return pa_sw_volume_from_linear(pa_sw_volume_to_linear(a)* pa_sw_volume_to_linear(b));
+    return pa_sw_volume_from_linear(pa_sw_volume_to_linear(a) * pa_sw_volume_to_linear(b));
+}
+
+pa_volume_t pa_sw_volume_divide(pa_volume_t a, pa_volume_t b) {
+    double v = pa_sw_volume_to_linear(b);
+
+    if (v <= 0)
+        return 0;
+
+    return pa_sw_volume_from_linear(pa_sw_volume_to_linear(a) / v);
 }
 
 #define USER_DECIBEL_RANGE 60
@@ -96,7 +119,7 @@ pa_volume_t pa_sw_volume_from_dB(double dB) {
     if (isinf(dB) < 0 || dB <= -USER_DECIBEL_RANGE)
         return PA_VOLUME_MUTED;
 
-    return (pa_volume_t) ((dB/USER_DECIBEL_RANGE+1)*PA_VOLUME_NORM);
+    return (pa_volume_t) lrint((dB/USER_DECIBEL_RANGE+1)*PA_VOLUME_NORM);
 }
 
 double pa_sw_volume_to_dB(pa_volume_t v) {
@@ -127,12 +150,19 @@ double pa_sw_volume_to_linear(pa_volume_t v) {
 
 char *pa_cvolume_snprint(char *s, size_t l, const pa_cvolume *c) {
     unsigned channel;
-    int first = 1;
+    pa_bool_t first = TRUE;
     char *e;
 
     pa_assert(s);
     pa_assert(l > 0);
     pa_assert(c);
+
+    pa_init_i18n();
+
+    if (!pa_cvolume_valid(c)) {
+        pa_snprintf(s, l, _("(invalid)"));
+        return s;
+    }
 
     *(e = s) = 0;
 
@@ -143,7 +173,38 @@ char *pa_cvolume_snprint(char *s, size_t l, const pa_cvolume *c) {
                       (c->values[channel]*100)/PA_VOLUME_NORM);
 
         e = strchr(e, 0);
-        first = 0;
+        first = FALSE;
+    }
+
+    return s;
+}
+
+char *pa_sw_cvolume_snprint_dB(char *s, size_t l, const pa_cvolume *c) {
+    unsigned channel;
+    pa_bool_t first = TRUE;
+    char *e;
+
+    pa_assert(s);
+    pa_assert(l > 0);
+    pa_assert(c);
+
+    pa_init_i18n();
+
+    if (!pa_cvolume_valid(c)) {
+        pa_snprintf(s, l, _("(invalid)"));
+        return s;
+    }
+
+    *(e = s) = 0;
+
+    for (channel = 0; channel < c->channels && l > 1; channel++) {
+        l -= pa_snprintf(e, l, "%s%u: %0.2f dB",
+                      first ? "" : " ",
+                      channel,
+                      pa_sw_volume_to_dB(c->values[channel]));
+
+        e = strchr(e, 0);
+        first = FALSE;
     }
 
     return s;
@@ -168,12 +229,23 @@ pa_cvolume *pa_sw_cvolume_multiply(pa_cvolume *dest, const pa_cvolume *a, const 
     pa_assert(a);
     pa_assert(b);
 
-    for (i = 0; i < a->channels && i < b->channels && i < PA_CHANNELS_MAX; i++) {
+    for (i = 0; i < a->channels && i < b->channels && i < PA_CHANNELS_MAX; i++)
+        dest->values[i] = pa_sw_volume_multiply(a->values[i], b->values[i]);
 
-        dest->values[i] = pa_sw_volume_multiply(
-            i < a->channels ? a->values[i] : PA_VOLUME_NORM,
-            i < b->channels ? b->values[i] : PA_VOLUME_NORM);
-    }
+    dest->channels = (uint8_t) i;
+
+    return dest;
+}
+
+pa_cvolume *pa_sw_cvolume_divide(pa_cvolume *dest, const pa_cvolume *a, const pa_cvolume *b) {
+    unsigned i;
+
+    pa_assert(dest);
+    pa_assert(a);
+    pa_assert(b);
+
+    for (i = 0; i < a->channels && i < b->channels && i < PA_CHANNELS_MAX; i++)
+        dest->values[i] = pa_sw_volume_divide(a->values[i], b->values[i]);
 
     dest->channels = (uint8_t) i;
 
@@ -181,10 +253,16 @@ pa_cvolume *pa_sw_cvolume_multiply(pa_cvolume *dest, const pa_cvolume *a, const 
 }
 
 int pa_cvolume_valid(const pa_cvolume *v) {
+    unsigned c;
+
     pa_assert(v);
 
     if (v->channels <= 0 || v->channels > PA_CHANNELS_MAX)
         return 0;
+
+    for (c = 0; c < v->channels; c++)
+        if (v->values[c] == (pa_volume_t) -1)
+            return 0;
 
     return 1;
 }
@@ -272,4 +350,18 @@ pa_cvolume *pa_cvolume_remap(pa_cvolume *v, pa_channel_map *from, pa_channel_map
 
     *v = result;
     return v;
+}
+
+int pa_cvolume_compatible(const pa_cvolume *v, const pa_sample_spec *ss) {
+
+    pa_assert(v);
+    pa_assert(ss);
+
+    if (!pa_cvolume_valid(v))
+        return 0;
+
+    if (!pa_sample_spec_valid(ss))
+        return 0;
+
+    return v->channels == ss->channels;
 }

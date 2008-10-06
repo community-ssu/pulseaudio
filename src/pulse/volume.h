@@ -116,6 +116,11 @@ typedef struct pa_cvolume {
 /** Return non-zero when *a == *b */
 int pa_cvolume_equal(const pa_cvolume *a, const pa_cvolume *b) PA_GCC_PURE;
 
+/** Initialize the specified volume and return a pointer to
+ * it. The sample spec will have a defined state but
+ * pa_cvolume_valid() will fail for it. \since 0.9.13 */
+pa_cvolume* pa_cvolume_init(pa_cvolume *a);
+
 /** Set the volume of all channels to PA_VOLUME_NORM */
 #define pa_cvolume_reset(a, n) pa_cvolume_set((a), (n), PA_VOLUME_NORM)
 
@@ -125,11 +130,25 @@ int pa_cvolume_equal(const pa_cvolume *a, const pa_cvolume *b) PA_GCC_PURE;
 /** Set the volume of all channels to the specified parameter */
 pa_cvolume* pa_cvolume_set(pa_cvolume *a, unsigned channels, pa_volume_t v);
 
-/** Maximum length of the strings returned by pa_cvolume_snprint() */
-#define PA_CVOLUME_SNPRINT_MAX 64
+/** Maximum length of the strings returned by
+ * pa_cvolume_snprint(). Please note that this value can change with
+ * any release without warning and without being considered API or ABI
+ * breakage. You should not use this definition anywhere where it
+ * might become part of an ABI.*/
+#define PA_CVOLUME_SNPRINT_MAX 320
 
 /** Pretty print a volume structure */
 char *pa_cvolume_snprint(char *s, size_t l, const pa_cvolume *c);
+
+/** Maximum length of the strings returned by
+ * pa_cvolume_snprint_dB(). Please note that this value can change with
+ * any release without warning and without being considered API or ABI
+ * breakage. You should not use this definition anywhere where it
+ * might become part of an ABI. \since 0.9.13 */
+#define PA_SW_CVOLUME_SNPRINT_DB_MAX 448
+
+/** Pretty print a volume structure but show dB values. \since 0.9.13 */
+char *pa_sw_cvolume_snprint_dB(char *s, size_t l, const pa_cvolume *c);
 
 /** Return the average volume of all channels */
 pa_volume_t pa_cvolume_avg(const pa_cvolume *a) PA_GCC_PURE;
@@ -149,11 +168,24 @@ int pa_cvolume_channels_equal_to(const pa_cvolume *a, pa_volume_t v) PA_GCC_PURE
 /** Return 1 if the specified volume has all channels on normal level */
 #define pa_cvolume_is_norm(a) pa_cvolume_channels_equal_to((a), PA_VOLUME_NORM)
 
-/** Multiply two volumes specifications, return the result. This uses PA_VOLUME_NORM as neutral element of multiplication. This is only valid for software volumes! */
+/** Multiply two volume specifications, return the result. This uses
+ * PA_VOLUME_NORM as neutral element of multiplication. This is only
+ * valid for software volumes! */
 pa_volume_t pa_sw_volume_multiply(pa_volume_t a, pa_volume_t b) PA_GCC_CONST;
 
-/** Multiply to per-channel volumes and return the result in *dest. This is only valid for software volumes! */
+/** Multiply two per-channel volumes and return the result in
+ * *dest. This is only valid for software volumes! */
 pa_cvolume *pa_sw_cvolume_multiply(pa_cvolume *dest, const pa_cvolume *a, const pa_cvolume *b);
+
+/** Divide two volume specifications, return the result. This uses
+ * PA_VOLUME_NORM as neutral element of division. This is only valid
+ * for software volumes! If a division by zero is tried the result
+ * will be 0. \since 0.9.13 */
+pa_volume_t pa_sw_volume_divide(pa_volume_t a, pa_volume_t b) PA_GCC_CONST;
+
+/** Multiply to per-channel volumes and return the result in
+ * *dest. This is only valid for software volumes! \since 0.9.13 */
+pa_cvolume *pa_sw_cvolume_divide(pa_cvolume *dest, const pa_cvolume *a, const pa_cvolume *b);
 
 /** Convert a decibel value to a volume. This is only valid for software volumes! */
 pa_volume_t pa_sw_volume_from_dB(double f) PA_GCC_CONST;
@@ -176,6 +208,10 @@ double pa_sw_volume_to_linear(pa_volume_t v) PA_GCC_CONST;
 
 /** Remap a volume from one channel mapping to a different channel mapping. \since 0.9.12 */
 pa_cvolume *pa_cvolume_remap(pa_cvolume *v, pa_channel_map *from, pa_channel_map *to);
+
+/** Return non-zero if the specified volume is compatible with
+ * the specified sample spec. \since 0.9.13 */
+int pa_cvolume_compatible(const pa_cvolume *v, const pa_sample_spec *ss) PA_GCC_PURE;
 
 PA_C_DECL_END
 

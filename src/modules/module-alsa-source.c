@@ -211,9 +211,10 @@ static int try_recover(struct userdata *u, const char *call, int err) {
 
 static size_t check_left_to_record(struct userdata *u, snd_pcm_sframes_t n) {
     size_t left_to_record;
+    size_t rec_space = u->hwbuf_size - (size_t) u->hwbuf_unused_frames*u->frame_size;
 
-    if ((size_t) n*u->frame_size < u->hwbuf_size)
-        left_to_record = u->hwbuf_size - ((size_t) n*u->frame_size);
+    if ((size_t) n*u->frame_size < rec_space)
+        left_to_record = rec_space - ((size_t) n*u->frame_size);
     else
         left_to_record = 0;
 
@@ -514,7 +515,7 @@ static int update_sw_params(struct userdata *u) {
         if ((latency = pa_source_get_requested_latency_within_thread(u->source)) != (pa_usec_t) -1) {
             size_t b;
 
-            pa_log_debug("latency set to %0.2f", (double) latency / PA_USEC_PER_MSEC);
+            pa_log_debug("latency set to %0.2fms", (double) latency / PA_USEC_PER_MSEC);
 
             b = pa_usec_to_bytes(latency, &u->source->sample_spec);
 
@@ -700,6 +701,21 @@ static int mixer_callback(snd_mixer_elem_t *elem, unsigned int mask) {
     return 0;
 }
 
+static pa_volume_t from_alsa_volume(struct userdata *u, long alsa_vol) {
+
+    return (pa_volume_t) round(((double) (alsa_vol - u->hw_volume_min) * PA_VOLUME_NORM) /
+                               (double) (u->hw_volume_max - u->hw_volume_min));
+}
+
+static long to_alsa_volume(struct userdata *u, pa_volume_t vol) {
+    long alsa_vol;
+
+    alsa_vol = (long) round(((double) vol * (double) (u->hw_volume_max - u->hw_volume_min))
+                            / PA_VOLUME_NORM) + u->hw_volume_min;
+
+    return PA_CLAMP_UNLIKELY(alsa_vol, u->hw_volume_min, u->hw_volume_max);
+}
+
 static int source_get_volume_cb(pa_source *s) {
     struct userdata *u = s->userdata;
     int err;
@@ -732,23 +748,31 @@ static int source_get_volume_cb(pa_source *s) {
                 if ((err = snd_mixer_selem_get_capture_volume(u->mixer_elem, u->mixer_map[i], &alsa_vol)) < 0)
                     goto fail;
 
-                r.values[i] = (pa_volume_t) round(((double) (alsa_vol - u->hw_volume_min) * PA_VOLUME_NORM) / (double) (u->hw_volume_max - u->hw_volume_min));
+                r.values[i] = from_alsa_volume(u, alsa_vol);
             }
         }
 
     } else {
         long alsa_vol;
 
-        pa_assert(u->hw_dB_supported);
+        if (u->hw_dB_supported) {
 
-        if ((err = snd_mixer_selem_get_capture_dB(u->mixer_elem, SND_MIXER_SCHN_MONO, &alsa_vol)) < 0)
-            goto fail;
+            if ((err = snd_mixer_selem_get_capture_dB(u->mixer_elem, SND_MIXER_SCHN_MONO, &alsa_vol)) < 0)
+                goto fail;
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
-        VALGRIND_MAKE_MEM_DEFINED(&alsa_vol, sizeof(alsa_vol));
+            VALGRIND_MAKE_MEM_DEFINED(&alsa_vol, sizeof(alsa_vol));
 #endif
 
-        pa_cvolume_set(&r, s->sample_spec.channels, pa_sw_volume_from_dB((double) alsa_vol / 100.0));
+            pa_cvolume_set(&r, s->sample_spec.channels, pa_sw_volume_from_dB((double) alsa_vol / 100.0));
+
+        } else {
+
+            if ((err = snd_mixer_selem_get_capture_volume(u->mixer_elem, SND_MIXER_SCHN_MONO, &alsa_vol)) < 0)
+                goto fail;
+
+            pa_cvolume_set(&r, s->sample_spec.channels, from_alsa_volume(u, alsa_vol));
+        }
     }
 
     pa_log_debug("Read hardware volume: %s", pa_cvolume_snprint(t, sizeof(t), &r));
@@ -784,7 +808,7 @@ static int source_set_volume_cb(pa_source *s) {
     pa_assert(u);
     pa_assert(u->mixer_elem);
 
-        if (u->mixer_seperate_channels) {
+    if (u->mixer_seperate_channels) {
 
         r.channels = s->sample_spec.channels;
 
@@ -806,10 +830,9 @@ static int source_set_volume_cb(pa_source *s) {
                     goto fail;
 
                 r.values[i] = pa_sw_volume_from_dB((double) alsa_vol / 100.0);
-            } else {
 
-                alsa_vol = (long) round(((double) vol * (double) (u->hw_volume_max - u->hw_volume_min)) / PA_VOLUME_NORM) + u->hw_volume_min;
-                alsa_vol = PA_CLAMP_UNLIKELY(alsa_vol, u->hw_volume_min, u->hw_volume_max);
+            } else {
+                alsa_vol = to_alsa_volume(u, vol);
 
                 if ((err = snd_mixer_selem_set_capture_volume(u->mixer_elem, u->mixer_map[i], alsa_vol)) < 0)
                     goto fail;
@@ -817,7 +840,7 @@ static int source_set_volume_cb(pa_source *s) {
                 if ((err = snd_mixer_selem_get_capture_volume(u->mixer_elem, u->mixer_map[i], &alsa_vol)) < 0)
                     goto fail;
 
-                r.values[i] = (pa_volume_t) round(((double) (alsa_vol - u->hw_volume_min) * PA_VOLUME_NORM) / (double) (u->hw_volume_max - u->hw_volume_min));
+                r.values[i] = from_alsa_volume(u, alsa_vol);
             }
         }
 
@@ -825,20 +848,31 @@ static int source_set_volume_cb(pa_source *s) {
         pa_volume_t vol;
         long alsa_vol;
 
-        pa_assert(u->hw_dB_supported);
-
         vol = pa_cvolume_max(&s->volume);
 
-        alsa_vol = (long) (pa_sw_volume_to_dB(vol) * 100);
-        alsa_vol = PA_CLAMP_UNLIKELY(alsa_vol, u->hw_dB_min, u->hw_dB_max);
+        if (u->hw_dB_supported) {
+            alsa_vol = (long) (pa_sw_volume_to_dB(vol) * 100);
+            alsa_vol = PA_CLAMP_UNLIKELY(alsa_vol, u->hw_dB_min, u->hw_dB_max);
 
-        if ((err = snd_mixer_selem_set_capture_dB_all(u->mixer_elem, alsa_vol, 1)) < 0)
-            goto fail;
+            if ((err = snd_mixer_selem_set_capture_dB_all(u->mixer_elem, alsa_vol, 1)) < 0)
+                goto fail;
 
-        if ((err = snd_mixer_selem_get_capture_dB(u->mixer_elem, SND_MIXER_SCHN_MONO, &alsa_vol)) < 0)
-            goto fail;
+            if ((err = snd_mixer_selem_get_capture_dB(u->mixer_elem, SND_MIXER_SCHN_MONO, &alsa_vol)) < 0)
+                goto fail;
 
-        pa_cvolume_set(&r, s->volume.channels, pa_sw_volume_from_dB((double) alsa_vol / 100.0));
+            pa_cvolume_set(&r, s->volume.channels, pa_sw_volume_from_dB((double) alsa_vol / 100.0));
+
+        } else {
+            alsa_vol = to_alsa_volume(u, vol);
+
+            if ((err = snd_mixer_selem_set_capture_volume_all(u->mixer_elem, alsa_vol)) < 0)
+                goto fail;
+
+            if ((err = snd_mixer_selem_get_capture_volume(u->mixer_elem, SND_MIXER_SCHN_MONO, &alsa_vol)) < 0)
+                goto fail;
+
+            pa_cvolume_set(&r, s->sample_spec.channels, from_alsa_volume(u, alsa_vol));
+        }
     }
 
     u->hardware_volume = r;
@@ -848,7 +882,7 @@ static int source_set_volume_cb(pa_source *s) {
 
         /* Match exactly what the user requested by software */
 
-        pa_alsa_volume_divide(&r, &s->volume);
+        pa_sw_cvolume_divide(&r, &s->volume, &r);
         pa_source_set_soft_volume(s, &r);
 
         pa_log_debug("Requested volume: %s", pa_cvolume_snprint(t, sizeof(t), &s->volume));
@@ -1262,14 +1296,15 @@ int pa__init(pa_module*m) {
         pa_assert(u->mixer_elem);
 
         if (snd_mixer_selem_has_capture_volume(u->mixer_elem)) {
-            pa_bool_t suitable = TRUE;
+            pa_bool_t suitable = FALSE;
 
-            if (snd_mixer_selem_get_capture_volume_range(u->mixer_elem, &u->hw_volume_min, &u->hw_volume_max) < 0) {
+            if (snd_mixer_selem_get_capture_volume_range(u->mixer_elem, &u->hw_volume_min, &u->hw_volume_max) < 0)
                 pa_log_info("Failed to get volume range. Falling back to software volume control.");
-                suitable = FALSE;
-            } else {
+            else if (u->hw_volume_min >= u->hw_volume_max)
+                pa_log_warn("Your kernel driver is broken: it reports a volume range from %li to %li which makes no sense.", u->hw_volume_min, u->hw_volume_max);
+            else {
                 pa_log_info("Volume ranges from %li to %li.", u->hw_volume_min, u->hw_volume_max);
-                pa_assert(u->hw_volume_min < u->hw_volume_max);
+                suitable = TRUE;
             }
 
             if (snd_mixer_selem_get_capture_dB_range(u->mixer_elem, &u->hw_dB_min, &u->hw_dB_max) < 0)
@@ -1280,9 +1315,12 @@ int pa__init(pa_module*m) {
                 VALGRIND_MAKE_MEM_DEFINED(&u->hw_dB_max, sizeof(u->hw_dB_max));
 #endif
 
-                pa_log_info("Volume ranges from %0.2f dB to %0.2f dB.", (double) u->hw_dB_min/100.0, (double) u->hw_dB_max/100.0);
-                pa_assert(u->hw_dB_min < u->hw_dB_max);
-                u->hw_dB_supported = TRUE;
+                if (u->hw_dB_min >= u->hw_dB_max)
+                    pa_log_warn("Your kernel driver is broken: it reports a volume range from %0.2f dB to %0.2f dB which makes no sense.", (double) u->hw_dB_min/100.0, (double) u->hw_dB_max/100.0);
+                else {
+                    pa_log_info("Volume ranges from %0.2f dB to %0.2f dB.", (double) u->hw_dB_min/100.0, (double) u->hw_dB_max/100.0);
+                    u->hw_dB_supported = TRUE;
+                }
             }
 
             if (suitable &&
@@ -1292,7 +1330,6 @@ int pa__init(pa_module*m) {
                 pa_log_info("Device has less than 4 volume levels. Falling back to software volume control.");
                 suitable = FALSE;
             }
-
 
             if (suitable) {
                 u->mixer_seperate_channels = pa_alsa_calc_mixer_map(u->mixer_elem, &map, u->mixer_map, FALSE) >= 0;

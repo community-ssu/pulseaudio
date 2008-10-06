@@ -44,7 +44,7 @@
 #include <pulsecore/time-smoother.h>
 #include <pulsecore/rtclock.h>
 
-#include "dbus-util.h"
+#include "../dbus-util.h"
 #include "module-bluetooth-device-symdef.h"
 #include "ipc.h"
 #include "sbc.h"
@@ -495,13 +495,6 @@ static int bt_getstreamfd(struct userdata *u) {
     if (u->stream_fd < 0) {
         pa_log_error("Failed to get data fd: %s (%d)",pa_cstrerror(errno), errno);
         return -errno;
-    }
-
-    if (u->transport == BT_CAPABILITIES_TRANSPORT_A2DP) {
-        if (pa_socket_set_sndbuf(u->stream_fd, 10U*u->link_mtu) < 0) {
-            pa_log_error("Failed to set socket options for A2DP: %s (%d)",pa_cstrerror(errno), errno);
-            return -errno;
-        }
     }
 
 //   if (setsockopt(u->stream_fd, SOL_SCO, SCO_TXBUFS, &period_count, sizeof(period_count)) == 0)

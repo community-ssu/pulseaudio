@@ -261,9 +261,11 @@ static struct mempool_slot* mempool_allocate_slot(pa_mempool *p) {
         }
     }
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-    VALGRIND_MALLOCLIKE_BLOCK(slot, p->block_size, 0, 0);
-#endif
+/* #ifdef HAVE_VALGRIND_MEMCHECK_H */
+/*     if (PA_UNLIKELY(pa_in_valgrind())) { */
+/*         VALGRIND_MALLOCLIKE_BLOCK(slot, p->block_size, 0, 0); */
+/*     } */
+/* #endif */
 
     return slot;
 }
@@ -534,15 +536,17 @@ static void memblock_free(pa_memblock *b) {
 
             call_free = b->type == PA_MEMBLOCK_POOL_EXTERNAL;
 
+/* #ifdef HAVE_VALGRIND_MEMCHECK_H */
+/*             if (PA_UNLIKELY(pa_in_valgrind())) { */
+/*                 VALGRIND_FREELIKE_BLOCK(slot, b->pool->block_size); */
+/*             } */
+/* #endif */
+
             /* The free list dimensions should easily allow all slots
              * to fit in, hence try harder if pushing this slot into
              * the free list fails */
             while (pa_flist_push(b->pool->free_slots, slot) < 0)
                 ;
-
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-            VALGRIND_FREELIKE_BLOCK(slot, b->pool->block_size);
-#endif
 
             if (call_free)
                 if (pa_flist_push(PA_STATIC_FLIST_GET(unused_memblocks), b) < 0)
@@ -680,8 +684,9 @@ static void memblock_replace_import(pa_memblock *b) {
         pa_mutex_unlock(seg->import->mutex);
 }
 
-pa_mempool* pa_mempool_new(pa_bool_t shared) {
+pa_mempool* pa_mempool_new(pa_bool_t shared, size_t size) {
     pa_mempool *p;
+    char t1[64], t2[64];
 
     p = pa_xnew(pa_mempool, 1);
 
@@ -692,12 +697,25 @@ pa_mempool* pa_mempool_new(pa_bool_t shared) {
     if (p->block_size < PA_PAGE_SIZE)
         p->block_size = PA_PAGE_SIZE;
 
-    p->n_blocks = PA_MEMPOOL_SLOTS_MAX;
+    if (size <= 0)
+        p->n_blocks = PA_MEMPOOL_SLOTS_MAX;
+    else {
+        p->n_blocks = (unsigned) (size / p->block_size);
+
+        if (p->n_blocks < 2)
+            p->n_blocks = 2;
+    }
 
     if (pa_shm_create_rw(&p->memory, p->n_blocks * p->block_size, shared, 0700) < 0) {
         pa_xfree(p);
         return NULL;
     }
+
+    pa_log_debug("Using %s memory pool with %u slots of size %s each, total size is %s",
+                 p->memory.shared ? "shared" : "private",
+                 p->n_blocks,
+                 pa_bytes_snprint(t1, sizeof(t1), (unsigned) p->block_size),
+                 pa_bytes_snprint(t2, sizeof(t2), (unsigned) (p->n_blocks * p->block_size)));
 
     memset(&p->stat, 0, sizeof(p->stat));
     pa_atomic_store(&p->n_init, 0);
