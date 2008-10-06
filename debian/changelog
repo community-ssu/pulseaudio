@@ -1,3 +1,9 @@
+pulseaudio (0.9.13-0maemo1) unstable; urgency=low
+
+  * New Upstream Release
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Mon, 06 Oct 2008 15:42:58 +0300
+
 pulseaudio (0.9.12git~20080930-0maemo2) unstable; urgency=low
 
   * Load module-policy-enforcement currently fails to load.

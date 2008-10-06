@@ -1,4 +1,4 @@
-From 568ac21f15449d59ebcdbac31e69b488193a7fb6 Mon Sep 17 00:00:00 2001
+From 6527caca8430a2971c14ab9f007bff6e3ebc91bd Mon Sep 17 00:00:00 2001
 From: Ismo Puustinen <ismo.h.puustinen@nokia.com>
 Date: Tue, 30 Sep 2008 18:45:55 +0300
 Subject: [PATCH] Add pulsecore.pc
@@ -24,7 +24,7 @@ index facce0d..703314e 100644
  if HAVE_AVAHI
  pkgconfig_DATA += \
 diff --git a/configure.ac b/configure.ac
-index 3c3550f..6068327 100644
+index 2b91a00..7659081 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -1118,6 +1118,7 @@ libpulse.pc
@@ -51,3 +51,6 @@ index 0000000..297cb17
 +Version: @PACKAGE_VERSION@
 +Libs: -L${libdir} -lpulsecore @PTHREAD_LIBS@
 +Cflags: -D_REENTRANT -I${includedir}
+-- 
+1.5.6.5
+

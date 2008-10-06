@@ -1,4 +1,4 @@
-From 76d50c2c7b8daaea1db086f5700ba9e9462018d5 Mon Sep 17 00:00:00 2001
+From b27dc118703ceac38a095d3927b9a5fe0b98d844 Mon Sep 17 00:00:00 2001
 From: Sarha Jyri (Nokia-D/Helsinki) <Jyri.Sarha@nokia.com>
 Date: Wed, 1 Oct 2008 18:08:36 +0300
 Subject: [PATCH] Fix supend
@@ -8,7 +8,7 @@ Subject: [PATCH] Fix supend
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index 2217b56..000eaed 100644
+index d20a49d..1286a93 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
 @@ -556,7 +556,7 @@ static void inputs_drop(pa_sink *s, pa_mix_info *info, unsigned n, pa_memchunk *
@@ -20,3 +20,6 @@ index 2217b56..000eaed 100644
  
              if (pa_hashmap_size(i->thread_info.direct_outputs) > 0) {
                  void *ostate = NULL;
+-- 
+1.5.6.5
+

@@ -1,4 +1,4 @@
-From 05fe83b48a45eca321d9cb2d5af16b79f4bd65c2 Mon Sep 17 00:00:00 2001
+From caeed4f36c1e07e6a6219e9980905fe77f2ad8df Mon Sep 17 00:00:00 2001
 From: Marc-Andre Lureau <marcandre.lureau@gmail.com>
 Date: Thu, 5 Jun 2008 21:46:50 +0300
 Subject: [PATCH] volume hooks
@@ -6,14 +6,14 @@ Subject: [PATCH] volume hooks
 ---
  src/pulsecore/core.h            |    2 ++
  src/pulsecore/protocol-native.c |    2 +-
- src/pulsecore/sink-input.c      |   30 +++++++++++++++++++++++-------
+ src/pulsecore/sink-input.c      |   29 +++++++++++++++++++++++------
  src/pulsecore/sink-input.h      |   11 +++++++++++
  src/pulsecore/sink.c            |   12 ++++++++++--
  src/pulsecore/sink.h            |    5 +++++
- 6 files changed, 52 insertions(+), 10 deletions(-)
+ 6 files changed, 52 insertions(+), 9 deletions(-)
 
 diff --git a/src/pulsecore/core.h b/src/pulsecore/core.h
-index fb4490f..65f5cc0 100644
+index 3955908..f796fb9 100644
 --- a/src/pulsecore/core.h
 +++ b/src/pulsecore/core.h
 @@ -49,6 +49,7 @@ typedef enum pa_core_hook {
@@ -33,10 +33,10 @@ index fb4490f..65f5cc0 100644
      PA_CORE_HOOK_SOURCE_OUTPUT_FIXATE,
      PA_CORE_HOOK_SOURCE_OUTPUT_PUT,
 diff --git a/src/pulsecore/protocol-native.c b/src/pulsecore/protocol-native.c
-index 6ccee57..a88a077 100644
+index 778aab5..46dcb14 100644
 --- a/src/pulsecore/protocol-native.c
 +++ b/src/pulsecore/protocol-native.c
-@@ -2720,7 +2720,7 @@ static void sink_input_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t,
+@@ -2722,7 +2722,7 @@ static void sink_input_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t,
      pa_tagstruct_putu32(t, s->sink->index);
      pa_tagstruct_put_sample_spec(t, &fixed_ss);
      pa_tagstruct_put_channel_map(t, &s->channel_map);
@@ -46,7 +46,7 @@ index 6ccee57..a88a077 100644
      pa_tagstruct_put_usec(t, sink_latency);
      pa_tagstruct_puts(t, pa_resample_method_to_string(pa_sink_input_get_resample_method(s)));
 diff --git a/src/pulsecore/sink-input.c b/src/pulsecore/sink-input.c
-index 326a7e2..7c0cfb1 100644
+index 4f70347..9a3c49c 100644
 --- a/src/pulsecore/sink-input.c
 +++ b/src/pulsecore/sink-input.c
 @@ -75,7 +75,7 @@ void pa_sink_input_new_data_set_volume(pa_sink_input_new_data *data, const pa_cv
@@ -67,17 +67,17 @@ index 326a7e2..7c0cfb1 100644
      if (!data->muted_is_set)
          data->muted = FALSE;
  
-@@ -227,7 +229,8 @@ pa_sink_input* pa_sink_input_new(
+@@ -227,7 +229,9 @@ pa_sink_input* pa_sink_input_new(
      i->sample_spec = data->sample_spec;
      i->channel_map = data->channel_map;
  
--    i->volume = data->volume;
-+    i->virtual_volume = i->volume = data->volume;
++    i->virtual_volume = data->virtual_volume;
+     i->volume = data->volume;
 +
      i->muted = data->muted;
  
      if (data->sync_base) {
-@@ -784,17 +787,30 @@ pa_usec_t pa_sink_input_get_requested_latency(pa_sink_input *i) {
+@@ -784,17 +788,30 @@ pa_usec_t pa_sink_input_get_requested_latency(pa_sink_input *i) {
  
  /* Called from main context */
  void pa_sink_input_set_volume(pa_sink_input *i, const pa_cvolume *volume) {
@@ -112,7 +112,7 @@ index 326a7e2..7c0cfb1 100644
  }
  
  /* Called from main context */
-@@ -802,7 +818,7 @@ const pa_cvolume *pa_sink_input_get_volume(pa_sink_input *i) {
+@@ -802,7 +819,7 @@ const pa_cvolume *pa_sink_input_get_volume(pa_sink_input *i) {
      pa_sink_input_assert_ref(i);
      pa_assert(PA_SINK_INPUT_IS_LINKED(i->state));
  
@@ -158,10 +158,10 @@ index 7663f22..ed95fe4 100644
  
  pa_sink_input* pa_sink_input_new(
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index 6fa22dc..2217b56 100644
+index e04fc08..d20a49d 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
-@@ -844,13 +844,21 @@ pa_usec_t pa_sink_get_latency(pa_sink *s) {
+@@ -843,13 +843,21 @@ pa_usec_t pa_sink_get_latency(pa_sink *s) {
  /* Called from main thread */
  void pa_sink_set_volume(pa_sink *s, const pa_cvolume *volume) {
      pa_bool_t changed;
@@ -201,3 +201,6 @@ index 672bdd3..74671b4 100644
  /* To be called exclusively by the sink driver, from main context */
  
  pa_sink* pa_sink_new(
+-- 
+1.5.6.5
+

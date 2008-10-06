@@ -205,7 +205,7 @@ Description: X11 module for PulseAudio sound server debugging symbols
  .
  This package contains debugging symbols for the PulseAudio X11 modules.
 
-Package: libpulsecore7
+Package: libpulsecore8
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -222,10 +222,10 @@ Description: PulseAudio sound server core
  This library provides core services to the PulseAudio daemon and modules
  the run inside the daemon.
 
-Package: libpulsecore7-dbg
+Package: libpulsecore8-dbg
 Architecture: any
 Priority: extra
-Depends: ${misc:Depends}, libpulsecore7 (= ${binary:Version})
+Depends: ${misc:Depends}, libpulsecore8 (= ${binary:Version})
 Description: PulseAudio sound server core detached debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with

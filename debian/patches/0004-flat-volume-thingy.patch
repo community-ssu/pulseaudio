@@ -1,16 +1,16 @@
-From 837202df0e78a5ee5af56467fbf9f452f721a835 Mon Sep 17 00:00:00 2001
+From 89f687c62f537955699637535fc600671921ee2e Mon Sep 17 00:00:00 2001
 From: Marc-Andre Lureau <marcandre.lureau@gmail.com>
 Date: Thu, 5 Jun 2008 21:47:17 +0300
 Subject: [PATCH] flat-volume thingy
 
 ---
  src/Makefile.am                  |   10 ++-
- src/modules/module-flat-volume.c |  233 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 242 insertions(+), 1 deletions(-)
+ src/modules/module-flat-volume.c |  220 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 229 insertions(+), 1 deletions(-)
  create mode 100644 src/modules/module-flat-volume.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 14eb7f0..5215a0c 100644
+index f277198..7487839 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -1032,6 +1032,7 @@ libavahi_wrap_la_LIBADD = $(AM_LIBADD) $(AVAHI_CFLAGS) libpulsecore.la
@@ -46,10 +46,10 @@ index 14eb7f0..5215a0c 100644
  module_simple_protocol_tcp_la_SOURCES = modules/module-protocol-stub.c
 diff --git a/src/modules/module-flat-volume.c b/src/modules/module-flat-volume.c
 new file mode 100644
-index 0000000..ff4f83f
+index 0000000..1a75e97
 --- /dev/null
 +++ b/src/modules/module-flat-volume.c
-@@ -0,0 +1,233 @@
+@@ -0,0 +1,220 @@
 +/* $Id$ */
 +
 +/***
@@ -107,135 +107,89 @@ index 0000000..ff4f83f
 +PA_MODULE_USAGE("");
 +
 +struct userdata {
++    pa_subscription *subscription;
 +    pa_hook_slot *sink_input_set_volume_hook_slot;
 +    pa_hook_slot *sink_input_fixate_hook_slot;
-+    pa_hook_slot *sink_set_volume_hook_slot;
 +};
 +
-+static pa_volume_t _volume_multiply(pa_volume_t a, pa_volume_t b) {
-+    return (a * b) / PA_VOLUME_NORM;
-+}
-+
-+static pa_volume_t _volume_divide(pa_volume_t a, pa_volume_t b) {
-+    if (b == 0)
-+        return PA_VOLUME_NORM;
-+
-+    return (a * PA_VOLUME_NORM) / b;
-+}
-+
-+static pa_cvolume *pa_sw_cvolume_divide_dB(pa_cvolume *dest, const pa_cvolume *a, const pa_cvolume *b) {
-+    uint8_t i;
-+
-+    pa_assert(dest);
-+    pa_assert(a);
-+    pa_assert(b);
-+
-+    for (i = 0; i < a->channels && i < b->channels && i < PA_CHANNELS_MAX; i++) {
-+
-+        dest->values[i] = _volume_divide(
-+                i < a->channels ? a->values[i] : PA_VOLUME_NORM,
-+                i < b->channels ? b->values[i] : PA_VOLUME_NORM);
-+    }
-+
-+    dest->channels = i;
-+
-+    return dest;
-+}
-+
-+static pa_cvolume *pa_sw_cvolume_multiply_dB(pa_cvolume *dest, const pa_cvolume *a, const pa_cvolume *b) {
-+    uint8_t i;
-+
-+    pa_assert(dest);
-+    pa_assert(a);
-+    pa_assert(b);
-+
-+    for (i = 0; i < a->channels && i < b->channels && i < PA_CHANNELS_MAX; i++) {
-+
-+        dest->values[i] = _volume_multiply(
-+                i < a->channels ? a->values[i] : PA_VOLUME_NORM,
-+                i < b->channels ? b->values[i] : PA_VOLUME_NORM);
-+    }
-+
-+    dest->channels = i;
-+
-+    return dest;
-+}
-+
-+
-+static void sink_input_normalize_volume(pa_cvolume *volume, const pa_cvolume *virtual_volume, const pa_cvolume *sink_volume) {
-+    pa_assert(volume);
-+    pa_assert(virtual_volume);
-+    pa_assert(sink_volume);
-+
-+    pa_sw_cvolume_divide_dB(volume, virtual_volume, sink_volume);
-+}
-+
-+static void process_input_volume_change(pa_cvolume *volume, const pa_cvolume *virtual_volume, pa_sink *s, pa_sink_input *this) {
++static void process_input_volume_change(pa_cvolume *dest_volume, const pa_cvolume *dest_virtual_volume, pa_channel_map *dest_channel_map,
++					pa_sink_input *this, pa_sink *sink) {
 +    pa_sink_input *i;
 +    uint32_t idx;
-+    pa_cvolume max_volume;
++    pa_cvolume max_volume, sink_volume;
 +
-+    pa_assert(s);
++    pa_assert(dest_volume);
++    pa_assert(dest_virtual_volume);
++    pa_assert(dest_channel_map);
++    pa_assert(sink);
 +
-+    max_volume = *virtual_volume;
-+    pa_log_debug("sink->virtual_volume max: %f", pa_sw_volume_to_dB(pa_cvolume_avg(&max_volume)));
-+    for (i = PA_SINK_INPUT(pa_idxset_first(s->inputs, &idx)); i; i = PA_SINK_INPUT(pa_idxset_next(s->inputs, &idx))) {
-+        if (this && i == this)
++    pa_log_debug("Sink input volume changed");
++
++    max_volume = *dest_virtual_volume;
++    pa_cvolume_remap(&max_volume, dest_channel_map, &sink->channel_map);
++
++    for (i = PA_SINK_INPUT(pa_idxset_first(sink->inputs, &idx)); i; i = PA_SINK_INPUT(pa_idxset_next(sink->inputs, &idx))) {
++        /* skip this sink-input if we are processing a volume change request */
++        if (this && this == i)
 +            continue;
 +
-+        if (pa_cvolume_avg(&i->virtual_volume) > pa_cvolume_avg(&max_volume))
++        if (pa_cvolume_avg(&i->virtual_volume) > pa_cvolume_avg(&max_volume)) {
 +            max_volume = i->virtual_volume;
-+    }
-+
-+    /* Set the master volume */
-+    if (!pa_cvolume_equal(&max_volume, &s->volume)) { /* FIXME: inline func from sink.h ? */
-+        s->volume = max_volume;
-+        if (s->set_volume && s->set_volume(s) < 0)
-+            s->set_volume = NULL;
-+
-+        if (!s->set_volume)
-+            pa_asyncmsgq_post(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SET_VOLUME, pa_xnewdup(struct pa_cvolume, &max_volume, 1), 0, NULL, pa_xfree);
-+
-+        pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
-+
-+        for (i = PA_SINK_INPUT(pa_idxset_first(s->inputs, &idx)); i; i = PA_SINK_INPUT(pa_idxset_next(s->inputs, &idx))) {
-+            if (this && i == this)
-+                continue;
-+
-+            sink_input_normalize_volume(&i->volume, &i->virtual_volume, pa_sink_get_volume(s, FALSE));
-+	    pa_log_debug("normalized sink input %d: vol %f, vvol %f, sinkvol %f",
-+			 i->index,
-+			 pa_sw_volume_to_dB(pa_cvolume_avg(&i->volume)),
-+			 pa_sw_volume_to_dB(pa_cvolume_avg(&i->virtual_volume)),
-+			 pa_sw_volume_to_dB(pa_cvolume_avg(&i->sink->volume)));
-+	    pa_asyncmsgq_post(i->sink->asyncmsgq, PA_MSGOBJECT(i), PA_SINK_INPUT_MESSAGE_SET_VOLUME, pa_xnewdup(struct pa_cvolume, &i->volume, 1), 0, NULL, pa_xfree);
++            pa_cvolume_remap(&max_volume, &i->channel_map, &sink->channel_map);
 +        }
 +    }
 +
-+    /* normalize the request */
-+    sink_input_normalize_volume(volume, virtual_volume, &s->volume);
++    /* Set the master volume, and normalize inputs */
++    if (!pa_cvolume_equal(&max_volume, &sink->volume)) {
++        /* copied from pa_sink_set_volume(): need to call from here to avoid sink hooks */
++        /* alternatively, could create an extra function pa_sink_set_volume_full()? */
++        sink->volume = max_volume;
++        if (sink->set_volume && sink->set_volume(sink) < 0)
++            sink->set_volume = NULL;
++
++        if (!sink->set_volume)
++            pa_sink_set_soft_volume(sink, &max_volume);
++
++        pa_subscription_post(sink->core, PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE, sink->index);
++
++        pa_log_debug("sink = %.2f (changed)", (double)pa_cvolume_avg(&sink->volume)/PA_VOLUME_NORM);
++
++        /* Now, normalize each of the internal volume (client sink-input volume / sink master volume) */
++        for (i = PA_SINK_INPUT(pa_idxset_first(sink->inputs, &idx)); i; i = PA_SINK_INPUT(pa_idxset_next(sink->inputs, &idx))) {
++            /* skip this sink-input if we are processing a volume change request */
++            if (this && this == i)
++                continue;
++
++            sink_volume = max_volume;
++            pa_cvolume_remap(&sink_volume, &sink->channel_map, &i->channel_map);
++            pa_sw_cvolume_divide(&i->volume, &i->virtual_volume, &sink_volume);
++	    pa_log_debug("sink input { id = %d, flat = %.2f, true = %.2f }",
++			 i->index,
++			 (double)pa_cvolume_avg(&i->virtual_volume)/PA_VOLUME_NORM,
++			 (double)pa_cvolume_avg(&i->volume)/PA_VOLUME_NORM);
++	    pa_asyncmsgq_post(i->sink->asyncmsgq, PA_MSGOBJECT(i), PA_SINK_INPUT_MESSAGE_SET_VOLUME, pa_xnewdup(struct pa_cvolume, &i->volume, 1), 0, NULL, pa_xfree);
++        }
++    } else
++        pa_log_debug("sink = %.2f", (double)pa_cvolume_avg(&sink->volume)/PA_VOLUME_NORM);
++
++    /* and this one */
++    {
++        sink_volume = max_volume;
++        pa_cvolume_remap(&sink_volume, &sink->channel_map, dest_channel_map);
++        pa_sw_cvolume_divide(dest_volume, dest_virtual_volume, &sink_volume);
++        pa_log_debug("caller sink input: { id = %d, flat = %.2f, true = %.2f }",
++                     this ? (int)this->index : -1,
++                     (double)pa_cvolume_avg(dest_virtual_volume)/PA_VOLUME_NORM,
++                     (double)pa_cvolume_avg(dest_volume)/PA_VOLUME_NORM);
++    }
 +}
 +
 +static pa_hook_result_t sink_input_set_volume_hook_callback(pa_core *c, pa_sink_input_set_volume_data *this, struct userdata *u) {
 +    pa_assert(this);
 +    pa_assert(this->sink_input);
 +
-+    process_input_volume_change(&this->volume, &this->virtual_volume, this->sink_input->sink, this->sink_input);
-+
-+    return PA_HOOK_OK;
-+}
-+
-+static pa_hook_result_t sink_set_volume_hook_callback(pa_core *core, pa_sink_set_volume_data *this, struct userdata *u) {
-+    pa_sink_input *i;
-+    uint32_t idx;
-+
-+    pa_assert(this);
-+    pa_assert(this->sink);
-+
-+    for (i = PA_SINK_INPUT(pa_idxset_first(this->sink->inputs, &idx)); i; i = PA_SINK_INPUT(pa_idxset_next(this->sink->inputs, &idx))) {
-+        pa_sw_cvolume_multiply_dB(&i->virtual_volume, &i->volume, &this->volume);
-+        pa_subscription_post(i->sink->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
-+    }
++    process_input_volume_change(&this->volume, &this->virtual_volume, &this->sink_input->channel_map,
++				this->sink_input, this->sink_input->sink);
 +
 +    return PA_HOOK_OK;
 +}
@@ -244,9 +198,42 @@ index 0000000..ff4f83f
 +    pa_assert(this);
 +    pa_assert(this->sink);
 +
-+    //process_input_volume_change(&this->volume, &this->virtual_volume, this->sink, NULL);
++    process_input_volume_change(&this->volume, &this->virtual_volume, &this->channel_map,
++                                NULL, this->sink);
 +
 +    return PA_HOOK_OK;
++}
++
++static void subscribe_callback(pa_core *core, pa_subscription_event_type_t t, uint32_t idx, void *userdata) {
++    struct userdata *u = userdata;
++    pa_sink *sink;
++    pa_sink_input *i;
++    uint32_t iidx;
++    pa_cvolume this_volume;
++
++    pa_assert(core);
++    pa_assert(u);
++
++    if (t != (PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_NEW) &&
++        t != (PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE))
++        return;
++
++    if (!(sink = pa_idxset_get_by_index(core->sinks, idx)))
++        return;
++
++    pa_log_debug("Sink volume changed");
++    pa_log_debug("sink = %.2f", (double)pa_cvolume_avg(pa_sink_get_volume(sink, FALSE)) / PA_VOLUME_NORM);
++
++    for (i = PA_SINK_INPUT(pa_idxset_first(sink->inputs, &iidx)); i; i = PA_SINK_INPUT(pa_idxset_next(sink->inputs, &iidx))) {
++        this_volume = *pa_sink_get_volume(sink, FALSE);
++        pa_cvolume_remap(&this_volume, &sink->channel_map, &i->channel_map);
++        pa_sw_cvolume_multiply(&i->virtual_volume, &i->volume, &this_volume);
++        pa_log_debug("sink input = { id = %d, flat = %.2f, true = %.2f }",
++                     i->index,
++                     (double)pa_cvolume_avg(&i->virtual_volume)/PA_VOLUME_NORM,
++                     (double)pa_cvolume_avg(&i->volume)/PA_VOLUME_NORM);
++        pa_subscription_post(i->sink->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
++    }
 +}
 +
 +int pa__init(pa_module*m) {
@@ -259,7 +246,8 @@ index 0000000..ff4f83f
 +
 +    u->sink_input_fixate_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_INPUT_FIXATE], PA_HOOK_LATE, (pa_hook_cb_t) sink_input_fixate_hook_callback, u);
 +    u->sink_input_set_volume_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_INPUT_SET_VOLUME], PA_HOOK_LATE, (pa_hook_cb_t) sink_input_set_volume_hook_callback, u);
-+    u->sink_set_volume_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_SET_VOLUME], PA_HOOK_EARLY, (pa_hook_cb_t) sink_set_volume_hook_callback, u);
++
++    u->subscription = pa_subscription_new(m->core, PA_SUBSCRIPTION_MASK_SINK, subscribe_callback, u);
 +
 +    return 0;
 +}
@@ -272,14 +260,16 @@ index 0000000..ff4f83f
 +    if (!(u = m->userdata))
 +        return;
 +
++    if (u->subscription)
++      pa_subscription_free(u->subscription);
++
 +    if (u->sink_input_set_volume_hook_slot)
-+      pa_hook_slot_free(u->sink_input_set_volume_hook_slot);
-+
-+    if (u->sink_set_volume_hook_slot)
-+        pa_hook_slot_free(u->sink_set_volume_hook_slot);
-+
++        pa_hook_slot_free(u->sink_input_set_volume_hook_slot);
 +    if (u->sink_input_fixate_hook_slot)
-+      pa_hook_slot_free(u->sink_input_fixate_hook_slot);
++        pa_hook_slot_free(u->sink_input_fixate_hook_slot);
 +
 +    pa_xfree(u);
 +}
+-- 
+1.5.6.5
+
