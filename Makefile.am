@@ -55,10 +55,12 @@ fedora-snapshot: dist
 	cp $(distdir).tar.gz $$HOME/cvs.fedora/pulseaudio/devel/$(distdir).git`date +%Y%m%d`.tar.gz
 
 dist-hook:
-	if test -d .git ; then \
+	if test -d .git && test x`which git-changelog.perl` != x; then \
 		git pull ; \
 		chmod u+w ${distdir}/ChangeLog || true ; \
 		git-changelog.perl > ${distdir}/ChangeLog ; \
+	else \
+		touch ChangeLog ; \
 	fi
 
 .PHONY: homepage distcleancheck doxygen

@@ -61,16 +61,17 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@OS_IS_WIN32_TRUE@am__append_1 = -Wl,--export-all-symbols
+@HAVE_OPENSSL_TRUE@am__append_1 = -I$(top_builddir)/src/modules/raop
+@OS_IS_WIN32_TRUE@am__append_2 = -Wl,--export-all-symbols
 bin_PROGRAMS = pulseaudio$(EXEEXT) pacat$(EXEEXT) pactl$(EXEEXT) \
 	paplay$(EXEEXT) pasuspender$(EXEEXT) $(am__EXEEXT_1) \
 	$(am__EXEEXT_2) $(am__EXEEXT_3)
-@HAVE_POLKIT_TRUE@am__append_2 = daemon/polkit.c daemon/polkit.h
-@HAVE_POLKIT_TRUE@am__append_3 = $(POLKIT_CFLAGS)
-@HAVE_POLKIT_TRUE@am__append_4 = $(POLKIT_LIBS)
-@HAVE_AF_UNIX_TRUE@am__append_5 = pacmd
-@HAVE_X11_TRUE@am__append_6 = pax11publish
-@HAVE_AVAHI_TRUE@am__append_7 = pabrowse
+@HAVE_POLKIT_TRUE@am__append_3 = daemon/polkit.c daemon/polkit.h
+@HAVE_POLKIT_TRUE@am__append_4 = $(POLKIT_CFLAGS)
+@HAVE_POLKIT_TRUE@am__append_5 = $(POLKIT_LIBS)
+@HAVE_AF_UNIX_TRUE@am__append_6 = pacmd
+@HAVE_X11_TRUE@am__append_7 = pax11publish
+@HAVE_AVAHI_TRUE@am__append_8 = pabrowse
 noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
 	pacat-simple$(EXEEXT) parec-simple$(EXEEXT) \
 	strlist-test$(EXEEXT) close-test$(EXEEXT) voltest$(EXEEXT) \
@@ -87,128 +88,128 @@ noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
 	proplist-test$(EXEEXT) rtstutter$(EXEEXT) stripnul$(EXEEXT) \
 	lock-autospawn-test$(EXEEXT) prioq-test$(EXEEXT) \
 	$(am__EXEEXT_4) $(am__EXEEXT_5)
-@HAVE_SIGXCPU_TRUE@am__append_8 = \
+@HAVE_SIGXCPU_TRUE@am__append_9 = \
 @HAVE_SIGXCPU_TRUE@		cpulimit-test \
 @HAVE_SIGXCPU_TRUE@		cpulimit-test2
 
-@HAVE_GLIB20_TRUE@am__append_9 = \
+@HAVE_GLIB20_TRUE@am__append_10 = \
 @HAVE_GLIB20_TRUE@		mainloop-test-glib
 
-@HAVE_AVAHI_TRUE@am__append_10 = \
+@HAVE_AVAHI_TRUE@am__append_11 = \
 @HAVE_AVAHI_TRUE@		pulse/browser.h
 
-@HAVE_GLIB20_TRUE@am__append_11 = \
+@HAVE_GLIB20_TRUE@am__append_12 = \
 @HAVE_GLIB20_TRUE@		pulse/glib-mainloop.h
 
-@HAVE_AVAHI_TRUE@am__append_12 = \
+@HAVE_AVAHI_TRUE@am__append_13 = \
 @HAVE_AVAHI_TRUE@		libpulse-browse.la
 
-@HAVE_GLIB20_TRUE@am__append_13 = \
+@HAVE_GLIB20_TRUE@am__append_14 = \
 @HAVE_GLIB20_TRUE@		libpulse-mainloop-glib.la
 
-@OS_IS_WIN32_TRUE@am__append_14 = \
+@OS_IS_WIN32_TRUE@am__append_15 = \
 @OS_IS_WIN32_TRUE@		pulsecore/dllmain.c
 
-@HAVE_X11_TRUE@am__append_15 = \
+@HAVE_X11_TRUE@am__append_16 = \
 @HAVE_X11_TRUE@		pulse/client-conf-x11.c pulse/client-conf-x11.h \
 @HAVE_X11_TRUE@		pulsecore/x11prop.c pulsecore/x11prop.h
 
-@HAVE_X11_TRUE@am__append_16 = $(X_CFLAGS)
-@HAVE_X11_TRUE@am__append_17 = $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS)
-@HAVE_LIBASYNCNS_TRUE@am__append_18 = $(LIBASYNCNS_CFLAGS)
-@HAVE_LIBASYNCNS_TRUE@am__append_19 = $(LIBASYNCNS_LIBS)
+@HAVE_X11_TRUE@am__append_17 = $(X_CFLAGS)
+@HAVE_X11_TRUE@am__append_18 = $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS)
+@HAVE_LIBASYNCNS_TRUE@am__append_19 = $(LIBASYNCNS_CFLAGS)
+@HAVE_LIBASYNCNS_TRUE@am__append_20 = $(LIBASYNCNS_LIBS)
 
 ###################################
 #         OSS emulation           #
 ###################################
-@HAVE_OSS_TRUE@am__append_20 = libpulsedsp.la
-@HAVE_OSS_TRUE@am__append_21 = utils/padsp
-@OS_IS_WIN32_TRUE@am__append_22 = \
+@HAVE_OSS_TRUE@am__append_21 = libpulsedsp.la
+@HAVE_OSS_TRUE@am__append_22 = utils/padsp
+@OS_IS_WIN32_TRUE@am__append_23 = \
 @OS_IS_WIN32_TRUE@		pulsecore/dllmain.c
 
 
 # We need to emulate sendmsg/recvmsg to support this on Win32
-@OS_IS_WIN32_FALSE@am__append_23 = \
+@OS_IS_WIN32_FALSE@am__append_24 = \
 @OS_IS_WIN32_FALSE@		librtp.la
 
 
 #pulsecoreinclude_HEADERS +=
-@HAVE_X11_TRUE@am__append_24 = \
+@HAVE_X11_TRUE@am__append_25 = \
 @HAVE_X11_TRUE@		pulsecore/x11wrap.h \
 @HAVE_X11_TRUE@		pulsecore/x11prop.h
 
-@HAVE_X11_TRUE@am__append_25 = \
+@HAVE_X11_TRUE@am__append_26 = \
 @HAVE_X11_TRUE@		libx11wrap.la \
 @HAVE_X11_TRUE@		libx11prop.la
 
 
 #pulsecoreinclude_HEADERS +=
-@HAVE_AVAHI_TRUE@am__append_26 = \
+@HAVE_AVAHI_TRUE@am__append_27 = \
 @HAVE_AVAHI_TRUE@		pulsecore/avahi-wrap.h
 
-@HAVE_AVAHI_TRUE@am__append_27 = \
+@HAVE_AVAHI_TRUE@am__append_28 = \
 @HAVE_AVAHI_TRUE@		libavahi-wrap.la
 
 
 # See comment at librtp.la above
-@OS_IS_WIN32_FALSE@am__append_28 = \
+@OS_IS_WIN32_FALSE@am__append_29 = \
 @OS_IS_WIN32_FALSE@		module-rtp-send.la \
 @OS_IS_WIN32_FALSE@		module-rtp-recv.la
 
-@HAVE_AF_UNIX_TRUE@am__append_29 = \
+@HAVE_AF_UNIX_TRUE@am__append_30 = \
 @HAVE_AF_UNIX_TRUE@		module-cli-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-simple-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-http-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-native-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-esound-protocol-unix.la
 
-@HAVE_MKFIFO_TRUE@am__append_30 = \
+@HAVE_MKFIFO_TRUE@am__append_31 = \
 @HAVE_MKFIFO_TRUE@		module-pipe-sink.la \
 @HAVE_MKFIFO_TRUE@		module-pipe-source.la
 
-@OS_IS_WIN32_FALSE@am__append_31 = \
+@OS_IS_WIN32_FALSE@am__append_32 = \
 @OS_IS_WIN32_FALSE@		module-esound-compat-spawnfd.la \
 @OS_IS_WIN32_FALSE@		module-esound-compat-spawnpid.la
 
-@HAVE_REGEX_TRUE@am__append_32 = \
+@HAVE_REGEX_TRUE@am__append_33 = \
 @HAVE_REGEX_TRUE@		module-match.la
 
-@HAVE_X11_TRUE@am__append_33 = \
+@HAVE_X11_TRUE@am__append_34 = \
 @HAVE_X11_TRUE@		module-x11-bell.la \
 @HAVE_X11_TRUE@		module-x11-publish.la \
 @HAVE_X11_TRUE@		module-x11-xsmp.la
 
-@HAVE_OSS_TRUE@am__append_34 = \
+@HAVE_OSS_TRUE@am__append_35 = \
 @HAVE_OSS_TRUE@		liboss-util.la \
 @HAVE_OSS_TRUE@		module-oss.la
 
-@HAVE_ALSA_TRUE@am__append_35 = \
+@HAVE_ALSA_TRUE@am__append_36 = \
 @HAVE_ALSA_TRUE@		libalsa-util.la \
 @HAVE_ALSA_TRUE@		module-alsa-sink.la \
 @HAVE_ALSA_TRUE@		module-alsa-source.la
 
-@HAVE_SOLARIS_TRUE@am__append_36 = \
+@HAVE_SOLARIS_TRUE@am__append_37 = \
 @HAVE_SOLARIS_TRUE@		module-solaris.la
 
-@HAVE_AVAHI_TRUE@am__append_37 = \
+@HAVE_AVAHI_TRUE@am__append_38 = \
 @HAVE_AVAHI_TRUE@		module-zeroconf-publish.la \
 @HAVE_AVAHI_TRUE@		module-zeroconf-discover.la
 
-@HAVE_LIRC_TRUE@am__append_38 = \
+@HAVE_LIRC_TRUE@am__append_39 = \
 @HAVE_LIRC_TRUE@		module-lirc.la
 
-@HAVE_EVDEV_TRUE@am__append_39 = \
+@HAVE_EVDEV_TRUE@am__append_40 = \
 @HAVE_EVDEV_TRUE@		module-mmkbd-evdev.la
 
-@HAVE_JACK_TRUE@am__append_40 = \
+@HAVE_JACK_TRUE@am__append_41 = \
 @HAVE_JACK_TRUE@		module-jack-sink.la \
 @HAVE_JACK_TRUE@		module-jack-source.la
 
 pulselibexec_PROGRAMS = $(am__EXEEXT_6) $(am__EXEEXT_7)
-@HAVE_GCONF_TRUE@am__append_41 = \
+@HAVE_GCONF_TRUE@am__append_42 = \
 @HAVE_GCONF_TRUE@		module-gconf.la
 
-@HAVE_GCONF_TRUE@am__append_42 = \
+@HAVE_GCONF_TRUE@am__append_43 = \
 @HAVE_GCONF_TRUE@		gconf-helper
 
 
@@ -216,23 +217,30 @@ pulselibexec_PROGRAMS = $(am__EXEEXT_6) $(am__EXEEXT_7)
 #modlibexec_LTLIBRARIES += \
 #		module-waveout.la
 #endif
-@HAVE_HAL_TRUE@am__append_43 = \
+@HAVE_HAL_TRUE@am__append_44 = \
 @HAVE_HAL_TRUE@		libdbus-util.la \
 @HAVE_HAL_TRUE@		module-hal-detect.la
 
-@HAVE_DBUS_TRUE@am__append_44 = \
+@HAVE_DBUS_TRUE@am__append_45 = \
 @HAVE_DBUS_TRUE@		libdbus-util.la \
 @HAVE_DBUS_TRUE@		module-console-kit.la
 
-@HAVE_BLUEZ_TRUE@am__append_45 = \
+@HAVE_BLUEZ_TRUE@am__append_46 = \
 @HAVE_BLUEZ_TRUE@		module-bluetooth-proximity.la \
 @HAVE_BLUEZ_TRUE@		module-bluetooth-discover.la \
 @HAVE_BLUEZ_TRUE@		libbluetooth-ipc.la \
 @HAVE_BLUEZ_TRUE@		libbluetooth-sbc.la \
 @HAVE_BLUEZ_TRUE@		module-bluetooth-device.la
 
-@HAVE_BLUEZ_TRUE@am__append_46 = \
+@HAVE_BLUEZ_TRUE@am__append_47 = \
 @HAVE_BLUEZ_TRUE@		proximity-helper
+
+@HAVE_OPENSSL_TRUE@am__append_48 = \
+@HAVE_OPENSSL_TRUE@		libraop.la \
+@HAVE_OPENSSL_TRUE@		module-raop-sink.la
+
+@HAVE_AVAHI_TRUE@@HAVE_OPENSSL_TRUE@am__append_49 = \
+@HAVE_AVAHI_TRUE@@HAVE_OPENSSL_TRUE@		module-raop-discover.la
 
 subdir = src
 DIST_COMMON = $(am__noinst_HEADERS_DIST) \
@@ -245,8 +253,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
 	$(top_srcdir)/m4/check_define.m4 $(top_srcdir)/m4/iconv.m4 \
 	$(top_srcdir)/m4/intltool.m4 $(top_srcdir)/m4/lib-ld.m4 \
 	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
-	$(top_srcdir)/m4/nls.m4 $(top_srcdir)/m4/tls.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/tls.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -776,8 +783,20 @@ libpulsedsp_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libpulsedsp_la_CFLAGS) \
 	$(CFLAGS) $(libpulsedsp_la_LDFLAGS) $(LDFLAGS) -o $@
 @HAVE_OSS_TRUE@am_libpulsedsp_la_rpath = -rpath $(libdir)
-librtp_la_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
-am_librtp_la_OBJECTS = rtp.lo sdp.lo sap.lo
+libraop_la_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
+	libsocket-util.la libiochannel.la libsocket-client.la \
+	libioline.la libpulsecore.la librtp.la
+am_libraop_la_OBJECTS = libraop_la-raop_client.lo libraop_la-base64.lo
+libraop_la_OBJECTS = $(am_libraop_la_OBJECTS)
+libraop_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libraop_la_CFLAGS) \
+	$(CFLAGS) $(libraop_la_LDFLAGS) $(LDFLAGS) -o $@
+@HAVE_OPENSSL_TRUE@am_libraop_la_rpath = -rpath $(modlibexecdir)
+librtp_la_DEPENDENCIES = $(am__DEPENDENCIES_2) libsocket-util.la \
+	libiochannel.la libsocket-client.la libioline.la \
+	libpulsecore.la
+am_librtp_la_OBJECTS = rtp.lo sdp.lo sap.lo rtsp_client.lo \
+	headerlist.lo
 librtp_la_OBJECTS = $(am_librtp_la_OBJECTS)
 librtp_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -1033,6 +1052,13 @@ module_esound_sink_la_OBJECTS = $(am_module_esound_sink_la_OBJECTS)
 module_esound_sink_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(module_esound_sink_la_LDFLAGS) $(LDFLAGS) -o $@
+module_flat_volume_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	libpulsecore.la
+am_module_flat_volume_la_OBJECTS = module-flat-volume.lo
+module_flat_volume_la_OBJECTS = $(am_module_flat_volume_la_OBJECTS)
+module_flat_volume_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(module_flat_volume_la_LDFLAGS) $(LDFLAGS) -o $@
 module_gconf_la_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
 am_module_gconf_la_OBJECTS = module_gconf_la-module-gconf.lo
 module_gconf_la_OBJECTS = $(am_module_gconf_la_OBJECTS)
@@ -1206,6 +1232,27 @@ module_position_event_sounds_la_LINK = $(LIBTOOL) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) \
 	$(module_position_event_sounds_la_LDFLAGS) $(LDFLAGS) -o $@
+module_raop_discover_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) libavahi-wrap.la libpulsecore.la
+am_module_raop_discover_la_OBJECTS =  \
+	module_raop_discover_la-module-raop-discover.lo
+module_raop_discover_la_OBJECTS =  \
+	$(am_module_raop_discover_la_OBJECTS)
+module_raop_discover_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(module_raop_discover_la_CFLAGS) $(CFLAGS) \
+	$(module_raop_discover_la_LDFLAGS) $(LDFLAGS) -o $@
+@HAVE_AVAHI_TRUE@@HAVE_OPENSSL_TRUE@am_module_raop_discover_la_rpath =  \
+@HAVE_AVAHI_TRUE@@HAVE_OPENSSL_TRUE@	-rpath $(modlibexecdir)
+module_raop_sink_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	libpulsecore.la libiochannel.la librtp.la libraop.la
+am_module_raop_sink_la_OBJECTS = module-raop-sink.lo
+module_raop_sink_la_OBJECTS = $(am_module_raop_sink_la_OBJECTS)
+module_raop_sink_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(module_raop_sink_la_LDFLAGS) $(LDFLAGS) -o $@
+@HAVE_OPENSSL_TRUE@am_module_raop_sink_la_rpath = -rpath \
+@HAVE_OPENSSL_TRUE@	$(modlibexecdir)
 module_remap_sink_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 	libpulsecore.la
 am_module_remap_sink_la_OBJECTS = module-remap-sink.lo
@@ -1841,11 +1888,11 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
 	$(libpulse_mainloop_glib_la_SOURCES) \
 	$(libpulse_simple_la_SOURCES) $(libpulse_la_SOURCES) \
 	$(libpulsecore_la_SOURCES) $(libpulsedsp_la_SOURCES) \
-	$(librtp_la_SOURCES) $(libsocket_client_la_SOURCES) \
-	$(libsocket_server_la_SOURCES) $(libsocket_util_la_SOURCES) \
-	$(libstrlist_la_SOURCES) $(libtagstruct_la_SOURCES) \
-	$(libx11prop_la_SOURCES) $(libx11wrap_la_SOURCES) \
-	$(module_alsa_sink_la_SOURCES) \
+	$(libraop_la_SOURCES) $(librtp_la_SOURCES) \
+	$(libsocket_client_la_SOURCES) $(libsocket_server_la_SOURCES) \
+	$(libsocket_util_la_SOURCES) $(libstrlist_la_SOURCES) \
+	$(libtagstruct_la_SOURCES) $(libx11prop_la_SOURCES) \
+	$(libx11wrap_la_SOURCES) $(module_alsa_sink_la_SOURCES) \
 	$(module_alsa_source_la_SOURCES) \
 	$(module_always_sink_la_SOURCES) \
 	$(module_bluetooth_device_la_SOURCES) \
@@ -1862,7 +1909,8 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
 	$(module_esound_compat_spawnpid_la_SOURCES) \
 	$(module_esound_protocol_tcp_la_SOURCES) \
 	$(module_esound_protocol_unix_la_SOURCES) \
-	$(module_esound_sink_la_SOURCES) $(module_gconf_la_SOURCES) \
+	$(module_esound_sink_la_SOURCES) \
+	$(module_flat_volume_la_SOURCES) $(module_gconf_la_SOURCES) \
 	$(module_hal_detect_la_SOURCES) \
 	$(module_http_protocol_tcp_la_SOURCES) \
 	$(module_http_protocol_unix_la_SOURCES) \
@@ -1877,7 +1925,8 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
 	$(module_pipe_sink_la_SOURCES) \
 	$(module_pipe_source_la_SOURCES) \
 	$(module_position_event_sounds_la_SOURCES) \
-	$(module_remap_sink_la_SOURCES) \
+	$(module_raop_discover_la_SOURCES) \
+	$(module_raop_sink_la_SOURCES) $(module_remap_sink_la_SOURCES) \
 	$(module_rescue_streams_la_SOURCES) \
 	$(module_rtp_recv_la_SOURCES) $(module_rtp_send_la_SOURCES) \
 	$(module_simple_protocol_tcp_la_SOURCES) \
@@ -1932,11 +1981,12 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
 	$(am__libpulse_simple_la_SOURCES_DIST) \
 	$(am__libpulse_la_SOURCES_DIST) \
 	$(am__libpulsecore_la_SOURCES_DIST) \
-	$(am__libpulsedsp_la_SOURCES_DIST) $(librtp_la_SOURCES) \
-	$(libsocket_client_la_SOURCES) $(libsocket_server_la_SOURCES) \
-	$(libsocket_util_la_SOURCES) $(libstrlist_la_SOURCES) \
-	$(libtagstruct_la_SOURCES) $(libx11prop_la_SOURCES) \
-	$(libx11wrap_la_SOURCES) $(module_alsa_sink_la_SOURCES) \
+	$(am__libpulsedsp_la_SOURCES_DIST) $(libraop_la_SOURCES) \
+	$(librtp_la_SOURCES) $(libsocket_client_la_SOURCES) \
+	$(libsocket_server_la_SOURCES) $(libsocket_util_la_SOURCES) \
+	$(libstrlist_la_SOURCES) $(libtagstruct_la_SOURCES) \
+	$(libx11prop_la_SOURCES) $(libx11wrap_la_SOURCES) \
+	$(module_alsa_sink_la_SOURCES) \
 	$(module_alsa_source_la_SOURCES) \
 	$(module_always_sink_la_SOURCES) \
 	$(module_bluetooth_device_la_SOURCES) \
@@ -1953,7 +2003,8 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
 	$(module_esound_compat_spawnpid_la_SOURCES) \
 	$(module_esound_protocol_tcp_la_SOURCES) \
 	$(module_esound_protocol_unix_la_SOURCES) \
-	$(module_esound_sink_la_SOURCES) $(module_gconf_la_SOURCES) \
+	$(module_esound_sink_la_SOURCES) \
+	$(module_flat_volume_la_SOURCES) $(module_gconf_la_SOURCES) \
 	$(module_hal_detect_la_SOURCES) \
 	$(module_http_protocol_tcp_la_SOURCES) \
 	$(module_http_protocol_unix_la_SOURCES) \
@@ -1968,7 +2019,8 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
 	$(module_pipe_sink_la_SOURCES) \
 	$(module_pipe_source_la_SOURCES) \
 	$(module_position_event_sounds_la_SOURCES) \
-	$(module_remap_sink_la_SOURCES) \
+	$(module_raop_discover_la_SOURCES) \
+	$(module_raop_sink_la_SOURCES) $(module_remap_sink_la_SOURCES) \
 	$(module_rescue_streams_la_SOURCES) \
 	$(module_rtp_recv_la_SOURCES) $(module_rtp_send_la_SOURCES) \
 	$(module_simple_protocol_tcp_la_SOURCES) \
@@ -2118,6 +2170,7 @@ HAVE_HAL = @HAVE_HAL@
 HAVE_JACK = @HAVE_JACK@
 HAVE_LIBASYNCNS = @HAVE_LIBASYNCNS@
 HAVE_LIBSAMPLERATE = @HAVE_LIBSAMPLERATE@
+HAVE_OPENSSL = @HAVE_OPENSSL@
 HAVE_OSS = @HAVE_OSS@
 HAVE_POLKIT = @HAVE_POLKIT@
 HAVE_SOLARIS = @HAVE_SOLARIS@
@@ -2192,6 +2245,8 @@ MSGMERGE = @MSGMERGE@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OPENSSL_CFLAGS = @OPENSSL_CFLAGS@
+OPENSSL_LIBS = @OPENSSL_LIBS@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -2324,12 +2379,12 @@ AM_CFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src/modules \
 	-DPA_SYSTEM_STATE_PATH=\"$(PA_SYSTEM_STATE_PATH)\" \
 	-DAO_REQUIRE_CAS -DPULSE_LOCALEDIR=\"$(pulselocaledir)\" \
 	-DPA_MACHINE_ID=\"$(localstatedir)/lib/dbus/machine-id\" \
-	'-DDEBUG_TRAP=__asm__("int $$3")'
+	'-DDEBUG_TRAP=__asm__("int $$3")' $(am__append_1)
 AM_LIBADD = $(PTHREAD_LIBS) $(INTLLIBS)
 AM_LDADD = $(PTHREAD_LIBS) $(INTLLIBS)
 
 # Only required on some platforms but defined for all to avoid errors
-AM_LDFLAGS = -Wl,-no-undefined -Wl,--gc-sections $(am__append_1)
+AM_LDFLAGS = -Wl,-no-undefined -Wl,--gc-sections $(am__append_2)
 @STATIC_BINS_TRUE@BINLDFLAGS = -static
 @OS_IS_WIN32_TRUE@WINSOCK_LIBS = -lwsock32 -lws2_32 -lwininet
 @OS_IS_WIN32_FALSE@PA_THREAD_OBJS = \
@@ -2366,15 +2421,15 @@ pulseaudio_SOURCES = daemon/caps.h daemon/caps.c daemon/cmdline.c \
 	daemon/cmdline.h daemon/cpulimit.c daemon/cpulimit.h \
 	daemon/daemon-conf.c daemon/daemon-conf.h daemon/dumpmodules.c \
 	daemon/dumpmodules.h daemon/ltdl-bind-now.c \
-	daemon/ltdl-bind-now.h daemon/main.c $(am__append_2)
+	daemon/ltdl-bind-now.h daemon/main.c $(am__append_3)
 pulseaudio_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS) \
 	$(LIBSAMPLERATE_CFLAGS) $(LIBSPEEX_CFLAGS) \
 	$(LIBSNDFILE_CFLAGS) $(CAP_CFLAGS) $(LIBOIL_CFLAGS) \
-	$(DBUS_CFLAGS) $(am__append_3)
+	$(DBUS_CFLAGS) $(am__append_4)
 pulseaudio_CPPFLAGS = $(AM_CPPFLAGS)
 pulseaudio_LDADD = $(AM_LDADD) libpulsecore.la $(LIBLTDL) \
 	$(LIBSAMPLERATE_LIBS) $(LIBSPEEX_LIBS) $(LIBSNDFILE_LIBS) \
-	$(CAP_LIBS) $(LIBOIL_LIBS) $(DBUS_LIBS) $(am__append_4)
+	$(CAP_LIBS) $(LIBOIL_LIBS) $(DBUS_LIBS) $(am__append_5)
 # This is needed because automake doesn't properly expand the foreach below
 pulseaudio_DEPENDENCIES = libpulsecore.la $(PREOPEN_LIBS)
 @PREOPEN_MODS_FALSE@PREOPEN_LIBS = $(modlibexec_LTLIBRARIES)
@@ -2382,7 +2437,7 @@ pulseaudio_DEPENDENCIES = libpulsecore.la $(PREOPEN_LIBS)
 @FORCE_PREOPEN_FALSE@pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlopen force $(foreach f,$(PREOPEN_LIBS),-dlopen $(f))
 @FORCE_PREOPEN_TRUE@pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlpreopen force $(foreach f,$(PREOPEN_LIBS),-dlpreopen $(f))
 @HAVE_POLKIT_TRUE@policy_DATA = daemon/org.pulseaudio.policy
-bin_SCRIPTS = esdcompat start-pulseaudio-x11 $(am__append_21)
+bin_SCRIPTS = esdcompat start-pulseaudio-x11 $(am__append_22)
 pacat_SOURCES = utils/pacat.c
 pacat_LDADD = $(AM_LDADD) libpulse.la
 pacat_CFLAGS = $(AM_CFLAGS)
@@ -2574,9 +2629,9 @@ pulseinclude_HEADERS = pulse/cdecl.h pulse/channelmap.h \
 	pulse/thread-mainloop.h pulse/timeval.h pulse/utf8.h \
 	pulse/util.h pulse/version.h pulse/volume.h pulse/xmalloc.h \
 	pulse/proplist.h pulse/gccmacro.h pulse/ext-stream-restore.h \
-	$(am__append_10) $(am__append_11)
-lib_LTLIBRARIES = libpulse.la libpulse-simple.la $(am__append_12) \
-	$(am__append_13) $(am__append_20) libpulsecore.la
+	$(am__append_11) $(am__append_12)
+lib_LTLIBRARIES = libpulse.la libpulse-simple.la $(am__append_13) \
+	$(am__append_14) $(am__append_21) libpulsecore.la
 
 # Public interface
 
@@ -2627,12 +2682,12 @@ libpulse_la_SOURCES = pulse/cdecl.h pulse/channelmap.c \
 	pulsecore/once.h pulsecore/rtclock.c pulsecore/rtclock.h \
 	pulsecore/time-smoother.c pulsecore/time-smoother.h \
 	pulsecore/proplist-util.c pulsecore/proplist-util.h \
-	$(PA_THREAD_OBJS) $(am__append_14) $(am__append_15)
-libpulse_la_CFLAGS = $(AM_CFLAGS) $(am__append_16) $(am__append_18)
+	$(PA_THREAD_OBJS) $(am__append_15) $(am__append_16)
+libpulse_la_CFLAGS = $(AM_CFLAGS) $(am__append_17) $(am__append_19)
 libpulse_la_LDFLAGS = -version-info $(LIBPULSE_VERSION_INFO) \
-	-Wl,-version-script=$(srcdir)/map-file $(am__append_17)
+	-Wl,-version-script=$(srcdir)/map-file $(am__append_18)
 libpulse_la_LIBADD = $(AM_LIBADD) $(WINSOCK_LIBS) $(LTLIBICONV) \
-	$(am__append_19)
+	$(am__append_20)
 libpulse_simple_la_SOURCES = \
 		pulse/simple.c pulse/simple.h	\
 		pulsecore/log.c pulsecore/log.h \
@@ -2713,7 +2768,7 @@ noinst_HEADERS = pulsecore/autoload.h pulsecore/atomic.h \
 	pulsecore/strlist.h pulsecore/protocol-simple.h \
 	pulsecore/esound.h pulsecore/protocol-esound.h \
 	pulsecore/native-common.h pulsecore/protocol-native.h \
-	pulsecore/protocol-http.h $(am__append_24) $(am__append_26)
+	pulsecore/protocol-http.h $(am__append_25) $(am__append_27)
 
 # Some public stuff is used even in the core
 
@@ -2778,7 +2833,7 @@ libpulsecore_la_SOURCES = pulse/channelmap.c pulse/channelmap.h \
 	pulsecore/start-child.h pulsecore/envelope.c \
 	pulsecore/envelope.h pulsecore/proplist-util.c \
 	pulsecore/proplist-util.h pulsecore/lock-autospawn.c \
-	pulsecore/lock-autospawn.h $(PA_THREAD_OBJS) $(am__append_22)
+	pulsecore/lock-autospawn.h $(PA_THREAD_OBJS) $(am__append_23)
 libpulsecore_la_CPPFLAGS = $(AM_CPPFLAGS) $(LIBOIL_CFLAGS)
 libpulsecore_la_LDFLAGS = -version-info $(LIBPULSECORE_VERSION_INFO)
 libpulsecore_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(LIBSPEEX_LIBS) $(WINSOCK_LIBS) $(LIBOIL_LIBS) $(LTLIBICONV) libffmpeg-resampler.la
@@ -2798,10 +2853,10 @@ modlibexec_LTLIBRARIES = libsocket-util.la libiochannel.la \
 	libpstream-util.la libpdispatch.la libauthkey.la \
 	libauth-cookie.la libstrlist.la libprotocol-simple.la \
 	libprotocol-http.la libprotocol-native.la \
-	libprotocol-esound.la $(am__append_23) $(am__append_25) \
-	$(am__append_27) module-cli.la module-cli-protocol-tcp.la \
-	module-simple-protocol-tcp.la module-null-sink.la \
-	module-detect.la module-volume-restore.la \
+	libprotocol-esound.la $(am__append_24) $(am__append_26) \
+	$(am__append_28) module-flat-volume.la module-cli.la \
+	module-cli-protocol-tcp.la module-simple-protocol-tcp.la \
+	module-null-sink.la module-detect.la module-volume-restore.la \
 	module-device-restore.la module-stream-restore.la \
 	module-default-device-restore.la module-always-sink.la \
 	module-rescue-streams.la module-suspend-on-idle.la \
@@ -2811,12 +2866,13 @@ modlibexec_LTLIBRARIES = libsocket-util.la libiochannel.la \
 	module-remap-sink.la module-ladspa-sink.la \
 	module-esound-sink.la module-tunnel-sink.la \
 	module-tunnel-source.la module-position-event-sounds.la \
-	$(am__append_28) $(am__append_29) $(am__append_30) \
-	$(am__append_31) $(am__append_32) $(am__append_33) \
-	$(am__append_34) $(am__append_35) $(am__append_36) \
-	$(am__append_37) $(am__append_38) $(am__append_39) \
-	$(am__append_40) $(am__append_41) $(am__append_43) \
-	$(am__append_44) $(am__append_45)
+	$(am__append_29) $(am__append_30) $(am__append_31) \
+	$(am__append_32) $(am__append_33) $(am__append_34) \
+	$(am__append_35) $(am__append_36) $(am__append_37) \
+	$(am__append_38) $(am__append_39) $(am__append_40) \
+	$(am__append_41) $(am__append_42) $(am__append_44) \
+	$(am__append_45) $(am__append_46) $(am__append_48) \
+	$(am__append_49)
 libprotocol_simple_la_SOURCES = pulsecore/protocol-simple.c pulsecore/protocol-simple.h
 libprotocol_simple_la_LDFLAGS = -avoid-version
 libprotocol_simple_la_LIBADD = $(AM_LIBADD) libpulsecore.la libsocket-server.la libiochannel.la
@@ -2891,9 +2947,22 @@ libsocket_util_la_SOURCES = \
 
 libsocket_util_la_LDFLAGS = -avoid-version
 libsocket_util_la_LIBADD = $(AM_LIBADD) $(WINSOCK_LIBS) libpulsecore.la
-librtp_la_SOURCES = modules/rtp/rtp.c modules/rtp/rtp.h modules/rtp/sdp.c modules/rtp/sdp.h modules/rtp/sap.c modules/rtp/sap.h
+librtp_la_SOURCES = \
+		modules/rtp/rtp.c modules/rtp/rtp.h \
+		modules/rtp/sdp.c modules/rtp/sdp.h \
+		modules/rtp/sap.c modules/rtp/sap.h \
+		modules/rtp/rtsp_client.c modules/rtp/rtsp_client.h \
+		modules/rtp/headerlist.c modules/rtp/headerlist.h
+
 librtp_la_LDFLAGS = -avoid-version
-librtp_la_LIBADD = $(AM_LIBADD) libpulsecore.la
+librtp_la_LIBADD = $(AM_LIBADD) libsocket-util.la libiochannel.la libsocket-client.la libioline.la libpulsecore.la
+libraop_la_SOURCES = \
+        modules/raop/raop_client.c modules/raop/raop_client.h \
+        modules/raop/base64.c modules/raop/base64.h
+
+libraop_la_CFLAGS = $(AM_CFLAGS) $(OPENSSL_CFLAGS)
+libraop_la_LDFLAGS = -avoid-version
+libraop_la_LIBADD = $(AM_LIBADD) $(OPENSSL_LIBS) libsocket-util.la libiochannel.la libsocket-client.la libioline.la libpulsecore.la librtp.la
 
 # X11
 libx11wrap_la_SOURCES = pulsecore/x11wrap.c pulsecore/x11wrap.h
@@ -2966,10 +3035,18 @@ SYMDEF_FILES = \
 		modules/bluetooth/module-bluetooth-proximity-symdef.h \
 		modules/bluetooth/module-bluetooth-discover-symdef.h \
 		modules/bluetooth/module-bluetooth-device-symdef.h \
+		modules/module-raop-sink-symdef.h \
+		modules/module-raop-discover-symdef.h \
 		modules/gconf/module-gconf-symdef.h \
 		modules/module-position-event-sounds-symdef.h \
-		modules/module-console-kit-symdef.h
+		modules/module-console-kit-symdef.h \
+		modules/module-flat-volume-symdef.h
 
+
+# Flat volume
+module_flat_volume_la_SOURCES = modules/module-flat-volume.c
+module_flat_volume_la_LDFLAGS = -module -avoid-version
+module_flat_volume_la_LIBADD = $(AM_LIBADD) libpulsecore.la
 
 # Simple protocol
 module_simple_protocol_tcp_la_SOURCES = modules/module-protocol-stub.c
@@ -3270,6 +3347,15 @@ module_bluetooth_device_la_SOURCES = modules/bluetooth/module-bluetooth-device.c
 module_bluetooth_device_la_LDFLAGS = -module -avoid-version
 module_bluetooth_device_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la libbluetooth-ipc.la libbluetooth-sbc.la libsocket-util.la
 module_bluetooth_device_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
+
+# Apple Airtunes/RAOP
+module_raop_sink_la_SOURCES = modules/module-raop-sink.c
+module_raop_sink_la_LDFLAGS = -module -avoid-version
+module_raop_sink_la_LIBADD = $(AM_LIBADD) libpulsecore.la libiochannel.la librtp.la libraop.la
+module_raop_discover_la_SOURCES = modules/module-raop-discover.c
+module_raop_discover_la_LDFLAGS = -module -avoid-version
+module_raop_discover_la_LIBADD = $(AM_LIBADD) $(AVAHI_LIBS) libavahi-wrap.la libpulsecore.la
+module_raop_discover_la_CFLAGS = $(AM_CFLAGS) $(AVAHI_CFLAGS)
 CLEANFILES = esdcompat client.conf default.pa system.pa daemon.conf start-pulseaudio-x11
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -3426,6 +3512,8 @@ libpulsecore.la: $(libpulsecore_la_OBJECTS) $(libpulsecore_la_DEPENDENCIES)
 	$(libpulsecore_la_LINK) -rpath $(libdir) $(libpulsecore_la_OBJECTS) $(libpulsecore_la_LIBADD) $(LIBS)
 libpulsedsp.la: $(libpulsedsp_la_OBJECTS) $(libpulsedsp_la_DEPENDENCIES) 
 	$(libpulsedsp_la_LINK) $(am_libpulsedsp_la_rpath) $(libpulsedsp_la_OBJECTS) $(libpulsedsp_la_LIBADD) $(LIBS)
+libraop.la: $(libraop_la_OBJECTS) $(libraop_la_DEPENDENCIES) 
+	$(libraop_la_LINK) $(am_libraop_la_rpath) $(libraop_la_OBJECTS) $(libraop_la_LIBADD) $(LIBS)
 librtp.la: $(librtp_la_OBJECTS) $(librtp_la_DEPENDENCIES) 
 	$(librtp_la_LINK) $(am_librtp_la_rpath) $(librtp_la_OBJECTS) $(librtp_la_LIBADD) $(LIBS)
 libsocket-client.la: $(libsocket_client_la_OBJECTS) $(libsocket_client_la_DEPENDENCIES) 
@@ -3480,6 +3568,8 @@ module-esound-protocol-unix.la: $(module_esound_protocol_unix_la_OBJECTS) $(modu
 	$(module_esound_protocol_unix_la_LINK) $(am_module_esound_protocol_unix_la_rpath) $(module_esound_protocol_unix_la_OBJECTS) $(module_esound_protocol_unix_la_LIBADD) $(LIBS)
 module-esound-sink.la: $(module_esound_sink_la_OBJECTS) $(module_esound_sink_la_DEPENDENCIES) 
 	$(module_esound_sink_la_LINK) -rpath $(modlibexecdir) $(module_esound_sink_la_OBJECTS) $(module_esound_sink_la_LIBADD) $(LIBS)
+module-flat-volume.la: $(module_flat_volume_la_OBJECTS) $(module_flat_volume_la_DEPENDENCIES) 
+	$(module_flat_volume_la_LINK) -rpath $(modlibexecdir) $(module_flat_volume_la_OBJECTS) $(module_flat_volume_la_LIBADD) $(LIBS)
 module-gconf.la: $(module_gconf_la_OBJECTS) $(module_gconf_la_DEPENDENCIES) 
 	$(module_gconf_la_LINK) $(am_module_gconf_la_rpath) $(module_gconf_la_OBJECTS) $(module_gconf_la_LIBADD) $(LIBS)
 module-hal-detect.la: $(module_hal_detect_la_OBJECTS) $(module_hal_detect_la_DEPENDENCIES) 
@@ -3516,6 +3606,10 @@ module-pipe-source.la: $(module_pipe_source_la_OBJECTS) $(module_pipe_source_la_
 	$(module_pipe_source_la_LINK) $(am_module_pipe_source_la_rpath) $(module_pipe_source_la_OBJECTS) $(module_pipe_source_la_LIBADD) $(LIBS)
 module-position-event-sounds.la: $(module_position_event_sounds_la_OBJECTS) $(module_position_event_sounds_la_DEPENDENCIES) 
 	$(module_position_event_sounds_la_LINK) -rpath $(modlibexecdir) $(module_position_event_sounds_la_OBJECTS) $(module_position_event_sounds_la_LIBADD) $(LIBS)
+module-raop-discover.la: $(module_raop_discover_la_OBJECTS) $(module_raop_discover_la_DEPENDENCIES) 
+	$(module_raop_discover_la_LINK) $(am_module_raop_discover_la_rpath) $(module_raop_discover_la_OBJECTS) $(module_raop_discover_la_LIBADD) $(LIBS)
+module-raop-sink.la: $(module_raop_sink_la_OBJECTS) $(module_raop_sink_la_DEPENDENCIES) 
+	$(module_raop_sink_la_LINK) $(am_module_raop_sink_la_rpath) $(module_raop_sink_la_OBJECTS) $(module_raop_sink_la_LIBADD) $(LIBS)
 module-remap-sink.la: $(module_remap_sink_la_OBJECTS) $(module_remap_sink_la_DEPENDENCIES) 
 	$(module_remap_sink_la_LINK) -rpath $(modlibexecdir) $(module_remap_sink_la_OBJECTS) $(module_remap_sink_la_LIBADD) $(LIBS)
 module-rescue-streams.la: $(module_rescue_streams_la_OBJECTS) $(module_rescue_streams_la_DEPENDENCIES) 
@@ -3796,6 +3890,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flist_test-flist-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gconf_helper-gconf-helper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get_binary_name_test-get-binary-name-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/headerlist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hook_list_test-hook-list-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/inet_ntop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/inet_pton.Plo@am__quote@
@@ -4014,6 +4109,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsedsp_la-semaphore-win32.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsedsp_la-thread-posix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsedsp_la-thread-win32.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libraop_la-base64.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libraop_la-raop_client.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsocket_client_la-socket-client.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libx11prop_la-x11prop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libx11wrap_la-x11wrap.Plo@am__quote@
@@ -4029,12 +4126,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-esound-compat-spawnfd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-esound-compat-spawnpid.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-esound-sink.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-flat-volume.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-match.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-null-sink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-oss.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-pipe-sink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-pipe-source.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-position-event-sounds.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-raop-sink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-remap-sink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-sine.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-solaris.Plo@am__quote@
@@ -4065,6 +4164,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_native_protocol_fd_la-module-native-protocol-fd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_native_protocol_tcp_la-module-protocol-stub.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_native_protocol_unix_la-module-protocol-stub.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_raop_discover_la-module-raop-discover.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_rescue_streams_la-module-rescue-streams.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_rtp_recv_la-module-rtp-recv.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_rtp_send_la-module-rtp-send.Plo@am__quote@
@@ -4165,6 +4265,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resampler_test-resampler-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtpoll_test-rtpoll-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtsp_client.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtstutter-rtstutter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sdp.Plo@am__quote@
@@ -5778,6 +5879,20 @@ libpulsedsp_la-semaphore-win32.lo: pulsecore/semaphore-win32.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsedsp_la_CFLAGS) $(CFLAGS) -c -o libpulsedsp_la-semaphore-win32.lo `test -f 'pulsecore/semaphore-win32.c' || echo '$(srcdir)/'`pulsecore/semaphore-win32.c
 
+libraop_la-raop_client.lo: modules/raop/raop_client.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libraop_la_CFLAGS) $(CFLAGS) -MT libraop_la-raop_client.lo -MD -MP -MF $(DEPDIR)/libraop_la-raop_client.Tpo -c -o libraop_la-raop_client.lo `test -f 'modules/raop/raop_client.c' || echo '$(srcdir)/'`modules/raop/raop_client.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libraop_la-raop_client.Tpo $(DEPDIR)/libraop_la-raop_client.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/raop/raop_client.c' object='libraop_la-raop_client.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libraop_la_CFLAGS) $(CFLAGS) -c -o libraop_la-raop_client.lo `test -f 'modules/raop/raop_client.c' || echo '$(srcdir)/'`modules/raop/raop_client.c
+
+libraop_la-base64.lo: modules/raop/base64.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libraop_la_CFLAGS) $(CFLAGS) -MT libraop_la-base64.lo -MD -MP -MF $(DEPDIR)/libraop_la-base64.Tpo -c -o libraop_la-base64.lo `test -f 'modules/raop/base64.c' || echo '$(srcdir)/'`modules/raop/base64.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libraop_la-base64.Tpo $(DEPDIR)/libraop_la-base64.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/raop/base64.c' object='libraop_la-base64.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libraop_la_CFLAGS) $(CFLAGS) -c -o libraop_la-base64.lo `test -f 'modules/raop/base64.c' || echo '$(srcdir)/'`modules/raop/base64.c
+
 rtp.lo: modules/rtp/rtp.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT rtp.lo -MD -MP -MF $(DEPDIR)/rtp.Tpo -c -o rtp.lo `test -f 'modules/rtp/rtp.c' || echo '$(srcdir)/'`modules/rtp/rtp.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/rtp.Tpo $(DEPDIR)/rtp.Plo
@@ -5798,6 +5913,20 @@ sap.lo: modules/rtp/sap.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/rtp/sap.c' object='sap.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sap.lo `test -f 'modules/rtp/sap.c' || echo '$(srcdir)/'`modules/rtp/sap.c
+
+rtsp_client.lo: modules/rtp/rtsp_client.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT rtsp_client.lo -MD -MP -MF $(DEPDIR)/rtsp_client.Tpo -c -o rtsp_client.lo `test -f 'modules/rtp/rtsp_client.c' || echo '$(srcdir)/'`modules/rtp/rtsp_client.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/rtsp_client.Tpo $(DEPDIR)/rtsp_client.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/rtp/rtsp_client.c' object='rtsp_client.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o rtsp_client.lo `test -f 'modules/rtp/rtsp_client.c' || echo '$(srcdir)/'`modules/rtp/rtsp_client.c
+
+headerlist.lo: modules/rtp/headerlist.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT headerlist.lo -MD -MP -MF $(DEPDIR)/headerlist.Tpo -c -o headerlist.lo `test -f 'modules/rtp/headerlist.c' || echo '$(srcdir)/'`modules/rtp/headerlist.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/headerlist.Tpo $(DEPDIR)/headerlist.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/rtp/headerlist.c' object='headerlist.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o headerlist.lo `test -f 'modules/rtp/headerlist.c' || echo '$(srcdir)/'`modules/rtp/headerlist.c
 
 libsocket_client_la-socket-client.lo: pulsecore/socket-client.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsocket_client_la_CFLAGS) $(CFLAGS) -MT libsocket_client_la-socket-client.lo -MD -MP -MF $(DEPDIR)/libsocket_client_la-socket-client.Tpo -c -o libsocket_client_la-socket-client.lo `test -f 'pulsecore/socket-client.c' || echo '$(srcdir)/'`pulsecore/socket-client.c
@@ -5988,6 +6117,13 @@ module-esound-sink.lo: modules/module-esound-sink.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module-esound-sink.lo `test -f 'modules/module-esound-sink.c' || echo '$(srcdir)/'`modules/module-esound-sink.c
 
+module-flat-volume.lo: modules/module-flat-volume.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module-flat-volume.lo -MD -MP -MF $(DEPDIR)/module-flat-volume.Tpo -c -o module-flat-volume.lo `test -f 'modules/module-flat-volume.c' || echo '$(srcdir)/'`modules/module-flat-volume.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module-flat-volume.Tpo $(DEPDIR)/module-flat-volume.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-flat-volume.c' object='module-flat-volume.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module-flat-volume.lo `test -f 'modules/module-flat-volume.c' || echo '$(srcdir)/'`modules/module-flat-volume.c
+
 module_gconf_la-module-gconf.lo: modules/gconf/module-gconf.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_gconf_la_CFLAGS) $(CFLAGS) -MT module_gconf_la-module-gconf.lo -MD -MP -MF $(DEPDIR)/module_gconf_la-module-gconf.Tpo -c -o module_gconf_la-module-gconf.lo `test -f 'modules/gconf/module-gconf.c' || echo '$(srcdir)/'`modules/gconf/module-gconf.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_gconf_la-module-gconf.Tpo $(DEPDIR)/module_gconf_la-module-gconf.Plo
@@ -6113,6 +6249,20 @@ module-position-event-sounds.lo: modules/module-position-event-sounds.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-position-event-sounds.c' object='module-position-event-sounds.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module-position-event-sounds.lo `test -f 'modules/module-position-event-sounds.c' || echo '$(srcdir)/'`modules/module-position-event-sounds.c
+
+module_raop_discover_la-module-raop-discover.lo: modules/module-raop-discover.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_raop_discover_la_CFLAGS) $(CFLAGS) -MT module_raop_discover_la-module-raop-discover.lo -MD -MP -MF $(DEPDIR)/module_raop_discover_la-module-raop-discover.Tpo -c -o module_raop_discover_la-module-raop-discover.lo `test -f 'modules/module-raop-discover.c' || echo '$(srcdir)/'`modules/module-raop-discover.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_raop_discover_la-module-raop-discover.Tpo $(DEPDIR)/module_raop_discover_la-module-raop-discover.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-raop-discover.c' object='module_raop_discover_la-module-raop-discover.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_raop_discover_la_CFLAGS) $(CFLAGS) -c -o module_raop_discover_la-module-raop-discover.lo `test -f 'modules/module-raop-discover.c' || echo '$(srcdir)/'`modules/module-raop-discover.c
+
+module-raop-sink.lo: modules/module-raop-sink.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module-raop-sink.lo -MD -MP -MF $(DEPDIR)/module-raop-sink.Tpo -c -o module-raop-sink.lo `test -f 'modules/module-raop-sink.c' || echo '$(srcdir)/'`modules/module-raop-sink.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module-raop-sink.Tpo $(DEPDIR)/module-raop-sink.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-raop-sink.c' object='module-raop-sink.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module-raop-sink.lo `test -f 'modules/module-raop-sink.c' || echo '$(srcdir)/'`modules/module-raop-sink.c
 
 module-remap-sink.lo: modules/module-remap-sink.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module-remap-sink.lo -MD -MP -MF $(DEPDIR)/module-remap-sink.Tpo -c -o module-remap-sink.lo `test -f 'modules/module-remap-sink.c' || echo '$(srcdir)/'`modules/module-remap-sink.c
