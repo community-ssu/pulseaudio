@@ -1,4 +1,4 @@
-From f7961ba64dcd5187d93362d928bf02d71cf70fda Mon Sep 17 00:00:00 2001
+From baa72ed3d57428028dc61a619d143f7db98b5264 Mon Sep 17 00:00:00 2001
 From: CJ van den Berg <cj@vdbonline.com>
 Date: Wed, 31 Oct 2007 13:59:31 +0100
 Subject: [PATCH] Set ESD socket to /tmp/.esd/socket to match up with libesd
@@ -8,7 +8,7 @@ Subject: [PATCH] Set ESD socket to /tmp/.esd/socket to match up with libesd
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/daemon/default.pa.in b/src/daemon/default.pa.in
-index 7032038..27b3458 100755
+index ae54c0a..9cfa016 100755
 --- a/src/daemon/default.pa.in
 +++ b/src/daemon/default.pa.in
 @@ -55,7 +55,7 @@ load-module module-detect

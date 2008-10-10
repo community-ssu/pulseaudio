@@ -1,3 +1,9 @@
+pulseaudio (0.9.13git~20081010-0maemo1) unstable; urgency=low
+
+  * Import 8e3e88df, which has flat-volume.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Fri, 10 Oct 2008 17:18:25 +0300
+
 pulseaudio (0.9.13-0maemo1) unstable; urgency=low
 
   * New Upstream Release

@@ -1,4 +1,4 @@
-From ebd3dc2606edcd18f264404cdf5628411d91ec3f Mon Sep 17 00:00:00 2001
+From 362c69ee79d4ce4d0900b343a113c5cb7460701f Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Mon, 25 Aug 2008 18:51:01 +0300
 Subject: [PATCH] Fix the busy loop on arm
@@ -8,7 +8,7 @@ Subject: [PATCH] Fix the busy loop on arm
  1 files changed, 20 insertions(+), 3 deletions(-)
 
 diff --git a/src/modules/module-alsa-sink.c b/src/modules/module-alsa-sink.c
-index 0e15da3..468e964 100644
+index 4044de1..4c2c111 100644
 --- a/src/modules/module-alsa-sink.c
 +++ b/src/modules/module-alsa-sink.c
 @@ -72,7 +72,9 @@ PA_MODULE_USAGE(
@@ -57,7 +57,7 @@ index 0e15da3..468e964 100644
              break;
  
          n -= u->hwbuf_unused_frames;
-@@ -1230,6 +1235,7 @@ int pa__init(pa_module*m) {
+@@ -1232,6 +1237,7 @@ int pa__init(pa_module*m) {
      pa_bool_t use_mmap = TRUE, b, use_tsched = TRUE, d;
      pa_usec_t usec;
      pa_sink_new_data data;
@@ -65,7 +65,7 @@ index 0e15da3..468e964 100644
  
      snd_pcm_info_alloca(&pcm_info);
  
-@@ -1284,6 +1290,16 @@ int pa__init(pa_module*m) {
+@@ -1286,6 +1292,16 @@ int pa__init(pa_module*m) {
          use_tsched = FALSE;
      }
  
@@ -82,7 +82,7 @@ index 0e15da3..468e964 100644
      u = pa_xnew0(struct userdata, 1);
      u->core = m->core;
      u->module = m;
-@@ -1438,6 +1454,7 @@ int pa__init(pa_module*m) {
+@@ -1440,6 +1456,7 @@ int pa__init(pa_module*m) {
      u->fragment_size = frag_size = (uint32_t) (period_frames * frame_size);
      u->nfragments = nfrags;
      u->hwbuf_size = u->fragment_size * nfrags;

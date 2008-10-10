@@ -1,4 +1,4 @@
-From 2db148aa8652293b51d70f6483a2b85039c35a9d Mon Sep 17 00:00:00 2001
+From 65a3b1b397d07064b66e5f3a2fd40947d24bac20 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Wed, 27 Aug 2008 19:54:48 +0300
 Subject: [PATCH] Add module-alsa-{sink,src}-old, backported from 0.9.10
@@ -17,10 +17,10 @@ Subject: [PATCH] Add module-alsa-{sink,src}-old, backported from 0.9.10
  create mode 100644 src/modules/module-alsa-source-old.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 7487839..0a529f5 100644
+index 4d1812e..7766c2e 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -1109,7 +1109,9 @@ if HAVE_ALSA
+@@ -1126,7 +1126,9 @@ if HAVE_ALSA
  modlibexec_LTLIBRARIES += \
  		libalsa-util.la \
  		module-alsa-sink.la \
@@ -31,7 +31,7 @@ index 7487839..0a529f5 100644
  endif
  
  if HAVE_SOLARIS
-@@ -1215,7 +1217,9 @@ SYMDEF_FILES = \
+@@ -1243,7 +1245,9 @@ SYMDEF_FILES = \
  		modules/module-x11-xsmp-symdef.h \
  		modules/module-oss-symdef.h \
  		modules/module-alsa-sink-symdef.h \
@@ -41,7 +41,7 @@ index 7487839..0a529f5 100644
  		modules/module-solaris-symdef.h \
  		modules/module-waveout-symdef.h \
  		modules/module-detect-symdef.h \
-@@ -1423,11 +1427,21 @@ module_alsa_sink_la_LDFLAGS = -module -avoid-version
+@@ -1453,11 +1457,21 @@ module_alsa_sink_la_LDFLAGS = -module -avoid-version
  module_alsa_sink_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore.la
  module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
@@ -1116,7 +1116,7 @@ index 0000000..e752c12
 +    snd_config_update_free_global();
 +}
 diff --git a/src/modules/module-alsa-sink.c b/src/modules/module-alsa-sink.c
-index 468e964..0ab3a59 100644
+index 4c2c111..eb75478 100644
 --- a/src/modules/module-alsa-sink.c
 +++ b/src/modules/module-alsa-sink.c
 @@ -73,7 +73,6 @@ PA_MODULE_USAGE(
@@ -1135,7 +1135,7 @@ index 468e964..0ab3a59 100644
      "hwbuf_min_frames_to_write",
      NULL
  };
-@@ -1290,11 +1288,6 @@ int pa__init(pa_module*m) {
+@@ -1292,11 +1290,6 @@ int pa__init(pa_module*m) {
          use_tsched = FALSE;
      }
  
