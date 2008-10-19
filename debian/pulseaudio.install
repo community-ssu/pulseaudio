@@ -2,6 +2,7 @@ etc/pulse/default.pa
 etc/pulse/system.pa
 etc/pulse/daemon.conf
 usr/bin/pulseaudio
+usr/bin/start-pulseaudio-x11
 usr/lib/pulse-*/modules/libalsa-util.so
 usr/lib/pulse-*/modules/libauthkey.so
 usr/lib/pulse-*/modules/libauth-cookie.so
@@ -43,3 +44,5 @@ usr/lib/pulse-*/modules/module-simple-protocol-unix.so
 usr/lib/pulse-*/modules/module-stream-restore.so
 usr/lib/pulse-*/modules/module-suspend-on-idle.so
 usr/share/lintian/overrides/pulseaudio
+usr/share/man/man5/default.pa.5
+usr/share/locale
