@@ -2,8 +2,8 @@ Source: pulseaudio
 Section: sound
 Priority: optional
 Maintainer: Marc-Andre Lureau <marc-andre.lureau@nokia.com>
-XSBC-Original-Maintainer: CJ van den Berg <cj@vdbonline.com>
-Uploaders: Sjoerd Simons <sjoerd@debian.org>
+XSBC-Original-Maintainer: Pulseaudio maintenance team <pkg-pulseaudio-devel@lists.alioth.debian.org>
+Uploaders: CJ van den Berg <cj@vdbonline.com>, Sjoerd Simons <sjoerd@debian.org>
 Build-Depends: debhelper (>= 5), cdbs, quilt, m4, libltdl3-dev (>= 1.5.24),
     liboil0.3-dev (>= 0.3.0) | liboil-dev,
     libsndfile1-dev (>= 1.0.10) | libsndfile-dev, libx11-dev,
