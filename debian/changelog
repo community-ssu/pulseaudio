@@ -119,7 +119,7 @@ pulseaudio (0.9.10-2maemo1) unstable; urgency=low
 
  -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Wed, 04 Jun 2008 16:21:08 +0300
 
-pulseaudio (0.9.13-1) UNRELEASED; urgency=low
+pulseaudio (0.9.13-1) experimental; urgency=low
 
   [ Bas Zoetekouw ]
   * debian/control: Build-Depend on libasound2-dev (>= 1.0.17)
@@ -155,7 +155,7 @@ pulseaudio (0.9.13-1) UNRELEASED; urgency=low
     recommend later
   * debian/control: Set the maintainer to the pkg-pulseaudio mailinglist
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Oct 2008 21:01:26 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Oct 2008 21:05:13 +0100
 
 pulseaudio (0.9.10-3) unstable; urgency=low
 
