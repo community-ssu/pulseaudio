@@ -1,2 +1,7 @@
-0001-Fix-library-search-path-to-include-lib-and-usr-lib.patch
-0002-load-module-gconf-earlier.patch
+0001-Set-ESD-socket-to-tmp-.esd-socket-to-match-up-with.patch
+0002-Fine-tune-ffmpeg-resampler-parameters-for-maemo.patch
+0003-Fix-the-busy-loop-on-arm.patch
+0004-Add-module-alsa-sink-src-old-backported-from-0.9.patch
+0005-Add-pulsecore.pc.patch
+0006-Fix-supend.patch
+0007-autofoo.patch

@@ -1,4 +1,4 @@
-From 60cbad0d8f82d76d3042285d9c6c79ffc7752dd3 Mon Sep 17 00:00:00 2001
+From 8a6ee18045deba96627c8de2a4e02ff97e00b0fb Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 10 Oct 2008 17:43:20 +0300
 Subject: [PATCH] autofoo
@@ -7,16 +7,15 @@ Subject: [PATCH] autofoo
  ChangeLog       |    7 ++++++
  Makefile.in     |   15 +++++++-----
  configure       |    3 +-
- po/ChangeLog    |   11 +++++++++
  src/Makefile.in |   64 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 5 files changed, 91 insertions(+), 9 deletions(-)
+ 4 files changed, 80 insertions(+), 9 deletions(-)
 
 diff --git a/ChangeLog b/ChangeLog
-index f0fe35d..af8e0e2 100644
+index 52630ba..d1d0dda 100644
 --- a/ChangeLog
 +++ b/ChangeLog
 @@ -1,5 +1,12 @@
- 2008-10-10  gettextize  <bug-gnu-gettext@gnu.org>
+ 2008-10-20  gettextize  <bug-gnu-gettext@gnu.org>
  
 +	* m4/gettext.m4: New file, from gettext-0.17.
 +	* m4/nls.m4: New file, from gettext-0.17.
@@ -96,28 +95,6 @@ index ae984d9..e39e0b0 100755
      "doxygen/Makefile") CONFIG_FILES="$CONFIG_FILES doxygen/Makefile" ;;
      "doxygen/doxygen.conf") CONFIG_FILES="$CONFIG_FILES doxygen/doxygen.conf" ;;
      "src/pulse/version.h") CONFIG_FILES="$CONFIG_FILES src/pulse/version.h" ;;
-diff --git a/po/ChangeLog b/po/ChangeLog
-index 44d12ec..accda66 100644
---- a/po/ChangeLog
-+++ b/po/ChangeLog
-@@ -1,6 +1,17 @@
- 2008-10-10  gettextize  <bug-gnu-gettext@gnu.org>
- 
- 	* Makefile.in.in: Upgrade to gettext-0.17.
-+	* boldquot.sed: New file, from gettext-0.17.
-+	* en@boldquot.header: New file, from gettext-0.17.
-+	* en@quot.header: New file, from gettext-0.17.
-+	* insert-header.sin: New file, from gettext-0.17.
-+	* quot.sed: New file, from gettext-0.17.
-+	* remove-potcdate.sin: New file, from gettext-0.17.
-+	* Rules-quot: New file, from gettext-0.17.
-+
-+2008-10-10  gettextize  <bug-gnu-gettext@gnu.org>
-+
-+	* Makefile.in.in: Upgrade to gettext-0.17.
- 
- 2008-10-10  gettextize  <bug-gnu-gettext@gnu.org>
- 
 diff --git a/src/Makefile.in b/src/Makefile.in
 index 8a1c404..6384d70 100644
 --- a/src/Makefile.in
