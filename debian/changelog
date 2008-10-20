@@ -6,6 +6,7 @@ pulseaudio (0.9.13git~20081020-0maemo1) unstable; urgency=low
   * Load policy module at first.
   * Remove policy module from this PulseAudio packaging, it is now
     packaged sperately.
+  * Do not start PulseAudio under scratchbox, people are complaining.
 
  -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Mon, 20 Oct 2008 13:10:06 +0300
 
