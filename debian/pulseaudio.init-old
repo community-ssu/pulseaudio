@@ -17,7 +17,6 @@ PIDFILE=/var/run/pulse/pid
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 test -x $DAEMON || exit 0
-type -p sb-menu && exit 0
 
 . /lib/lsb/init-functions
 
