@@ -1,3 +1,14 @@
+pulseaudio (0.9.13git~20081020-0maemo1) unstable; urgency=low
+
+  * Import d6750583, which has few bluetooth fixes.
+  * Comment out flat-volume, which conflict with policy atm.
+  * Add a null sink for policy convenience.
+  * Load policy module at first.
+  * Remove policy module from this PulseAudio packaging, it is now
+    packaged sperately.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Mon, 20 Oct 2008 13:10:06 +0300
+
 pulseaudio (0.9.13git~20081010-0maemo1) unstable; urgency=low
 
   * Import 8e3e88df, which has flat-volume.
