@@ -1,3 +1,10 @@
+pulseaudio (0.9.13git~20081020-0maemo2) unstable; urgency=low
+
+  * debian/patches/0008-Fix-a-crash-for-special-loop-case.patch:
+    + Add a fix for sink-input loop case.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Mon, 20 Oct 2008 15:53:42 +0300
+
 pulseaudio (0.9.13git~20081020-0maemo1) unstable; urgency=low
 
   * Import d6750583, which has few bluetooth fixes.

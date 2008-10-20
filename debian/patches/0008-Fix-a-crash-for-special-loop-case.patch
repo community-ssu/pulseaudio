@@ -1,0 +1,28 @@
+From 0e105481b66721105a6e066e8b95cbffc64cc96e Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Thu, 16 Oct 2008 21:56:58 +0300
+Subject: [PATCH] Fix a crash for special loop case
+
+---
+ src/pulsecore/sink-input.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/src/pulsecore/sink-input.c b/src/pulsecore/sink-input.c
+index 8505c63..11c2bfe 100644
+--- a/src/pulsecore/sink-input.c
++++ b/src/pulsecore/sink-input.c
+@@ -929,6 +929,11 @@ int pa_sink_input_move_to(pa_sink_input *i, pa_sink *dest) {
+     if (i->flags & PA_SINK_INPUT_DONT_MOVE)
+         return -1;
+ 
++    if (dest->asyncmsgq == i->sink->asyncmsgq) {
++        pa_log_warn("Moving streams to slaved sink ""%s"" not supported.", dest->name);
++        return -1;
++    }
++
+     if (i->sync_next || i->sync_prev) {
+         pa_log_warn("Moving synchronised streams not supported.");
+         return -1;
+-- 
+1.5.6.5
+

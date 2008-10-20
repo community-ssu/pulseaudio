@@ -5,3 +5,4 @@
 0005-Add-pulsecore.pc.patch
 0006-Fix-supend.patch
 0007-autofoo.patch
+0008-Fix-a-crash-for-special-loop-case.patch
