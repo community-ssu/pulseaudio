@@ -1,4 +1,3 @@
-usr/lib/libpulsedsp.so
 usr/lib/pulse-*/modules/liboss-util.so
 usr/lib/pulse-*/modules/libparseaddr.so
 usr/lib/pulse-*/modules/libprotocol-http.so
