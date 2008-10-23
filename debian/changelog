@@ -1,6 +1,8 @@
 pulseaudio (0.9.13git~20081020-0maemo3) unstable; urgency=low
 
   * Add pulsecore/pulsecore-config.h from config.h (very dangerous!)
+  * Remove null-sink, it's no longer needed.
+  * Uncomment flat-module.
 
  -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Thu, 23 Oct 2008 18:39:38 +0300
 
