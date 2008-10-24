@@ -2,5 +2,5 @@
 ../../src/.libs/libpulsecore.a usr/lib
 ../../src/pulsecore/*.h usr/include/pulsecore
 ../../src/modules/*-util.h usr/include/pulsecore/modules
-../../config.h usr/include/pulsecore/pulsecore-config.h
+usr/include/pulsecore/pulsecore-config.h
 usr/lib/pkgconfig/pulsecore.pc
