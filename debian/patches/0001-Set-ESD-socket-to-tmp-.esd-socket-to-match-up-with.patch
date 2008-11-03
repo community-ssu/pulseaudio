@@ -1,4 +1,4 @@
-From d6a2ba941b1adf649d686eebd101f10fc76f134c Mon Sep 17 00:00:00 2001
+From 3e56644ea9c6dd85f068a5b9278935ae3d60d8a5 Mon Sep 17 00:00:00 2001
 From: CJ van den Berg <cj@vdbonline.com>
 Date: Wed, 31 Oct 2007 13:59:31 +0100
 Subject: [PATCH] Set ESD socket to /tmp/.esd/socket to match up with libesd
@@ -21,5 +21,5 @@ index a831876..0f3d9ae 100755
  load-module module-native-protocol-unix
  
 -- 
-1.5.6.5
+1.6.0.2.514.g23abd3
 

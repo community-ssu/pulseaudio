@@ -1,4 +1,4 @@
-From 1f469974fdd952f7f6f0e30529bbff0a5c0fc107 Mon Sep 17 00:00:00 2001
+From 175108bb16c61794a63fca024984f127c2a708b7 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Wed, 27 Aug 2008 19:54:48 +0300
 Subject: [PATCH] Add module-alsa-{sink,src}-old, backported from 0.9.10
@@ -2169,5 +2169,5 @@ index 0000000..7d7acbe
 +    snd_config_update_free_global();
 +}
 -- 
-1.5.6.5
+1.6.0.2.514.g23abd3
 

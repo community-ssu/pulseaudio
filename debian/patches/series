@@ -4,5 +4,10 @@
 0004-Add-module-alsa-sink-src-old-backported-from-0.9.patch
 0005-Add-pulsecore.pc.patch
 0006-Fix-supend.patch
-0007-autofoo.patch
-0008-Fix-a-crash-for-special-loop-case.patch
+0007-Fix-a-crash-for-special-loop-case.patch
+0008-Add-pa_sink_update_proplist.patch
+0009-Add-pa_source_update_proplist.patch
+0010-Add-proplist_from_string.patch
+0011-cli-update-sink-proplist.patch
+0012-make-shm-marker-architecture-independant-patch-from.patch
+0013-autofoo.patch

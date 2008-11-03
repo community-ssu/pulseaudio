@@ -1,4 +1,4 @@
-From 800f6376f73005ef6499b0f9c608cfe52ee6ef24 Mon Sep 17 00:00:00 2001
+From 01bc8888d0c5f219244a1eac9968b8c8a4347601 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Wed, 9 Apr 2008 16:46:14 +0300
 Subject: [PATCH] Fine tune ffmpeg resampler parameters for maemo.
@@ -21,5 +21,5 @@ index b2d512c..1482315 100644
  
      r->impl_free = ffmpeg_free;
 -- 
-1.5.6.5
+1.6.0.2.514.g23abd3
 
