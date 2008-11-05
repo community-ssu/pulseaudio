@@ -1,3 +1,10 @@
+pulseaudio (0.9.13git~20081020-0maemo6) unstable; urgency=low
+
+  * Change maintainer to Maemo Multimedia <multimedia@maemo.org>
+  * More resampler tests.
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Wed, 05 Nov 2008 15:43:40 +0200
+
 pulseaudio (0.9.13git~20081020-0maemo5) unstable; urgency=low
 
   * Update git command to use non-dash version for git 1.6.
