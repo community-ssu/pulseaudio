@@ -3,4 +3,4 @@ exit-idle-time = -1
 
 realtime-scheduling = yes
 realtime-priority = 5
-resample-method = ffmpeg
+resample-method = speex-fixed-2

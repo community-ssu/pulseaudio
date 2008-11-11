@@ -1,3 +1,9 @@
+pulseaudio (0.9.13git~20081020-0maemo7) unstable; urgency=low
+
+  * Use speex-fixed-2, now that we have a speex NEON-enabled resampler.
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 11 Nov 2008 21:51:35 +0200
+
 pulseaudio (0.9.13git~20081020-0maemo6) unstable; urgency=low
 
   * debian/patches:
