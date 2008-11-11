@@ -10,4 +10,8 @@
 0010-Add-proplist_from_string.patch
 0011-cli-update-sink-proplist.patch
 0012-make-shm-marker-architecture-independant-patch-from.patch
-0013-autofoo.patch
+0013-Only-transfer-full-periods-in-module-alsa-sink-old-a.patch
+0014-Use-pa_sink_get_volume-s-TRUE-to-work-with-slaved.patch
+0015-Add-a-virtual_volume-to-sink.patch
+0016-configure-print-more-informations-about-preopen.patch
+0017-autofoo.patch

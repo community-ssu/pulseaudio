@@ -1,12 +1,12 @@
-From cd30b89cea64d75e11a78660f0235d2643b8447e Mon Sep 17 00:00:00 2001
+From 344bd0f15ac59314487692f62e3f10e84fd3c049 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
-Date: Mon, 3 Nov 2008 18:15:51 +0200
+Date: Tue, 11 Nov 2008 21:01:47 +0200
 Subject: [PATCH] autofoo
 
 ---
  ChangeLog              |    7 +
  Makefile.in            |   15 +-
- configure              |    3 +-
+ configure              |   13 +-
  libltdl/COPYING.LIB    |  515 +
  libltdl/Makefile.am    |   32 +
  libltdl/Makefile.in    |  663 ++
@@ -27,7 +27,7 @@ Subject: [PATCH] autofoo
  m4/nls.m4              |   31 +
  m4/po.m4               |  449 +
  m4/progtest.m4         |   92 +
- po/ChangeLog           |   19 +
+ po/ChangeLog           |   11 +
  po/Makevars.template   |   41 +
  po/Rules-quot          |   47 +
  po/boldquot.sed        |   10 +
@@ -37,7 +37,7 @@ Subject: [PATCH] autofoo
  po/quot.sed            |    6 +
  po/remove-potcdate.sin |   19 +
  src/Makefile.in        |   64 +-
- 33 files changed, 50888 insertions(+), 9 deletions(-)
+ 33 files changed, 50887 insertions(+), 12 deletions(-)
  create mode 100644 libltdl/COPYING.LIB
  create mode 100644 libltdl/Makefile.am
  create mode 100644 libltdl/Makefile.in
@@ -68,11 +68,11 @@ Subject: [PATCH] autofoo
  create mode 100644 po/remove-potcdate.sin
 
 diff --git a/ChangeLog b/ChangeLog
-index 52630ba..bb4ea8c 100644
+index 52630ba..d71499f 100644
 --- a/ChangeLog
 +++ b/ChangeLog
 @@ -1,3 +1,10 @@
-+2008-11-03  gettextize  <bug-gnu-gettext@gnu.org>
++2008-11-11  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* m4/gettext.m4: New file, from gettext-0.17.
 +	* m4/nls.m4: New file, from gettext-0.17.
@@ -130,9 +130,25 @@ index 2c2f30d..61485f6 100644
  	cd $(top_builddir) && $(SHELL) ./config.status $@
  
 diff --git a/configure b/configure
-index ae984d9..e39e0b0 100755
+index ae984d9..0582382 100755
 --- a/configure
 +++ b/configure
+@@ -38343,12 +38343,12 @@ fi
+ 
+ # Check whether --enable-force-preopen was given.
+ if test "${enable_force_preopen+set}" = set; then
+-  enableval=$enable_force_preopen; FORCE_PREOPEN=1
++  enableval=$enable_force_preopen; FORCE_PREOPEN=$enableval
+ else
+-  FORCE_PREOPEN=0
++  FORCE_PREOPEN=no
+ fi
+ 
+- if test "x$FORCE_PREOPEN" = "x1"; then
++ if test "x$FORCE_PREOPEN" = "xyes"; then
+   FORCE_PREOPEN_TRUE=
+   FORCE_PREOPEN_FALSE='#'
+ else
 @@ -38357,7 +38357,7 @@ else
  fi
  
@@ -150,6 +166,27 @@ index ae984d9..e39e0b0 100755
      "doxygen/Makefile") CONFIG_FILES="$CONFIG_FILES doxygen/Makefile" ;;
      "doxygen/doxygen.conf") CONFIG_FILES="$CONFIG_FILES doxygen/doxygen.conf" ;;
      "src/pulse/version.h") CONFIG_FILES="$CONFIG_FILES src/pulse/version.h" ;;
+@@ -40320,6 +40321,7 @@ echo "
+     System Config Path:            ${PA_SYSTEM_CONFIG_PATH}
+     Compiler:                      ${CC}
+     CFLAGS:                        ${CFLAGS}
++
+     Have X11:                      ${ENABLE_X11}
+     Enable OSS:                    ${ENABLE_OSS}
+     Enable Alsa:                   ${ENABLE_ALSA}
+@@ -40336,9 +40338,12 @@ echo "
+     Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}
+     Enable PolicyKit:              ${ENABLE_POLKIT}
+     Enable OpenSSL (for Airtunes): ${ENABLE_OPENSSL}
++
+     System User:                   ${PA_SYSTEM_USER}
+     System Group:                  ${PA_SYSTEM_GROUP}
+     Realtime Group:                ${PA_REALTIME_GROUP}
+     Access Group:                  ${PA_ACCESS_GROUP}
+     Enable per-user EsounD socket: ${ENABLE_PER_USER_ESOUND_SOCKET}
++    Force preopen:                 ${FORCE_PREOPEN}
++    Preopened modules:             ${PREOPEN_MODS}
+ "
 diff --git a/libltdl/COPYING.LIB b/libltdl/COPYING.LIB
 new file mode 100644
 index 0000000..ba2be48
@@ -50867,28 +50904,20 @@ index 0000000..a56365c
 +AC_SUBST($1)dnl
 +])
 diff --git a/po/ChangeLog b/po/ChangeLog
-index ad2d9ee..38b603e 100644
+index ad2d9ee..427cef0 100644
 --- a/po/ChangeLog
 +++ b/po/ChangeLog
-@@ -1,3 +1,22 @@
-+2008-11-03  gettextize  <bug-gnu-gettext@gnu.org>
+@@ -1,3 +1,14 @@
++2008-11-11  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* Makefile.in.in: Upgrade to gettext-0.17.
-+
-+2008-11-03  gettextize  <bug-gnu-gettext@gnu.org>
-+
-+	* Makefile.in.in: Upgrade to gettext-0.17.
-+
-+2008-11-03  gettextize  <bug-gnu-gettext@gnu.org>
-+
-+	* Makefile.in.in: Upgrade to gettext-0.17.
++	* Rules-quot: New file, from gettext-0.17.
 +	* boldquot.sed: New file, from gettext-0.17.
 +	* en@boldquot.header: New file, from gettext-0.17.
 +	* en@quot.header: New file, from gettext-0.17.
 +	* insert-header.sin: New file, from gettext-0.17.
 +	* quot.sed: New file, from gettext-0.17.
 +	* remove-potcdate.sin: New file, from gettext-0.17.
-+	* Rules-quot: New file, from gettext-0.17.
 +
  2008-10-20  gettextize  <bug-gnu-gettext@gnu.org>
  
