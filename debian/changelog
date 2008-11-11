@@ -1,7 +1,12 @@
 pulseaudio (0.9.13git~20081020-0maemo6) unstable; urgency=low
 
+  * debian/patches:
+    + Add virtual_volume on sink
+    + Only transfer full periods in module-alsa-sink-old and
+      module-alsa-source-old.
+  * debian/default.pa.maemo:
+    + Set default sink to music, and source to voice.
   * Change maintainer to Maemo Multimedia <multimedia@maemo.org>
-  * More resampler tests.
 
  -- Maemo Multimedia <multimedia@maemo.org>  Wed, 05 Nov 2008 15:43:40 +0200
 
