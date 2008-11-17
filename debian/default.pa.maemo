@@ -8,8 +8,8 @@ load-module module-null-sink sink_name=sink.null
 # glitch-free is off by default
 # load-module module-alsa-sink sink_name=sink.hw0 device=hw:0 rate=48000 fragment_size=960 fragments=4 tsched=0 hwbuf_min_frames_to_write=32
 
-load-module module-alsa-sink-old sink_name=sink.hw0 device=hw:0 rate=48000 fragment_size=960 fragments=2
-load-module module-alsa-source-old source_name=source.hw0 device=hw:0 rate=48000 fragment_size=960 fragments=2
+load-module module-alsa-sink-old sink_name=sink.hw0 device=hw:0 rate=48000 fragment_size=3840 fragments=8 alt_fragment_size=960 alt_fragments=2 dbus_type=system
+load-module module-alsa-source-old source_name=source.hw0 device=hw:0 rate=48000 fragment_size=1920 fragments=8 fragment_size=960 fragments=2 dbus_type=system
 
 
 .ifexists module-nokia-voice.so
