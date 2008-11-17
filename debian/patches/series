@@ -14,4 +14,5 @@
 0014-Use-pa_sink_get_volume-s-TRUE-to-work-with-slaved.patch
 0015-Add-a-virtual_volume-to-sink.patch
 0016-configure-print-more-informations-about-preopen.patch
-0017-autofoo.patch
+0017-More-resample-tests.patch
+0018-autofoo.patch

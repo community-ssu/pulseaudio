@@ -1,6 +1,6 @@
-From 344bd0f15ac59314487692f62e3f10e84fd3c049 Mon Sep 17 00:00:00 2001
+From 088947542ae0f6744907313e00f6b017ba3c8e0a Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
-Date: Tue, 11 Nov 2008 21:01:47 +0200
+Date: Mon, 17 Nov 2008 12:05:41 +0200
 Subject: [PATCH] autofoo
 
 ---
@@ -68,11 +68,11 @@ Subject: [PATCH] autofoo
  create mode 100644 po/remove-potcdate.sin
 
 diff --git a/ChangeLog b/ChangeLog
-index 52630ba..d71499f 100644
+index 52630ba..bedcf8b 100644
 --- a/ChangeLog
 +++ b/ChangeLog
 @@ -1,3 +1,10 @@
-+2008-11-11  gettextize  <bug-gnu-gettext@gnu.org>
++2008-11-17  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* m4/gettext.m4: New file, from gettext-0.17.
 +	* m4/nls.m4: New file, from gettext-0.17.
@@ -50904,11 +50904,11 @@ index 0000000..a56365c
 +AC_SUBST($1)dnl
 +])
 diff --git a/po/ChangeLog b/po/ChangeLog
-index ad2d9ee..427cef0 100644
+index ad2d9ee..3bbb6ac 100644
 --- a/po/ChangeLog
 +++ b/po/ChangeLog
 @@ -1,3 +1,14 @@
-+2008-11-11  gettextize  <bug-gnu-gettext@gnu.org>
++2008-11-17  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* Makefile.in.in: Upgrade to gettext-0.17.
 +	* Rules-quot: New file, from gettext-0.17.
