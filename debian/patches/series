@@ -15,4 +15,5 @@
 0015-Add-a-virtual_volume-to-sink.patch
 0016-configure-print-more-informations-about-preopen.patch
 0017-More-resample-tests.patch
-0018-autofoo.patch
+0018-Dynamic-switching-of-buffer-metrics-controlled-with.patch
+0019-autofoo.patch

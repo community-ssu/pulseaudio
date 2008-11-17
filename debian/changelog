@@ -1,7 +1,7 @@
 pulseaudio (0.9.13git~20081020-0maemo8) unstable; urgency=low
 
   * debian/default.pa.maemo:
-    + Change to 2 fragments.
+    + Change to 2 fragments, use alternative confiuration sink/src.
     + Move policy enforcement loading to the end.
     + Add a null sink "sink.null".
 
