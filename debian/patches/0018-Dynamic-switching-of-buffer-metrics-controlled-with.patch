@@ -1,13 +1,13 @@
-From 530791b794fb90b73117c65ea4d4720bd657f398 Mon Sep 17 00:00:00 2001
+From 9fc476e76e66c5c1594fff8c169161a48b8b655c Mon Sep 17 00:00:00 2001
 From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
 Date: Mon, 17 Nov 2008 19:50:30 +0200
 Subject: [PATCH] Dynamic switching of buffer metrics, controlled with dbus.
 
 ---
  src/Makefile.am                      |   13 +-
- src/modules/module-alsa-sink-old.c   |  322 +++++++++++++++++++++++++++++++++-
+ src/modules/module-alsa-sink-old.c   |  320 +++++++++++++++++++++++++++++++++-
  src/modules/module-alsa-source-old.c |  321 +++++++++++++++++++++++++++++++++-
- 3 files changed, 645 insertions(+), 11 deletions(-)
+ 3 files changed, 643 insertions(+), 11 deletions(-)
 
 diff --git a/src/Makefile.am b/src/Makefile.am
 index 7766c2e..db5a744 100644
@@ -51,7 +51,7 @@ index 7766c2e..db5a744 100644
  # Solaris
  
 diff --git a/src/modules/module-alsa-sink-old.c b/src/modules/module-alsa-sink-old.c
-index 9578dac..1f0f681 100644
+index 9578dac..e3c0493 100644
 --- a/src/modules/module-alsa-sink-old.c
 +++ b/src/modules/module-alsa-sink-old.c
 @@ -47,6 +47,12 @@
@@ -62,7 +62,7 @@ index 9578dac..1f0f681 100644
 +#include <poll.h>
 +#include <string.h>
 +#include <dbus/dbus.h>
-+#include <pulsecore/modules/dbus-util.h>
++#include <dbus-util.h>
 +
  #include "alsa-util.h"
  #include "module-alsa-sink-old-symdef.h"
@@ -166,12 +166,12 @@ index 9578dac..1f0f681 100644
 +        if (u->switch_mode == rateswitch)
 +        {       
 +            pa_log_info("same rate as previously");
-+            return DBUS_HANDLER_RESULT_HANDLED;
++            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 +        }       
 +
 +        switch_buffers(u, rateswitch);
 +         
-+        return DBUS_HANDLER_RESULT_HANDLED;
++        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 +
 +    } else if (dbus_message_is_signal(msg, DBUS_CSCALL_STATUS_IF, DBUS_CSCALL_STATUS_SIG)) {
 +        pa_log_debug("Received ServerStatus");
@@ -190,7 +190,7 @@ index 9578dac..1f0f681 100644
 +                return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 +            }
 +            switch_buffers(u, val == TRUE);
-+            return DBUS_HANDLER_RESULT_HANDLED;
++            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 +
 +        } else {
 +            pa_log_warn("Bad parameters.");
@@ -216,7 +216,7 @@ index 9578dac..1f0f681 100644
 +
 +#define STRBUSTYPE(DBusType) ((DBusType) == DBUS_BUS_SYSTEM ? "system" : "session")
 +
-+    pa_log("DBus connection to %s bus.", STRBUSTYPE(e->dbus_type));
++    pa_log_info("DBus connection to %s bus.", STRBUSTYPE(e->dbus_type));
 +
 +    dbus_error_init(&error);
 +    e->dbus_conn = pa_dbus_bus_get(u->core, e->dbus_type, &error);
@@ -343,13 +343,12 @@ index 9578dac..1f0f681 100644
  static int mmap_write(struct userdata *u) {
      int work_done = 0;
  
-@@ -476,6 +722,34 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+@@ -476,6 +722,33 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
              }
  
              break;
 +
 +        case PA_SINK_MESSAGE_ADD_INPUT:
-+            pa_log("WE GO HERE");
 +            if (!u->switch_done) {
 +                if (u->switch_mode == SWITCH_PRIMARY) {
 +                    pa_log_info("switch to primary buffer");
@@ -378,7 +377,7 @@ index 9578dac..1f0f681 100644
      }
  
      return pa_sink_process_msg(o, code, data, offset, chunk);
-@@ -723,8 +997,11 @@ int pa__init(pa_module*m) {
+@@ -723,8 +996,11 @@ int pa__init(pa_module*m) {
      pa_sample_spec ss;
      pa_channel_map map;
      uint32_t nfrags, frag_size;
@@ -390,7 +389,7 @@ index 9578dac..1f0f681 100644
      snd_pcm_info_t *pcm_info = NULL;
      int err;
      char *t;
-@@ -732,6 +1009,7 @@ int pa__init(pa_module*m) {
+@@ -732,6 +1008,7 @@ int pa__init(pa_module*m) {
      char *name_buf = NULL;
      int namereg_fail;
      pa_bool_t use_mmap = TRUE, b, d;
@@ -398,7 +397,7 @@ index 9578dac..1f0f681 100644
      pa_sink_new_data data;
  
      snd_pcm_info_alloca(&pcm_info);
-@@ -743,6 +1021,8 @@ int pa__init(pa_module*m) {
+@@ -743,6 +1020,8 @@ int pa__init(pa_module*m) {
          goto fail;
      }
  
@@ -407,7 +406,7 @@ index 9578dac..1f0f681 100644
      ss = m->core->default_sample_spec;
      if (pa_modargs_get_sample_spec_and_channel_map(ma, &ss, &map, PA_CHANNEL_MAP_ALSA) < 0) {
          pa_log("Failed to parse sample specification and channel map");
-@@ -761,6 +1041,19 @@ int pa__init(pa_module*m) {
+@@ -761,6 +1040,19 @@ int pa__init(pa_module*m) {
          goto fail;
      }
      period_size = frag_size/frame_size;
@@ -427,7 +426,7 @@ index 9578dac..1f0f681 100644
  
      if (pa_modargs_get_value_boolean(ma, "mmap", &use_mmap) < 0) {
          pa_log("Failed to parse mmap argument.");
-@@ -768,6 +1061,8 @@ int pa__init(pa_module*m) {
+@@ -768,6 +1060,8 @@ int pa__init(pa_module*m) {
      }
  
      u = pa_xnew0(struct userdata, 1);
@@ -436,7 +435,7 @@ index 9578dac..1f0f681 100644
      u->core = m->core;
      u->module = m;
      m->userdata = u;
-@@ -830,6 +1125,7 @@ int pa__init(pa_module*m) {
+@@ -830,6 +1124,7 @@ int pa__init(pa_module*m) {
  
      /* ALSA might tweak the sample spec, so recalculate the frame size */
      frame_size = pa_frame_size(&ss);
@@ -444,7 +443,7 @@ index 9578dac..1f0f681 100644
  
      if ((err = snd_mixer_open(&u->mixer_handle, 0)) < 0)
          pa_log_warn("Error opening mixer: %s", snd_strerror(err));
-@@ -908,8 +1204,21 @@ int pa__init(pa_module*m) {
+@@ -908,8 +1203,21 @@ int pa__init(pa_module*m) {
      u->nfragments = nfrags;
      u->hwbuf_size = u->fragment_size * nfrags;
      u->period_size = period_size;
@@ -468,19 +467,18 @@ index 9578dac..1f0f681 100644
  
      pa_memchunk_reset(&u->memchunk);
  
-@@ -955,6 +1264,11 @@ int pa__init(pa_module*m) {
+@@ -955,6 +1263,10 @@ int pa__init(pa_module*m) {
  
      pa_sink_put(u->sink);
  
 +    if (alsa_switch_init_event_forwarder(u, dbus_type)) {
-+        pa_log("what a misery");
 +        goto fail;
 +    }
 +
      pa_modargs_free(ma);
  
      return 0;
-@@ -977,6 +1291,8 @@ void pa__done(pa_module*m) {
+@@ -977,6 +1289,8 @@ void pa__done(pa_module*m) {
      if (!(u = m->userdata))
          return;
  
@@ -490,7 +488,7 @@ index 9578dac..1f0f681 100644
          pa_sink_unlink(u->sink);
  
 diff --git a/src/modules/module-alsa-source-old.c b/src/modules/module-alsa-source-old.c
-index 63850f2..4bfc0cb 100644
+index 63850f2..1c65ccb 100644
 --- a/src/modules/module-alsa-source-old.c
 +++ b/src/modules/module-alsa-source-old.c
 @@ -48,6 +48,12 @@
@@ -501,7 +499,7 @@ index 63850f2..4bfc0cb 100644
 +#include <poll.h>
 +#include <string.h>
 +#include <dbus/dbus.h>
-+#include <pulsecore/modules/dbus-util.h>
++#include <dbus-util.h>
 +
  #include "alsa-util.h"
  #include "module-alsa-source-old-symdef.h"
@@ -605,12 +603,12 @@ index 63850f2..4bfc0cb 100644
 +        if (u->switch_mode == rateswitch)
 +        {
 +            pa_log_info("same rate as previously");
-+            return DBUS_HANDLER_RESULT_HANDLED;
++            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 +        }        
 +
 +        switch_buffers(u, rateswitch);
 +     
-+        return DBUS_HANDLER_RESULT_HANDLED;
++        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 +
 +    } else if (dbus_message_is_signal(msg, DBUS_CSCALL_STATUS_IF, DBUS_CSCALL_STATUS_SIG)) {
 +        pa_log_debug("Received ServerStatus");
@@ -629,7 +627,7 @@ index 63850f2..4bfc0cb 100644
 +                return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 +            }        
 +            switch_buffers(u, val == TRUE);
-+            return DBUS_HANDLER_RESULT_HANDLED;
++            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 +
 +        } else { 
 +            pa_log_warn("Bad parameters.");
@@ -655,7 +653,7 @@ index 63850f2..4bfc0cb 100644
 +
 +#define STRBUSTYPE(DBusType) ((DBusType) == DBUS_BUS_SYSTEM ? "system" : "session")
 +
-+    pa_log("DBus connection to %s bus.", STRBUSTYPE(e->dbus_type));
++    pa_log_info("DBus connection to %s bus.", STRBUSTYPE(e->dbus_type));
 +
 +    dbus_error_init(&error);
 +    e->dbus_conn = pa_dbus_bus_get(u->core, e->dbus_type, &error);
