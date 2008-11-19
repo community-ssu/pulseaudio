@@ -1,19 +1,29 @@
-From 9fc476e76e66c5c1594fff8c169161a48b8b655c Mon Sep 17 00:00:00 2001
+From ad8afef1e11d20313a645675651f2bf16aa4293f Mon Sep 17 00:00:00 2001
 From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
 Date: Mon, 17 Nov 2008 19:50:30 +0200
 Subject: [PATCH] Dynamic switching of buffer metrics, controlled with dbus.
 
 ---
- src/Makefile.am                      |   13 +-
+ src/Makefile.am                      |   26 ++--
  src/modules/module-alsa-sink-old.c   |  320 +++++++++++++++++++++++++++++++++-
  src/modules/module-alsa-source-old.c |  321 +++++++++++++++++++++++++++++++++-
- 3 files changed, 643 insertions(+), 11 deletions(-)
+ 3 files changed, 649 insertions(+), 18 deletions(-)
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 7766c2e..db5a744 100644
+index 7766c2e..c88c223 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -1126,10 +1126,13 @@ if HAVE_ALSA
+@@ -1122,14 +1122,23 @@ modlibexec_LTLIBRARIES += \
+ 		module-oss.la
+ endif
+ 
++if HAVE_DBUS
++modlibexec_LTLIBRARIES += \
++		libdbus-util.la \
++		module-console-kit.la
++endif
++
+ if HAVE_ALSA
  modlibexec_LTLIBRARIES += \
  		libalsa-util.la \
  		module-alsa-sink.la \
@@ -28,7 +38,28 @@ index 7766c2e..db5a744 100644
  
  if HAVE_SOLARIS
  modlibexec_LTLIBRARIES += \
-@@ -1459,8 +1462,8 @@ module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
+@@ -1179,12 +1188,6 @@ modlibexec_LTLIBRARIES += \
+ 		module-hal-detect.la
+ endif
+ 
+-if HAVE_DBUS
+-modlibexec_LTLIBRARIES += \
+-		libdbus-util.la \
+-		module-console-kit.la
+-endif
+-
+ if HAVE_BLUEZ
+ modlibexec_LTLIBRARIES += \
+ 		module-bluetooth-proximity.la \
+@@ -1446,7 +1449,6 @@ module_oss_la_LDFLAGS = -module -avoid-version
+ module_oss_la_LIBADD = $(AM_LIBADD) libiochannel.la liboss-util.la libpulsecore.la
+ 
+ # ALSA
+-
+ libalsa_util_la_SOURCES = modules/alsa-util.c modules/alsa-util.h
+ libalsa_util_la_LDFLAGS = -avoid-version
+ libalsa_util_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libpulsecore.la
+@@ -1459,8 +1461,8 @@ module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
  module_alsa_sink_old_la_SOURCES = modules/module-alsa-sink-old.c
  module_alsa_sink_old_la_LDFLAGS = -module -avoid-version
@@ -39,7 +70,7 @@ index 7766c2e..db5a744 100644
  
  module_alsa_source_la_SOURCES = modules/module-alsa-source.c
  module_alsa_source_la_LDFLAGS = -module -avoid-version
-@@ -1469,8 +1472,8 @@ module_alsa_source_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
+@@ -1469,8 +1471,8 @@ module_alsa_source_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
  module_alsa_source_old_la_SOURCES = modules/module-alsa-source-old.c
  module_alsa_source_old_la_LDFLAGS = -module -avoid-version

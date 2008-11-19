@@ -1,4 +1,4 @@
-From 50ec725aec05d15538759215511c0c06bd54feb3 Mon Sep 17 00:00:00 2001
+From 9c8738f2fc8d22ab7bed4f0240c8b4ca064a6dfd Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 17 Nov 2008 12:05:41 +0200
 Subject: [PATCH] autofoo
@@ -27,7 +27,7 @@ Subject: [PATCH] autofoo
  m4/nls.m4              |   31 +
  m4/po.m4               |  449 +
  m4/progtest.m4         |   92 +
- po/ChangeLog           |   15 +
+ po/ChangeLog           |   27 +
  po/Makevars.template   |   41 +
  po/Rules-quot          |   47 +
  po/boldquot.sed        |   10 +
@@ -36,8 +36,8 @@ Subject: [PATCH] autofoo
  po/insert-header.sin   |   23 +
  po/quot.sed            |    6 +
  po/remove-potcdate.sin |   19 +
- src/Makefile.in        |   98 +-
- 33 files changed, 50910 insertions(+), 27 deletions(-)
+ src/Makefile.in        |  106 +-
+ 33 files changed, 50926 insertions(+), 31 deletions(-)
  create mode 100644 libltdl/COPYING.LIB
  create mode 100644 libltdl/Makefile.am
  create mode 100644 libltdl/Makefile.in
@@ -50904,10 +50904,22 @@ index 0000000..a56365c
 +AC_SUBST($1)dnl
 +])
 diff --git a/po/ChangeLog b/po/ChangeLog
-index ad2d9ee..c198e76 100644
+index ad2d9ee..6238ecb 100644
 --- a/po/ChangeLog
 +++ b/po/ChangeLog
-@@ -1,3 +1,18 @@
+@@ -1,3 +1,30 @@
++2008-11-19  gettextize  <bug-gnu-gettext@gnu.org>
++
++	* Makefile.in.in: Upgrade to gettext-0.17.
++
++2008-11-19  gettextize  <bug-gnu-gettext@gnu.org>
++
++	* Makefile.in.in: Upgrade to gettext-0.17.
++
++2008-11-19  gettextize  <bug-gnu-gettext@gnu.org>
++
++	* Makefile.in.in: Upgrade to gettext-0.17.
++
 +2008-11-18  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* Makefile.in.in: Upgrade to gettext-0.17.
@@ -51168,63 +51180,72 @@ index 0000000..2436c49
 +:b
 +}
 diff --git a/src/Makefile.in b/src/Makefile.in
-index 8a1c404..d09ab5e 100644
+index 8a1c404..fb66da1 100644
 --- a/src/Makefile.in
 +++ b/src/Makefile.in
-@@ -188,28 +188,32 @@ noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
+@@ -183,33 +183,41 @@ noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
+ @HAVE_OSS_TRUE@		liboss-util.la \
+ @HAVE_OSS_TRUE@		module-oss.la
+ 
+-@HAVE_ALSA_TRUE@am__append_36 = \
++@HAVE_DBUS_TRUE@am__append_36 = \
++@HAVE_DBUS_TRUE@		libdbus-util.la \
++@HAVE_DBUS_TRUE@		module-console-kit.la
++
++@HAVE_ALSA_TRUE@am__append_37 = \
+ @HAVE_ALSA_TRUE@		libalsa-util.la \
  @HAVE_ALSA_TRUE@		module-alsa-sink.la \
  @HAVE_ALSA_TRUE@		module-alsa-source.la
  
 -@HAVE_SOLARIS_TRUE@am__append_37 = \
-+@HAVE_ALSA_TRUE@@HAVE_DBUS_TRUE@am__append_37 = \
++@HAVE_ALSA_TRUE@@HAVE_DBUS_TRUE@am__append_38 = \
 +@HAVE_ALSA_TRUE@@HAVE_DBUS_TRUE@		module-alsa-sink-old.la \
 +@HAVE_ALSA_TRUE@@HAVE_DBUS_TRUE@		module-alsa-source-old.la
 +
-+@HAVE_SOLARIS_TRUE@am__append_38 = \
++@HAVE_SOLARIS_TRUE@am__append_39 = \
  @HAVE_SOLARIS_TRUE@		module-solaris.la
  
 -@HAVE_AVAHI_TRUE@am__append_38 = \
-+@HAVE_AVAHI_TRUE@am__append_39 = \
++@HAVE_AVAHI_TRUE@am__append_40 = \
  @HAVE_AVAHI_TRUE@		module-zeroconf-publish.la \
  @HAVE_AVAHI_TRUE@		module-zeroconf-discover.la
  
 -@HAVE_LIRC_TRUE@am__append_39 = \
-+@HAVE_LIRC_TRUE@am__append_40 = \
++@HAVE_LIRC_TRUE@am__append_41 = \
  @HAVE_LIRC_TRUE@		module-lirc.la
  
 -@HAVE_EVDEV_TRUE@am__append_40 = \
-+@HAVE_EVDEV_TRUE@am__append_41 = \
++@HAVE_EVDEV_TRUE@am__append_42 = \
  @HAVE_EVDEV_TRUE@		module-mmkbd-evdev.la
  
 -@HAVE_JACK_TRUE@am__append_41 = \
-+@HAVE_JACK_TRUE@am__append_42 = \
++@HAVE_JACK_TRUE@am__append_43 = \
  @HAVE_JACK_TRUE@		module-jack-sink.la \
  @HAVE_JACK_TRUE@		module-jack-source.la
  
  pulselibexec_PROGRAMS = $(am__EXEEXT_6) $(am__EXEEXT_7)
 -@HAVE_GCONF_TRUE@am__append_42 = \
-+@HAVE_GCONF_TRUE@am__append_43 = \
++@HAVE_GCONF_TRUE@am__append_44 = \
  @HAVE_GCONF_TRUE@		module-gconf.la
  
 -@HAVE_GCONF_TRUE@am__append_43 = \
-+@HAVE_GCONF_TRUE@am__append_44 = \
++@HAVE_GCONF_TRUE@am__append_45 = \
  @HAVE_GCONF_TRUE@		gconf-helper
  
  
-@@ -217,29 +221,29 @@ pulselibexec_PROGRAMS = $(am__EXEEXT_6) $(am__EXEEXT_7)
+@@ -217,29 +225,25 @@ pulselibexec_PROGRAMS = $(am__EXEEXT_6) $(am__EXEEXT_7)
  #modlibexec_LTLIBRARIES += \
  #		module-waveout.la
  #endif
 -@HAVE_HAL_TRUE@am__append_44 = \
-+@HAVE_HAL_TRUE@am__append_45 = \
++@HAVE_HAL_TRUE@am__append_46 = \
  @HAVE_HAL_TRUE@		libdbus-util.la \
  @HAVE_HAL_TRUE@		module-hal-detect.la
  
 -@HAVE_DBUS_TRUE@am__append_45 = \
-+@HAVE_DBUS_TRUE@am__append_46 = \
- @HAVE_DBUS_TRUE@		libdbus-util.la \
- @HAVE_DBUS_TRUE@		module-console-kit.la
- 
+-@HAVE_DBUS_TRUE@		libdbus-util.la \
+-@HAVE_DBUS_TRUE@		module-console-kit.la
+-
 -@HAVE_BLUEZ_TRUE@am__append_46 = \
 +@HAVE_BLUEZ_TRUE@am__append_47 = \
  @HAVE_BLUEZ_TRUE@		module-bluetooth-proximity.la \
@@ -51316,7 +51337,7 @@ index 8a1c404..d09ab5e 100644
 -	$(am__append_45) $(am__append_46) $(am__append_48) \
 -	$(am__append_49)
 +	$(am__append_41) $(am__append_42) $(am__append_43) \
-+	$(am__append_45) $(am__append_46) $(am__append_47) \
++	$(am__append_44) $(am__append_46) $(am__append_47) \
 +	$(am__append_49) $(am__append_50)
  libprotocol_simple_la_SOURCES = pulsecore/protocol-simple.c pulsecore/protocol-simple.h
  libprotocol_simple_la_LDFLAGS = -avoid-version
