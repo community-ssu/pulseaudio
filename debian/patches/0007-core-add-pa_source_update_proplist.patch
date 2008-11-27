@@ -1,7 +1,7 @@
-From 421fecf89b0b73789057c8adbadc026c64a7ae9e Mon Sep 17 00:00:00 2001
+From 1a6894e380166fb2cff4f4901d4e0b16b9aeac92 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 31 Oct 2008 02:38:00 +0200
-Subject: [PATCH] Add pa_source_update_proplist
+Subject: [PATCH] core: add pa_source_update_proplist
 
 ---
  src/pulsecore/source.c |   14 ++++++++++++++

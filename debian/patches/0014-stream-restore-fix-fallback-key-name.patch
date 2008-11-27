@@ -1,0 +1,25 @@
+From 6b6a8e2a497d71e01ddd8372194af4c4efb76ba4 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Thu, 20 Nov 2008 16:40:47 +0200
+Subject: [PATCH] stream-restore: fix fallback key name
+
+---
+ src/modules/module-stream-restore.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
+index e1381a5..5d0862b 100644
+--- a/src/modules/module-stream-restore.c
++++ b/src/modules/module-stream-restore.c
+@@ -134,7 +134,7 @@ static char *get_name(pa_proplist *p, const char *prefix) {
+     else if ((r = pa_proplist_gets(p, PA_PROP_MEDIA_NAME)))
+         return pa_sprintf_malloc("%s-by-media-name:%s", prefix, r);
+ 
+-    return pa_sprintf_malloc("%s-fallback:%s", prefix);
++    return pa_sprintf_malloc("%s-fallback", prefix);
+ }
+ 
+ static struct entry* read_entry(struct userdata *u, char *name) {
+-- 
+1.6.0.2.514.g23abd3
+

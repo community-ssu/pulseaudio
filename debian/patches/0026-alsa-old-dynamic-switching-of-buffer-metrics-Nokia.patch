@@ -1,8 +1,9 @@
-From ad8afef1e11d20313a645675651f2bf16aa4293f Mon Sep 17 00:00:00 2001
+From 54387b8de81a749f2a65faca7e0ae27eccc603e6 Mon Sep 17 00:00:00 2001
 From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
 Date: Mon, 17 Nov 2008 19:50:30 +0200
-Subject: [PATCH] Dynamic switching of buffer metrics, controlled with dbus.
+Subject: [PATCH] alsa-old: dynamic switching of buffer metrics (Nokia specific)
 
+Controlled with dbus.
 ---
  src/Makefile.am                      |   26 ++--
  src/modules/module-alsa-sink-old.c   |  320 +++++++++++++++++++++++++++++++++-

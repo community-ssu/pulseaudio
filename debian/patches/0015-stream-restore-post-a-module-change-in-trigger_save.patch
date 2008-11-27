@@ -1,0 +1,25 @@
+From f45e221433f4934c2fc9b0d8d4afdfc763658abd Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Thu, 20 Nov 2008 16:59:13 +0200
+Subject: [PATCH] stream-restore: post a module change in trigger_save
+
+---
+ src/modules/module-stream-restore.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
+index 5d0862b..6c4e43c 100644
+--- a/src/modules/module-stream-restore.c
++++ b/src/modules/module-stream-restore.c
+@@ -205,6 +205,8 @@ static void trigger_save(struct userdata *u) {
+         pa_pstream_send_tagstruct(pa_native_connection_get_pstream(c), t);
+     }
+ 
++    pa_subscription_post(u->core, PA_SUBSCRIPTION_EVENT_MODULE|PA_SUBSCRIPTION_EVENT_CHANGE, u->module->index);
++
+     if (u->save_time_event)
+         return;
+ 
+-- 
+1.6.0.2.514.g23abd3
+

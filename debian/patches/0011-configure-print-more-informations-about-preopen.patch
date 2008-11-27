@@ -1,4 +1,4 @@
-From a5301f8ae51096b41ef5c097cf057233ebabc351 Mon Sep 17 00:00:00 2001
+From 039ebf2c76ff69413d1200a391163b1f075bbb2b Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 10 Nov 2008 19:11:40 +0200
 Subject: [PATCH] configure: print more informations about preopen
@@ -8,10 +8,10 @@ Subject: [PATCH] configure: print more informations about preopen
  1 files changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/configure.ac b/configure.ac
-index 00e34c2..8eb4710 100644
+index 8ffc689..b30c59d 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -1142,8 +1142,8 @@ AC_SUBST(modlibexecdir)
+@@ -1143,8 +1143,8 @@ AC_SUBST(modlibexecdir)
  AC_ARG_ENABLE(
          [force-preopen],
          AS_HELP_STRING([--enable-force-preopen],[Preopen modules, even when dlopen() is supported.]),

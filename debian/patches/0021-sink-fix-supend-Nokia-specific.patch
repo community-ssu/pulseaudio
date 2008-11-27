@@ -1,14 +1,14 @@
-From f8f20ec0f49d9eb1c526ba63e9e70be29de2e774 Mon Sep 17 00:00:00 2001
+From 3fb6103e7b9a2057525c4df085a13daf3c1e00ce Mon Sep 17 00:00:00 2001
 From: Sarha Jyri (Nokia-D/Helsinki) <Jyri.Sarha@nokia.com>
 Date: Wed, 1 Oct 2008 18:08:36 +0300
-Subject: [PATCH] Fix supend
+Subject: [PATCH] sink: fix supend (Nokia specific)
 
 ---
  src/pulsecore/sink.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index d8d1f79..6adab8a 100644
+index f92308d..acf933c 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
 @@ -556,7 +556,7 @@ static void inputs_drop(pa_sink *s, pa_mix_info *info, unsigned n, pa_memchunk *

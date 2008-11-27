@@ -1,4 +1,4 @@
-From 845300fe009eb5c2ed24942a3549e0add6bc67c1 Mon Sep 17 00:00:00 2001
+From 21ee1236fd1a6aa88a6098ad1089f50f1b2064f3 Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Sat, 1 Nov 2008 21:41:07 +0100
 Subject: [PATCH] make shm marker architecture independant, patch from michich, closes #401

@@ -1,7 +1,7 @@
-From 9c8738f2fc8d22ab7bed4f0240c8b4ca064a6dfd Mon Sep 17 00:00:00 2001
+From e1a922e96cf684f6a76ce4d132c43ce5842e5c3b Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 17 Nov 2008 12:05:41 +0200
-Subject: [PATCH] autofoo
+Subject: [PATCH] build: autofoo (Nokia specific)
 
 ---
  ChangeLog              |    7 +

@@ -1,7 +1,7 @@
-From 5a8badb9d685f44f0c1984405a27072a7fe26576 Mon Sep 17 00:00:00 2001
+From 4c16065ef3705e4cbe2dc2ec5508c5655b40775c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 10 Nov 2008 16:59:09 +0200
-Subject: [PATCH] Add a virtual_volume to sink
+Subject: [PATCH] sink: add a virtual_volume to sink
 
 ---
  src/pulsecore/sink.c |   17 +++++++++--------
@@ -9,7 +9,7 @@ Subject: [PATCH] Add a virtual_volume to sink
  2 files changed, 11 insertions(+), 8 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index 37973c9..acf933c 100644
+index 220271e..f92308d 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
 @@ -190,7 +190,7 @@ pa_sink* pa_sink_new(

@@ -1,7 +1,7 @@
-From 2a2d06bbb077fc68545b85ac8c4f552e3165629a Mon Sep 17 00:00:00 2001
+From 9b9019fec9488f0eb9098fcd4fc9b00bb6978796 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 31 Oct 2008 02:33:28 +0200
-Subject: [PATCH] Add pa_sink_update_proplist
+Subject: [PATCH] core: add pa_sink_update_proplist
 
 ---
  src/pulsecore/sink.c |   14 ++++++++++++++
@@ -9,7 +9,7 @@ Subject: [PATCH] Add pa_sink_update_proplist
  2 files changed, 16 insertions(+), 0 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index 6adab8a..37973c9 100644
+index d8d1f79..220271e 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
 @@ -949,6 +949,20 @@ pa_bool_t pa_sink_get_mute(pa_sink *s, pa_bool_t force_refresh) {

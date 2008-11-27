@@ -1,7 +1,7 @@
-From a094e04a84478d5c27b2a26bdbe62af8c4d7fe9a Mon Sep 17 00:00:00 2001
+From 9420a8d700838a23b1307b25d1efca173a376c30 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Fri, 7 Nov 2008 16:39:42 +0200
-Subject: [PATCH] Only transfer full periods in module-alsa-sink-old and module-alsa-source-old.
+Subject: [PATCH] alsa-old: only transfer full periods (Nokia specific)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
