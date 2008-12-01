@@ -1,14 +1,13 @@
-From 54387b8de81a749f2a65faca7e0ae27eccc603e6 Mon Sep 17 00:00:00 2001
+From c7ef244d0b0762af834f05697e7bc81ec82cf8d8 Mon Sep 17 00:00:00 2001
 From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
 Date: Mon, 17 Nov 2008 19:50:30 +0200
 Subject: [PATCH] alsa-old: dynamic switching of buffer metrics (Nokia specific)
 
-Controlled with dbus.
 ---
  src/Makefile.am                      |   26 ++--
- src/modules/module-alsa-sink-old.c   |  320 +++++++++++++++++++++++++++++++++-
+ src/modules/module-alsa-sink-old.c   |  319 +++++++++++++++++++++++++++++++++-
  src/modules/module-alsa-source-old.c |  321 +++++++++++++++++++++++++++++++++-
- 3 files changed, 649 insertions(+), 18 deletions(-)
+ 3 files changed, 650 insertions(+), 16 deletions(-)
 
 diff --git a/src/Makefile.am b/src/Makefile.am
 index 7766c2e..c88c223 100644
@@ -83,7 +82,7 @@ index 7766c2e..c88c223 100644
  # Solaris
  
 diff --git a/src/modules/module-alsa-sink-old.c b/src/modules/module-alsa-sink-old.c
-index 9578dac..e3c0493 100644
+index 9578dac..1623e65 100644
 --- a/src/modules/module-alsa-sink-old.c
 +++ b/src/modules/module-alsa-sink-old.c
 @@ -47,6 +47,12 @@
@@ -119,7 +118,7 @@ index 9578dac..e3c0493 100644
 +    size_t pri_frame_size, pri_fragment_size, pri_hwbuf_size;
 +    snd_pcm_uframes_t pri_period_size;
 +    unsigned pri_nfragments;
-+    
++
 +    size_t alt_frame_size, alt_fragment_size, alt_hwbuf_size;
 +    snd_pcm_uframes_t alt_period_size;
 +    unsigned alt_nfragments;
@@ -143,7 +142,7 @@ index 9578dac..e3c0493 100644
  };
  
  static const char* const valid_modargs[] = {
-@@ -109,11 +135,231 @@ static const char* const valid_modargs[] = {
+@@ -109,11 +135,232 @@ static const char* const valid_modargs[] = {
      "rate",
      "fragments",
      "fragment_size",
@@ -173,7 +172,7 @@ index 9578dac..e3c0493 100644
 +#define SWITCH_PRIMARY (0)
 +#define SWITCH_ALTERNATIVE (1)
 +
-+static DBusHandlerResult alsa_switch_dbus_filter(DBusConnection *conn, DBusMessage *msg, void *arg) { 
++static DBusHandlerResult alsa_switch_dbus_filter(DBusConnection *conn, DBusMessage *msg, void *arg) {
 +    struct userdata *u = arg;
 +    pa_assert(u);
 +
@@ -184,36 +183,36 @@ index 9578dac..e3c0493 100644
 +    int type;
 +
 +    if (dbus_message_is_signal(msg, DBUS_ALSA_SWITCH_IF, DBUS_ALSA_SWITCH_SIG)) {
-+    
++
 +        dbus_message_get_args(msg, &dbus_error,
 +                              DBUS_TYPE_INT32, &rateswitch,
 +                              DBUS_TYPE_INVALID);
 +
-+        if (dbus_error_is_set(&dbus_error) != TRUE) { 
++        if (dbus_error_is_set(&dbus_error) != TRUE) {
 +            pa_log_info("received rate switch request %d", rateswitch);
 +        } else {
 +            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-+        }       
++        }
 +
 +        if (u->switch_mode == rateswitch)
-+        {       
++        {
 +            pa_log_info("same rate as previously");
 +            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-+        }       
++        }
 +
 +        switch_buffers(u, rateswitch);
-+         
++
 +        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 +
 +    } else if (dbus_message_is_signal(msg, DBUS_CSCALL_STATUS_IF, DBUS_CSCALL_STATUS_SIG)) {
 +        pa_log_debug("Received ServerStatus");
 +
-+        if (dbus_message_iter_init(msg, &args) == TRUE) { 
++        if (dbus_message_iter_init(msg, &args) == TRUE) {
 +            type = dbus_message_iter_get_arg_type(&args);
 +            dbus_bool_t val;
 +            if (type == DBUS_TYPE_BOOLEAN) {
 +                dbus_message_iter_get_basic(&args, &val);
-+            }       
++            }
 +
 +            pa_log_debug("Set ServerStatus to %d.", val == TRUE);
 +
@@ -288,17 +287,18 @@ index 9578dac..e3c0493 100644
 +
 +static void alsa_switch_unload_event_forwarder(struct userdata *u)
 +{
++    DBusConnection *dbusconn;
 +    struct alsa_switch_event_forwarder *e = &u->event_forwarder;
 +
-+    if (e->dbus_conn) {
-+    DBusConnection *dbusconn = pa_dbus_connection_get(e->dbus_conn);
++    if (!e->dbus_conn)
++        return;
++
++    dbusconn = pa_dbus_connection_get(e->dbus_conn);
 +
 +    dbus_connection_remove_filter(dbusconn, alsa_switch_dbus_filter, u);
-+
 +    clear_dbus_matches(e, dbusconn);
 +
 +    pa_dbus_connection_unref(e->dbus_conn);
-+    }
 +}
 +
 +
@@ -375,7 +375,7 @@ index 9578dac..e3c0493 100644
  static int mmap_write(struct userdata *u) {
      int work_done = 0;
  
-@@ -476,6 +722,33 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+@@ -476,6 +723,33 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
              }
  
              break;
@@ -393,7 +393,7 @@ index 9578dac..e3c0493 100644
 +                    unsuspend(u);
 +                } else {
 +                    pa_log_info("switch to alternate buffer");
-+                    suspend(u); 
++                    suspend(u);
 +                    u->frame_size = u->alt_frame_size;
 +                    u->fragment_size = u->alt_fragment_size;
 +                    u->hwbuf_size = u->alt_hwbuf_size;
@@ -409,7 +409,7 @@ index 9578dac..e3c0493 100644
      }
  
      return pa_sink_process_msg(o, code, data, offset, chunk);
-@@ -723,8 +996,11 @@ int pa__init(pa_module*m) {
+@@ -723,8 +997,11 @@ int pa__init(pa_module*m) {
      pa_sample_spec ss;
      pa_channel_map map;
      uint32_t nfrags, frag_size;
@@ -421,7 +421,7 @@ index 9578dac..e3c0493 100644
      snd_pcm_info_t *pcm_info = NULL;
      int err;
      char *t;
-@@ -732,6 +1008,7 @@ int pa__init(pa_module*m) {
+@@ -732,6 +1009,7 @@ int pa__init(pa_module*m) {
      char *name_buf = NULL;
      int namereg_fail;
      pa_bool_t use_mmap = TRUE, b, d;
@@ -429,7 +429,7 @@ index 9578dac..e3c0493 100644
      pa_sink_new_data data;
  
      snd_pcm_info_alloca(&pcm_info);
-@@ -743,6 +1020,8 @@ int pa__init(pa_module*m) {
+@@ -743,6 +1021,8 @@ int pa__init(pa_module*m) {
          goto fail;
      }
  
@@ -438,11 +438,10 @@ index 9578dac..e3c0493 100644
      ss = m->core->default_sample_spec;
      if (pa_modargs_get_sample_spec_and_channel_map(ma, &ss, &map, PA_CHANNEL_MAP_ALSA) < 0) {
          pa_log("Failed to parse sample specification and channel map");
-@@ -761,6 +1040,19 @@ int pa__init(pa_module*m) {
-         goto fail;
+@@ -762,12 +1042,27 @@ int pa__init(pa_module*m) {
      }
      period_size = frag_size/frame_size;
-+    
+ 
 +    alt_frame_size = pa_frame_size(&ss);
 +
 +    alt_nfrags = m->core->default_n_fragments;
@@ -455,10 +454,10 @@ index 9578dac..e3c0493 100644
 +        goto fail;
 +    }
 +    alt_period_size = alt_frag_size/alt_frame_size;
- 
++
      if (pa_modargs_get_value_boolean(ma, "mmap", &use_mmap) < 0) {
          pa_log("Failed to parse mmap argument.");
-@@ -768,6 +1060,8 @@ int pa__init(pa_module*m) {
+         goto fail;
      }
  
      u = pa_xnew0(struct userdata, 1);
@@ -467,7 +466,7 @@ index 9578dac..e3c0493 100644
      u->core = m->core;
      u->module = m;
      m->userdata = u;
-@@ -830,6 +1124,7 @@ int pa__init(pa_module*m) {
+@@ -830,6 +1125,7 @@ int pa__init(pa_module*m) {
  
      /* ALSA might tweak the sample spec, so recalculate the frame size */
      frame_size = pa_frame_size(&ss);
@@ -475,19 +474,17 @@ index 9578dac..e3c0493 100644
  
      if ((err = snd_mixer_open(&u->mixer_handle, 0)) < 0)
          pa_log_warn("Error opening mixer: %s", snd_strerror(err));
-@@ -908,8 +1203,21 @@ int pa__init(pa_module*m) {
-     u->nfragments = nfrags;
+@@ -909,7 +1205,20 @@ int pa__init(pa_module*m) {
      u->hwbuf_size = u->fragment_size * nfrags;
      u->period_size = period_size;
--
+ 
 -    pa_log_info("Using %u fragments of size %lu bytes.", nfrags, (long unsigned) u->fragment_size);
-+    
 +    u->pri_frame_size = frame_size;
 +    u->pri_fragment_size = frag_size = period_size * frame_size;
 +    u->pri_nfragments = nfrags;
 +    u->pri_hwbuf_size = u->fragment_size * nfrags;
 +    u->pri_period_size = period_size;
-+    
++
 +    u->alt_frame_size = alt_frame_size;
 +    u->alt_fragment_size = alt_frag_size = alt_period_size * alt_frame_size;
 +    u->alt_nfragments = alt_nfrags;
@@ -499,7 +496,7 @@ index 9578dac..e3c0493 100644
  
      pa_memchunk_reset(&u->memchunk);
  
-@@ -955,6 +1263,10 @@ int pa__init(pa_module*m) {
+@@ -955,6 +1264,10 @@ int pa__init(pa_module*m) {
  
      pa_sink_put(u->sink);
  
@@ -510,7 +507,7 @@ index 9578dac..e3c0493 100644
      pa_modargs_free(ma);
  
      return 0;
-@@ -977,6 +1289,8 @@ void pa__done(pa_module*m) {
+@@ -977,6 +1290,8 @@ void pa__done(pa_module*m) {
      if (!(u = m->userdata))
          return;
  
@@ -520,7 +517,7 @@ index 9578dac..e3c0493 100644
          pa_sink_unlink(u->sink);
  
 diff --git a/src/modules/module-alsa-source-old.c b/src/modules/module-alsa-source-old.c
-index 63850f2..1c65ccb 100644
+index 63850f2..8fa2b53 100644
 --- a/src/modules/module-alsa-source-old.c
 +++ b/src/modules/module-alsa-source-old.c
 @@ -48,6 +48,12 @@
@@ -556,11 +553,11 @@ index 63850f2..1c65ccb 100644
 +    size_t pri_frame_size, pri_fragment_size, pri_hwbuf_size;
 +    snd_pcm_uframes_t pri_period_size;
 +    unsigned pri_nfragments;
-+    
++
 +    size_t alt_frame_size, alt_fragment_size, alt_hwbuf_size;
 +    snd_pcm_uframes_t alt_period_size;
 +    unsigned alt_nfragments;
-+    
++
 +    int switch_mode;
 +    pa_bool_t switch_done;
 +    long ref;
@@ -582,7 +579,7 @@ index 63850f2..1c65ccb 100644
  };
  
  static const char* const valid_modargs[] = {
-@@ -107,11 +135,235 @@ static const char* const valid_modargs[] = {
+@@ -107,11 +135,237 @@ static const char* const valid_modargs[] = {
      "format",
      "fragments",
      "fragment_size",
@@ -611,7 +608,7 @@ index 63850f2..1c65ccb 100644
 +#define DBUS_CSCALL_STATUS_SIG "ServerStatus"
 +
 +static DBusHandlerResult alsa_switch_dbus_filter(DBusConnection *conn, DBusMessage *msg, void *arg) {
-+    struct userdata *u = arg; 
++    struct userdata *u = arg;
 +    pa_assert(u);
 +
 +    DBusError dbus_error;
@@ -621,7 +618,7 @@ index 63850f2..1c65ccb 100644
 +    int type;
 +
 +    if (dbus_message_is_signal(msg, DBUS_ALSA_SWITCH_IF, DBUS_ALSA_SWITCH_SIG)) {
-+    
++
 +        dbus_message_get_args(msg, &dbus_error,
 +                              DBUS_TYPE_INT32, &rateswitch,
 +                              DBUS_TYPE_INVALID);
@@ -630,16 +627,16 @@ index 63850f2..1c65ccb 100644
 +            pa_log_info("received rate switch request %d", rateswitch);
 +        } else {
 +            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-+        }    
++        }
 +
 +        if (u->switch_mode == rateswitch)
 +        {
 +            pa_log_info("same rate as previously");
 +            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-+        }        
++        }
 +
 +        switch_buffers(u, rateswitch);
-+     
++
 +        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 +
 +    } else if (dbus_message_is_signal(msg, DBUS_CSCALL_STATUS_IF, DBUS_CSCALL_STATUS_SIG)) {
@@ -650,25 +647,25 @@ index 63850f2..1c65ccb 100644
 +            dbus_bool_t val;
 +            if (type == DBUS_TYPE_BOOLEAN) {
 +                dbus_message_iter_get_basic(&args, &val);
-+            }    
++            }
 +
 +            pa_log_debug("Set ServerStatus to %d.", val == TRUE);
 +
 +            if (u->switch_mode == (val == TRUE)) {
 +                pa_log_info("same rate as previously");
 +                return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-+            }        
++            }
 +            switch_buffers(u, val == TRUE);
 +            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 +
-+        } else { 
++        } else {
 +            pa_log_warn("Bad parameters.");
 +            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-+        }        
-+    } else {     
++        }
++    } else {
 +        pa_log_debug("Not our signal.");
 +        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-+    }        
++    }
 +}
 +
 +static int alsa_switch_init_event_forwarder(struct userdata *u, char *dbus_type)
@@ -679,9 +676,9 @@ index 63850f2..1c65ccb 100644
 +    char                     rule[512];
 +
 +    if (0 == strcasecmp(dbus_type, "system"))
-+    e->dbus_type = DBUS_BUS_SYSTEM;
++        e->dbus_type = DBUS_BUS_SYSTEM;
 +    else
-+    e->dbus_type = DBUS_BUS_SESSION;
++        e->dbus_type = DBUS_BUS_SESSION;
 +
 +#define STRBUSTYPE(DBusType) ((DBusType) == DBUS_BUS_SYSTEM ? "system" : "session")
 +
@@ -725,17 +722,19 @@ index 63850f2..1c65ccb 100644
 +
 +static void alsa_switch_unload_event_forwarder(struct userdata *u)
 +{
++    DBusConnection *dbusconn;
 +    struct alsa_switch_event_forwarder *e = &u->event_forwarder;
 +
-+    if (e->dbus_conn) {
-+    DBusConnection *dbusconn = pa_dbus_connection_get(e->dbus_conn);
++    if (!e->dbus_conn)
++        return;
++
++    dbusconn = pa_dbus_connection_get(e->dbus_conn);
 +
 +    dbus_connection_remove_filter(dbusconn, alsa_switch_dbus_filter, u);
 +
 +    clear_dbus_matches(e, dbusconn);
 +
 +    pa_dbus_connection_unref(e->dbus_conn);
-+    }
 +}
 +
 +static int add_dbus_match(struct alsa_switch_event_forwarder *e, DBusConnection *dbusconn, char *match)
@@ -818,7 +817,7 @@ index 63850f2..1c65ccb 100644
  static int mmap_read(struct userdata *u) {
      int work_done = 0;
  
-@@ -467,6 +719,30 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
+@@ -467,6 +721,30 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
              }
  
              break;
@@ -849,7 +848,7 @@ index 63850f2..1c65ccb 100644
      }
  
      return pa_source_process_msg(o, code, data, offset, chunk);
-@@ -704,8 +980,11 @@ int pa__init(pa_module*m) {
+@@ -704,8 +982,11 @@ int pa__init(pa_module*m) {
      pa_sample_spec ss;
      pa_channel_map map;
      uint32_t nfrags, frag_size;
@@ -861,7 +860,7 @@ index 63850f2..1c65ccb 100644
      snd_pcm_info_t *pcm_info = NULL;
      int err;
      char *t;
-@@ -714,6 +993,7 @@ int pa__init(pa_module*m) {
+@@ -714,6 +995,7 @@ int pa__init(pa_module*m) {
      int namereg_fail;
      pa_bool_t use_mmap = TRUE, b, d;
      pa_source_new_data data;
@@ -869,11 +868,10 @@ index 63850f2..1c65ccb 100644
  
      snd_pcm_info_alloca(&pcm_info);
  
-@@ -742,6 +1022,21 @@ int pa__init(pa_module*m) {
-         goto fail;
+@@ -743,12 +1025,29 @@ int pa__init(pa_module*m) {
      }
      period_size = frag_size/frame_size;
-+    
+ 
 +    alt_frame_size = pa_frame_size(&ss);
 +
 +    alt_nfrags = m->core->default_n_fragments;
@@ -888,10 +886,10 @@ index 63850f2..1c65ccb 100644
 +    alt_period_size = alt_frag_size/alt_frame_size;
 +
 +    dbus_type = pa_modargs_get_value(ma, "dbus_type", "session");
- 
++
      if (pa_modargs_get_value_boolean(ma, "mmap", &use_mmap) < 0) {
          pa_log("Failed to parse mmap argument.");
-@@ -749,6 +1044,8 @@ int pa__init(pa_module*m) {
+         goto fail;
      }
  
      u = pa_xnew0(struct userdata, 1);
@@ -900,19 +898,17 @@ index 63850f2..1c65ccb 100644
      u->core = m->core;
      u->module = m;
      m->userdata = u;
-@@ -885,8 +1182,21 @@ int pa__init(pa_module*m) {
-     u->nfragments = nfrags;
+@@ -886,7 +1185,20 @@ int pa__init(pa_module*m) {
      u->hwbuf_size = u->fragment_size * nfrags;
      u->period_size = period_size;
--
+ 
 -    pa_log_info("Using %u fragments of size %lu bytes.", nfrags, (long unsigned) u->fragment_size);
-+    
 +    u->pri_frame_size = frame_size;
 +    u->pri_fragment_size = frag_size = period_size * frame_size;
 +    u->pri_nfragments = nfrags;
 +    u->pri_hwbuf_size = u->fragment_size * nfrags;
 +    u->pri_period_size = period_size;
-+    
++
 +    u->alt_frame_size = alt_frame_size;
 +    u->alt_fragment_size = alt_frag_size = alt_period_size * alt_frame_size;
 +    u->alt_nfragments = alt_nfrags;
@@ -924,7 +920,7 @@ index 63850f2..1c65ccb 100644
  
      if (u->mixer_handle) {
          pa_assert(u->mixer_elem);
-@@ -929,6 +1239,9 @@ int pa__init(pa_module*m) {
+@@ -929,6 +1241,9 @@ int pa__init(pa_module*m) {
  
      pa_source_put(u->source);
  
@@ -934,7 +930,7 @@ index 63850f2..1c65ccb 100644
      pa_modargs_free(ma);
  
      return 0;
-@@ -951,6 +1264,8 @@ void pa__done(pa_module*m) {
+@@ -951,6 +1266,8 @@ void pa__done(pa_module*m) {
      if (!(u = m->userdata))
          return;
  
