@@ -16,8 +16,8 @@ load-module module-alsa-source-old source_name=source.hw0 device=hw:0 rate=48000
 load-module module-nokia-voice master_sink=sink.hw0 master_source=source.hw0 dbus_type=system
 .endif
 
-.ifexists module-nokia-EAP.so
-load-module module-nokia-EAP sink_name=sink.music master_sink=sink.voice.raw
+.ifexists module-nokia-music.so
+load-module module-nokia-music sink_name=sink.music master_sink=sink.voice.raw
 .endif
 
 .nofail
