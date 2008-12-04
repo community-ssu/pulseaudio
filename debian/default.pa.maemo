@@ -4,6 +4,7 @@ load-module module-native-protocol-unix
 load-module module-simple-protocol-unix
 load-module module-suspend-on-idle
 load-module module-null-sink sink_name=sink.null
+load-module module-null-sink sink_name=source.null rate=8000 channels=1
 
 # glitch-free is off by default
 # load-module module-alsa-sink sink_name=sink.hw0 device=hw:0 rate=48000 fragment_size=960 fragments=4 tsched=0 hwbuf_min_frames_to_write=32
