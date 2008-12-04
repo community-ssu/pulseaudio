@@ -1,4 +1,4 @@
-From b0d9801f21c42c0a9ba2094237f929c3faf7f9e7 Mon Sep 17 00:00:00 2001
+From 3d3e47de26bb98790863fad74467a9f584abb9f3 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 27 Oct 2008 21:14:50 +0200
 Subject: [PATCH] libpulse: add proplist_from_string

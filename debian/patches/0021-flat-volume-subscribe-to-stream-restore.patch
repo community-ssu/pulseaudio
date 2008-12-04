@@ -1,4 +1,4 @@
-From 39d09aefbe9c953083f4c1771e4fefaaae6b7480 Mon Sep 17 00:00:00 2001
+From babd992a97a4e0a13bf25e14c52a073617d6f627 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 20 Nov 2008 18:47:15 +0200
 Subject: [PATCH] flat-volume: subscribe to stream-restore

@@ -1,4 +1,4 @@
-From afd1fc0fedc7231d43d92362342d20adec12af79 Mon Sep 17 00:00:00 2001
+From aa15d6199126d4cf1cc77d82bb71244714065d52 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 27 Nov 2008 16:14:00 +0200
 Subject: [PATCH] stream-restore: add module usage

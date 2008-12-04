@@ -1,4 +1,4 @@
-From fb2687031f180915c984ee05db828dcb53859b03 Mon Sep 17 00:00:00 2001
+From ecab114dc8cdc06873b3c919ae66ad8deb2359c2 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 20 Nov 2008 18:39:52 +0200
 Subject: [PATCH] stream-restore: add public api (hacking)

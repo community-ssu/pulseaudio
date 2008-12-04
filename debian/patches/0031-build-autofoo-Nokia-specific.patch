@@ -1,12 +1,12 @@
-From de1f6239ad7b18f55937802b71f0a900b2f15a18 Mon Sep 17 00:00:00 2001
+From d5ae3dcd64650b28625d1502441283aaf78634a5 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 17 Nov 2008 12:05:41 +0200
 Subject: [PATCH] build: autofoo (Nokia specific)
 
 ---
  ChangeLog              |    7 +
- Makefile.in            |   15 +-
- configure              |   13 +-
+ Makefile.in            |   17 +-
+ configure              |   14 +-
  libltdl/COPYING.LIB    |  515 +
  libltdl/Makefile.am    |   32 +
  libltdl/Makefile.in    |  663 ++
@@ -27,7 +27,7 @@ Subject: [PATCH] build: autofoo (Nokia specific)
  m4/nls.m4              |   31 +
  m4/po.m4               |  449 +
  m4/progtest.m4         |   92 +
- po/ChangeLog           |   27 +
+ po/ChangeLog           |   31 +
  po/Makevars.template   |   41 +
  po/Rules-quot          |   47 +
  po/boldquot.sed        |   10 +
@@ -36,8 +36,8 @@ Subject: [PATCH] build: autofoo (Nokia specific)
  po/insert-header.sin   |   23 +
  po/quot.sed            |    6 +
  po/remove-potcdate.sin |   19 +
- src/Makefile.in        |  106 +-
- 33 files changed, 50926 insertions(+), 31 deletions(-)
+ src/Makefile.in        |  149 +-
+ 33 files changed, 50965 insertions(+), 42 deletions(-)
  create mode 100644 libltdl/COPYING.LIB
  create mode 100644 libltdl/Makefile.am
  create mode 100644 libltdl/Makefile.in
@@ -83,7 +83,7 @@ index 52630ba..bedcf8b 100644
  
  	* Makefile.am (EXTRA_DIST): Add config.rpath, m4/ChangeLog.
 diff --git a/Makefile.in b/Makefile.in
-index 2c2f30d..61485f6 100644
+index 2c2f30d..fe8f866 100644
 --- a/Makefile.in
 +++ b/Makefile.in
 @@ -61,9 +61,10 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
@@ -109,7 +109,12 @@ index 2c2f30d..61485f6 100644
  SOURCES =
  DIST_SOURCES =
  RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
-@@ -360,8 +361,8 @@ SUBDIRS = src doxygen man po
+@@ -356,12 +357,12 @@ top_builddir = @top_builddir@
+ top_srcdir = @top_srcdir@
+ ACLOCAL_AMFLAGS = -I m4
+ EXTRA_DIST = bootstrap.sh LICENSE GPL LGPL doxygen/Makefile.am doxygen/Makefile.in doxygen/doxygen.conf.in README todo
+-SUBDIRS = src doxygen man po
++SUBDIRS = libltdl src doxygen man po
  MAINTAINERCLEANFILES = 
  noinst_DATA = 
  pkgconfigdir = $(libdir)/pkgconfig
@@ -130,10 +135,18 @@ index 2c2f30d..61485f6 100644
  	cd $(top_builddir) && $(SHELL) ./config.status $@
  
 diff --git a/configure b/configure
-index ae984d9..0582382 100755
+index ae984d9..68254e6 100755
 --- a/configure
 +++ b/configure
-@@ -38343,12 +38343,12 @@ fi
+@@ -22036,6 +22036,7 @@ fi
+ done
+ 
+ LIBS=$old_LIBS
++
+ { $as_echo "$as_me:$LINENO: checking for struct lt_user_dlloader" >&5
+ $as_echo_n "checking for struct lt_user_dlloader... " >&6; }
+ if test "${ac_cv_type_struct_lt_user_dlloader+set}" = set; then
+@@ -38343,12 +38344,12 @@ fi
  
  # Check whether --enable-force-preopen was given.
  if test "${enable_force_preopen+set}" = set; then
@@ -149,7 +162,7 @@ index ae984d9..0582382 100755
    FORCE_PREOPEN_TRUE=
    FORCE_PREOPEN_FALSE='#'
  else
-@@ -38357,7 +38357,7 @@ else
+@@ -38357,7 +38358,7 @@ else
  fi
  
  
@@ -158,7 +171,7 @@ index ae984d9..0582382 100755
  
  cat >confcache <<\_ACEOF
  # This file is a shell script that caches the results of configure
-@@ -39186,6 +39186,7 @@ do
+@@ -39186,6 +39187,7 @@ do
      "libpulse-simple.pc") CONFIG_FILES="$CONFIG_FILES libpulse-simple.pc" ;;
      "libpulse-browse.pc") CONFIG_FILES="$CONFIG_FILES libpulse-browse.pc" ;;
      "libpulse-mainloop-glib.pc") CONFIG_FILES="$CONFIG_FILES libpulse-mainloop-glib.pc" ;;
@@ -166,7 +179,7 @@ index ae984d9..0582382 100755
      "doxygen/Makefile") CONFIG_FILES="$CONFIG_FILES doxygen/Makefile" ;;
      "doxygen/doxygen.conf") CONFIG_FILES="$CONFIG_FILES doxygen/doxygen.conf" ;;
      "src/pulse/version.h") CONFIG_FILES="$CONFIG_FILES src/pulse/version.h" ;;
-@@ -40320,6 +40321,7 @@ echo "
+@@ -40320,6 +40322,7 @@ echo "
      System Config Path:            ${PA_SYSTEM_CONFIG_PATH}
      Compiler:                      ${CC}
      CFLAGS:                        ${CFLAGS}
@@ -174,7 +187,7 @@ index ae984d9..0582382 100755
      Have X11:                      ${ENABLE_X11}
      Enable OSS:                    ${ENABLE_OSS}
      Enable Alsa:                   ${ENABLE_ALSA}
-@@ -40336,9 +40338,12 @@ echo "
+@@ -40336,9 +40339,12 @@ echo "
      Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}
      Enable PolicyKit:              ${ENABLE_POLKIT}
      Enable OpenSSL (for Airtunes): ${ENABLE_OPENSSL}
@@ -50904,10 +50917,14 @@ index 0000000..a56365c
 +AC_SUBST($1)dnl
 +])
 diff --git a/po/ChangeLog b/po/ChangeLog
-index ad2d9ee..6238ecb 100644
+index ad2d9ee..3e75ce0 100644
 --- a/po/ChangeLog
 +++ b/po/ChangeLog
-@@ -1,3 +1,30 @@
+@@ -1,3 +1,34 @@
++2008-12-04  gettextize  <bug-gnu-gettext@gnu.org>
++
++	* Makefile.in.in: Upgrade to gettext-0.17.
++
 +2008-11-19  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* Makefile.in.in: Upgrade to gettext-0.17.
@@ -51180,7 +51197,7 @@ index 0000000..2436c49
 +:b
 +}
 diff --git a/src/Makefile.in b/src/Makefile.in
-index 8a1c404..fb66da1 100644
+index 8a1c404..462d53a 100644
 --- a/src/Makefile.in
 +++ b/src/Makefile.in
 @@ -183,33 +183,41 @@ noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
@@ -51308,7 +51325,21 @@ index 8a1c404..fb66da1 100644
  module_alsa_source_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
  	$(am__DEPENDENCIES_1) libalsa-util.la libpulsecore.la
  am_module_alsa_source_la_OBJECTS =  \
-@@ -1892,7 +1922,9 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
+@@ -1196,6 +1226,13 @@ module_null_sink_la_OBJECTS = $(am_module_null_sink_la_OBJECTS)
+ module_null_sink_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+ 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+ 	$(module_null_sink_la_LDFLAGS) $(LDFLAGS) -o $@
++module_null_source_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
++	libpulsecore.la
++am_module_null_source_la_OBJECTS = module-null-source.lo
++module_null_source_la_OBJECTS = $(am_module_null_source_la_OBJECTS)
++module_null_source_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
++	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
++	$(module_null_source_la_LDFLAGS) $(LDFLAGS) -o $@
+ module_oss_la_DEPENDENCIES = $(am__DEPENDENCIES_2) libiochannel.la \
+ 	liboss-util.la libpulsecore.la
+ am_module_oss_la_OBJECTS = module-oss.lo
+@@ -1892,7 +1929,9 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
  	$(libsocket_client_la_SOURCES) $(libsocket_server_la_SOURCES) \
  	$(libsocket_util_la_SOURCES) $(libstrlist_la_SOURCES) \
  	$(libtagstruct_la_SOURCES) $(libx11prop_la_SOURCES) \
@@ -51319,7 +51350,17 @@ index 8a1c404..fb66da1 100644
  	$(module_alsa_source_la_SOURCES) \
  	$(module_always_sink_la_SOURCES) \
  	$(module_bluetooth_device_la_SOURCES) \
-@@ -1986,7 +2018,9 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
+@@ -1921,7 +1960,8 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
+ 	$(module_native_protocol_fd_la_SOURCES) \
+ 	$(module_native_protocol_tcp_la_SOURCES) \
+ 	$(module_native_protocol_unix_la_SOURCES) \
+-	$(module_null_sink_la_SOURCES) $(module_oss_la_SOURCES) \
++	$(module_null_sink_la_SOURCES) \
++	$(module_null_source_la_SOURCES) $(module_oss_la_SOURCES) \
+ 	$(module_pipe_sink_la_SOURCES) \
+ 	$(module_pipe_source_la_SOURCES) \
+ 	$(module_position_event_sounds_la_SOURCES) \
+@@ -1986,7 +2026,9 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
  	$(libsocket_server_la_SOURCES) $(libsocket_util_la_SOURCES) \
  	$(libstrlist_la_SOURCES) $(libtagstruct_la_SOURCES) \
  	$(libx11prop_la_SOURCES) $(libx11wrap_la_SOURCES) \
@@ -51329,7 +51370,39 @@ index 8a1c404..fb66da1 100644
  	$(module_alsa_source_la_SOURCES) \
  	$(module_always_sink_la_SOURCES) \
  	$(module_bluetooth_device_la_SOURCES) \
-@@ -2870,9 +2904,9 @@ modlibexec_LTLIBRARIES = libsocket-util.la libiochannel.la \
+@@ -2015,7 +2057,8 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
+ 	$(module_native_protocol_fd_la_SOURCES) \
+ 	$(module_native_protocol_tcp_la_SOURCES) \
+ 	$(module_native_protocol_unix_la_SOURCES) \
+-	$(module_null_sink_la_SOURCES) $(module_oss_la_SOURCES) \
++	$(module_null_sink_la_SOURCES) \
++	$(module_null_source_la_SOURCES) $(module_oss_la_SOURCES) \
+ 	$(module_pipe_sink_la_SOURCES) \
+ 	$(module_pipe_source_la_SOURCES) \
+ 	$(module_position_event_sounds_la_SOURCES) \
+@@ -2856,23 +2899,23 @@ modlibexec_LTLIBRARIES = libsocket-util.la libiochannel.la \
+ 	libprotocol-esound.la $(am__append_24) $(am__append_26) \
+ 	$(am__append_28) module-flat-volume.la module-cli.la \
+ 	module-cli-protocol-tcp.la module-simple-protocol-tcp.la \
+-	module-null-sink.la module-detect.la module-volume-restore.la \
+-	module-device-restore.la module-stream-restore.la \
+-	module-default-device-restore.la module-always-sink.la \
+-	module-rescue-streams.la module-suspend-on-idle.la \
+-	module-http-protocol-tcp.la module-sine.la \
+-	module-native-protocol-tcp.la module-native-protocol-fd.la \
+-	module-esound-protocol-tcp.la module-combine.la \
+-	module-remap-sink.la module-ladspa-sink.la \
++	module-null-sink.la module-null-source.la module-detect.la \
++	module-volume-restore.la module-device-restore.la \
++	module-stream-restore.la module-default-device-restore.la \
++	module-always-sink.la module-rescue-streams.la \
++	module-suspend-on-idle.la module-http-protocol-tcp.la \
++	module-sine.la module-native-protocol-tcp.la \
++	module-native-protocol-fd.la module-esound-protocol-tcp.la \
++	module-combine.la module-remap-sink.la module-ladspa-sink.la \
+ 	module-esound-sink.la module-tunnel-sink.la \
+ 	module-tunnel-source.la module-position-event-sounds.la \
+ 	$(am__append_29) $(am__append_30) $(am__append_31) \
  	$(am__append_32) $(am__append_33) $(am__append_34) \
  	$(am__append_35) $(am__append_36) $(am__append_37) \
  	$(am__append_38) $(am__append_39) $(am__append_40) \
@@ -51342,7 +51415,15 @@ index 8a1c404..fb66da1 100644
  libprotocol_simple_la_SOURCES = pulsecore/protocol-simple.c pulsecore/protocol-simple.h
  libprotocol_simple_la_LDFLAGS = -avoid-version
  libprotocol_simple_la_LIBADD = $(AM_LIBADD) libpulsecore.la libsocket-server.la libiochannel.la
-@@ -3016,7 +3050,9 @@ SYMDEF_FILES = \
+@@ -3004,6 +3047,7 @@ SYMDEF_FILES = \
+ 		modules/module-tunnel-sink-symdef.h \
+ 		modules/module-tunnel-source-symdef.h \
+ 		modules/module-null-sink-symdef.h \
++		modules/module-null-source-symdef.h \
+ 		modules/module-esound-sink-symdef.h \
+ 		modules/module-zeroconf-publish-symdef.h \
+ 		modules/module-zeroconf-discover-symdef.h \
+@@ -3016,7 +3060,9 @@ SYMDEF_FILES = \
  		modules/module-x11-xsmp-symdef.h \
  		modules/module-oss-symdef.h \
  		modules/module-alsa-sink-symdef.h \
@@ -51352,7 +51433,17 @@ index 8a1c404..fb66da1 100644
  		modules/module-solaris-symdef.h \
  		modules/module-waveout-symdef.h \
  		modules/module-detect-symdef.h \
-@@ -3183,10 +3219,18 @@ module_alsa_sink_la_SOURCES = modules/module-alsa-sink.c
+@@ -3129,6 +3175,9 @@ module_sine_la_LIBADD = $(AM_LIBADD) libpulsecore.la
+ module_null_sink_la_SOURCES = modules/module-null-sink.c
+ module_null_sink_la_LDFLAGS = -module -avoid-version
+ module_null_sink_la_LIBADD = $(AM_LIBADD) libpulsecore.la
++module_null_source_la_SOURCES = modules/module-null-source.c
++module_null_source_la_LDFLAGS = -module -avoid-version
++module_null_source_la_LIBADD = $(AM_LIBADD) libpulsecore.la
+ 
+ # Couplings
+ module_combine_la_SOURCES = modules/module-combine.c
+@@ -3183,10 +3232,18 @@ module_alsa_sink_la_SOURCES = modules/module-alsa-sink.c
  module_alsa_sink_la_LDFLAGS = -module -avoid-version
  module_alsa_sink_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore.la
  module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
@@ -51371,7 +51462,7 @@ index 8a1c404..fb66da1 100644
  
  # Solaris
  module_solaris_la_SOURCES = modules/module-solaris.c
-@@ -3530,8 +3574,12 @@ libx11prop.la: $(libx11prop_la_OBJECTS) $(libx11prop_la_DEPENDENCIES)
+@@ -3530,8 +3587,12 @@ libx11prop.la: $(libx11prop_la_OBJECTS) $(libx11prop_la_DEPENDENCIES)
  	$(libx11prop_la_LINK) $(am_libx11prop_la_rpath) $(libx11prop_la_OBJECTS) $(libx11prop_la_LIBADD) $(LIBS)
  libx11wrap.la: $(libx11wrap_la_OBJECTS) $(libx11wrap_la_DEPENDENCIES) 
  	$(libx11wrap_la_LINK) $(am_libx11wrap_la_rpath) $(libx11wrap_la_OBJECTS) $(libx11wrap_la_LIBADD) $(LIBS)
@@ -51384,7 +51475,24 @@ index 8a1c404..fb66da1 100644
  module-alsa-source.la: $(module_alsa_source_la_OBJECTS) $(module_alsa_source_la_DEPENDENCIES) 
  	$(module_alsa_source_la_LINK) $(am_module_alsa_source_la_rpath) $(module_alsa_source_la_OBJECTS) $(module_alsa_source_la_LIBADD) $(LIBS)
  module-always-sink.la: $(module_always_sink_la_OBJECTS) $(module_always_sink_la_DEPENDENCIES) 
-@@ -4139,7 +4187,9 @@ distclean-compile:
+@@ -3598,6 +3659,8 @@ module-native-protocol-unix.la: $(module_native_protocol_unix_la_OBJECTS) $(modu
+ 	$(module_native_protocol_unix_la_LINK) $(am_module_native_protocol_unix_la_rpath) $(module_native_protocol_unix_la_OBJECTS) $(module_native_protocol_unix_la_LIBADD) $(LIBS)
+ module-null-sink.la: $(module_null_sink_la_OBJECTS) $(module_null_sink_la_DEPENDENCIES) 
+ 	$(module_null_sink_la_LINK) -rpath $(modlibexecdir) $(module_null_sink_la_OBJECTS) $(module_null_sink_la_LIBADD) $(LIBS)
++module-null-source.la: $(module_null_source_la_OBJECTS) $(module_null_source_la_DEPENDENCIES) 
++	$(module_null_source_la_LINK) -rpath $(modlibexecdir) $(module_null_source_la_OBJECTS) $(module_null_source_la_LIBADD) $(LIBS)
+ module-oss.la: $(module_oss_la_OBJECTS) $(module_oss_la_DEPENDENCIES) 
+ 	$(module_oss_la_LINK) $(am_module_oss_la_rpath) $(module_oss_la_OBJECTS) $(module_oss_la_LIBADD) $(LIBS)
+ module-pipe-sink.la: $(module_pipe_sink_la_OBJECTS) $(module_pipe_sink_la_DEPENDENCIES) 
+@@ -4129,6 +4192,7 @@ distclean-compile:
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-flat-volume.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-match.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-null-sink.Plo@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-null-source.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-oss.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-pipe-sink.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-pipe-source.Plo@am__quote@
+@@ -4139,7 +4203,9 @@ distclean-compile:
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-solaris.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-tunnel.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Plo@am__quote@
@@ -51394,7 +51502,7 @@ index 8a1c404..fb66da1 100644
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_always_sink_la-module-always-sink.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_bluetooth_device_la-module-bluetooth-device.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_bluetooth_discover_la-module-bluetooth-discover.Plo@am__quote@
-@@ -5984,6 +6034,13 @@ libx11wrap_la-x11wrap.lo: pulsecore/x11wrap.c
+@@ -5984,6 +6050,13 @@ libx11wrap_la-x11wrap.lo: pulsecore/x11wrap.c
  @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
  @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libx11wrap_la_CFLAGS) $(CFLAGS) -c -o libx11wrap_la-x11wrap.lo `test -f 'pulsecore/x11wrap.c' || echo '$(srcdir)/'`pulsecore/x11wrap.c
  
@@ -51408,7 +51516,7 @@ index 8a1c404..fb66da1 100644
  module_alsa_sink_la-module-alsa-sink.lo: modules/module-alsa-sink.c
  @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_alsa_sink_la_CFLAGS) $(CFLAGS) -MT module_alsa_sink_la-module-alsa-sink.lo -MD -MP -MF $(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Tpo -c -o module_alsa_sink_la-module-alsa-sink.lo `test -f 'modules/module-alsa-sink.c' || echo '$(srcdir)/'`modules/module-alsa-sink.c
  @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Tpo $(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Plo
-@@ -5991,6 +6048,13 @@ module_alsa_sink_la-module-alsa-sink.lo: modules/module-alsa-sink.c
+@@ -5991,6 +6064,13 @@ module_alsa_sink_la-module-alsa-sink.lo: modules/module-alsa-sink.c
  @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
  @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_alsa_sink_la_CFLAGS) $(CFLAGS) -c -o module_alsa_sink_la-module-alsa-sink.lo `test -f 'modules/module-alsa-sink.c' || echo '$(srcdir)/'`modules/module-alsa-sink.c
  
@@ -51422,6 +51530,20 @@ index 8a1c404..fb66da1 100644
  module_alsa_source_la-module-alsa-source.lo: modules/module-alsa-source.c
  @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_alsa_source_la_CFLAGS) $(CFLAGS) -MT module_alsa_source_la-module-alsa-source.lo -MD -MP -MF $(DEPDIR)/module_alsa_source_la-module-alsa-source.Tpo -c -o module_alsa_source_la-module-alsa-source.lo `test -f 'modules/module-alsa-source.c' || echo '$(srcdir)/'`modules/module-alsa-source.c
  @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_alsa_source_la-module-alsa-source.Tpo $(DEPDIR)/module_alsa_source_la-module-alsa-source.Plo
+@@ -6222,6 +6302,13 @@ module-null-sink.lo: modules/module-null-sink.c
+ @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+ @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module-null-sink.lo `test -f 'modules/module-null-sink.c' || echo '$(srcdir)/'`modules/module-null-sink.c
+ 
++module-null-source.lo: modules/module-null-source.c
++@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module-null-source.lo -MD -MP -MF $(DEPDIR)/module-null-source.Tpo -c -o module-null-source.lo `test -f 'modules/module-null-source.c' || echo '$(srcdir)/'`modules/module-null-source.c
++@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module-null-source.Tpo $(DEPDIR)/module-null-source.Plo
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-null-source.c' object='module-null-source.lo' libtool=yes @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module-null-source.lo `test -f 'modules/module-null-source.c' || echo '$(srcdir)/'`modules/module-null-source.c
++
+ module-oss.lo: modules/module-oss.c
+ @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module-oss.lo -MD -MP -MF $(DEPDIR)/module-oss.Tpo -c -o module-oss.lo `test -f 'modules/module-oss.c' || echo '$(srcdir)/'`modules/module-oss.c
+ @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module-oss.Tpo $(DEPDIR)/module-oss.Plo
 -- 
 1.6.0.2.514.g23abd3
 

@@ -1,4 +1,4 @@
-From 03598666407ce12021996b58c048e0521e9f7c5a Mon Sep 17 00:00:00 2001
+From 086992e65c8662de4e27dd57abc36bff41af0a5b Mon Sep 17 00:00:00 2001
 From: Ismo Puustinen <ismo.h.puustinen@nokia.com>
 Date: Tue, 30 Sep 2008 18:45:55 +0300
 Subject: [PATCH] build: add pulsecore.pc (Nokia specific)

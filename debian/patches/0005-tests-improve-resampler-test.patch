@@ -1,4 +1,4 @@
-From cf23ef20933a5733d5fcb88be8cda2eac61ceebd Mon Sep 17 00:00:00 2001
+From ac926605a055142f8383dd748e986b062676397a Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 5 Nov 2008 00:24:37 +0200
 Subject: [PATCH] tests: improve resampler test

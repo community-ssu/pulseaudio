@@ -1,4 +1,4 @@
-From 75549967303daf8aa662178b293a7bc3e06f1f4a Mon Sep 17 00:00:00 2001
+From e08ed9d6109fbde95305513f46faa5315b05a17e Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Wed, 27 Aug 2008 19:54:48 +0300
 Subject: [PATCH] alsa-old: add module-alsa-{sink,src}-old (Nokia specific)
@@ -18,10 +18,10 @@ Backported from 0.9.10 with minor modifications.
  create mode 100644 src/modules/module-alsa-source-old.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 4d1812e..7766c2e 100644
+index a8a257c..ff5458b 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -1126,7 +1126,9 @@ if HAVE_ALSA
+@@ -1127,7 +1127,9 @@ if HAVE_ALSA
  modlibexec_LTLIBRARIES += \
  		libalsa-util.la \
  		module-alsa-sink.la \
@@ -32,7 +32,7 @@ index 4d1812e..7766c2e 100644
  endif
  
  if HAVE_SOLARIS
-@@ -1243,7 +1245,9 @@ SYMDEF_FILES = \
+@@ -1245,7 +1247,9 @@ SYMDEF_FILES = \
  		modules/module-x11-xsmp-symdef.h \
  		modules/module-oss-symdef.h \
  		modules/module-alsa-sink-symdef.h \
@@ -42,7 +42,7 @@ index 4d1812e..7766c2e 100644
  		modules/module-solaris-symdef.h \
  		modules/module-waveout-symdef.h \
  		modules/module-detect-symdef.h \
-@@ -1453,11 +1457,21 @@ module_alsa_sink_la_LDFLAGS = -module -avoid-version
+@@ -1459,11 +1463,21 @@ module_alsa_sink_la_LDFLAGS = -module -avoid-version
  module_alsa_sink_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore.la
  module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
