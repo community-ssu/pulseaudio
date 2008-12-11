@@ -310,3 +310,16 @@ Description: PulseAudio core development headers and libraries
  .
  Headers and libraries for developing module that access a PulseAudio
  sound server via internal PulseAudio's interface.
+
+Package: pulseaudio-test
+Architecture: any
+Section: misc
+Priority: optional
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: insanity
+Description: PulseAudio tests
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
+ This package include PulseAudio internal tests.

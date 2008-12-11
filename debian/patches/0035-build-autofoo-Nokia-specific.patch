@@ -1,4 +1,4 @@
-From 1a735582100280b61087cbb7cbf5d855cdd0095c Mon Sep 17 00:00:00 2001
+From 43b24cf565fc315d24f046f3fe113929e0898d37 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 17 Nov 2008 12:05:41 +0200
 Subject: [PATCH] build: autofoo (Nokia specific)
@@ -36,8 +36,8 @@ Subject: [PATCH] build: autofoo (Nokia specific)
  po/insert-header.sin   |   23 +
  po/quot.sed            |    6 +
  po/remove-potcdate.sin |   19 +
- src/Makefile.in        |  151 +-
- 33 files changed, 50966 insertions(+), 43 deletions(-)
+ src/Makefile.in        |  245 +-
+ 33 files changed, 51026 insertions(+), 77 deletions(-)
  create mode 100644 libltdl/COPYING.LIB
  create mode 100644 libltdl/Makefile.am
  create mode 100644 libltdl/Makefile.in
@@ -51197,9 +51197,27 @@ index 0000000..2436c49
 +:b
 +}
 diff --git a/src/Makefile.in b/src/Makefile.in
-index 8a1c404..cfb6060 100644
+index 8a1c404..c1b1131 100644
 --- a/src/Makefile.in
 +++ b/src/Makefile.in
+@@ -72,7 +72,7 @@ bin_PROGRAMS = pulseaudio$(EXEEXT) pacat$(EXEEXT) pactl$(EXEEXT) \
+ @HAVE_AF_UNIX_TRUE@am__append_6 = pacmd
+ @HAVE_X11_TRUE@am__append_7 = pax11publish
+ @HAVE_AVAHI_TRUE@am__append_8 = pabrowse
+-noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
++pulsetest_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
+ 	pacat-simple$(EXEEXT) parec-simple$(EXEEXT) \
+ 	strlist-test$(EXEEXT) close-test$(EXEEXT) voltest$(EXEEXT) \
+ 	memblockq-test$(EXEEXT) sync-playback$(EXEEXT) \
+@@ -87,7 +87,7 @@ noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
+ 	mix-test$(EXEEXT) remix-test$(EXEEXT) envelope-test$(EXEEXT) \
+ 	proplist-test$(EXEEXT) rtstutter$(EXEEXT) stripnul$(EXEEXT) \
+ 	lock-autospawn-test$(EXEEXT) prioq-test$(EXEEXT) \
+-	$(am__EXEEXT_4) $(am__EXEEXT_5)
++	$(am__EXEEXT_6) $(am__EXEEXT_7)
+ @HAVE_SIGXCPU_TRUE@am__append_9 = \
+ @HAVE_SIGXCPU_TRUE@		cpulimit-test \
+ @HAVE_SIGXCPU_TRUE@		cpulimit-test2
 @@ -183,33 +183,41 @@ noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
  @HAVE_OSS_TRUE@		liboss-util.la \
  @HAVE_OSS_TRUE@		module-oss.la
@@ -51240,8 +51258,9 @@ index 8a1c404..cfb6060 100644
  @HAVE_JACK_TRUE@		module-jack-sink.la \
  @HAVE_JACK_TRUE@		module-jack-source.la
  
- pulselibexec_PROGRAMS = $(am__EXEEXT_6) $(am__EXEEXT_7)
+-pulselibexec_PROGRAMS = $(am__EXEEXT_6) $(am__EXEEXT_7)
 -@HAVE_GCONF_TRUE@am__append_42 = \
++pulselibexec_PROGRAMS = $(am__EXEEXT_4) $(am__EXEEXT_5)
 +@HAVE_GCONF_TRUE@am__append_44 = \
  @HAVE_GCONF_TRUE@		module-gconf.la
  
@@ -51285,6 +51304,19 @@ index 8a1c404..cfb6060 100644
  @HAVE_AVAHI_TRUE@@HAVE_OPENSSL_TRUE@		module-raop-discover.la
  
  subdir = src
+@@ -267,9 +271,9 @@ am__vpath_adj = case $$p in \
+ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
+ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(modlibexecdir)" \
+ 	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(pulselibexecdir)" \
+-	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(policydir)" \
+-	"$(DESTDIR)$(pulseconfdir)" "$(DESTDIR)$(xdgautostartdir)" \
+-	"$(DESTDIR)$(pulseincludedir)"
++	"$(DESTDIR)$(pulsetestdir)" "$(DESTDIR)$(bindir)" \
++	"$(DESTDIR)$(policydir)" "$(DESTDIR)$(pulseconfdir)" \
++	"$(DESTDIR)$(xdgautostartdir)" "$(DESTDIR)$(pulseincludedir)"
+ libLTLIBRARIES_INSTALL = $(INSTALL)
+ modlibexecLTLIBRARIES_INSTALL = $(INSTALL)
+ LTLIBRARIES = $(lib_LTLIBRARIES) $(modlibexec_LTLIBRARIES) \
 @@ -858,6 +862,19 @@ libx11wrap_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
  	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libx11wrap_la_CFLAGS) \
  	$(CFLAGS) $(libx11wrap_la_LDFLAGS) $(LDFLAGS) -o $@
@@ -51339,7 +51371,29 @@ index 8a1c404..cfb6060 100644
  module_oss_la_DEPENDENCIES = $(am__DEPENDENCIES_2) libiochannel.la \
  	liboss-util.la libpulsecore.la
  am_module_oss_la_OBJECTS = module-oss.lo
-@@ -1892,7 +1929,9 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
+@@ -1443,13 +1480,15 @@ module_zeroconf_publish_la_LINK = $(LIBTOOL) --tag=CC \
+ @HAVE_X11_TRUE@am__EXEEXT_2 = pax11publish$(EXEEXT)
+ @HAVE_AVAHI_TRUE@am__EXEEXT_3 = pabrowse$(EXEEXT)
+ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
+-@HAVE_SIGXCPU_TRUE@am__EXEEXT_4 = cpulimit-test$(EXEEXT) \
+-@HAVE_SIGXCPU_TRUE@	cpulimit-test2$(EXEEXT)
+-@HAVE_GLIB20_TRUE@am__EXEEXT_5 = mainloop-test-glib$(EXEEXT)
+-@HAVE_GCONF_TRUE@am__EXEEXT_6 = gconf-helper$(EXEEXT)
+-@HAVE_BLUEZ_TRUE@am__EXEEXT_7 = proximity-helper$(EXEEXT)
++@HAVE_GCONF_TRUE@am__EXEEXT_4 = gconf-helper$(EXEEXT)
++@HAVE_BLUEZ_TRUE@am__EXEEXT_5 = proximity-helper$(EXEEXT)
+ pulselibexecPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
+-PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS) $(pulselibexec_PROGRAMS)
++@HAVE_SIGXCPU_TRUE@am__EXEEXT_6 = cpulimit-test$(EXEEXT) \
++@HAVE_SIGXCPU_TRUE@	cpulimit-test2$(EXEEXT)
++@HAVE_GLIB20_TRUE@am__EXEEXT_7 = mainloop-test-glib$(EXEEXT)
++pulsetestPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
++PROGRAMS = $(bin_PROGRAMS) $(pulselibexec_PROGRAMS) \
++	$(pulsetest_PROGRAMS)
+ am_asyncmsgq_test_OBJECTS = asyncmsgq_test-asyncmsgq-test.$(OBJEXT)
+ asyncmsgq_test_OBJECTS = $(am_asyncmsgq_test_OBJECTS)
+ asyncmsgq_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
+@@ -1892,7 +1931,9 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
  	$(libsocket_client_la_SOURCES) $(libsocket_server_la_SOURCES) \
  	$(libsocket_util_la_SOURCES) $(libstrlist_la_SOURCES) \
  	$(libtagstruct_la_SOURCES) $(libx11prop_la_SOURCES) \
@@ -51350,7 +51404,7 @@ index 8a1c404..cfb6060 100644
  	$(module_alsa_source_la_SOURCES) \
  	$(module_always_sink_la_SOURCES) \
  	$(module_bluetooth_device_la_SOURCES) \
-@@ -1921,7 +1960,8 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
+@@ -1921,7 +1962,8 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
  	$(module_native_protocol_fd_la_SOURCES) \
  	$(module_native_protocol_tcp_la_SOURCES) \
  	$(module_native_protocol_unix_la_SOURCES) \
@@ -51360,7 +51414,7 @@ index 8a1c404..cfb6060 100644
  	$(module_pipe_sink_la_SOURCES) \
  	$(module_pipe_source_la_SOURCES) \
  	$(module_position_event_sounds_la_SOURCES) \
-@@ -1986,7 +2026,9 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
+@@ -1986,7 +2028,9 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
  	$(libsocket_server_la_SOURCES) $(libsocket_util_la_SOURCES) \
  	$(libstrlist_la_SOURCES) $(libtagstruct_la_SOURCES) \
  	$(libx11prop_la_SOURCES) $(libx11wrap_la_SOURCES) \
@@ -51370,7 +51424,7 @@ index 8a1c404..cfb6060 100644
  	$(module_alsa_source_la_SOURCES) \
  	$(module_always_sink_la_SOURCES) \
  	$(module_bluetooth_device_la_SOURCES) \
-@@ -2015,7 +2057,8 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
+@@ -2015,7 +2059,8 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libauth_cookie_la_SOURCES) \
  	$(module_native_protocol_fd_la_SOURCES) \
  	$(module_native_protocol_tcp_la_SOURCES) \
  	$(module_native_protocol_unix_la_SOURCES) \
@@ -51380,7 +51434,15 @@ index 8a1c404..cfb6060 100644
  	$(module_pipe_sink_la_SOURCES) \
  	$(module_pipe_source_la_SOURCES) \
  	$(module_position_event_sounds_la_SOURCES) \
-@@ -2435,7 +2478,7 @@ pulseaudio_DEPENDENCIES = libpulsecore.la $(PREOPEN_LIBS)
+@@ -2352,6 +2397,7 @@ pulsecoreincludedir = $(includedir)/pulsecore
+ pulseconfdir = $(sysconfdir)/pulse
+ pulselibexecdir = $(libexecdir)/pulse
+ xdgautostartdir = $(sysconfdir)/xdg/autostart
++pulsetestdir = $(libexecdir)/pulse-tests
+ 
+ ###################################
+ #            Defines              #
+@@ -2435,7 +2481,7 @@ pulseaudio_DEPENDENCIES = libpulsecore.la $(PREOPEN_LIBS)
  @PREOPEN_MODS_FALSE@PREOPEN_LIBS = $(modlibexec_LTLIBRARIES)
  @PREOPEN_MODS_TRUE@PREOPEN_LIBS = $(PREOPEN_MODS)
  @FORCE_PREOPEN_FALSE@pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlopen force $(foreach f,$(PREOPEN_LIBS),-dlopen $(f))
@@ -51389,7 +51451,7 @@ index 8a1c404..cfb6060 100644
  @HAVE_POLKIT_TRUE@policy_DATA = daemon/org.pulseaudio.policy
  bin_SCRIPTS = esdcompat start-pulseaudio-x11 $(am__append_22)
  pacat_SOURCES = utils/pacat.c
-@@ -2856,23 +2899,23 @@ modlibexec_LTLIBRARIES = libsocket-util.la libiochannel.la \
+@@ -2856,23 +2902,23 @@ modlibexec_LTLIBRARIES = libsocket-util.la libiochannel.la \
  	libprotocol-esound.la $(am__append_24) $(am__append_26) \
  	$(am__append_28) module-flat-volume.la module-cli.la \
  	module-cli-protocol-tcp.la module-simple-protocol-tcp.la \
@@ -51424,7 +51486,7 @@ index 8a1c404..cfb6060 100644
  libprotocol_simple_la_SOURCES = pulsecore/protocol-simple.c pulsecore/protocol-simple.h
  libprotocol_simple_la_LDFLAGS = -avoid-version
  libprotocol_simple_la_LIBADD = $(AM_LIBADD) libpulsecore.la libsocket-server.la libiochannel.la
-@@ -3004,6 +3047,7 @@ SYMDEF_FILES = \
+@@ -3004,6 +3050,7 @@ SYMDEF_FILES = \
  		modules/module-tunnel-sink-symdef.h \
  		modules/module-tunnel-source-symdef.h \
  		modules/module-null-sink-symdef.h \
@@ -51432,7 +51494,7 @@ index 8a1c404..cfb6060 100644
  		modules/module-esound-sink-symdef.h \
  		modules/module-zeroconf-publish-symdef.h \
  		modules/module-zeroconf-discover-symdef.h \
-@@ -3016,7 +3060,9 @@ SYMDEF_FILES = \
+@@ -3016,7 +3063,9 @@ SYMDEF_FILES = \
  		modules/module-x11-xsmp-symdef.h \
  		modules/module-oss-symdef.h \
  		modules/module-alsa-sink-symdef.h \
@@ -51442,7 +51504,7 @@ index 8a1c404..cfb6060 100644
  		modules/module-solaris-symdef.h \
  		modules/module-waveout-symdef.h \
  		modules/module-detect-symdef.h \
-@@ -3129,6 +3175,9 @@ module_sine_la_LIBADD = $(AM_LIBADD) libpulsecore.la
+@@ -3129,6 +3178,9 @@ module_sine_la_LIBADD = $(AM_LIBADD) libpulsecore.la
  module_null_sink_la_SOURCES = modules/module-null-sink.c
  module_null_sink_la_LDFLAGS = -module -avoid-version
  module_null_sink_la_LIBADD = $(AM_LIBADD) libpulsecore.la
@@ -51452,7 +51514,7 @@ index 8a1c404..cfb6060 100644
  
  # Couplings
  module_combine_la_SOURCES = modules/module-combine.c
-@@ -3183,10 +3232,18 @@ module_alsa_sink_la_SOURCES = modules/module-alsa-sink.c
+@@ -3183,10 +3235,18 @@ module_alsa_sink_la_SOURCES = modules/module-alsa-sink.c
  module_alsa_sink_la_LDFLAGS = -module -avoid-version
  module_alsa_sink_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore.la
  module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
@@ -51471,7 +51533,7 @@ index 8a1c404..cfb6060 100644
  
  # Solaris
  module_solaris_la_SOURCES = modules/module-solaris.c
-@@ -3530,8 +3587,12 @@ libx11prop.la: $(libx11prop_la_OBJECTS) $(libx11prop_la_DEPENDENCIES)
+@@ -3530,8 +3590,12 @@ libx11prop.la: $(libx11prop_la_OBJECTS) $(libx11prop_la_DEPENDENCIES)
  	$(libx11prop_la_LINK) $(am_libx11prop_la_rpath) $(libx11prop_la_OBJECTS) $(libx11prop_la_LIBADD) $(LIBS)
  libx11wrap.la: $(libx11wrap_la_OBJECTS) $(libx11wrap_la_DEPENDENCIES) 
  	$(libx11wrap_la_LINK) $(am_libx11wrap_la_rpath) $(libx11wrap_la_OBJECTS) $(libx11wrap_la_LIBADD) $(LIBS)
@@ -51484,7 +51546,7 @@ index 8a1c404..cfb6060 100644
  module-alsa-source.la: $(module_alsa_source_la_OBJECTS) $(module_alsa_source_la_DEPENDENCIES) 
  	$(module_alsa_source_la_LINK) $(am_module_alsa_source_la_rpath) $(module_alsa_source_la_OBJECTS) $(module_alsa_source_la_LIBADD) $(LIBS)
  module-always-sink.la: $(module_always_sink_la_OBJECTS) $(module_always_sink_la_DEPENDENCIES) 
-@@ -3598,6 +3659,8 @@ module-native-protocol-unix.la: $(module_native_protocol_unix_la_OBJECTS) $(modu
+@@ -3598,6 +3662,8 @@ module-native-protocol-unix.la: $(module_native_protocol_unix_la_OBJECTS) $(modu
  	$(module_native_protocol_unix_la_LINK) $(am_module_native_protocol_unix_la_rpath) $(module_native_protocol_unix_la_OBJECTS) $(module_native_protocol_unix_la_LIBADD) $(LIBS)
  module-null-sink.la: $(module_null_sink_la_OBJECTS) $(module_null_sink_la_DEPENDENCIES) 
  	$(module_null_sink_la_LINK) -rpath $(modlibexecdir) $(module_null_sink_la_OBJECTS) $(module_null_sink_la_LIBADD) $(LIBS)
@@ -51493,7 +51555,56 @@ index 8a1c404..cfb6060 100644
  module-oss.la: $(module_oss_la_OBJECTS) $(module_oss_la_DEPENDENCIES) 
  	$(module_oss_la_LINK) $(am_module_oss_la_rpath) $(module_oss_la_OBJECTS) $(module_oss_la_LIBADD) $(LIBS)
  module-pipe-sink.la: $(module_pipe_sink_la_OBJECTS) $(module_pipe_sink_la_DEPENDENCIES) 
-@@ -4129,6 +4192,7 @@ distclean-compile:
+@@ -3674,13 +3740,6 @@ clean-binPROGRAMS:
+ 	  echo " rm -f $$p $$f"; \
+ 	  rm -f $$p $$f ; \
+ 	done
+-
+-clean-noinstPROGRAMS:
+-	@list='$(noinst_PROGRAMS)'; for p in $$list; do \
+-	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+-	  echo " rm -f $$p $$f"; \
+-	  rm -f $$p $$f ; \
+-	done
+ install-pulselibexecPROGRAMS: $(pulselibexec_PROGRAMS)
+ 	@$(NORMAL_INSTALL)
+ 	test -z "$(pulselibexecdir)" || $(MKDIR_P) "$(DESTDIR)$(pulselibexecdir)"
+@@ -3709,6 +3768,34 @@ clean-pulselibexecPROGRAMS:
+ 	  echo " rm -f $$p $$f"; \
+ 	  rm -f $$p $$f ; \
+ 	done
++install-pulsetestPROGRAMS: $(pulsetest_PROGRAMS)
++	@$(NORMAL_INSTALL)
++	test -z "$(pulsetestdir)" || $(MKDIR_P) "$(DESTDIR)$(pulsetestdir)"
++	@list='$(pulsetest_PROGRAMS)'; for p in $$list; do \
++	  p1=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
++	  if test -f $$p \
++	     || test -f $$p1 \
++	  ; then \
++	    f=`echo "$$p1" | sed 's,^.*/,,;$(transform);s/$$/$(EXEEXT)/'`; \
++	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(pulsetestPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(pulsetestdir)/$$f'"; \
++	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(pulsetestPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(pulsetestdir)/$$f" || exit 1; \
++	  else :; fi; \
++	done
++
++uninstall-pulsetestPROGRAMS:
++	@$(NORMAL_UNINSTALL)
++	@list='$(pulsetest_PROGRAMS)'; for p in $$list; do \
++	  f=`echo "$$p" | sed 's,^.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/'`; \
++	  echo " rm -f '$(DESTDIR)$(pulsetestdir)/$$f'"; \
++	  rm -f "$(DESTDIR)$(pulsetestdir)/$$f"; \
++	done
++
++clean-pulsetestPROGRAMS:
++	@list='$(pulsetest_PROGRAMS)'; for p in $$list; do \
++	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
++	  echo " rm -f $$p $$f"; \
++	  rm -f $$p $$f ; \
++	done
+ asyncmsgq-test$(EXEEXT): $(asyncmsgq_test_OBJECTS) $(asyncmsgq_test_DEPENDENCIES) 
+ 	@rm -f asyncmsgq-test$(EXEEXT)
+ 	$(asyncmsgq_test_LINK) $(asyncmsgq_test_OBJECTS) $(asyncmsgq_test_LDADD) $(LIBS)
+@@ -4129,6 +4216,7 @@ distclean-compile:
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-flat-volume.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-match.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-null-sink.Plo@am__quote@
@@ -51501,7 +51612,7 @@ index 8a1c404..cfb6060 100644
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-oss.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-pipe-sink.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-pipe-source.Plo@am__quote@
-@@ -4139,7 +4203,9 @@ distclean-compile:
+@@ -4139,7 +4227,9 @@ distclean-compile:
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-solaris.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-tunnel.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Plo@am__quote@
@@ -51511,7 +51622,7 @@ index 8a1c404..cfb6060 100644
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_always_sink_la-module-always-sink.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_bluetooth_device_la-module-bluetooth-device.Plo@am__quote@
  @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_bluetooth_discover_la-module-bluetooth-discover.Plo@am__quote@
-@@ -5984,6 +6050,13 @@ libx11wrap_la-x11wrap.lo: pulsecore/x11wrap.c
+@@ -5984,6 +6074,13 @@ libx11wrap_la-x11wrap.lo: pulsecore/x11wrap.c
  @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
  @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libx11wrap_la_CFLAGS) $(CFLAGS) -c -o libx11wrap_la-x11wrap.lo `test -f 'pulsecore/x11wrap.c' || echo '$(srcdir)/'`pulsecore/x11wrap.c
  
@@ -51525,7 +51636,7 @@ index 8a1c404..cfb6060 100644
  module_alsa_sink_la-module-alsa-sink.lo: modules/module-alsa-sink.c
  @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_alsa_sink_la_CFLAGS) $(CFLAGS) -MT module_alsa_sink_la-module-alsa-sink.lo -MD -MP -MF $(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Tpo -c -o module_alsa_sink_la-module-alsa-sink.lo `test -f 'modules/module-alsa-sink.c' || echo '$(srcdir)/'`modules/module-alsa-sink.c
  @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Tpo $(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Plo
-@@ -5991,6 +6064,13 @@ module_alsa_sink_la-module-alsa-sink.lo: modules/module-alsa-sink.c
+@@ -5991,6 +6088,13 @@ module_alsa_sink_la-module-alsa-sink.lo: modules/module-alsa-sink.c
  @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
  @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_alsa_sink_la_CFLAGS) $(CFLAGS) -c -o module_alsa_sink_la-module-alsa-sink.lo `test -f 'modules/module-alsa-sink.c' || echo '$(srcdir)/'`modules/module-alsa-sink.c
  
@@ -51539,7 +51650,7 @@ index 8a1c404..cfb6060 100644
  module_alsa_source_la-module-alsa-source.lo: modules/module-alsa-source.c
  @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_alsa_source_la_CFLAGS) $(CFLAGS) -MT module_alsa_source_la-module-alsa-source.lo -MD -MP -MF $(DEPDIR)/module_alsa_source_la-module-alsa-source.Tpo -c -o module_alsa_source_la-module-alsa-source.lo `test -f 'modules/module-alsa-source.c' || echo '$(srcdir)/'`modules/module-alsa-source.c
  @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module_alsa_source_la-module-alsa-source.Tpo $(DEPDIR)/module_alsa_source_la-module-alsa-source.Plo
-@@ -6222,6 +6302,13 @@ module-null-sink.lo: modules/module-null-sink.c
+@@ -6222,6 +6326,13 @@ module-null-sink.lo: modules/module-null-sink.c
  @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
  @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module-null-sink.lo `test -f 'modules/module-null-sink.c' || echo '$(srcdir)/'`modules/module-null-sink.c
  
@@ -51553,6 +51664,79 @@ index 8a1c404..cfb6060 100644
  module-oss.lo: modules/module-oss.c
  @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module-oss.lo -MD -MP -MF $(DEPDIR)/module-oss.Tpo -c -o module-oss.lo `test -f 'modules/module-oss.c' || echo '$(srcdir)/'`modules/module-oss.c
  @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module-oss.Tpo $(DEPDIR)/module-oss.Plo
+@@ -8057,7 +8168,7 @@ all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(SCRIPTS) $(DATA) \
+ install-binPROGRAMS: install-libLTLIBRARIES
+ 
+ installdirs:
+-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(modlibexecdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pulselibexecdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(policydir)" "$(DESTDIR)$(pulseconfdir)" "$(DESTDIR)$(xdgautostartdir)" "$(DESTDIR)$(pulseincludedir)"; do \
++	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(modlibexecdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pulselibexecdir)" "$(DESTDIR)$(pulsetestdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(policydir)" "$(DESTDIR)$(pulseconfdir)" "$(DESTDIR)$(xdgautostartdir)" "$(DESTDIR)$(pulseincludedir)"; do \
+ 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+ 	done
+ install: $(BUILT_SOURCES)
+@@ -8091,8 +8202,8 @@ clean: clean-am
+ 
+ clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
+ 	clean-libtool clean-modlibexecLTLIBRARIES \
+-	clean-noinstLTLIBRARIES clean-noinstPROGRAMS \
+-	clean-pulselibexecPROGRAMS mostlyclean-am
++	clean-noinstLTLIBRARIES clean-pulselibexecPROGRAMS \
++	clean-pulsetestPROGRAMS mostlyclean-am
+ 
+ distclean: distclean-am
+ 	-rm -rf ./$(DEPDIR)
+@@ -8111,7 +8222,8 @@ info: info-am
+ info-am:
+ 
+ install-data-am: install-policyDATA install-pulseconfDATA \
+-	install-pulseincludeHEADERS install-xdgautostartDATA
++	install-pulseincludeHEADERS install-pulsetestPROGRAMS \
++	install-xdgautostartDATA
+ 
+ install-dvi: install-dvi-am
+ 
+@@ -8155,14 +8267,14 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
+ 	uninstall-libLTLIBRARIES uninstall-modlibexecLTLIBRARIES \
+ 	uninstall-policyDATA uninstall-pulseconfDATA \
+ 	uninstall-pulseincludeHEADERS uninstall-pulselibexecPROGRAMS \
+-	uninstall-xdgautostartDATA
++	uninstall-pulsetestPROGRAMS uninstall-xdgautostartDATA
+ 
+ .MAKE: install-am install-exec-am install-strip
+ 
+ .PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
+ 	clean-generic clean-libLTLIBRARIES clean-libtool \
+ 	clean-modlibexecLTLIBRARIES clean-noinstLTLIBRARIES \
+-	clean-noinstPROGRAMS clean-pulselibexecPROGRAMS ctags \
++	clean-pulselibexecPROGRAMS clean-pulsetestPROGRAMS ctags \
+ 	distclean distclean-compile distclean-generic \
+ 	distclean-libtool distclean-tags distdir dvi dvi-am html \
+ 	html-am info info-am install install-am install-binPROGRAMS \
+@@ -8173,15 +8285,16 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
+ 	install-modlibexecLTLIBRARIES install-pdf install-pdf-am \
+ 	install-policyDATA install-ps install-ps-am \
+ 	install-pulseconfDATA install-pulseincludeHEADERS \
+-	install-pulselibexecPROGRAMS install-strip \
+-	install-xdgautostartDATA installcheck installcheck-am \
+-	installdirs maintainer-clean maintainer-clean-generic \
+-	mostlyclean mostlyclean-compile mostlyclean-generic \
+-	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
+-	uninstall-am uninstall-binPROGRAMS uninstall-binSCRIPTS \
+-	uninstall-libLTLIBRARIES uninstall-modlibexecLTLIBRARIES \
+-	uninstall-policyDATA uninstall-pulseconfDATA \
+-	uninstall-pulseincludeHEADERS uninstall-pulselibexecPROGRAMS \
++	install-pulselibexecPROGRAMS install-pulsetestPROGRAMS \
++	install-strip install-xdgautostartDATA installcheck \
++	installcheck-am installdirs maintainer-clean \
++	maintainer-clean-generic mostlyclean mostlyclean-compile \
++	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
++	tags uninstall uninstall-am uninstall-binPROGRAMS \
++	uninstall-binSCRIPTS uninstall-libLTLIBRARIES \
++	uninstall-modlibexecLTLIBRARIES uninstall-policyDATA \
++	uninstall-pulseconfDATA uninstall-pulseincludeHEADERS \
++	uninstall-pulselibexecPROGRAMS uninstall-pulsetestPROGRAMS \
+ 	uninstall-xdgautostartDATA
+ 
+ 
 -- 
 1.6.0.2.514.g23abd3
 
