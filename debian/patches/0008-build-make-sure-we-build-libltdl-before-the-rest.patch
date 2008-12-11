@@ -1,4 +1,4 @@
-From 78a4d1bcf68235fe8985c0f90e69612977e61dfc Mon Sep 17 00:00:00 2001
+From 2ca878d86219a20080f610b0ae1ef77c8fb5866f Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 12 Nov 2008 17:40:34 +0200
 Subject: [PATCH] build: make sure we build libltdl before the rest

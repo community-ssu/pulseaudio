@@ -1,4 +1,4 @@
-From f29f182bc8655d0d355bafe6e23b738402573c2a Mon Sep 17 00:00:00 2001
+From 989c38b7628518416431ee3c251c8feac11f0ff5 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 10 Nov 2008 19:11:40 +0200
 Subject: [PATCH] configure: print more informations about preopen

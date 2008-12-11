@@ -1,4 +1,4 @@
-From d5ae3dcd64650b28625d1502441283aaf78634a5 Mon Sep 17 00:00:00 2001
+From 1a735582100280b61087cbb7cbf5d855cdd0095c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 17 Nov 2008 12:05:41 +0200
 Subject: [PATCH] build: autofoo (Nokia specific)
@@ -36,8 +36,8 @@ Subject: [PATCH] build: autofoo (Nokia specific)
  po/insert-header.sin   |   23 +
  po/quot.sed            |    6 +
  po/remove-potcdate.sin |   19 +
- src/Makefile.in        |  149 +-
- 33 files changed, 50965 insertions(+), 42 deletions(-)
+ src/Makefile.in        |  151 +-
+ 33 files changed, 50966 insertions(+), 43 deletions(-)
  create mode 100644 libltdl/COPYING.LIB
  create mode 100644 libltdl/Makefile.am
  create mode 100644 libltdl/Makefile.in
@@ -51197,7 +51197,7 @@ index 0000000..2436c49
 +:b
 +}
 diff --git a/src/Makefile.in b/src/Makefile.in
-index 8a1c404..462d53a 100644
+index 8a1c404..cfb6060 100644
 --- a/src/Makefile.in
 +++ b/src/Makefile.in
 @@ -183,33 +183,41 @@ noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
@@ -51380,6 +51380,15 @@ index 8a1c404..462d53a 100644
  	$(module_pipe_sink_la_SOURCES) \
  	$(module_pipe_source_la_SOURCES) \
  	$(module_position_event_sounds_la_SOURCES) \
+@@ -2435,7 +2478,7 @@ pulseaudio_DEPENDENCIES = libpulsecore.la $(PREOPEN_LIBS)
+ @PREOPEN_MODS_FALSE@PREOPEN_LIBS = $(modlibexec_LTLIBRARIES)
+ @PREOPEN_MODS_TRUE@PREOPEN_LIBS = $(PREOPEN_MODS)
+ @FORCE_PREOPEN_FALSE@pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlopen force $(foreach f,$(PREOPEN_LIBS),-dlopen $(f))
+-@FORCE_PREOPEN_TRUE@pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlpreopen force $(foreach f,$(PREOPEN_LIBS),-dlpreopen $(f))
++@FORCE_PREOPEN_TRUE@pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlpreopen force $(foreach f,$(PREOPEN_LIBS),-dlpreopen $(f)) -Wl,--rpath -Wl,./.libs
+ @HAVE_POLKIT_TRUE@policy_DATA = daemon/org.pulseaudio.policy
+ bin_SCRIPTS = esdcompat start-pulseaudio-x11 $(am__append_22)
+ pacat_SOURCES = utils/pacat.c
 @@ -2856,23 +2899,23 @@ modlibexec_LTLIBRARIES = libsocket-util.la libiochannel.la \
  	libprotocol-esound.la $(am__append_24) $(am__append_26) \
  	$(am__append_28) module-flat-volume.la module-cli.la \

@@ -1,4 +1,4 @@
-From 8ded00b56415546bb3913301e726afbf8aef5257 Mon Sep 17 00:00:00 2001
+From 60e85a1aeef0849bb8caa1afc0aea209aa5f3195 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 31 Oct 2008 18:43:38 +0200
 Subject: [PATCH] cli: update-sink-proplist

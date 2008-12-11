@@ -1,4 +1,4 @@
-From d987803f75b56708007e408a4c4692c35d86ab4c Mon Sep 17 00:00:00 2001
+From c12712470dfa5932dd76c42278fe9b58fd1c1d70 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 20 Nov 2008 16:40:47 +0200
 Subject: [PATCH] stream-restore: fix fallback key name

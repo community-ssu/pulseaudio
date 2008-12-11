@@ -1,4 +1,4 @@
-From e08ed9d6109fbde95305513f46faa5315b05a17e Mon Sep 17 00:00:00 2001
+From 9632484c02c3e623e139c7378c91fd4da40b16b1 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Wed, 27 Aug 2008 19:54:48 +0300
 Subject: [PATCH] alsa-old: add module-alsa-{sink,src}-old (Nokia specific)

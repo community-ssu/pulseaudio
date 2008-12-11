@@ -1,4 +1,4 @@
-From b663d7e0ab698fa2c00127a197d664f742678322 Mon Sep 17 00:00:00 2001
+From e58dc72e43260b7f05f0f38cb451338af78e1e68 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 17 Nov 2008 21:09:42 +0200
 Subject: [PATCH] match: can now change properties also

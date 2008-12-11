@@ -1,4 +1,4 @@
-From 3ccdd1247f50031de95b3ec52fab8c5a46b13492 Mon Sep 17 00:00:00 2001
+From 05f5076f9be55b3bf94a2175acbae4ee563ba0e2 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Fri, 7 Nov 2008 16:39:42 +0200
 Subject: [PATCH] alsa-old: only transfer full periods (Nokia specific)

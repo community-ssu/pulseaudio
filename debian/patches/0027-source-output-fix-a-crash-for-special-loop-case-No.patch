@@ -1,4 +1,4 @@
-From c8d41cd403c730c353d1f3a8df3e98c9cfb55ed5 Mon Sep 17 00:00:00 2001
+From 109535cf8b41c08108190024448fffadafb9a08b Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 4 Dec 2008 16:23:41 +0200
 Subject: [PATCH] source-output: fix a crash for special loop case (Nokia specific)

@@ -1,4 +1,4 @@
-From 7abe939718b37cde4eee797e457b0fda140cc822 Mon Sep 17 00:00:00 2001
+From 79f9d64c46924661a75aaf16370b75972c6d5d2c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 10 Nov 2008 16:59:09 +0200
 Subject: [PATCH] sink: add a virtual_volume to sink

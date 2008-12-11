@@ -1,4 +1,4 @@
-From ef1c0be14d05621d6a35f229aa8460a38f00051d Mon Sep 17 00:00:00 2001
+From 80982afc073b7c1c7d9c76580bc5aac76a8cedf9 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 4 Dec 2008 18:02:21 +0200
 Subject: [PATCH] module: new null-source module

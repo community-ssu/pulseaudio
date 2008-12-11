@@ -1,4 +1,4 @@
-From 986caba5fa4da4f78a4814993192e6a05e92dcc4 Mon Sep 17 00:00:00 2001
+From bced9ce628b88291902e6e118cf0e612c67a1965 Mon Sep 17 00:00:00 2001
 From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
 Date: Mon, 17 Nov 2008 19:50:30 +0200
 Subject: [PATCH] alsa-old: dynamic switching of buffer metrics (Nokia specific)
