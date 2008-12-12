@@ -33,3 +33,4 @@
 0033-build-libtool-fails-to-link-module-s-library-during.patch
 0034-build-install-pulse-tests-under-libexecdir-pulse.patch
 0035-build-autofoo-Nokia-specific.patch
+0036-fix.patch
