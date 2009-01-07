@@ -1,6 +1,14 @@
 pulseaudio (0.9.14~git20090107-0maemo1) unstable; urgency=low
 
   * Rebased on upstream git for Bluez API changes.
+  * debian/control:
+    + Remove libltdl3-dev and bump libbluetooth3-dev dependency
+  * debian/pulseaudio.install, debian/pulseaudio-module-extra.install,
+    debian/pulseaudio-module-x11.install, debian/pulseaudio-dev.install:
+    + Removed libraries from usr/lib/pulse-*/modules/lib, which have been
+      merged in libpulsecommon and libpulsecore.
+  * debian/libpulse-dev.install:
+    + Removed static .a library.
 
  -- Maemo Multimedia <multimedia@maemo.org>  Wed, 07 Jan 2009 11:57:20 +0200
 

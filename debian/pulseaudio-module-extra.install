@@ -1,5 +1,4 @@
 usr/lib/pulse-*/modules/liboss-util.so
-usr/lib/pulse-*/modules/libparseaddr.so
 usr/lib/pulse-*/modules/libprotocol-http.so
 usr/lib/pulse-*/modules/librtp.so
 usr/lib/pulse-*/modules/module-bluetooth-proximity.so

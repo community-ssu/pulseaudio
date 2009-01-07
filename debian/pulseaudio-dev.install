@@ -1,5 +1,3 @@
-../../src/.libs/libpulsecore.so usr/lib
-../../src/.libs/libpulsecore.a usr/lib
 ../../src/pulsecore/*.h usr/include/pulsecore
 ../../src/modules/*-util.h usr/include/pulsecore/modules
 usr/include/pulsecore/pulsecore-config.h
