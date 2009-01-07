@@ -18,7 +18,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = bootstrap.sh LICENSE GPL LGPL doxygen/Makefile.am doxygen/Makefile.in doxygen/doxygen.conf.in README todo
-SUBDIRS=src doxygen man po
+SUBDIRS=src doxygen man po libltdl
 
 MAINTAINERCLEANFILES =
 noinst_DATA =
@@ -55,12 +55,10 @@ fedora-snapshot: dist
 	cp $(distdir).tar.gz $$HOME/cvs.fedora/pulseaudio/devel/$(distdir).git`date +%Y%m%d`.tar.gz
 
 dist-hook:
-	if test -d .git && test x`which git-changelog.perl` != x; then \
+	if test -d .git ; then \
 		git pull ; \
 		chmod u+w ${distdir}/ChangeLog || true ; \
-		git-changelog.perl > ${distdir}/ChangeLog ; \
-	else \
-		touch ChangeLog ; \
+		( git-changelog.perl || echo "git-changelog.perl failed." ) > ${distdir}/ChangeLog 2>&1 ; \
 	fi
 
 .PHONY: homepage distcleancheck doxygen

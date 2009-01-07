@@ -134,7 +134,7 @@ static char *get_name(pa_proplist *p, const char *prefix) {
     else if ((r = pa_proplist_gets(p, PA_PROP_MEDIA_NAME)))
         return pa_sprintf_malloc("%s-by-media-name:%s", prefix, r);
 
-    return pa_sprintf_malloc("%s-fallback:%s", prefix);
+    return pa_sprintf_malloc("%s-fallback:%s", prefix, r);
 }
 
 static struct entry* read_entry(struct userdata *u, char *name) {
@@ -741,7 +741,7 @@ int pa__init(pa_module*m) {
     if (!fname)
         goto fail;
 
-    if (!(u->gdbm_file = gdbm_open(fname, 0, GDBM_WRCREAT, 0600, NULL))) {
+    if (!(u->gdbm_file = gdbm_open(fname, 0, GDBM_WRCREAT|GDBM_NOLOCK, 0600, NULL))) {
         pa_log("Failed to open volume database '%s': %s", fname, gdbm_strerror(gdbm_errno));
         pa_xfree(fname);
         goto fail;

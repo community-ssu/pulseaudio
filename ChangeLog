@@ -1,5 +1,2 @@
-2008-10-20  gettextize  <bug-gnu-gettext@gnu.org>
-
-	* Makefile.am (EXTRA_DIST): Add config.rpath, m4/ChangeLog.
-	* configure.ac (AC_CONFIG_FILES): Add po/Makefile.in.
-
+/bin/sh: line 3: git-changelog.perl: command not found
+git-changelog.perl failed.

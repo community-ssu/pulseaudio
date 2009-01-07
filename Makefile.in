@@ -67,11 +67,15 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
 	$(top_srcdir)/m4/acx_lirc.m4 $(top_srcdir)/m4/acx_pthread.m4 \
-	$(top_srcdir)/m4/attributes.m4 \
+	$(top_srcdir)/m4/argz.m4 $(top_srcdir)/m4/attributes.m4 \
 	$(top_srcdir)/m4/check_define.m4 $(top_srcdir)/m4/iconv.m4 \
 	$(top_srcdir)/m4/intltool.m4 $(top_srcdir)/m4/lib-ld.m4 \
 	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
-	$(top_srcdir)/m4/tls.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltdl.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/nls.m4 $(top_srcdir)/m4/tls.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -119,6 +123,7 @@ ALLOCA = @ALLOCA@
 ALL_LINGUAS = @ALL_LINGUAS@
 AMTAR = @AMTAR@
 AR = @AR@
+ARGZ_H = @ARGZ_H@
 AS = @AS@
 ASOUNDLIB_CFLAGS = @ASOUNDLIB_CFLAGS@
 ASOUNDLIB_LIBS = @ASOUNDLIB_LIBS@
@@ -137,10 +142,6 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
-CXX = @CXX@
-CXXCPP = @CXXCPP@
-CXXDEPMODE = @CXXDEPMODE@
-CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DATADIRNAME = @DATADIRNAME@
 DBUS_CFLAGS = @DBUS_CFLAGS@
@@ -149,14 +150,13 @@ DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
-ECHO = @ECHO@
+DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
-F77 = @F77@
-FFLAGS = @FFLAGS@
+FGREP = @FGREP@
 GCONF_CFLAGS = @GCONF_CFLAGS@
 GCONF_LIBS = @GCONF_LIBS@
 GETTEXT_PACKAGE = @GETTEXT_PACKAGE@
@@ -182,6 +182,7 @@ HAVE_OSS = @HAVE_OSS@
 HAVE_POLKIT = @HAVE_POLKIT@
 HAVE_SOLARIS = @HAVE_SOLARIS@
 HAVE_X11 = @HAVE_X11@
+INCLTDL = @INCLTDL@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -214,7 +215,12 @@ INTLTOOL_XML_NOMERGE_RULE = @INTLTOOL_XML_NOMERGE_RULE@
 INTLTOOL_XML_RULE = @INTLTOOL_XML_RULE@
 JACK_CFLAGS = @JACK_CFLAGS@
 JACK_LIBS = @JACK_LIBS@
+LD = @LD@
 LDFLAGS = @LDFLAGS@
+LIBADD_DL = @LIBADD_DL@
+LIBADD_DLD_LINK = @LIBADD_DLD_LINK@
+LIBADD_DLOPEN = @LIBADD_DLOPEN@
+LIBADD_SHL_LOAD = @LIBADD_SHL_LOAD@
 LIBASYNCNS_CFLAGS = @LIBASYNCNS_CFLAGS@
 LIBASYNCNS_LIBS = @LIBASYNCNS_LIBS@
 LIBICONV = @LIBICONV@
@@ -222,7 +228,6 @@ LIBLTDL = @LIBLTDL@
 LIBOBJS = @LIBOBJS@
 LIBOIL_CFLAGS = @LIBOIL_CFLAGS@
 LIBOIL_LIBS = @LIBOIL_LIBS@
-LIBPULSECORE_VERSION_INFO = @LIBPULSECORE_VERSION_INFO@
 LIBPULSE_BROWSE_VERSION_INFO = @LIBPULSE_BROWSE_VERSION_INFO@
 LIBPULSE_MAINLOOP_GLIB_VERSION_INFO = @LIBPULSE_MAINLOOP_GLIB_VERSION_INFO@
 LIBPULSE_SIMPLE_VERSION_INFO = @LIBPULSE_SIMPLE_VERSION_INFO@
@@ -236,12 +241,18 @@ LIBSPEEX_CFLAGS = @LIBSPEEX_CFLAGS@
 LIBSPEEX_LIBS = @LIBSPEEX_LIBS@
 LIBTOOL = @LIBTOOL@
 LIBWRAP_LIBS = @LIBWRAP_LIBS@
+LIPO = @LIPO@
 LIRC_CFLAGS = @LIRC_CFLAGS@
 LIRC_LIBS = @LIRC_LIBS@
 LN_S = @LN_S@
+LTDLDEPS = @LTDLDEPS@
 LTDLINCL = @LTDLINCL@
+LTDLOPEN = @LTDLOPEN@
 LTLIBICONV = @LTLIBICONV@
 LTLIBOBJS = @LTLIBOBJS@
+LT_CONFIG_H = @LT_CONFIG_H@
+LT_DLLOADERS = @LT_DLLOADERS@
+LT_DLPREOPEN = @LT_DLPREOPEN@
 M4 = @M4@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
@@ -249,11 +260,14 @@ MKINSTALLDIRS = @MKINSTALLDIRS@
 MSGFMT = @MSGFMT@
 MSGFMT_OPTS = @MSGFMT_OPTS@
 MSGMERGE = @MSGMERGE@
+NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPENSSL_CFLAGS = @OPENSSL_CFLAGS@
 OPENSSL_LIBS = @OPENSSL_LIBS@
+OTOOL = @OTOOL@
+OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -265,6 +279,7 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PA_ACCESS_GROUP = @PA_ACCESS_GROUP@
 PA_API_VERSION = @PA_API_VERSION@
 PA_MAJORMINOR = @PA_MAJORMINOR@
+PA_MAJORMINORMICRO = @PA_MAJORMINORMICRO@
 PA_PROTOCOL_VERSION = @PA_PROTOCOL_VERSION@
 PA_REALTIME_GROUP = @PA_REALTIME_GROUP@
 PA_SYSTEM_CONFIG_PATH = @PA_SYSTEM_CONFIG_PATH@
@@ -301,8 +316,7 @@ abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 ac_ct_CC = @ac_ct_CC@
-ac_ct_CXX = @ac_ct_CXX@
-ac_ct_F77 = @ac_ct_F77@
+ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 acx_pthread_config = @acx_pthread_config@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
@@ -335,6 +349,9 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 localedir = @localedir@
 localstatedir = @localstatedir@
+lt_ECHO = @lt_ECHO@
+ltdl_LIBOBJS = @ltdl_LIBOBJS@
+ltdl_LTLIBOBJS = @ltdl_LTLIBOBJS@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 modlibexecdir = @modlibexecdir@
@@ -348,7 +365,7 @@ pulselocaledir = @pulselocaledir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
-subdirs = @subdirs@
+sys_symbol_underscore = @sys_symbol_underscore@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
@@ -356,7 +373,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = bootstrap.sh LICENSE GPL LGPL doxygen/Makefile.am doxygen/Makefile.in doxygen/doxygen.conf.in README todo
-SUBDIRS = src doxygen man po
+SUBDIRS = src doxygen man po libltdl
 MAINTAINERCLEANFILES = 
 noinst_DATA = 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -869,12 +886,10 @@ fedora-snapshot: dist
 	cp $(distdir).tar.gz $$HOME/cvs.fedora/pulseaudio/devel/$(distdir).git`date +%Y%m%d`.tar.gz
 
 dist-hook:
-	if test -d .git && test x`which git-changelog.perl` != x; then \
+	if test -d .git ; then \
 		git pull ; \
 		chmod u+w ${distdir}/ChangeLog || true ; \
-		git-changelog.perl > ${distdir}/ChangeLog ; \
-	else \
-		touch ChangeLog ; \
+		( git-changelog.perl || echo "git-changelog.perl failed." ) > ${distdir}/ChangeLog 2>&1 ; \
 	fi
 
 .PHONY: homepage distcleancheck doxygen

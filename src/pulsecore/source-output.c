@@ -90,6 +90,7 @@ static void reset_callbacks(pa_source_output *o) {
     o->kill = NULL;
     o->get_latency = NULL;
     o->state_change = NULL;
+    o->may_move_to = NULL;
 }
 
 /* Called from main context */
@@ -246,7 +247,6 @@ static void update_n_corked(pa_source_output *o, pa_source_output_state_t state)
     else if (o->state != PA_SOURCE_OUTPUT_CORKED && state == PA_SOURCE_OUTPUT_CORKED)
         o->source->n_corked++;
 
-    pa_source_update_status(o->source);
 }
 
 /* Called from main context */
@@ -263,6 +263,8 @@ static int source_output_set_state(pa_source_output *o, pa_source_output_state_t
 
     if (state != PA_SOURCE_OUTPUT_UNLINKED)
         pa_hook_fire(&o->source->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_STATE_CHANGED], o);
+
+    pa_source_update_status(o->source);
 
     return 0;
 }
@@ -301,6 +303,8 @@ void pa_source_output_unlink(pa_source_output*o) {
         pa_subscription_post(o->source->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_REMOVE, o->index);
         pa_hook_fire(&o->source->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_UNLINK_POST], o);
     }
+
+    pa_source_update_status(o->source);
 
     o->source = NULL;
     pa_source_output_unref(o);
@@ -353,6 +357,8 @@ void pa_source_output_put(pa_source_output *o) {
 
     pa_subscription_post(o->source->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_NEW, o->index);
     pa_hook_fire(&o->source->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_PUT], o);
+
+    pa_source_update_status(o->source);
 }
 
 /* Called from main context */
@@ -593,6 +599,32 @@ pa_resample_method_t pa_source_output_get_resample_method(pa_source_output *o) {
     return o->resample_method;
 }
 
+pa_bool_t pa_source_output_may_move_to(pa_source_output *o, pa_source *dest) {
+    pa_source_output_assert_ref(o);
+    pa_assert(PA_SOURCE_OUTPUT_IS_LINKED(o->state));
+    pa_source_assert_ref(dest);
+
+    if (dest == o->source)
+        return TRUE;
+
+    if (o->flags & PA_SOURCE_OUTPUT_DONT_MOVE)
+        return FALSE;
+
+    if (o->direct_on_input)
+        return FALSE;
+
+    if (pa_idxset_size(dest->outputs) >= PA_MAX_OUTPUTS_PER_SOURCE) {
+        pa_log_warn("Failed to move source output: too many outputs per source.");
+        return FALSE;
+    }
+
+    if (o->may_move_to)
+        if (!o->may_move_to(o, dest))
+            return FALSE;
+
+    return TRUE;
+}
+
 /* Called from main context */
 int pa_source_output_move_to(pa_source_output *o, pa_source *dest) {
     pa_source *origin;
@@ -608,16 +640,8 @@ int pa_source_output_move_to(pa_source_output *o, pa_source *dest) {
     if (dest == origin)
         return 0;
 
-    if (o->flags & PA_SOURCE_OUTPUT_DONT_MOVE)
+    if (!pa_source_output_may_move_to(o, dest))
         return -1;
-
-    if (o->direct_on_input)
-        return -1;
-
-    if (pa_idxset_size(dest->outputs) >= PA_MAX_OUTPUTS_PER_SOURCE) {
-        pa_log_warn("Failed to move source output: too many outputs per source.");
-        return -1;
-    }
 
     if (o->thread_info.resampler &&
         pa_sample_spec_equal(&origin->sample_spec, &dest->sample_spec) &&

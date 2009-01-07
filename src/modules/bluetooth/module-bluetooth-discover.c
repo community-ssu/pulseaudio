@@ -44,7 +44,7 @@ PA_MODULE_USAGE("");
 
 struct module {
     char *profile;
-    pa_module *pa_m;
+    uint32_t index;
     PA_LLIST_FIELDS(struct module);
 };
 
@@ -78,7 +78,7 @@ static struct module *module_new(const char *profile, pa_module *pa_m) {
 
     m = pa_xnew(struct module, 1);
     m->profile = pa_xstrdup(profile);
-    m->pa_m = pa_m;
+    m->index = pa_m->index;
     PA_LLIST_INIT(struct module, m);
 
     return m;
@@ -94,7 +94,7 @@ static void module_free(struct module *m) {
 static struct module* module_find(struct device *d, const char *profile) {
     struct module *m;
 
-    for (m = d->module_list; d; d = d->next)
+    for (m = d->module_list; m; m = m->next)
         if (pa_streq(m->profile, profile))
             return m;
 
@@ -364,7 +364,7 @@ static void unload_module_for_device(struct userdata *u, struct device *d, const
     if (!(m = module_find(d, profile)))
         return;
 
-    pa_module_unload_request(m->pa_m, TRUE);
+    pa_module_unload_request_by_index(u->module->core, m->index, TRUE);
 
     PA_LLIST_REMOVE(struct module, d->module_list, m);
     module_free(m);
