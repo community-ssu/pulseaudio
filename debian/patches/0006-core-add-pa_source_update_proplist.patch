@@ -1,0 +1,51 @@
+From cfe216621d4fb78a2f3667b866ec41b19278ca0e Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Fri, 31 Oct 2008 02:38:00 +0200
+Subject: [PATCH] core: add pa_source_update_proplist
+
+---
+ src/pulsecore/source.c |   14 ++++++++++++++
+ src/pulsecore/source.h |    2 ++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
+
+diff --git a/src/pulsecore/source.c b/src/pulsecore/source.c
+index f113e29..65e2861 100644
+--- a/src/pulsecore/source.c
++++ b/src/pulsecore/source.c
+@@ -600,6 +600,20 @@ pa_bool_t pa_source_get_mute(pa_source *s, pa_bool_t force_refresh) {
+     return s->muted;
+ }
+ 
++pa_bool_t pa_source_update_proplist(pa_source *s, pa_update_mode_t mode, pa_proplist *p) {
++
++    pa_source_assert_ref(s);
++
++    pa_proplist_update(s->proplist, mode, p);
++
++    if (PA_SOURCE_IS_LINKED(s->state)) {
++        pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SOURCE_PROPLIST_CHANGED], s);
++        pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SOURCE|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
++    }
++
++    return TRUE;
++}
++
+ /* Called from main thread */
+ void pa_source_set_description(pa_source *s, const char *description) {
+     const char *old;
+diff --git a/src/pulsecore/source.h b/src/pulsecore/source.h
+index aaf904b..55851ae 100644
+--- a/src/pulsecore/source.h
++++ b/src/pulsecore/source.h
+@@ -232,6 +232,8 @@ const pa_cvolume *pa_source_get_volume(pa_source *source, pa_bool_t force_refres
+ void pa_source_set_mute(pa_source *source, pa_bool_t mute);
+ pa_bool_t pa_source_get_mute(pa_source *source, pa_bool_t force_refresh);
+ 
++pa_bool_t pa_source_update_proplist(pa_source *s, pa_update_mode_t mode, pa_proplist *p);
++
+ unsigned pa_source_linked_by(pa_source *s); /* Number of connected streams */
+ unsigned pa_source_used_by(pa_source *s); /* Number of connected streams that are not corked */
+ unsigned pa_source_check_suspend(pa_source *s); /* Returns how many streams are active that don't allow suspensions */
+-- 
+1.6.0.2.514.g23abd3
+

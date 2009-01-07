@@ -1,0 +1,25 @@
+From 2985add6af901a2281baa30cd94cdbc1b48761d4 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Wed, 7 Jan 2009 12:19:23 +0200
+Subject: [PATCH] build: build libltdl before src
+
+---
+ Makefile.am |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index b27f9e6..bc46cac 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -18,7 +18,7 @@
+ ACLOCAL_AMFLAGS = -I m4
+ 
+ EXTRA_DIST = bootstrap.sh LICENSE GPL LGPL doxygen/Makefile.am doxygen/Makefile.in doxygen/doxygen.conf.in README todo
+-SUBDIRS=src doxygen man po libltdl
++SUBDIRS = libltdl src doxygen man po
+ 
+ MAINTAINERCLEANFILES =
+ noinst_DATA =
+-- 
+1.6.0.2.514.g23abd3
+

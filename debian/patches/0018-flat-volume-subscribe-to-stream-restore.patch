@@ -1,0 +1,74 @@
+From 881091b2ebba3cd26683e5f27b32647d12398a64 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Thu, 20 Nov 2008 18:47:15 +0200
+Subject: [PATCH] flat-volume: subscribe to stream-restore
+
+---
+ src/modules/module-flat-volume.c |   23 ++++++++++++++++++++++-
+ 1 files changed, 22 insertions(+), 1 deletions(-)
+
+diff --git a/src/modules/module-flat-volume.c b/src/modules/module-flat-volume.c
+index fe6dc92..122f569 100644
+--- a/src/modules/module-flat-volume.c
++++ b/src/modules/module-flat-volume.c
+@@ -45,6 +45,7 @@
+ #include <pulsecore/macro.h>
+ 
+ #include "module-flat-volume-symdef.h"
++#include "module-stream-restore.h"
+ 
+ PA_MODULE_AUTHOR("Marc-Andre Lureau");
+ PA_MODULE_DESCRIPTION("Flat volume");
+@@ -56,6 +57,8 @@ struct userdata {
+     pa_subscription *subscription;
+     pa_hook_slot *sink_input_set_volume_hook_slot;
+     pa_hook_slot *sink_input_fixate_hook_slot;
++
++    pa_module *module_stream_restore;
+ };
+ 
+ static void process_input_volume_change(
+@@ -159,6 +162,13 @@ static void subscribe_callback(pa_core *core, pa_subscription_event_type_t t, ui
+     pa_assert(core);
+     pa_assert(u);
+ 
++    if (u->module_stream_restore &&
++        t == (PA_SUBSCRIPTION_EVENT_MODULE|PA_SUBSCRIPTION_EVENT_CHANGE) &&
++        idx == u->module_stream_restore->index) {
++        pa_log_debug("Stream-restore changed");
++        return;
++    }
++
+     if (t != (PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_NEW) &&
+         t != (PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE))
+         return;
+@@ -190,6 +200,8 @@ static void subscribe_callback(pa_core *core, pa_subscription_event_type_t t, ui
+ 
+ int pa__init(pa_module*m) {
+     struct userdata *u;
++    pa_module *i;
++    uint32_t idx;
+ 
+     pa_assert(m);
+ 
+@@ -199,7 +211,16 @@ int pa__init(pa_module*m) {
+     u->sink_input_fixate_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_INPUT_FIXATE], PA_HOOK_LATE, (pa_hook_cb_t) sink_input_fixate_hook_callback, u);
+     u->sink_input_set_volume_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_INPUT_SET_VOLUME], PA_HOOK_LATE, (pa_hook_cb_t) sink_input_set_volume_hook_callback, u);
+ 
+-    u->subscription = pa_subscription_new(m->core, PA_SUBSCRIPTION_MASK_SINK, subscribe_callback, u);
++    u->subscription = pa_subscription_new(m->core, PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_MODULE, subscribe_callback, u);
++
++    u->module_stream_restore = NULL;
++    for (i = pa_idxset_first(m->core->modules, &idx); i; i = pa_idxset_next(m->core->modules, &idx)) {
++        if (pa_streq(i->name, "module-stream-restore")) {
++            pa_log_debug("flat-volume will update stream-restore rules");
++            u->module_stream_restore = i;
++            break;
++        }
++    }
+ 
+     return 0;
+ }
+-- 
+1.6.0.2.514.g23abd3
+

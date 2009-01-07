@@ -1,0 +1,173 @@
+From cd9f0f0794a87ed0ed1f3200375c18f38923713d Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Mon, 27 Oct 2008 21:14:50 +0200
+Subject: [PATCH] libpulse: add proplist_from_string
+
+---
+ src/map-file              |    1 +
+ src/pulse/proplist.c      |   84 +++++++++++++++++++++++++++++++++++++++++++++
+ src/pulse/proplist.h      |    6 +++-
+ src/tests/proplist-test.c |   11 +++++-
+ 4 files changed, 99 insertions(+), 3 deletions(-)
+
+diff --git a/src/map-file b/src/map-file
+index ca523b9..18e7273 100644
+--- a/src/map-file
++++ b/src/map-file
+@@ -156,6 +156,7 @@ pa_proplist_set;
+ pa_proplist_setf;
+ pa_proplist_sets;
+ pa_proplist_to_string;
++pa_proplist_from_string;
+ pa_proplist_unset;
+ pa_proplist_unset_many;
+ pa_proplist_update;
+diff --git a/src/pulse/proplist.c b/src/pulse/proplist.c
+index 93bc003..1694284 100644
+--- a/src/pulse/proplist.c
++++ b/src/pulse/proplist.c
+@@ -291,6 +291,90 @@ char *pa_proplist_to_string(pa_proplist *p) {
+     return pa_strbuf_tostring_free(buf);
+ }
+ 
++/* Remove all whitepsapce from the beginning and the end of *s. *s may
++ * be modified. (from conf-parser.c) */
++#define WHITESPACE " \t\n"
++#define in_string(c,s) (strchr(s,c) != NULL)
++
++static char *strip(char *s) {
++    char *b = s+strspn(s, WHITESPACE);
++    char *e, *l = NULL;
++
++    for (e = b; *e; e++)
++        if (!in_string(*e, WHITESPACE))
++            l = e;
++
++    if (l)
++        *(l+1) = 0;
++
++    return b;
++}
++
++pa_proplist *pa_proplist_from_string(const char *str) {
++    pa_proplist *p;
++    char *s, *v, *k, *e;
++
++    pa_assert(str);
++    pa_assert_se(p = pa_proplist_new());
++    pa_assert_se(s = strdup(str));
++
++    for (k = s; *k; k = e) {
++        k = k+strspn(k, WHITESPACE);
++
++        if (!*k)
++            break;
++
++        if (!(v = strchr(k, '='))) {
++            pa_log("Missing '='.");
++            break;
++        }
++
++        *v++ = '\0';
++        k = strip(k);
++
++        v = v+strspn(v, WHITESPACE);
++        if (*v == '"') {
++            v++;
++            if (!(e = strchr(v, '"'))) { /* FIXME: handle escape */
++                pa_log("Missing '\"' at end of string value.");
++                break;
++            }
++            *e++ = '\0';
++            pa_proplist_sets(p, k, v);
++        } else {
++            uint8_t *blob;
++
++            if (*v++ != 'h' || *v++ != 'e' || *v++ != 'x' || *v++ != ':') {
++                pa_log("Value must be a string or \"hex:\"");
++                break;
++            }
++
++            e = v;
++            while (in_string(*e, "0123456789abcdefABCDEF"))
++                ++e;
++
++            if ((e - v) % 2) {
++                pa_log("Invalid \"hex:\" value data");
++                break;
++            }
++
++            blob = pa_xmalloc((size_t)(e-v)/2);
++            if (pa_parsehex(v, blob, (e-v)/2) != ((e-v)/2)) {
++                pa_log("Invalid \"hex:\" value data");
++                pa_xfree(blob);
++                break;
++            }
++
++            pa_proplist_set(p, k, blob, (e-v)/2);
++            pa_xfree(blob);
++        }
++    }
++
++    pa_xfree(s);
++
++    return p;
++}
++
+ int pa_proplist_contains(pa_proplist *p, const char *key) {
+     pa_assert(p);
+     pa_assert(key);
+diff --git a/src/pulse/proplist.h b/src/pulse/proplist.h
+index c23ef23..4f1a1ec 100644
+--- a/src/pulse/proplist.h
++++ b/src/pulse/proplist.h
+@@ -213,7 +213,11 @@ const char *pa_proplist_iterate(pa_proplist *p, void **state);
+  * 0.9.11 */
+ char *pa_proplist_to_string(pa_proplist *p);
+ 
+-/** Returns 1 if an entry for the specified key is existant in the
++/** Allocate a new property list and assign key/value from a human readable string. \since
++ * 0.9.14 */
++pa_proplist *pa_proplist_from_string(const char *str);
++
++  /** Returns 1 if an entry for the specified key is existant in the
+  * property list. \since 0.9.11 */
+ int pa_proplist_contains(pa_proplist *p, const char *key);
+ 
+diff --git a/src/tests/proplist-test.c b/src/tests/proplist-test.c
+index 20041af..f69fa68 100644
+--- a/src/tests/proplist-test.c
++++ b/src/tests/proplist-test.c
+@@ -29,8 +29,8 @@
+ #include <pulsecore/core-util.h>
+ 
+ int main(int argc, char*argv[]) {
+-    pa_proplist *a, *b;
+-    char *s, *t;
++    pa_proplist *a, *b, *c;
++    char *s, *t, *u;
+ 
+     a = pa_proplist_new();
+     pa_assert_se(pa_proplist_sets(a, PA_PROP_MEDIA_TITLE, "Brandenburgische Konzerte") == 0);
+@@ -50,11 +50,18 @@ int main(int argc, char*argv[]) {
+     s = pa_proplist_to_string(a);
+     t = pa_proplist_to_string(b);
+     printf("---\n%s---\n%s", s, t);
++
++    c = pa_proplist_from_string(s);
++    u = pa_proplist_to_string(c);
++    pa_assert_se(pa_streq(s, u));
++
+     pa_xfree(s);
+     pa_xfree(t);
++    pa_xfree(u);
+ 
+     pa_proplist_free(a);
+     pa_proplist_free(b);
++    pa_proplist_free(c);
+ 
+     return 0;
+ }
+-- 
+1.6.0.2.514.g23abd3
+

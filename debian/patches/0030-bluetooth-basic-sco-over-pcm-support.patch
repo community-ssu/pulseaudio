@@ -1,0 +1,251 @@
+From 7ded475456fa62aabd92e7a355ab9fd14c280b85 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Sat, 13 Dec 2008 01:47:52 +0200
+Subject: [PATCH] bluetooth: basic sco over pcm support
+
+---
+ src/modules/bluetooth/module-bluetooth-device.c   |  108 ++++++++++++++-------
+ src/modules/bluetooth/module-bluetooth-discover.c |   30 ++++++-
+ 2 files changed, 101 insertions(+), 37 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index 90bfef9..249ebe0 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -43,6 +43,7 @@
+ #include <pulsecore/rtpoll.h>
+ #include <pulsecore/time-smoother.h>
+ #include <pulsecore/rtclock.h>
++#include <pulsecore/namereg.h>
+ 
+ #include "../dbus-util.h"
+ #include "module-bluetooth-device-symdef.h"
+@@ -65,7 +66,9 @@ PA_MODULE_LOAD_ONCE(FALSE);
+ PA_MODULE_USAGE(
+         "sink_name=<name of the device> "
+         "address=<address of the device> "
+-        "profile=<a2dp|hsp>");
++        "profile=<a2dp|hsp> "
++        "over_sink=<name of sink> "
++        "over_source=<name of source>");
+ 
+ struct bt_a2dp {
+     sbc_capabilities_t sbc_capabilities;
+@@ -109,6 +112,9 @@ struct userdata {
+     pa_usec_t latency;
+ 
+     struct bt_a2dp a2dp;
++
++    pa_sink *over_sink;
++    pa_source *over_source;
+ };
+ 
+ static const char* const valid_modargs[] = {
+@@ -117,6 +123,8 @@ static const char* const valid_modargs[] = {
+     "profile",
+     "rate",
+     "channels",
++    "over_sink",
++    "over_source",
+     NULL
+ };
+ 
+@@ -829,6 +837,20 @@ int pa__init(pa_module* m) {
+     }
+     u->ss.channels = (uint8_t) channels;
+ 
++    if (pa_streq(u->profile, "hsp") &&
++        pa_modargs_get_value(ma, "over_sink", NULL) &&
++        !(u->over_sink = pa_namereg_get(m->core, pa_modargs_get_value(ma, "over_sink", NULL), PA_NAMEREG_SINK, 1))) {
++        pa_log("Over sink not found");
++        goto fail;
++    }
++
++    if (pa_streq(u->profile, "hsp") &&
++        pa_modargs_get_value(ma, "over_source", NULL) &&
++        !(u->over_source = pa_namereg_get(m->core, pa_modargs_get_value(ma, "over_source", NULL), PA_NAMEREG_SOURCE, 1))) {
++        pa_log("Over source not found");
++        goto fail;
++    }
++
+     /* connect to the bluez audio service */
+     u->audioservice_fd = bt_audio_service_open();
+     if (u->audioservice_fd <= 0) {
+@@ -861,43 +883,59 @@ int pa__init(pa_module* m) {
+     }
+     pa_log_debug("Got the device socket");
+ 
+-    /* create sink */
+-    pa_sink_new_data_init(&data);
+-    data.driver = __FILE__;
+-    data.module = m;
+-    pa_sink_new_data_set_name(&data, u->name);
+-    pa_sink_new_data_set_sample_spec(&data, &u->ss);
+-    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->name);
+-    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Bluetooth %s '%s' (%s)", u->strtransport, u->name, u->addr);
+-    pa_proplist_sets(data.proplist, "bluetooth.protocol", u->profile);
+-    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_API, "bluez");
+-    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_CLASS, "sound");
+-    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_CONNECTOR, "bluetooth");
+-/*     pa_proplist_setf(data.proplist, PA_PROP_DEVICE_FORM_FACTOR, "headset"); /\*FIXME*\/ */
+-/*     pa_proplist_setf(data.proplist, PA_PROP_DEVICE_VENDOR_PRODUCT_ID, "product_id"); /\*FIXME*\/ */
+-/*     pa_proplist_setf(data.proplist, PA_PROP_DEVICE_SERIAL, "serial"); /\*FIXME*\/ */
+-    u->sink = pa_sink_new(m->core, &data, PA_SINK_HARDWARE|PA_SINK_LATENCY);
+-    pa_sink_new_data_done(&data);
+-    if (!u->sink) {
+-        pa_log_error("Failed to create sink");
+-        goto fail;
+-    }
+-    u->sink->userdata = u;
+-    u->sink->parent.process_msg = sink_process_msg;
+-    pa_sink_set_asyncmsgq(u->sink, u->thread_mq.inq);
+-    pa_sink_set_rtpoll(u->sink, u->rtpoll);
++    if (!u->over_sink) {
++        /* create sink */
++        pa_sink_new_data_init(&data);
++        data.driver = __FILE__;
++        data.module = m;
++        pa_sink_new_data_set_name(&data, u->name);
++        pa_sink_new_data_set_sample_spec(&data, &u->ss);
++        pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->name);
++        pa_proplist_setf(data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Bluetooth %s '%s' (%s)", u->strtransport, u->name, u->addr);
++        pa_proplist_sets(data.proplist, "bluetooth.protocol", u->profile);
++        pa_proplist_setf(data.proplist, PA_PROP_DEVICE_API, "bluez");
++        pa_proplist_setf(data.proplist, PA_PROP_DEVICE_CLASS, "sound");
++        pa_proplist_setf(data.proplist, PA_PROP_DEVICE_CONNECTOR, "bluetooth");
++        /* pa_proplist_setf(data.proplist, PA_PROP_DEVICE_FORM_FACTOR, "headset"); /\*FIXME*\/ */
++        /* pa_proplist_setf(data.proplist, PA_PROP_DEVICE_VENDOR_PRODUCT_ID, "product_id"); /\*FIXME*\/ */
++        /* pa_proplist_setf(data.proplist, PA_PROP_DEVICE_SERIAL, "serial"); /\*FIXME*\/ */
++        u->sink = pa_sink_new(m->core, &data, PA_SINK_HARDWARE|PA_SINK_LATENCY);
++        pa_sink_new_data_done(&data);
++        if (!u->sink) {
++            pa_log_error("Failed to create sink");
++            goto fail;
++        }
++        u->sink->userdata = u;
++        u->sink->parent.process_msg = sink_process_msg;
++        pa_sink_set_asyncmsgq(u->sink, u->thread_mq.inq);
++        pa_sink_set_rtpoll(u->sink, u->rtpoll);
+ 
+-    u->rtpoll_item = pa_rtpoll_item_new(u->rtpoll, PA_RTPOLL_NEVER, 1);
+-    pollfd = pa_rtpoll_item_get_pollfd(u->rtpoll_item, NULL);
+-    pollfd->fd = u->stream_fd;
+-    pollfd->events = pollfd->revents = 0;
++        u->rtpoll_item = pa_rtpoll_item_new(u->rtpoll, PA_RTPOLL_NEVER, 1);
++        pollfd = pa_rtpoll_item_get_pollfd(u->rtpoll_item, NULL);
++        pollfd->fd = u->stream_fd;
++        pollfd->events = pollfd->revents = 0;
+ 
+-    /* start rt thread */
+-    if (!(u->thread = pa_thread_new(thread_func, u))) {
+-        pa_log_error("Failed to create IO thread");
+-        goto fail;
++        /* start rt thread */
++        if (!(u->thread = pa_thread_new(thread_func, u))) {
++            pa_log_error("Failed to create IO thread");
++            goto fail;
++        }
++        pa_sink_put(u->sink);
++    } else {
++        /* pa_proplist *p; */
++
++        /* p = pa_proplist_new(); */
++        /* pa_proplist_setf(p, PA_PROP_DEVICE_DESCRIPTION, "Bluetooth %s '%s' (%s)", u->strtransport, u->name, u->addr); */
++        /* pa_proplist_sets(p, "bluetooth.protocol", u->profile); */
++        /* pa_proplist_setf(p, PA_PROP_DEVICE_API, "bluez"); */
++        /* pa_proplist_setf(p, PA_PROP_DEVICE_CLASS, "sound"); */
++        /* pa_proplist_setf(p, PA_PROP_DEVICE_CONNECTOR, "bluetooth"); */
++
++	/* pa_proplist_update(u->over_sink, PA_UPDATE_MERGE, p); */
++	/* pa_proplist_update(u->over_source, PA_UPDATE_MERGE, p); */
++
++	/* pa_proplist_free(p); */
+     }
+-    pa_sink_put(u->sink);
+ 
+     pa_modargs_free(ma);
+     return 0;
+diff --git a/src/modules/bluetooth/module-bluetooth-discover.c b/src/modules/bluetooth/module-bluetooth-discover.c
+index 2fe0937..efed1ee 100644
+--- a/src/modules/bluetooth/module-bluetooth-discover.c
++++ b/src/modules/bluetooth/module-bluetooth-discover.c
+@@ -40,7 +40,15 @@
+ PA_MODULE_AUTHOR("Joao Paulo Rechi Vita");
+ PA_MODULE_DESCRIPTION("Detect available bluetooth audio devices and load bluetooth audio drivers");
+ PA_MODULE_VERSION(PACKAGE_VERSION);
+-PA_MODULE_USAGE("");
++PA_MODULE_USAGE(
++        "over_sink=<name of sink> "
++        "over_source=<name of source>");
++
++static const char* const valid_modargs[] = {
++    "over_sink",
++    "over_source",
++    NULL
++};
+ 
+ struct module {
+     char *profile;
+@@ -69,6 +77,7 @@ struct device {
+ 
+ struct userdata {
+     pa_module *module;
++    pa_modargs *ma;
+     pa_dbus_connection *conn;
+     PA_LLIST_HEAD(struct device, device_list);
+ };
+@@ -334,7 +343,7 @@ finish:
+ }
+ 
+ static void load_module_for_device(struct userdata *u, struct device *d, const char *profile) {
+-    char *args;
++    char *args, *tmp;
+     pa_module *pa_m;
+     struct module *m;
+ 
+@@ -343,6 +352,13 @@ static void load_module_for_device(struct userdata *u, struct device *d, const c
+ 
+     get_device_properties(u, d);
+     args = pa_sprintf_malloc("sink_name=\"%s\" address=\"%s\" profile=\"%s\"", d->name, d->address, profile);
++    if (pa_modargs_get_value(u->ma, "over_sink", NULL) &&
++        pa_modargs_get_value(u->ma, "over_source", NULL)) {
++        tmp = pa_sprintf_malloc("%s over_sink=\"%s\" over_source=\"%s\"", args, pa_modargs_get_value(u->ma, "over_sink", NULL), pa_modargs_get_value(u->ma, "over_source", NULL));
++        pa_xfree(args);
++        args = tmp;
++    }
++
+     pa_m = pa_module_load(u->module->core, "module-bluetooth-device", args);
+     pa_xfree(args);
+ 
+@@ -503,18 +519,28 @@ void pa__done(pa_module* m) {
+         pa_dbus_connection_unref(u->conn);
+     }
+ 
++    if (u->ma)
++        pa_modargs_free(u->ma);
++
+     pa_xfree(u);
+ }
+ 
+ int pa__init(pa_module* m) {
+     DBusError err;
+     struct userdata *u;
++    pa_modargs *ma;
+ 
+     pa_assert(m);
+     dbus_error_init(&err);
+ 
++    if (!(ma = pa_modargs_new(m->argument, valid_modargs))) {
++        pa_log_error("Failed to parse module arguments");
++        return;
++    }
++
+     m->userdata = u = pa_xnew(struct userdata, 1);
+     u->module = m;
++    u->ma = ma;
+     PA_LLIST_HEAD_INIT(struct device, u->device_list);
+ 
+     /* connect to the bus */
+-- 
+1.6.0.2.514.g23abd3
+
