@@ -28,4 +28,5 @@
 0028-build-add-pulsecore.pc-Nokia-specific.patch
 0029-build-libtool-fails-to-link-module-s-library-during.patch
 0030-bluetooth-basic-sco-over-pcm-support.patch
-0031-autofoo.patch
+0031-build-fix-build-on-scratchbox-with-rpath.patch
+0032-autofoo.patch
