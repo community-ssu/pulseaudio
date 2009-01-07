@@ -20,11 +20,11 @@
 # along with PulseAudio; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 
-AC_PREREQ(2.62)
+AC_PREREQ(2.63)
 
 m4_define(PA_MAJOR, [0])
 m4_define(PA_MINOR, [9])
-m4_define(PA_MICRO, [13])
+m4_define(PA_MICRO, [14])
 
 AC_INIT([pulseaudio],[PA_MAJOR.PA_MINOR.PA_MICRO],[mzchyfrnhqvb (at) 0pointer (dot) net])
 AC_CONFIG_SRCDIR([src/daemon/main.c])
@@ -32,11 +32,12 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([foreign 1.10 -Wall])
 
-AC_SUBST(PA_MAJORMINOR, "PA_MAJOR.PA_MINOR")
+AC_SUBST(PA_MAJORMINOR, PA_MAJOR.PA_MINOR)
+AC_SUBST(PA_MAJORMINORMICRO, PA_MAJOR.PA_MINOR.PA_MICRO)
 AC_SUBST(PACKAGE_URL, [http://pulseaudio.org/])
 
 AC_SUBST(PA_API_VERSION, 12)
-AC_SUBST(PA_PROTOCOL_VERSION, 14)
+AC_SUBST(PA_PROTOCOL_VERSION, 15)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
@@ -53,11 +54,6 @@ AC_SUBST(LIBPULSE_BROWSE_VERSION_INFO, [1:1:1])
 # The ABI-stable GLib adapter for client applications, for the version
 # info x:y:z always will hold y=z
 AC_SUBST(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO, [0:4:0])
-
-# An internally used, ABI-unstable library that contains the
-# PulseAudio core, SONAMEs are bumped on every release, version info
-# suffix will always be 0:0
-AC_SUBST(LIBPULSECORE_VERSION_INFO, [8:0:0])
 
 AC_CANONICAL_HOST
 AC_DEFINE_UNQUOTED([CANONICAL_HOST], "$host", [Canonical host string.])
@@ -213,29 +209,10 @@ AS_IF([test "$pulseaudio_cv__Bool" = "yes"], [
   ])
 
 #### libtool stuff ####
-
-AC_LTDL_ENABLE_INSTALL
-AC_LIBLTDL_INSTALLABLE
-AC_LIBTOOL_DLOPEN
-AC_LIBTOOL_WIN32_DLL
-AC_PROG_LIBTOOL
-AC_SUBST(LTDLINCL)
-AC_SUBST(LIBLTDL)
-AC_CONFIG_SUBDIRS(libltdl)
-
-old_LIBS=$LIBS
-LIBS="$LIBS $LIBLTDL"
-AC_CHECK_FUNCS([lt_dlmutex_register])
-LIBS=$old_LIBS
-AC_CHECK_TYPES([struct lt_user_dlloader, lt_dladvise], , , [#include <ltdl.h>])
-
-if test "x$enable_ltdl_install" = "xno" && test "x$ac_cv_lib_ltdl_lt_dlinit" = "xno" ; then
-    AC_MSG_ERROR([[
-
-        *** Cannot find the libltdl development files.
-        *** Maybe you need to install the libltdl-dev package.
-        ]])
-fi
+LT_PREREQ(2.2)
+LT_CONFIG_LTDL_DIR([libltdl])
+LT_INIT([dlopen win32-dll disable-static])
+LTDL_INIT([convenience recursive])
 
 #### Determine build environment ####
 
@@ -297,6 +274,7 @@ AC_CHECK_HEADERS([sys/ioctl.h])
 AC_CHECK_HEADERS([byteswap.h])
 AC_CHECK_HEADERS([sys/syscall.h])
 AC_CHECK_HEADERS([sys/eventfd.h])
+AC_CHECK_HEADERS([execinfo.h])
 
 #### Typdefs, structures, etc. ####
 
@@ -307,7 +285,7 @@ AC_TYPE_SIZE_T
 AC_CHECK_TYPES(ssize_t, , [AC_DEFINE([ssize_t], [signed long],
     [Define ssize_t if it is not done by the standard libs.])])
 AC_TYPE_OFF_T
-AC_TYPE_SIGNAL
+
 AC_TYPE_UID_T
 AC_CHECK_DECLS(environ)
 
@@ -1003,7 +981,7 @@ AM_CONDITIONAL([HAVE_POLKIT], [test "x$HAVE_POLKIT" = x1])
 #### OpenSSL support (optional) ####
 
 AC_ARG_ENABLE([openssl],
-    AC_HELP_STRING([--disable-openssl], [Disable OpenSSL support (used for Airtunes/RAOP)]),
+    AS_HELP_STRING([--disable-openssl],[Disable OpenSSL support (used for Airtunes/RAOP)]),
         [
             case "${enableval}" in
                 yes) openssl=yes ;;
@@ -1134,8 +1112,8 @@ fi
 
 AC_ARG_WITH(
         [module-dir],
-        AS_HELP_STRING([--with-module-dir],[Directory where to install the modules to (defaults to ${libdir}/pulse-${PA_MAJORMINOR}/modules/]),
-        [modlibexecdir=$withval], [modlibexecdir="${libdir}/pulse-${PA_MAJORMINOR}/modules/"])
+        AS_HELP_STRING([--with-module-dir],[Directory where to install the modules to (defaults to ${libdir}/pulse-${PA_MAJORMINORMICRO}/modules/]),
+        [modlibexecdir=$withval], [modlibexecdir="${libdir}/pulse-${PA_MAJORMINORMICRO}/modules/"])
 
 AC_SUBST(modlibexecdir)
 
@@ -1147,6 +1125,7 @@ AM_CONDITIONAL([FORCE_PREOPEN], [test "x$FORCE_PREOPEN" = "x1"])
 
 AC_CONFIG_FILES([
 Makefile
+libltdl/Makefile
 src/Makefile
 man/Makefile
 libpulse.pc

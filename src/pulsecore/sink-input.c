@@ -108,6 +108,7 @@ static void reset_callbacks(pa_sink_input *i) {
     i->kill = NULL;
     i->get_latency = NULL;
     i->state_change = NULL;
+    i->may_move_to = NULL;
 }
 
 /* Called from main context */
@@ -157,10 +158,10 @@ pa_sink_input* pa_sink_input_new(
     }
 
     pa_return_null_if_fail(pa_cvolume_valid(&data->volume));
-    pa_return_null_if_fail(pa_cvolume_compatible(&data->volume.channels, &data->sample_spec));
+    pa_return_null_if_fail(pa_cvolume_compatible(&data->volume, &data->sample_spec));
 
     pa_return_null_if_fail(pa_cvolume_valid(&data->virtual_volume));
-    pa_return_null_if_fail(pa_cvolume_compatible(&data->virtual_volume.channels, &data->sample_spec));
+    pa_return_null_if_fail(pa_cvolume_compatible(&data->virtual_volume, &data->sample_spec));
 
     if (!data->muted_is_set)
         data->muted = FALSE;
@@ -301,8 +302,6 @@ static void update_n_corked(pa_sink_input *i, pa_sink_input_state_t state) {
         pa_assert_se(i->sink->n_corked -- >= 1);
     else if (i->state != PA_SINK_INPUT_CORKED && state == PA_SINK_INPUT_CORKED)
         i->sink->n_corked++;
-
-    pa_sink_update_status(i->sink);
 }
 
 /* Called from main context */
@@ -339,6 +338,8 @@ static int sink_input_set_state(pa_sink_input *i, pa_sink_input_state_t state) {
         for (ssync = i->sync_next; ssync; ssync = ssync->sync_next)
             pa_hook_fire(&i->sink->core->hooks[PA_CORE_HOOK_SINK_INPUT_STATE_CHANGED], ssync);
     }
+
+    pa_sink_update_status(i->sink);
 
     return 0;
 }
@@ -389,6 +390,8 @@ void pa_sink_input_unlink(pa_sink_input *i) {
         pa_subscription_post(i->sink->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_REMOVE, i->index);
         pa_hook_fire(&i->sink->core->hooks[PA_CORE_HOOK_SINK_INPUT_UNLINK_POST], i);
     }
+
+    pa_sink_update_status(i->sink);
 
     i->sink = NULL;
     pa_sink_input_unref(i);
@@ -451,6 +454,8 @@ void pa_sink_input_put(pa_sink_input *i) {
 
     pa_subscription_post(i->sink->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_NEW, i->index);
     pa_hook_fire(&i->sink->core->hooks[PA_CORE_HOOK_SINK_INPUT_PUT], i);
+
+    pa_sink_update_status(i->sink);
 }
 
 /* Called from main context */
@@ -911,6 +916,35 @@ pa_resample_method_t pa_sink_input_get_resample_method(pa_sink_input *i) {
 }
 
 /* Called from main context */
+pa_bool_t pa_sink_input_may_move_to(pa_sink_input *i, pa_sink *dest) {
+    pa_sink_input_assert_ref(i);
+    pa_assert(PA_SINK_INPUT_IS_LINKED(i->state));
+    pa_sink_assert_ref(dest);
+
+    if (dest == i->sink)
+        return TRUE;
+
+    if (i->flags & PA_SINK_INPUT_DONT_MOVE)
+        return FALSE;
+
+    if (i->sync_next || i->sync_prev) {
+        pa_log_warn("Moving synchronised streams not supported.");
+        return FALSE;
+    }
+
+    if (pa_idxset_size(dest->inputs) >= PA_MAX_INPUTS_PER_SINK) {
+        pa_log_warn("Failed to move sink input: too many inputs per sink.");
+        return FALSE;
+    }
+
+    if (i->may_move_to)
+        if (!i->may_move_to(i, dest))
+            return FALSE;
+
+    return TRUE;
+}
+
+/* Called from main context */
 int pa_sink_input_move_to(pa_sink_input *i, pa_sink *dest) {
     pa_resampler *new_resampler;
     pa_sink *origin;
@@ -926,18 +960,8 @@ int pa_sink_input_move_to(pa_sink_input *i, pa_sink *dest) {
     if (dest == origin)
         return 0;
 
-    if (i->flags & PA_SINK_INPUT_DONT_MOVE)
+    if (!pa_sink_input_may_move_to(i, dest))
         return -1;
-
-    if (i->sync_next || i->sync_prev) {
-        pa_log_warn("Moving synchronised streams not supported.");
-        return -1;
-    }
-
-    if (pa_idxset_size(dest->inputs) >= PA_MAX_INPUTS_PER_SINK) {
-        pa_log_warn("Failed to move sink input: too many inputs per sink.");
-        return -1;
-    }
 
     /* Kill directly connected outputs */
     while ((o = pa_idxset_first(i->direct_outputs, NULL))) {
@@ -1170,7 +1194,8 @@ void pa_sink_input_request_rewind(pa_sink_input *i, size_t nbytes  /* in our sam
      * implementor. This implies 'flush' is TRUE. */
 
     pa_sink_input_assert_ref(i);
-    pa_assert(i->thread_info.rewrite_nbytes == 0);
+
+    nbytes = PA_MAX(i->thread_info.rewrite_nbytes, nbytes);
 
 /*     pa_log_debug("request rewrite %lu", (unsigned long) nbytes); */
 
@@ -1198,26 +1223,33 @@ void pa_sink_input_request_rewind(pa_sink_input *i, size_t nbytes  /* in our sam
             nbytes = pa_resampler_request(i->thread_info.resampler, nbytes);
     }
 
-    if (rewrite) {
-        /* Make sure to not overwrite over underruns */
-        if (nbytes > i->thread_info.playing_for)
-            nbytes = (size_t) i->thread_info.playing_for;
+    if (i->thread_info.rewrite_nbytes != (size_t) -1) {
+        if (rewrite) {
+            /* Make sure to not overwrite over underruns */
+            if (nbytes > i->thread_info.playing_for)
+                nbytes = (size_t) i->thread_info.playing_for;
 
-        i->thread_info.rewrite_nbytes = nbytes;
-    } else
-        i->thread_info.rewrite_nbytes = (size_t) -1;
+            i->thread_info.rewrite_nbytes = nbytes;
+        } else
+            i->thread_info.rewrite_nbytes = (size_t) -1;
+    }
 
-    i->thread_info.rewrite_flush = flush && i->thread_info.rewrite_nbytes != 0;
+    i->thread_info.rewrite_flush =
+        i->thread_info.rewrite_flush ||
+        (flush && i->thread_info.rewrite_nbytes != 0);
 
-    /* Transform to sink domain */
-    if (i->thread_info.resampler)
-        nbytes = pa_resampler_result(i->thread_info.resampler, nbytes);
+    if (nbytes != (size_t) -1) {
 
-    if (nbytes > lbq)
-        pa_sink_request_rewind(i->sink, nbytes - lbq);
-    else
-        /* This call will make sure process_rewind() is called later */
-        pa_sink_request_rewind(i->sink, 0);
+        /* Transform to sink domain */
+        if (i->thread_info.resampler)
+            nbytes = pa_resampler_result(i->thread_info.resampler, nbytes);
+
+        if (nbytes > lbq)
+            pa_sink_request_rewind(i->sink, nbytes - lbq);
+        else
+            /* This call will make sure process_rewind() is called later */
+            pa_sink_request_rewind(i->sink, 0);
+    }
 }
 
 /* Called from main context */

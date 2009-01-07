@@ -296,6 +296,11 @@ int pa__init(pa_module*m) {
             pa_log("IP_MULTICAST_TTL failed: %s", pa_cstrerror(errno));
             goto fail;
         }
+
+        if (setsockopt(sap_fd, IPPROTO_IP, IP_MULTICAST_TTL, &_ttl, sizeof(_ttl)) < 0) {
+            pa_log("IP_MULTICAST_TTL (sap) failed: %s", pa_cstrerror(errno));
+            goto fail;
+        }
     }
 
     /* If the socket queue is full, let's drop packets */
@@ -316,7 +321,7 @@ int pa__init(pa_module*m) {
     pa_source_output_new_data_set_sample_spec(&data, &ss);
     pa_source_output_new_data_set_channel_map(&data, &cm);
 
-    o = pa_source_output_new(m->core, &data, 0);
+    o = pa_source_output_new(m->core, &data, PA_SOURCE_OUTPUT_DONT_INHIBIT_AUTO_SUSPEND);
     pa_source_output_new_data_done(&data);
 
     if (!o) {
