@@ -71,6 +71,18 @@ bin_PROGRAMS = pulseaudio$(EXEEXT) pacat$(EXEEXT) pactl$(EXEEXT) \
 @HAVE_AF_UNIX_TRUE@am__append_5 = pacmd
 @HAVE_X11_TRUE@am__append_6 = pax11publish
 @HAVE_AVAHI_TRUE@am__append_7 = pabrowse
+TESTS = mainloop-test$(EXEEXT) strlist-test$(EXEEXT) \
+	close-test$(EXEEXT) voltest$(EXEEXT) memblockq-test$(EXEEXT) \
+	channelmap-test$(EXEEXT) thread-mainloop-test$(EXEEXT) \
+	utf8-test$(EXEEXT) get-binary-name-test$(EXEEXT) \
+	ipacl-test$(EXEEXT) hook-list-test$(EXEEXT) \
+	memblock-test$(EXEEXT) asyncq-test$(EXEEXT) \
+	asyncmsgq-test$(EXEEXT) queue-test$(EXEEXT) \
+	rtpoll-test$(EXEEXT) sig2str-test$(EXEEXT) \
+	resampler-test$(EXEEXT) smoother-test$(EXEEXT) \
+	mix-test$(EXEEXT) remix-test$(EXEEXT) envelope-test$(EXEEXT) \
+	proplist-test$(EXEEXT) lock-autospawn-test$(EXEEXT) \
+	prioq-test$(EXEEXT) $(am__EXEEXT_5)
 noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
 	pacat-simple$(EXEEXT) parec-simple$(EXEEXT) \
 	strlist-test$(EXEEXT) close-test$(EXEEXT) voltest$(EXEEXT) \
@@ -87,6 +99,10 @@ noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
 	proplist-test$(EXEEXT) rtstutter$(EXEEXT) stripnul$(EXEEXT) \
 	lock-autospawn-test$(EXEEXT) prioq-test$(EXEEXT) \
 	$(am__EXEEXT_4) $(am__EXEEXT_5)
+
+#TESTS += \
+#		cpulimit-test \
+#		cpulimit-test2
 @HAVE_SIGXCPU_TRUE@am__append_8 = \
 @HAVE_SIGXCPU_TRUE@		cpulimit-test \
 @HAVE_SIGXCPU_TRUE@		cpulimit-test2
@@ -94,114 +110,117 @@ noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
 @HAVE_GLIB20_TRUE@am__append_9 = \
 @HAVE_GLIB20_TRUE@		mainloop-test-glib
 
-@OS_IS_WIN32_TRUE@am__append_10 = \
+@HAVE_GLIB20_TRUE@am__append_10 = \
+@HAVE_GLIB20_TRUE@		mainloop-test-glib
+
+@OS_IS_WIN32_TRUE@am__append_11 = \
 @OS_IS_WIN32_TRUE@		pulsecore/mutex-win32.c pulsecore/mutex.h \
 @OS_IS_WIN32_TRUE@		pulsecore/thread-win32.c pulsecore/thread.h \
 @OS_IS_WIN32_TRUE@		pulsecore/semaphore-win32.c pulsecore/semaphore.h
 
-@OS_IS_WIN32_FALSE@am__append_11 = \
+@OS_IS_WIN32_FALSE@am__append_12 = \
 @OS_IS_WIN32_FALSE@		pulsecore/mutex-posix.c pulsecore/mutex.h \
 @OS_IS_WIN32_FALSE@		pulsecore/thread-posix.c pulsecore/thread.h \
 @OS_IS_WIN32_FALSE@		pulsecore/semaphore-posix.c pulsecore/semaphore.h
 
-@HAVE_X11_TRUE@am__append_12 = pulsecore/x11prop.c pulsecore/x11prop.h
-@HAVE_X11_TRUE@am__append_13 = $(X_CFLAGS)
-@HAVE_X11_TRUE@am__append_14 = $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS)
-@HAVE_LIBASYNCNS_TRUE@am__append_15 = $(LIBASYNCNS_CFLAGS)
-@HAVE_LIBASYNCNS_TRUE@am__append_16 = $(LIBASYNCNS_LIBS)
-@OS_IS_WIN32_TRUE@am__append_17 = pulsecore/dllmain.c
-@HAVE_AVAHI_TRUE@am__append_18 = \
+@HAVE_X11_TRUE@am__append_13 = pulsecore/x11prop.c pulsecore/x11prop.h
+@HAVE_X11_TRUE@am__append_14 = $(X11_CFLAGS)
+@HAVE_X11_TRUE@am__append_15 = $(X11_LIBS)
+@HAVE_LIBASYNCNS_TRUE@am__append_16 = $(LIBASYNCNS_CFLAGS)
+@HAVE_LIBASYNCNS_TRUE@am__append_17 = $(LIBASYNCNS_LIBS)
+@OS_IS_WIN32_TRUE@am__append_18 = pulsecore/dllmain.c
+@HAVE_AVAHI_TRUE@am__append_19 = \
 @HAVE_AVAHI_TRUE@		pulse/browser.h
 
-@HAVE_AVAHI_TRUE@am__append_19 = \
+@HAVE_AVAHI_TRUE@am__append_20 = \
 @HAVE_AVAHI_TRUE@		libpulse-browse.la
 
-@HAVE_GLIB20_TRUE@am__append_20 = \
+@HAVE_GLIB20_TRUE@am__append_21 = \
 @HAVE_GLIB20_TRUE@		pulse/glib-mainloop.h
 
-@HAVE_GLIB20_TRUE@am__append_21 = \
+@HAVE_GLIB20_TRUE@am__append_22 = \
 @HAVE_GLIB20_TRUE@		libpulse-mainloop-glib.la
 
-@HAVE_X11_TRUE@am__append_22 = pulse/client-conf-x11.c pulse/client-conf-x11.h
-@HAVE_X11_TRUE@am__append_23 = $(X_CFLAGS)
-@HAVE_X11_TRUE@am__append_24 = $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS)
+@HAVE_X11_TRUE@am__append_23 = pulse/client-conf-x11.c pulse/client-conf-x11.h
+@HAVE_X11_TRUE@am__append_24 = $(X11_CFLAGS)
+@HAVE_X11_TRUE@am__append_25 = $(X11_LIBS)
 
 ###################################
 #         OSS emulation           #
 ###################################
-@HAVE_OSS_TRUE@am__append_25 = libpulsedsp.la
-@HAVE_OSS_TRUE@am__append_26 = utils/padsp
-@HAVE_X11_TRUE@am__append_27 = pulsecore/x11wrap.c pulsecore/x11wrap.h
-@HAVE_X11_TRUE@am__append_28 = $(X_CFLAGS)
-@HAVE_X11_TRUE@am__append_29 = $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS)
+@HAVE_OSS_TRUE@am__append_26 = libpulsedsp.la
+@HAVE_OSS_TRUE@am__append_27 = utils/padsp
+@HAVE_X11_TRUE@am__append_28 = pulsecore/x11wrap.c pulsecore/x11wrap.h
+@HAVE_X11_TRUE@am__append_29 = $(X11_CFLAGS)
+@HAVE_X11_TRUE@am__append_30 = $(X11_LIBS)
 
 # We need to emulate sendmsg/recvmsg to support this on Win32
-@OS_IS_WIN32_FALSE@am__append_30 = \
+@OS_IS_WIN32_FALSE@am__append_31 = \
 @OS_IS_WIN32_FALSE@		librtp.la
 
-@HAVE_AVAHI_TRUE@am__append_31 = \
+@HAVE_AVAHI_TRUE@am__append_32 = \
 @HAVE_AVAHI_TRUE@		libavahi-wrap.la
 
 
 # See comment at librtp.la above
-@OS_IS_WIN32_FALSE@am__append_32 = \
+@OS_IS_WIN32_FALSE@am__append_33 = \
 @OS_IS_WIN32_FALSE@		module-rtp-send.la \
 @OS_IS_WIN32_FALSE@		module-rtp-recv.la
 
-@HAVE_AF_UNIX_TRUE@am__append_33 = \
+@HAVE_AF_UNIX_TRUE@am__append_34 = \
 @HAVE_AF_UNIX_TRUE@		module-cli-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-simple-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-http-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-native-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-esound-protocol-unix.la
 
-@HAVE_MKFIFO_TRUE@am__append_34 = \
+@HAVE_MKFIFO_TRUE@am__append_35 = \
 @HAVE_MKFIFO_TRUE@		module-pipe-sink.la \
 @HAVE_MKFIFO_TRUE@		module-pipe-source.la
 
-@OS_IS_WIN32_FALSE@am__append_35 = \
+@OS_IS_WIN32_FALSE@am__append_36 = \
 @OS_IS_WIN32_FALSE@		module-esound-compat-spawnfd.la \
 @OS_IS_WIN32_FALSE@		module-esound-compat-spawnpid.la
 
-@HAVE_REGEX_TRUE@am__append_36 = \
+@HAVE_REGEX_TRUE@am__append_37 = \
 @HAVE_REGEX_TRUE@		module-match.la
 
-@HAVE_X11_TRUE@am__append_37 = \
+@HAVE_X11_TRUE@am__append_38 = \
 @HAVE_X11_TRUE@		module-x11-bell.la \
 @HAVE_X11_TRUE@		module-x11-publish.la \
 @HAVE_X11_TRUE@		module-x11-xsmp.la
 
-@HAVE_OSS_TRUE@am__append_38 = \
+@HAVE_OSS_TRUE@am__append_39 = \
 @HAVE_OSS_TRUE@		liboss-util.la \
 @HAVE_OSS_TRUE@		module-oss.la
 
-@HAVE_ALSA_TRUE@am__append_39 = \
+@HAVE_ALSA_TRUE@am__append_40 = \
 @HAVE_ALSA_TRUE@		libalsa-util.la \
 @HAVE_ALSA_TRUE@		module-alsa-sink.la \
 @HAVE_ALSA_TRUE@		module-alsa-source.la
 
-@HAVE_SOLARIS_TRUE@am__append_40 = \
+@HAVE_SOLARIS_TRUE@am__append_41 = \
 @HAVE_SOLARIS_TRUE@		module-solaris.la
 
-@HAVE_AVAHI_TRUE@am__append_41 = \
+@HAVE_AVAHI_TRUE@am__append_42 = \
 @HAVE_AVAHI_TRUE@		module-zeroconf-publish.la \
 @HAVE_AVAHI_TRUE@		module-zeroconf-discover.la
 
-@HAVE_LIRC_TRUE@am__append_42 = \
+@HAVE_LIRC_TRUE@am__append_43 = \
 @HAVE_LIRC_TRUE@		module-lirc.la
 
-@HAVE_EVDEV_TRUE@am__append_43 = \
+@HAVE_EVDEV_TRUE@am__append_44 = \
 @HAVE_EVDEV_TRUE@		module-mmkbd-evdev.la
 
-@HAVE_JACK_TRUE@am__append_44 = \
+@HAVE_JACK_TRUE@am__append_45 = \
 @HAVE_JACK_TRUE@		module-jack-sink.la \
 @HAVE_JACK_TRUE@		module-jack-source.la
 
 pulselibexec_PROGRAMS = $(am__EXEEXT_6) $(am__EXEEXT_7)
-@HAVE_GCONF_TRUE@am__append_45 = \
+@HAVE_GCONF_TRUE@am__append_46 = \
 @HAVE_GCONF_TRUE@		module-gconf.la
 
-@HAVE_GCONF_TRUE@am__append_46 = \
+@HAVE_GCONF_TRUE@am__append_47 = \
 @HAVE_GCONF_TRUE@		gconf-helper
 
 
@@ -209,29 +228,29 @@ pulselibexec_PROGRAMS = $(am__EXEEXT_6) $(am__EXEEXT_7)
 #modlibexec_LTLIBRARIES += \
 #		module-waveout.la
 #endif
-@HAVE_HAL_TRUE@am__append_47 = \
+@HAVE_HAL_TRUE@am__append_48 = \
 @HAVE_HAL_TRUE@		libdbus-util.la \
 @HAVE_HAL_TRUE@		module-hal-detect.la
 
-@HAVE_DBUS_TRUE@am__append_48 = \
+@HAVE_DBUS_TRUE@am__append_49 = \
 @HAVE_DBUS_TRUE@		libdbus-util.la \
 @HAVE_DBUS_TRUE@		module-console-kit.la
 
-@HAVE_BLUEZ_TRUE@am__append_49 = \
+@HAVE_BLUEZ_TRUE@am__append_50 = \
 @HAVE_BLUEZ_TRUE@		module-bluetooth-proximity.la \
 @HAVE_BLUEZ_TRUE@		module-bluetooth-discover.la \
 @HAVE_BLUEZ_TRUE@		libbluetooth-ipc.la \
 @HAVE_BLUEZ_TRUE@		libbluetooth-sbc.la \
 @HAVE_BLUEZ_TRUE@		module-bluetooth-device.la
 
-@HAVE_BLUEZ_TRUE@am__append_50 = \
+@HAVE_BLUEZ_TRUE@am__append_51 = \
 @HAVE_BLUEZ_TRUE@		proximity-helper
 
-@HAVE_OPENSSL_TRUE@am__append_51 = \
+@HAVE_OPENSSL_TRUE@am__append_52 = \
 @HAVE_OPENSSL_TRUE@		libraop.la \
 @HAVE_OPENSSL_TRUE@		module-raop-sink.la
 
-@HAVE_AVAHI_TRUE@@HAVE_OPENSSL_TRUE@am__append_52 = \
+@HAVE_AVAHI_TRUE@@HAVE_OPENSSL_TRUE@am__append_53 = \
 @HAVE_AVAHI_TRUE@@HAVE_OPENSSL_TRUE@		module-raop-discover.la
 
 subdir = src
@@ -447,14 +466,15 @@ libpulsecommon_@PA_MAJORMINORMICRO@_la_DEPENDENCIES =  \
 	$(am__DEPENDENCIES_3)
 am__libpulsecommon_@PA_MAJORMINORMICRO@_la_SOURCES_DIST =  \
 	pulse/client-conf.c pulse/client-conf.h pulse/i18n.c \
-	pulse/i18n.h pulsecore/authkey.c pulsecore/authkey.h \
-	pulsecore/conf-parser.c pulsecore/conf-parser.h \
-	pulsecore/core-error.c pulsecore/core-error.h \
-	pulsecore/core-util.c pulsecore/core-util.h pulsecore/creds.h \
-	pulsecore/dynarray.c pulsecore/dynarray.h \
-	pulsecore/endianmacros.h pulsecore/flist.c pulsecore/flist.h \
-	pulsecore/hashmap.c pulsecore/hashmap.h pulsecore/idxset.c \
-	pulsecore/idxset.h pulsecore/inet_ntop.c pulsecore/inet_ntop.h \
+	pulse/i18n.h pulsecore/atomic.h pulsecore/authkey.c \
+	pulsecore/authkey.h pulsecore/conf-parser.c \
+	pulsecore/conf-parser.h pulsecore/core-error.c \
+	pulsecore/core-error.h pulsecore/core-util.c \
+	pulsecore/core-util.h pulsecore/creds.h pulsecore/dynarray.c \
+	pulsecore/dynarray.h pulsecore/endianmacros.h \
+	pulsecore/flist.c pulsecore/flist.h pulsecore/hashmap.c \
+	pulsecore/hashmap.h pulsecore/idxset.c pulsecore/idxset.h \
+	pulsecore/inet_ntop.c pulsecore/inet_ntop.h \
 	pulsecore/inet_pton.c pulsecore/inet_pton.h \
 	pulsecore/iochannel.c pulsecore/iochannel.h pulsecore/ioline.c \
 	pulsecore/ioline.h pulsecore/ipacl.h pulsecore/ipacl.c \
@@ -474,8 +494,8 @@ am__libpulsecommon_@PA_MAJORMINORMICRO@_la_SOURCES_DIST =  \
 	pulsecore/pstream-util.c pulsecore/pstream-util.h \
 	pulsecore/pstream.c pulsecore/pstream.h pulsecore/queue.c \
 	pulsecore/queue.h pulsecore/random.c pulsecore/random.h \
-	pulsecore/rtclock.c pulsecore/rtclock.h pulsecore/shm.c \
-	pulsecore/shm.h pulsecore/socket-client.c \
+	pulsecore/refcnt.h pulsecore/rtclock.c pulsecore/rtclock.h \
+	pulsecore/shm.c pulsecore/shm.h pulsecore/socket-client.c \
 	pulsecore/socket-client.h pulsecore/socket-server.c \
 	pulsecore/socket-server.h pulsecore/socket-util.c \
 	pulsecore/socket-util.h pulsecore/strbuf.c pulsecore/strbuf.h \
@@ -1251,7 +1271,6 @@ module_volume_restore_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(module_volume_restore_la_CFLAGS) $(CFLAGS) \
 	$(module_volume_restore_la_LDFLAGS) $(LDFLAGS) -o $@
 module_x11_bell_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) libpulsecore-@PA_MAJORMINORMICRO@.la \
 	libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 am_module_x11_bell_la_OBJECTS = module_x11_bell_la-module-x11-bell.lo
@@ -1262,7 +1281,6 @@ module_x11_bell_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(module_x11_bell_la_LDFLAGS) $(LDFLAGS) -o $@
 @HAVE_X11_TRUE@am_module_x11_bell_la_rpath = -rpath $(modlibexecdir)
 module_x11_publish_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) libprotocol-native.la \
 	libpulsecore-@PA_MAJORMINORMICRO@.la \
 	libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
@@ -1276,7 +1294,6 @@ module_x11_publish_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 @HAVE_X11_TRUE@am_module_x11_publish_la_rpath = -rpath \
 @HAVE_X11_TRUE@	$(modlibexecdir)
 module_x11_xsmp_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) libpulsecore-@PA_MAJORMINORMICRO@.la \
 	libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 am_module_x11_xsmp_la_OBJECTS = module_x11_xsmp_la-module-x11-xsmp.lo
@@ -1546,8 +1563,7 @@ pasuspender_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 am_pax11publish_OBJECTS = pax11publish-pax11publish.$(OBJEXT)
 pax11publish_OBJECTS = $(am_pax11publish_OBJECTS)
 pax11publish_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la \
-	libpulsecommon-@PA_MAJORMINORMICRO@.la $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	libpulsecommon-@PA_MAJORMINORMICRO@.la $(am__DEPENDENCIES_1)
 pax11publish_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(pax11publish_CFLAGS) \
 	$(CFLAGS) $(pax11publish_LDFLAGS) $(LDFLAGS) -o $@
@@ -2090,12 +2106,9 @@ SHELL = @SHELL@
 STRIP = @STRIP@
 USE_NLS = @USE_NLS@
 VERSION = @VERSION@
+X11_CFLAGS = @X11_CFLAGS@
+X11_LIBS = @X11_LIBS@
 XGETTEXT = @XGETTEXT@
-XMKMF = @XMKMF@
-X_CFLAGS = @X_CFLAGS@
-X_EXTRA_LIBS = @X_EXTRA_LIBS@
-X_LIBS = @X_LIBS@
-X_PRE_LIBS = @X_PRE_LIBS@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -2174,11 +2187,11 @@ PA_BINARY = $(bindir)/pulseaudio$(EXEEXT)
 ###################################
 AM_CFLAGS = \
 	-I$(top_srcdir)/src \
-	-I$(top_builddir)/src/modules \
-	-I$(top_builddir)/src/modules/rtp \
-	-I$(top_builddir)/src/modules/gconf \
-	-I$(top_builddir)/src/modules/bluetooth \
-	-I$(top_builddir)/src/modules/raop \
+	-I$(top_srcdir)/src/modules \
+	-I$(top_srcdir)/src/modules/rtp \
+	-I$(top_srcdir)/src/modules/gconf \
+	-I$(top_srcdir)/src/modules/bluetooth \
+	-I$(top_srcdir)/src/modules/raop \
 	$(PTHREAD_CFLAGS) -D_POSIX_PTHREAD_SEMANTICS \
 	$(LTDLINCL) \
 	$(LIBSAMPLERATE_CFLAGS) \
@@ -2199,6 +2212,7 @@ AM_LDADD = $(PTHREAD_LIBS) $(INTLLIBS)
 AM_LDFLAGS = -Wl,-z,nodelete $(am__append_1)
 @STATIC_BINS_TRUE@BINLDFLAGS = -static
 @OS_IS_WIN32_TRUE@WINSOCK_LIBS = -lwsock32 -lws2_32 -lwininet
+MODULE_LDFLAGS = -module -disable-static -avoid-version
 
 ###################################
 #          Extra files            #
@@ -2239,7 +2253,7 @@ pulseaudio_DEPENDENCIES = libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@P
 @FORCE_PREOPEN_FALSE@pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlopen force $(foreach f,$(PREOPEN_LIBS),-dlopen $(f))
 @FORCE_PREOPEN_TRUE@pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlpreopen force $(foreach f,$(PREOPEN_LIBS),-dlpreopen $(f))
 @HAVE_POLKIT_TRUE@policy_DATA = daemon/org.pulseaudio.policy
-bin_SCRIPTS = esdcompat start-pulseaudio-x11 $(am__append_26)
+bin_SCRIPTS = esdcompat start-pulseaudio-x11 $(am__append_27)
 pacat_SOURCES = utils/pacat.c
 pacat_LDADD = $(AM_LDADD) libpulse.la
 pacat_CFLAGS = $(AM_CFLAGS)
@@ -2261,8 +2275,8 @@ pacmd_CFLAGS = $(AM_CFLAGS)
 pacmd_LDADD = $(AM_LDADD) libpulse.la libpulsecommon-@PA_MAJORMINORMICRO@.la
 pacmd_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 pax11publish_SOURCES = utils/pax11publish.c
-pax11publish_CFLAGS = $(AM_CFLAGS) $(X_CFLAGS)
-pax11publish_LDADD = $(AM_LDADD) libpulse.la libpulsecommon-@PA_MAJORMINORMICRO@.la $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS)
+pax11publish_CFLAGS = $(AM_CFLAGS) $(X11_CFLAGS)
+pax11publish_LDADD = $(AM_LDADD) libpulse.la libpulsecommon-@PA_MAJORMINORMICRO@.la $(X11_LIBS)
 pax11publish_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 pabrowse_SOURCES = utils/pabrowse.c
 pabrowse_LDADD = $(AM_LDADD) libpulse.la libpulse-browse.la
@@ -2425,11 +2439,11 @@ prioq_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
 #      Daemon core library        #
 ###################################
 lib_LTLIBRARIES = libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la \
-	libpulse-simple.la $(am__append_19) $(am__append_21) \
-	$(am__append_25) libpulsecore-@PA_MAJORMINORMICRO@.la
+	libpulse-simple.la $(am__append_20) $(am__append_22) \
+	$(am__append_26) libpulsecore-@PA_MAJORMINORMICRO@.la
 libpulsecommon_@PA_MAJORMINORMICRO@_la_SOURCES = pulse/client-conf.c \
 	pulse/client-conf.h pulse/i18n.c pulse/i18n.h \
-	pulsecore/authkey.c pulsecore/authkey.h \
+	pulsecore/atomic.h pulsecore/authkey.c pulsecore/authkey.h \
 	pulsecore/conf-parser.c pulsecore/conf-parser.h \
 	pulsecore/core-error.c pulsecore/core-error.h \
 	pulsecore/core-util.c pulsecore/core-util.h pulsecore/creds.h \
@@ -2456,22 +2470,22 @@ libpulsecommon_@PA_MAJORMINORMICRO@_la_SOURCES = pulse/client-conf.c \
 	pulsecore/pstream-util.c pulsecore/pstream-util.h \
 	pulsecore/pstream.c pulsecore/pstream.h pulsecore/queue.c \
 	pulsecore/queue.h pulsecore/random.c pulsecore/random.h \
-	pulsecore/rtclock.c pulsecore/rtclock.h pulsecore/shm.c \
-	pulsecore/shm.h pulsecore/socket-client.c \
+	pulsecore/refcnt.h pulsecore/rtclock.c pulsecore/rtclock.h \
+	pulsecore/shm.c pulsecore/shm.h pulsecore/socket-client.c \
 	pulsecore/socket-client.h pulsecore/socket-server.c \
 	pulsecore/socket-server.h pulsecore/socket-util.c \
 	pulsecore/socket-util.h pulsecore/strbuf.c pulsecore/strbuf.h \
 	pulsecore/strlist.c pulsecore/strlist.h pulsecore/tagstruct.c \
 	pulsecore/tagstruct.h pulsecore/time-smoother.c \
 	pulsecore/time-smoother.h pulsecore/tokenizer.c \
-	pulsecore/tokenizer.h pulsecore/winsock.h $(am__append_10) \
-	$(am__append_11) $(am__append_12) $(am__append_17)
+	pulsecore/tokenizer.h pulsecore/winsock.h $(am__append_11) \
+	$(am__append_12) $(am__append_13) $(am__append_18)
 libpulsecommon_@PA_MAJORMINORMICRO@_la_CFLAGS = $(AM_CFLAGS) \
-	$(am__append_13) $(am__append_15)
+	$(am__append_14) $(am__append_16)
 libpulsecommon_@PA_MAJORMINORMICRO@_la_LDFLAGS = $(AM_LDFLAGS) \
-	-avoid-version $(am__append_14)
+	-avoid-version $(am__append_15)
 libpulsecommon_@PA_MAJORMINORMICRO@_la_LIBADD = $(AM_LIBADD) \
-	$(LIBWRAP_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) $(am__append_16)
+	$(LIBWRAP_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) $(am__append_17)
 
 ###################################
 #         Client library          #
@@ -2484,7 +2498,7 @@ pulseinclude_HEADERS = pulse/cdecl.h pulse/channelmap.h \
 	pulse/sample.h pulse/scache.h pulse/simple.h pulse/stream.h \
 	pulse/subscribe.h pulse/thread-mainloop.h pulse/timeval.h \
 	pulse/utf8.h pulse/util.h pulse/version.h pulse/volume.h \
-	pulse/xmalloc.h $(am__append_18) $(am__append_20)
+	pulse/xmalloc.h $(am__append_19) $(am__append_21)
 
 # Public interface
 libpulse_la_SOURCES = pulse/cdecl.h pulse/channelmap.c \
@@ -2501,11 +2515,11 @@ libpulse_la_SOURCES = pulse/cdecl.h pulse/channelmap.c \
 	pulse/thread-mainloop.c pulse/thread-mainloop.h \
 	pulse/timeval.c pulse/timeval.h pulse/utf8.c pulse/utf8.h \
 	pulse/util.c pulse/util.h pulse/volume.c pulse/volume.h \
-	pulse/xmalloc.c pulse/xmalloc.h $(am__append_22)
-libpulse_la_CFLAGS = $(AM_CFLAGS) $(am__append_23)
+	pulse/xmalloc.c pulse/xmalloc.h $(am__append_23)
+libpulse_la_CFLAGS = $(AM_CFLAGS) $(am__append_24)
 libpulse_la_LDFLAGS = $(AM_LDFLAGS) -version-info \
 	$(LIBPULSE_VERSION_INFO) \
-	-Wl,-version-script=$(srcdir)/map-file $(am__append_24)
+	-Wl,-version-script=$(srcdir)/map-file $(am__append_25)
 libpulse_la_LIBADD = $(AM_LIBADD) $(WINSOCK_LIBS) $(LTLIBICONV) libpulsecommon-@PA_MAJORMINORMICRO@.la
 libpulse_simple_la_SOURCES = pulse/simple.c pulse/simple.h
 libpulse_simple_la_CFLAGS = $(AM_CFLAGS)
@@ -2522,7 +2536,7 @@ libpulse_mainloop_glib_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBPULSE_MAINL
 libpulsedsp_la_SOURCES = utils/padsp.c
 libpulsedsp_la_CFLAGS = $(AM_CFLAGS)
 libpulsedsp_la_LIBADD = $(AM_LIBADD) libpulse.la libpulsecommon-@PA_MAJORMINORMICRO@.la
-libpulsedsp_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
+libpulsedsp_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version -disable-static
 
 # Pure core stuff
 libpulsecore_@PA_MAJORMINORMICRO@_la_SOURCES = pulsecore/asyncmsgq.c \
@@ -2561,11 +2575,11 @@ libpulsecore_@PA_MAJORMINORMICRO@_la_SOURCES = pulsecore/asyncmsgq.c \
 	pulsecore/source.c pulsecore/source.h pulsecore/start-child.c \
 	pulsecore/start-child.h pulsecore/thread-mq.c \
 	pulsecore/thread-mq.h pulsecore/time-smoother.c \
-	pulsecore/time-smoother.h $(am__append_27)
+	pulsecore/time-smoother.h $(am__append_28)
 libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS = $(AM_CFLAGS) \
-	$(LIBOIL_CFLAGS) $(am__append_28)
+	$(LIBOIL_CFLAGS) $(am__append_29)
 libpulsecore_@PA_MAJORMINORMICRO@_la_LDFLAGS = -avoid-version \
-	$(am__append_29)
+	$(am__append_30)
 libpulsecore_@PA_MAJORMINORMICRO@_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(LIBSPEEX_LIBS) $(WINSOCK_LIBS) $(LIBOIL_LIBS) $(LTLIBICONV) libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 ###################################
@@ -2582,8 +2596,8 @@ libpulsecore_@PA_MAJORMINORMICRO@_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPL
 ###################################
 modlibexec_LTLIBRARIES = libcli.la libprotocol-cli.la \
 	libprotocol-simple.la libprotocol-http.la \
-	libprotocol-native.la libprotocol-esound.la $(am__append_30) \
-	$(am__append_31) module-flat-volume.la module-cli.la \
+	libprotocol-native.la libprotocol-esound.la $(am__append_31) \
+	$(am__append_32) module-flat-volume.la module-cli.la \
 	module-cli-protocol-tcp.la module-simple-protocol-tcp.la \
 	module-null-sink.la module-detect.la module-volume-restore.la \
 	module-device-restore.la module-stream-restore.la \
@@ -2595,13 +2609,13 @@ modlibexec_LTLIBRARIES = libcli.la libprotocol-cli.la \
 	module-remap-sink.la module-ladspa-sink.la \
 	module-esound-sink.la module-tunnel-sink.la \
 	module-tunnel-source.la module-position-event-sounds.la \
-	$(am__append_32) $(am__append_33) $(am__append_34) \
-	$(am__append_35) $(am__append_36) $(am__append_37) \
-	$(am__append_38) $(am__append_39) $(am__append_40) \
-	$(am__append_41) $(am__append_42) $(am__append_43) \
-	$(am__append_44) $(am__append_45) $(am__append_47) \
-	$(am__append_48) $(am__append_49) $(am__append_51) \
-	$(am__append_52)
+	$(am__append_33) $(am__append_34) $(am__append_35) \
+	$(am__append_36) $(am__append_37) $(am__append_38) \
+	$(am__append_39) $(am__append_40) $(am__append_41) \
+	$(am__append_42) $(am__append_43) $(am__append_44) \
+	$(am__append_45) $(am__append_46) $(am__append_48) \
+	$(am__append_49) $(am__append_50) $(am__append_52) \
+	$(am__append_53)
 libprotocol_simple_la_SOURCES = pulsecore/protocol-simple.c pulsecore/protocol-simple.h
 libprotocol_simple_la_LDFLAGS = -avoid-version
 libprotocol_simple_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
@@ -2708,133 +2722,133 @@ SYMDEF_FILES = \
 
 # Flat volume
 module_flat_volume_la_SOURCES = modules/module-flat-volume.c
-module_flat_volume_la_LDFLAGS = -module -avoid-version
+module_flat_volume_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_flat_volume_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 # Simple protocol
 module_simple_protocol_tcp_la_SOURCES = modules/module-protocol-stub.c
 module_simple_protocol_tcp_la_CFLAGS = -DUSE_TCP_SOCKETS -DUSE_PROTOCOL_SIMPLE $(AM_CFLAGS)
-module_simple_protocol_tcp_la_LDFLAGS = -module -avoid-version
+module_simple_protocol_tcp_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_simple_protocol_tcp_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libprotocol-simple.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_simple_protocol_unix_la_SOURCES = modules/module-protocol-stub.c
 module_simple_protocol_unix_la_CFLAGS = -DUSE_UNIX_SOCKETS -DUSE_PROTOCOL_SIMPLE $(AM_CFLAGS)
-module_simple_protocol_unix_la_LDFLAGS = -module -avoid-version
+module_simple_protocol_unix_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_simple_protocol_unix_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libprotocol-simple.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 # CLI protocol
 module_cli_la_SOURCES = modules/module-cli.c
-module_cli_la_LDFLAGS = -module -avoid-version
+module_cli_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_cli_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libcli.la
 module_cli_protocol_tcp_la_SOURCES = modules/module-protocol-stub.c
 module_cli_protocol_tcp_la_CFLAGS = -DUSE_TCP_SOCKETS -DUSE_PROTOCOL_CLI $(AM_CFLAGS)
-module_cli_protocol_tcp_la_LDFLAGS = -module -avoid-version
+module_cli_protocol_tcp_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_cli_protocol_tcp_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libprotocol-cli.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_cli_protocol_unix_la_SOURCES = modules/module-protocol-stub.c
 module_cli_protocol_unix_la_CFLAGS = -DUSE_UNIX_SOCKETS -DUSE_PROTOCOL_CLI $(AM_CFLAGS)
-module_cli_protocol_unix_la_LDFLAGS = -module -avoid-version
+module_cli_protocol_unix_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_cli_protocol_unix_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libprotocol-cli.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 # HTTP protocol
 module_http_protocol_tcp_la_SOURCES = modules/module-protocol-stub.c
 module_http_protocol_tcp_la_CFLAGS = -DUSE_TCP_SOCKETS -DUSE_PROTOCOL_HTTP $(AM_CFLAGS)
-module_http_protocol_tcp_la_LDFLAGS = -module -avoid-version
+module_http_protocol_tcp_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_http_protocol_tcp_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libprotocol-http.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_http_protocol_unix_la_SOURCES = modules/module-protocol-stub.c
 module_http_protocol_unix_la_CFLAGS = -DUSE_UNIX_SOCKETS -DUSE_PROTOCOL_HTTP $(AM_CFLAGS)
-module_http_protocol_unix_la_LDFLAGS = -module -avoid-version
+module_http_protocol_unix_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_http_protocol_unix_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libprotocol-http.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 # Native protocol
 module_native_protocol_tcp_la_SOURCES = modules/module-protocol-stub.c
 module_native_protocol_tcp_la_CFLAGS = -DUSE_TCP_SOCKETS -DUSE_PROTOCOL_NATIVE $(AM_CFLAGS)
-module_native_protocol_tcp_la_LDFLAGS = -module -avoid-version
+module_native_protocol_tcp_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_native_protocol_tcp_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libprotocol-native.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_native_protocol_unix_la_SOURCES = modules/module-protocol-stub.c
 module_native_protocol_unix_la_CFLAGS = -DUSE_UNIX_SOCKETS -DUSE_PROTOCOL_NATIVE $(AM_CFLAGS)
-module_native_protocol_unix_la_LDFLAGS = -module -avoid-version
+module_native_protocol_unix_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_native_protocol_unix_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libprotocol-native.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_native_protocol_fd_la_SOURCES = modules/module-native-protocol-fd.c
 module_native_protocol_fd_la_CFLAGS = $(AM_CFLAGS)
-module_native_protocol_fd_la_LDFLAGS = -module -avoid-version
+module_native_protocol_fd_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_native_protocol_fd_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libprotocol-native.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 # EsounD protocol
 module_esound_protocol_tcp_la_SOURCES = modules/module-protocol-stub.c
 module_esound_protocol_tcp_la_CFLAGS = -DUSE_TCP_SOCKETS -DUSE_PROTOCOL_ESOUND $(AM_CFLAGS)
-module_esound_protocol_tcp_la_LDFLAGS = -module -avoid-version
+module_esound_protocol_tcp_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_esound_protocol_tcp_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libprotocol-esound.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_esound_protocol_unix_la_SOURCES = modules/module-protocol-stub.c
 module_esound_protocol_unix_la_CFLAGS = -DUSE_UNIX_SOCKETS -DUSE_PROTOCOL_ESOUND $(AM_CFLAGS)
-module_esound_protocol_unix_la_LDFLAGS = -module -avoid-version
+module_esound_protocol_unix_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_esound_protocol_unix_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libprotocol-esound.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_esound_compat_spawnfd_la_SOURCES = modules/module-esound-compat-spawnfd.c
-module_esound_compat_spawnfd_la_LDFLAGS = -module -avoid-version
+module_esound_compat_spawnfd_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_esound_compat_spawnfd_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_esound_compat_spawnpid_la_SOURCES = modules/module-esound-compat-spawnpid.c
-module_esound_compat_spawnpid_la_LDFLAGS = -module -avoid-version
+module_esound_compat_spawnpid_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_esound_compat_spawnpid_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_esound_sink_la_SOURCES = modules/module-esound-sink.c
-module_esound_sink_la_LDFLAGS = -module -avoid-version
+module_esound_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_esound_sink_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 # Pipes
 module_pipe_sink_la_SOURCES = modules/module-pipe-sink.c
-module_pipe_sink_la_LDFLAGS = -module -avoid-version
+module_pipe_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_pipe_sink_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_pipe_source_la_SOURCES = modules/module-pipe-source.c
-module_pipe_source_la_LDFLAGS = -module -avoid-version
+module_pipe_source_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_pipe_source_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 # Fake sources/sinks
 module_sine_la_SOURCES = modules/module-sine.c
-module_sine_la_LDFLAGS = -module -avoid-version
+module_sine_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_sine_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_null_sink_la_SOURCES = modules/module-null-sink.c
-module_null_sink_la_LDFLAGS = -module -avoid-version
+module_null_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_null_sink_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 # Couplings
 module_combine_la_SOURCES = modules/module-combine.c
-module_combine_la_LDFLAGS = -module -avoid-version
+module_combine_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_combine_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_remap_sink_la_SOURCES = modules/module-remap-sink.c
-module_remap_sink_la_LDFLAGS = -module -avoid-version
+module_remap_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_remap_sink_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_ladspa_sink_la_SOURCES = modules/module-ladspa-sink.c modules/ladspa.h
 module_ladspa_sink_la_CFLAGS = -DLADSPA_PATH=\"$(libdir)/ladspa:/usr/local/lib/ladspa:/usr/lib/ladspa:/usr/local/lib64/ladspa:/usr/lib64/ladspa\" $(AM_CFLAGS)
-module_ladspa_sink_la_LDFLAGS = -module -avoid-version
+module_ladspa_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_ladspa_sink_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_match_la_SOURCES = modules/module-match.c
-module_match_la_LDFLAGS = -module -avoid-version
+module_match_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_match_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_tunnel_sink_la_SOURCES = modules/module-tunnel.c
 module_tunnel_sink_la_CFLAGS = -DTUNNEL_SINK=1 $(AM_CFLAGS)
-module_tunnel_sink_la_LDFLAGS = -module -avoid-version
+module_tunnel_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_tunnel_sink_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_tunnel_source_la_SOURCES = modules/module-tunnel.c
-module_tunnel_source_la_LDFLAGS = -module -avoid-version
+module_tunnel_source_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_tunnel_source_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 # X11
 module_x11_bell_la_SOURCES = modules/module-x11-bell.c
-module_x11_bell_la_CFLAGS = $(AM_CFLAGS) $(X_CFLAGS)
-module_x11_bell_la_LDFLAGS = -module -avoid-version
-module_x11_bell_la_LIBADD = $(AM_LIBADD) $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+module_x11_bell_la_CFLAGS = $(AM_CFLAGS) $(X11_CFLAGS)
+module_x11_bell_la_LDFLAGS = $(MODULE_LDFLAGS)
+module_x11_bell_la_LIBADD = $(AM_LIBADD) $(X11_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_x11_publish_la_SOURCES = modules/module-x11-publish.c
-module_x11_publish_la_CFLAGS = $(AM_CFLAGS) $(X_CFLAGS)
-module_x11_publish_la_LDFLAGS = -module -avoid-version
-module_x11_publish_la_LIBADD = $(AM_LIBADD) $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS) libprotocol-native.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+module_x11_publish_la_CFLAGS = $(AM_CFLAGS) $(X11_CFLAGS)
+module_x11_publish_la_LDFLAGS = $(MODULE_LDFLAGS)
+module_x11_publish_la_LIBADD = $(AM_LIBADD) $(X11_LIBS) libprotocol-native.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_x11_xsmp_la_SOURCES = modules/module-x11-xsmp.c
-module_x11_xsmp_la_CFLAGS = $(AM_CFLAGS) $(X_CFLAGS)
-module_x11_xsmp_la_LDFLAGS = -module -avoid-version
-module_x11_xsmp_la_LIBADD = $(AM_LIBADD) $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+module_x11_xsmp_la_CFLAGS = $(AM_CFLAGS) $(X11_CFLAGS)
+module_x11_xsmp_la_LDFLAGS = $(MODULE_LDFLAGS)
+module_x11_xsmp_la_LIBADD = $(AM_LIBADD) $(X11_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 # OSS
 liboss_util_la_SOURCES = modules/oss-util.c modules/oss-util.h
 liboss_util_la_LDFLAGS = -avoid-version
 liboss_util_la_LIBADD = libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_oss_la_SOURCES = modules/module-oss.c
-module_oss_la_LDFLAGS = -module -avoid-version
+module_oss_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_oss_la_LIBADD = $(AM_LIBADD) liboss-util.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 # ALSA
@@ -2843,119 +2857,119 @@ libalsa_util_la_LDFLAGS = -avoid-version
 libalsa_util_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 libalsa_util_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
 module_alsa_sink_la_SOURCES = modules/module-alsa-sink.c
-module_alsa_sink_la_LDFLAGS = -module -avoid-version
+module_alsa_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_alsa_sink_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
 module_alsa_source_la_SOURCES = modules/module-alsa-source.c
-module_alsa_source_la_LDFLAGS = -module -avoid-version
+module_alsa_source_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_alsa_source_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_alsa_source_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
 
 # Solaris
 module_solaris_la_SOURCES = modules/module-solaris.c
-module_solaris_la_LDFLAGS = -module -avoid-version
+module_solaris_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_solaris_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 # Avahi
 module_zeroconf_publish_la_SOURCES = modules/module-zeroconf-publish.c
-module_zeroconf_publish_la_LDFLAGS = -module -avoid-version
+module_zeroconf_publish_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_zeroconf_publish_la_LIBADD = $(AM_LIBADD) $(AVAHI_LIBS) libavahi-wrap.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_zeroconf_publish_la_CFLAGS = $(AM_CFLAGS) $(AVAHI_CFLAGS)
 module_zeroconf_discover_la_SOURCES = modules/module-zeroconf-discover.c
-module_zeroconf_discover_la_LDFLAGS = -module -avoid-version
+module_zeroconf_discover_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_zeroconf_discover_la_LIBADD = $(AM_LIBADD) $(AVAHI_LIBS) libavahi-wrap.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_zeroconf_discover_la_CFLAGS = $(AM_CFLAGS) $(AVAHI_CFLAGS)
 
 # LIRC
 module_lirc_la_SOURCES = modules/module-lirc.c
-module_lirc_la_LDFLAGS = -module -avoid-version
+module_lirc_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_lirc_la_LIBADD = $(AM_LIBADD) $(LIRC_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_lirc_la_CFLAGS = $(AM_CFLAGS) $(LIRC_CFLAGS)
 
 # Linux evdev
 module_mmkbd_evdev_la_SOURCES = modules/module-mmkbd-evdev.c
-module_mmkbd_evdev_la_LDFLAGS = -module -avoid-version
+module_mmkbd_evdev_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_mmkbd_evdev_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_mmkbd_evdev_la_CFLAGS = $(AM_CFLAGS)
 
 # Windows waveout
 
 #module_waveout_la_SOURCES = modules/module-waveout.c
-#module_waveout_la_LDFLAGS = -module -avoid-version
+#module_waveout_la_LDFLAGS = $(MODULE_LDFLAGS)
 #module_waveout_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la -lwinmm libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 #module_waveout_la_CFLAGS = $(AM_CFLAGS)
 
 # Hardware autodetection module
 module_detect_la_SOURCES = modules/module-detect.c
-module_detect_la_LDFLAGS = -module -avoid-version
+module_detect_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_detect_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_detect_la_CFLAGS = $(AM_CFLAGS)
 
 # Volume restore module
 module_volume_restore_la_SOURCES = modules/module-volume-restore.c
-module_volume_restore_la_LDFLAGS = -module -avoid-version
+module_volume_restore_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_volume_restore_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_volume_restore_la_CFLAGS = $(AM_CFLAGS)
 
 # Position event sounds in space
 module_position_event_sounds_la_SOURCES = modules/module-position-event-sounds.c
-module_position_event_sounds_la_LDFLAGS = -module -avoid-version
+module_position_event_sounds_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_position_event_sounds_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_position_event_sounds_CFLAGS = $(AM_CFLAGS)
 
 # Device volume/muted restore module
 module_device_restore_la_SOURCES = modules/module-device-restore.c
-module_device_restore_la_LDFLAGS = -module -avoid-version
+module_device_restore_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_device_restore_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la -lgdbm libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_device_restore_la_CFLAGS = $(AM_CFLAGS)
 
 # Stream volume/muted/device restore module
 module_stream_restore_la_SOURCES = modules/module-stream-restore.c
-module_stream_restore_la_LDFLAGS = -module -avoid-version
+module_stream_restore_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_stream_restore_la_LIBADD = $(AM_LIBADD) libprotocol-native.la libpulsecore-@PA_MAJORMINORMICRO@.la -lgdbm libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_stream_restore_la_CFLAGS = $(AM_CFLAGS)
 
 # Default sink/source restore module
 module_default_device_restore_la_SOURCES = modules/module-default-device-restore.c
-module_default_device_restore_la_LDFLAGS = -module -avoid-version
+module_default_device_restore_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_default_device_restore_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_default_device_restore_la_CFLAGS = $(AM_CFLAGS)
 
 # Always Sink module
 module_always_sink_la_SOURCES = modules/module-always-sink.c
-module_always_sink_la_LDFLAGS = -module -avoid-version
+module_always_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_always_sink_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_always_sink_la_CFLAGS = $(AM_CFLAGS)
 
 # Rescue streams module
 module_rescue_streams_la_SOURCES = modules/module-rescue-streams.c
-module_rescue_streams_la_LDFLAGS = -module -avoid-version
+module_rescue_streams_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_rescue_streams_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_rescue_streams_la_CFLAGS = $(AM_CFLAGS)
 
 # Suspend-on-idle module
 module_suspend_on_idle_la_SOURCES = modules/module-suspend-on-idle.c
-module_suspend_on_idle_la_LDFLAGS = -module -avoid-version
+module_suspend_on_idle_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_suspend_on_idle_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_suspend_on_idle_la_CFLAGS = $(AM_CFLAGS)
 
 # RTP modules
 module_rtp_send_la_SOURCES = modules/rtp/module-rtp-send.c
-module_rtp_send_la_LDFLAGS = -module -avoid-version
+module_rtp_send_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_rtp_send_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la librtp.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_rtp_send_la_CFLAGS = $(AM_CFLAGS)
 module_rtp_recv_la_SOURCES = modules/rtp/module-rtp-recv.c
-module_rtp_recv_la_LDFLAGS = -module -avoid-version
+module_rtp_recv_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_rtp_recv_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la librtp.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_rtp_recv_la_CFLAGS = $(AM_CFLAGS)
 
 # JACK
 module_jack_sink_la_SOURCES = modules/module-jack-sink.c
-module_jack_sink_la_LDFLAGS = -module -avoid-version
+module_jack_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_jack_sink_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la $(JACK_LIBS) libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_jack_sink_la_CFLAGS = $(AM_CFLAGS) $(JACK_CFLAGS)
 module_jack_source_la_SOURCES = modules/module-jack-source.c
-module_jack_source_la_LDFLAGS = -module -avoid-version
+module_jack_source_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_jack_source_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la $(JACK_LIBS) libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_jack_source_la_CFLAGS = $(AM_CFLAGS) $(JACK_CFLAGS)
 
@@ -2965,17 +2979,17 @@ libdbus_util_la_LDFLAGS = -avoid-version
 libdbus_util_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 libdbus_util_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
 module_hal_detect_la_SOURCES = modules/module-hal-detect.c
-module_hal_detect_la_LDFLAGS = -module -avoid-version
+module_hal_detect_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_hal_detect_la_LIBADD = $(AM_LIBADD) $(HAL_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libdbus-util.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_hal_detect_la_CFLAGS = $(AM_CFLAGS) $(HAL_CFLAGS)
 module_console_kit_la_SOURCES = modules/module-console-kit.c
-module_console_kit_la_LDFLAGS = -module -avoid-version
+module_console_kit_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_console_kit_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libdbus-util.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_console_kit_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
 
 # GConf support
 module_gconf_la_SOURCES = modules/gconf/module-gconf.c
-module_gconf_la_LDFLAGS = -module -avoid-version
+module_gconf_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_gconf_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_gconf_la_CFLAGS = $(AM_CFLAGS) -DPA_GCONF_HELPER=\"$(pulselibexecdir)/gconf-helper\"
 gconf_helper_SOURCES = modules/gconf/gconf-helper.c
@@ -2985,7 +2999,7 @@ gconf_helper_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 # Bluetooth proximity
 module_bluetooth_proximity_la_SOURCES = modules/bluetooth/module-bluetooth-proximity.c
-module_bluetooth_proximity_la_LDFLAGS = -module -avoid-version
+module_bluetooth_proximity_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_bluetooth_proximity_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libdbus-util.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_bluetooth_proximity_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS) -DPA_BT_PROXIMITY_HELPER=\"$(pulselibexecdir)/proximity-helper\"
 proximity_helper_SOURCES = modules/bluetooth/proximity-helper.c
@@ -2995,7 +3009,7 @@ proximity_helper_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 # Bluetooth sink / source
 module_bluetooth_discover_la_SOURCES = modules/bluetooth/module-bluetooth-discover.c
-module_bluetooth_discover_la_LDFLAGS = -module -avoid-version
+module_bluetooth_discover_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_bluetooth_discover_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libdbus-util.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_bluetooth_discover_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
 libbluetooth_sbc_la_SOURCES = modules/bluetooth/sbc.c modules/bluetooth/sbc.h modules/bluetooth/sbc_tables.h modules/bluetooth/sbc_math.h
@@ -3007,16 +3021,16 @@ libbluetooth_ipc_la_LDFLAGS = -avoid-version
 libbluetooth_ipc_la_LIBADD = $(AM_LIBADD)libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 libbluetooth_ipc_la_CFLAGS = $(AM_CFLAGS) -w
 module_bluetooth_device_la_SOURCES = modules/bluetooth/module-bluetooth-device.c modules/bluetooth/rtp.h
-module_bluetooth_device_la_LDFLAGS = -module -avoid-version
+module_bluetooth_device_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_bluetooth_device_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libdbus-util.la libbluetooth-ipc.la libbluetooth-sbc.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_bluetooth_device_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS) -w
 
 # Apple Airtunes/RAOP
 module_raop_sink_la_SOURCES = modules/module-raop-sink.c
-module_raop_sink_la_LDFLAGS = -module -avoid-version
+module_raop_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_raop_sink_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la librtp.la libraop.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_raop_discover_la_SOURCES = modules/module-raop-discover.c
-module_raop_discover_la_LDFLAGS = -module -avoid-version
+module_raop_discover_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_raop_discover_la_LIBADD = $(AM_LIBADD) $(AVAHI_LIBS) libavahi-wrap.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_raop_discover_la_CFLAGS = $(AM_CFLAGS) $(AVAHI_CFLAGS)
 CLEANFILES = esdcompat client.conf default.pa system.pa daemon.conf start-pulseaudio-x11
@@ -6071,6 +6085,79 @@ GTAGS:
 distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 
+check-TESTS: $(TESTS)
+	@failed=0; all=0; xfail=0; xpass=0; skip=0; ws='[	 ]'; \
+	srcdir=$(srcdir); export srcdir; \
+	list=' $(TESTS) '; \
+	if test -n "$$list"; then \
+	  for tst in $$list; do \
+	    if test -f ./$$tst; then dir=./; \
+	    elif test -f $$tst; then dir=; \
+	    else dir="$(srcdir)/"; fi; \
+	    if $(TESTS_ENVIRONMENT) $${dir}$$tst; then \
+	      all=`expr $$all + 1`; \
+	      case " $(XFAIL_TESTS) " in \
+	      *$$ws$$tst$$ws*) \
+		xpass=`expr $$xpass + 1`; \
+		failed=`expr $$failed + 1`; \
+		echo "XPASS: $$tst"; \
+	      ;; \
+	      *) \
+		echo "PASS: $$tst"; \
+	      ;; \
+	      esac; \
+	    elif test $$? -ne 77; then \
+	      all=`expr $$all + 1`; \
+	      case " $(XFAIL_TESTS) " in \
+	      *$$ws$$tst$$ws*) \
+		xfail=`expr $$xfail + 1`; \
+		echo "XFAIL: $$tst"; \
+	      ;; \
+	      *) \
+		failed=`expr $$failed + 1`; \
+		echo "FAIL: $$tst"; \
+	      ;; \
+	      esac; \
+	    else \
+	      skip=`expr $$skip + 1`; \
+	      echo "SKIP: $$tst"; \
+	    fi; \
+	  done; \
+	  if test "$$failed" -eq 0; then \
+	    if test "$$xfail" -eq 0; then \
+	      banner="All $$all tests passed"; \
+	    else \
+	      banner="All $$all tests behaved as expected ($$xfail expected failures)"; \
+	    fi; \
+	  else \
+	    if test "$$xpass" -eq 0; then \
+	      banner="$$failed of $$all tests failed"; \
+	    else \
+	      banner="$$failed of $$all tests did not behave as expected ($$xpass unexpected passes)"; \
+	    fi; \
+	  fi; \
+	  dashes="$$banner"; \
+	  skipped=""; \
+	  if test "$$skip" -ne 0; then \
+	    skipped="($$skip tests were not run)"; \
+	    test `echo "$$skipped" | wc -c` -le `echo "$$banner" | wc -c` || \
+	      dashes="$$skipped"; \
+	  fi; \
+	  report=""; \
+	  if test "$$failed" -ne 0 && test -n "$(PACKAGE_BUGREPORT)"; then \
+	    report="Please report to $(PACKAGE_BUGREPORT)"; \
+	    test `echo "$$report" | wc -c` -le `echo "$$banner" | wc -c` || \
+	      dashes="$$report"; \
+	  fi; \
+	  dashes=`echo "$$dashes" | sed s/./=/g`; \
+	  echo "$$dashes"; \
+	  echo "$$banner"; \
+	  test -z "$$skipped" || echo "$$skipped"; \
+	  test -z "$$report" || echo "$$report"; \
+	  echo "$$dashes"; \
+	  test "$$failed" -eq 0; \
+	else :; fi
+
 distdir: $(DISTFILES)
 	@srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
@@ -6098,6 +6185,7 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
+	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(SCRIPTS) $(DATA) \
@@ -6203,12 +6291,14 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
 	uninstall-policyDATA uninstall-pulseconfDATA \
 	uninstall-pulseincludeHEADERS uninstall-pulselibexecPROGRAMS \
 	uninstall-xdgautostartDATA
+	@$(NORMAL_INSTALL)
+	$(MAKE) $(AM_MAKEFLAGS) uninstall-hook
 
-.MAKE: install-am install-exec-am install-strip
+.MAKE: install-am install-exec-am install-strip uninstall-am
 
-.PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
-	clean-generic clean-libLTLIBRARIES clean-libtool \
-	clean-modlibexecLTLIBRARIES clean-noinstPROGRAMS \
+.PHONY: CTAGS GTAGS all all-am check check-TESTS check-am clean \
+	clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
+	clean-libtool clean-modlibexecLTLIBRARIES clean-noinstPROGRAMS \
 	clean-pulselibexecPROGRAMS ctags distclean distclean-compile \
 	distclean-generic distclean-libtool distclean-tags distdir dvi \
 	dvi-am html html-am info info-am install install-am \
@@ -6225,10 +6315,10 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
 	mostlyclean mostlyclean-compile mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
 	uninstall-am uninstall-binPROGRAMS uninstall-binSCRIPTS \
-	uninstall-libLTLIBRARIES uninstall-modlibexecLTLIBRARIES \
-	uninstall-policyDATA uninstall-pulseconfDATA \
-	uninstall-pulseincludeHEADERS uninstall-pulselibexecPROGRAMS \
-	uninstall-xdgautostartDATA
+	uninstall-hook uninstall-libLTLIBRARIES \
+	uninstall-modlibexecLTLIBRARIES uninstall-policyDATA \
+	uninstall-pulseconfDATA uninstall-pulseincludeHEADERS \
+	uninstall-pulselibexecPROGRAMS uninstall-xdgautostartDATA
 
 
 $(SYMDEF_FILES): modules/module-defs.h.m4
@@ -6282,10 +6372,13 @@ install-exec-hook:
 	chmod u+s $(DESTDIR)$(bindir)/pulseaudio
 	-chmod u+s $(DESTDIR)$(pulselibexecdir)/proximity-helper
 	ln -sf pacat $(DESTDIR)$(bindir)/parec
-	rm -f $(DESTDIR)$(modlibexecdir)/*.a
-	rm -f $(DESTDIR)$(libdir)/libpulsedsp.a
 	rm -f $(DESTDIR)$(libdir)/libpulsedsp.la
 	rm -f $(DESTDIR)$(modlibexecdir)/*.la
+
+uninstall-hook:
+	rm -f $(DESTDIR)$(bindir)/parec
+	rm -f $(DESTDIR)$(libdir)/libpulsedsp.*
+	rm -f $(DESTDIR)$(modlibexecdir)/*.so
 
 massif: pulseaudio
 	libtool --mode=execute valgrind --tool=massif --depth=6  --alloc-fn=pa_xmalloc --alloc-fn=pa_xmalloc0 --alloc-fn=pa_xrealloc --alloc-fn=dbus_realloc --alloc-fn=pa_xnew0_internal --alloc-fn=pa_xnew_internal ./pulseaudio

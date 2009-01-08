@@ -305,12 +305,9 @@ SHELL = @SHELL@
 STRIP = @STRIP@
 USE_NLS = @USE_NLS@
 VERSION = @VERSION@
+X11_CFLAGS = @X11_CFLAGS@
+X11_LIBS = @X11_LIBS@
 XGETTEXT = @XGETTEXT@
-XMKMF = @XMKMF@
-X_CFLAGS = @X_CFLAGS@
-X_EXTRA_LIBS = @X_EXTRA_LIBS@
-X_LIBS = @X_LIBS@
-X_PRE_LIBS = @X_PRE_LIBS@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -373,7 +370,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = bootstrap.sh LICENSE GPL LGPL doxygen/Makefile.am doxygen/Makefile.in doxygen/doxygen.conf.in README todo
-SUBDIRS = src doxygen man po libltdl
+SUBDIRS = libltdl src doxygen man po
 MAINTAINERCLEANFILES = 
 noinst_DATA = 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -887,7 +884,7 @@ fedora-snapshot: dist
 
 dist-hook:
 	if test -d .git ; then \
-		git pull ; \
+		test -z $$SKIP_GIT && git pull ; \
 		chmod u+w ${distdir}/ChangeLog || true ; \
 		( git-changelog.perl || echo "git-changelog.perl failed." ) > ${distdir}/ChangeLog 2>&1 ; \
 	fi
