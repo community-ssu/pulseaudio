@@ -1,4 +1,4 @@
-From b95745893ac337c15220e7b07a6291b0893590ee Mon Sep 17 00:00:00 2001
+From d2ac550f734f8a1024db0a865cd82ae27318a183 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Wed, 27 Aug 2008 19:54:48 +0300
 Subject: [PATCH] alsa-old: add module-alsa-{sink,src}-old (Nokia specific)
@@ -7,17 +7,17 @@ Backported from 0.9.10 with minor modifications.
 ---
  src/Makefile.am                             |   16 +-
  src/modules/module-alsa-sink-old-symdef.h   |   25 +
- src/modules/module-alsa-sink-old.c          | 1015 +++++++++++++++++++++++++++
+ src/modules/module-alsa-sink-old.c          | 1014 +++++++++++++++++++++++++++
  src/modules/module-alsa-source-old-symdef.h |   25 +
- src/modules/module-alsa-source-old.c        |  984 ++++++++++++++++++++++++++
- 5 files changed, 2064 insertions(+), 1 deletions(-)
+ src/modules/module-alsa-source-old.c        |  983 ++++++++++++++++++++++++++
+ 5 files changed, 2062 insertions(+), 1 deletions(-)
  create mode 100644 src/modules/module-alsa-sink-old-symdef.h
  create mode 100644 src/modules/module-alsa-sink-old.c
  create mode 100644 src/modules/module-alsa-source-old-symdef.h
  create mode 100644 src/modules/module-alsa-source-old.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 9b82968..22a82a4 100644
+index 50457f6..0b580d8 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -920,7 +920,9 @@ if HAVE_ALSA
@@ -96,15 +96,14 @@ index 0000000..4df382b
 +#endif
 diff --git a/src/modules/module-alsa-sink-old.c b/src/modules/module-alsa-sink-old.c
 new file mode 100644
-index 0000000..e752c12
+index 0000000..e50e150
 --- /dev/null
 +++ b/src/modules/module-alsa-sink-old.c
-@@ -0,0 +1,1015 @@
-+/* $Id: module-alsa-sink.c 2055 2007-11-13 23:42:15Z lennart $ */
-+
+@@ -0,0 +1,1014 @@
 +/***
 +  This file is part of PulseAudio.
 +
++  Copyright (C) 2008-2009 Nokia Corporation and/or its subsidiary(-ies).
 +  Copyright 2004-2006 Lennart Poettering
 +  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
 +
@@ -950,7 +949,7 @@ index 0000000..e752c12
 +        }
 +
 +        if (found)
-+            if (!(u->mixer_elem = pa_alsa_find_elem(u->mixer_handle, "Master", "PCM")))
++            if (!(u->mixer_elem = pa_alsa_find_elem(u->mixer_handle, "Master", "PCM", TRUE)))
 +                found = FALSE;
 +
 +        if (!found) {
@@ -1148,15 +1147,14 @@ index 0000000..0b5f047
 +#endif
 diff --git a/src/modules/module-alsa-source-old.c b/src/modules/module-alsa-source-old.c
 new file mode 100644
-index 0000000..7d7acbe
+index 0000000..d710ae7
 --- /dev/null
 +++ b/src/modules/module-alsa-source-old.c
-@@ -0,0 +1,984 @@
-+/* $Id: module-alsa-source.c 2055 2007-11-13 23:42:15Z lennart $ */
-+
+@@ -0,0 +1,983 @@
 +/***
 +  This file is part of PulseAudio.
 +
++  Copyright (C) 2008-2009 Nokia Corporation and/or its subsidiary(-ies).
 +  Copyright 2004-2006 Lennart Poettering
 +  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
 +
@@ -1978,7 +1976,7 @@ index 0000000..7d7acbe
 +        }
 +
 +        if (found)
-+            if (!(u->mixer_elem = pa_alsa_find_elem(u->mixer_handle, "Capture", "Mic")))
++            if (!(u->mixer_elem = pa_alsa_find_elem(u->mixer_handle, "Capture", "Mic", FALSE)))
 +                found = FALSE;
 +
 +        if (!found) {

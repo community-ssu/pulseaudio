@@ -1,4 +1,4 @@
-From 7354ca456b41653296be1c3749bb1fecfd4a41ef Mon Sep 17 00:00:00 2001
+From 6f002308412be5158a33d94c5c8190eba2ba3847 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 4 Dec 2008 18:02:21 +0200
 Subject: [PATCH] module: new null-source module
@@ -12,7 +12,7 @@ Subject: [PATCH] module: new null-source module
  create mode 100644 src/modules/module-null-source.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index e4ec488..ba2256f 100644
+index 608e678..b4fde6d 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -847,6 +847,7 @@ modlibexec_LTLIBRARIES += \

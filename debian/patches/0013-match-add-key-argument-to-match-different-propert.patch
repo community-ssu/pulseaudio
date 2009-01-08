@@ -1,4 +1,4 @@
-From fcff53a32c1aab1fddeb9a452754c1ab7dfd562f Mon Sep 17 00:00:00 2001
+From 213ae589b619da43867edc948acd89254edbf267 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 17 Nov 2008 21:37:25 +0200
 Subject: [PATCH] match: add "key" argument to match different properties

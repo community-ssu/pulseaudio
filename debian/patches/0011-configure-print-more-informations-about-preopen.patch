@@ -1,4 +1,4 @@
-From ba11580da8d549a6b7d61ab1b66a1c12cdd6864a Mon Sep 17 00:00:00 2001
+From 0f6366d4521770b70936a7e1ef384b0813fe9b18 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 10 Nov 2008 19:11:40 +0200
 Subject: [PATCH] configure: print more informations about preopen
@@ -8,7 +8,7 @@ Subject: [PATCH] configure: print more informations about preopen
  1 files changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/configure.ac b/configure.ac
-index ae6dd96..05c18bb 100644
+index 277ae2a..00b78ad 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -1139,8 +1139,8 @@ AC_SUBST(modlibexecdir)

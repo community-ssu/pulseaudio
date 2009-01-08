@@ -1,4 +1,4 @@
-From 24adf8c050ec9aa9606289d9d30d90a054f126dc Mon Sep 17 00:00:00 2001
+From 9c0854343176a34abd70f0b117b2220fc46f8f3f Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 10 Nov 2008 15:43:05 +0200
 Subject: [PATCH] flat-volume: use pa_sink_get_volume(s, TRUE) to work with slaved sink

@@ -1,4 +1,4 @@
-From a70734bdab6f1b8a1a875652e8b0127d7402e5fa Mon Sep 17 00:00:00 2001
+From cfac113a81a48c8661257521bcdc545cbf21123b Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Fri, 7 Nov 2008 16:39:42 +0200
 Subject: [PATCH] alsa-old: only transfer full periods (Nokia specific)
@@ -13,10 +13,10 @@ Signed-off-by: Marc-André Lureau <marcandre.lureau@gmail.com>
  2 files changed, 17 insertions(+), 11 deletions(-)
 
 diff --git a/src/modules/module-alsa-sink-old.c b/src/modules/module-alsa-sink-old.c
-index e752c12..9578dac 100644
+index e50e150..a587795 100644
 --- a/src/modules/module-alsa-sink-old.c
 +++ b/src/modules/module-alsa-sink-old.c
-@@ -85,6 +85,7 @@ struct userdata {
+@@ -84,6 +84,7 @@ struct userdata {
      long hw_volume_max, hw_volume_min;
  
      size_t frame_size, fragment_size, hwbuf_size;
@@ -24,7 +24,7 @@ index e752c12..9578dac 100644
      unsigned nfragments;
      pa_memchunk memchunk;
  
-@@ -146,10 +147,10 @@ static int mmap_write(struct userdata *u) {
+@@ -145,10 +146,10 @@ static int mmap_write(struct userdata *u) {
  
  /*         pa_log("Got request for %i samples", (int) n); */
  
@@ -38,7 +38,7 @@ index e752c12..9578dac 100644
  
          if ((err = snd_pcm_mmap_begin(u->pcm_handle, &areas, &offset, &frames)) < 0) {
  
-@@ -241,6 +242,8 @@ static int unix_write(struct userdata *u) {
+@@ -240,6 +241,8 @@ static int unix_write(struct userdata *u) {
  
  /*         pa_log("%u bytes to write", l); */
  
@@ -47,7 +47,7 @@ index e752c12..9578dac 100644
          if (l <= 0)
              return work_done;
  
-@@ -362,7 +365,6 @@ static int unsuspend(struct userdata *u) {
+@@ -361,7 +364,6 @@ static int unsuspend(struct userdata *u) {
      int err;
      pa_bool_t b, d;
      unsigned nfrags;
@@ -55,7 +55,7 @@ index e752c12..9578dac 100644
  
      pa_assert(u);
      pa_assert(!u->pcm_handle);
-@@ -377,11 +379,10 @@ static int unsuspend(struct userdata *u) {
+@@ -376,11 +378,10 @@ static int unsuspend(struct userdata *u) {
  
      ss = u->sink->sample_spec;
      nfrags = u->nfragments;
@@ -68,7 +68,7 @@ index e752c12..9578dac 100644
          pa_log("Failed to set hardware parameters: %s", snd_strerror(err));
          goto fail;
      }
-@@ -396,12 +397,12 @@ static int unsuspend(struct userdata *u) {
+@@ -395,12 +396,12 @@ static int unsuspend(struct userdata *u) {
          goto fail;
      }
  
@@ -83,7 +83,7 @@ index e752c12..9578dac 100644
          pa_log("Failed to set software parameters: %s", snd_strerror(err));
          goto fail;
      }
-@@ -906,6 +907,7 @@ int pa__init(pa_module*m) {
+@@ -905,6 +906,7 @@ int pa__init(pa_module*m) {
      u->fragment_size = frag_size = period_size * frame_size;
      u->nfragments = nfrags;
      u->hwbuf_size = u->fragment_size * nfrags;
@@ -92,10 +92,10 @@ index e752c12..9578dac 100644
      pa_log_info("Using %u fragments of size %lu bytes.", nfrags, (long unsigned) u->fragment_size);
  
 diff --git a/src/modules/module-alsa-source-old.c b/src/modules/module-alsa-source-old.c
-index 7d7acbe..63850f2 100644
+index d710ae7..f6da6f9 100644
 --- a/src/modules/module-alsa-source-old.c
 +++ b/src/modules/module-alsa-source-old.c
-@@ -86,6 +86,7 @@ struct userdata {
+@@ -85,6 +85,7 @@ struct userdata {
      long hw_volume_max, hw_volume_min;
  
      size_t frame_size, fragment_size, hwbuf_size;
@@ -103,7 +103,7 @@ index 7d7acbe..63850f2 100644
      unsigned nfragments;
  
      char *device_name;
-@@ -142,10 +143,10 @@ static int mmap_read(struct userdata *u) {
+@@ -141,10 +142,10 @@ static int mmap_read(struct userdata *u) {
  
  /*         pa_log("Got request for %i samples", (int) n); */
  
@@ -117,7 +117,7 @@ index 7d7acbe..63850f2 100644
  
          if ((err = snd_pcm_mmap_begin(u->pcm_handle, &areas, &offset, &frames)) < 0) {
  
-@@ -229,6 +230,8 @@ static int unix_read(struct userdata *u) {
+@@ -228,6 +229,8 @@ static int unix_read(struct userdata *u) {
  
          l = snd_pcm_status_get_avail(status) * u->frame_size;
  
@@ -126,7 +126,7 @@ index 7d7acbe..63850f2 100644
          if (l <= 0)
              return work_done;
  
-@@ -881,6 +884,7 @@ int pa__init(pa_module*m) {
+@@ -880,6 +883,7 @@ int pa__init(pa_module*m) {
      u->fragment_size = frag_size = period_size * frame_size;
      u->nfragments = nfrags;
      u->hwbuf_size = u->fragment_size * nfrags;

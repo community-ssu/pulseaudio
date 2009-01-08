@@ -1,4 +1,4 @@
-From 3aefc8f16a4b7a2a15fdd14ffb0d7eefce3177e0 Mon Sep 17 00:00:00 2001
+From 63250906b6c314af706e2c9d2bdb7fc3dd4e1c19 Mon Sep 17 00:00:00 2001
 From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
 Date: Mon, 17 Nov 2008 19:50:30 +0200
 Subject: [PATCH] alsa-old: dynamic switching of buffer metrics (Nokia specific)
@@ -10,7 +10,7 @@ Subject: [PATCH] alsa-old: dynamic switching of buffer metrics (Nokia specific)
  3 files changed, 650 insertions(+), 16 deletions(-)
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 22a82a4..e614429 100644
+index 0b580d8..a2a6b64 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -916,14 +916,23 @@ modlibexec_LTLIBRARIES += \
@@ -82,10 +82,10 @@ index 22a82a4..e614429 100644
  # Solaris
  
 diff --git a/src/modules/module-alsa-sink-old.c b/src/modules/module-alsa-sink-old.c
-index 9578dac..1623e65 100644
+index a587795..a69d11c 100644
 --- a/src/modules/module-alsa-sink-old.c
 +++ b/src/modules/module-alsa-sink-old.c
-@@ -47,6 +47,12 @@
+@@ -46,6 +46,12 @@
  #include <pulsecore/thread-mq.h>
  #include <pulsecore/rtpoll.h>
  
@@ -98,7 +98,7 @@ index 9578dac..1623e65 100644
  #include "alsa-util.h"
  #include "module-alsa-sink-old-symdef.h"
  
-@@ -63,8 +69,11 @@ PA_MODULE_USAGE(
+@@ -62,8 +68,11 @@ PA_MODULE_USAGE(
          "rate=<sample rate> "
          "fragments=<number of fragments> "
          "fragment_size=<fragment size> "
@@ -111,7 +111,7 @@ index 9578dac..1623e65 100644
  
  #define DEFAULT_DEVICE "default"
  
-@@ -89,6 +98,17 @@ struct userdata {
+@@ -88,6 +97,17 @@ struct userdata {
      unsigned nfragments;
      pa_memchunk memchunk;
  
@@ -129,7 +129,7 @@ index 9578dac..1623e65 100644
      char *device_name;
  
      pa_bool_t use_mmap;
-@@ -98,6 +118,12 @@ struct userdata {
+@@ -97,6 +117,12 @@ struct userdata {
      pa_rtpoll_item *alsa_rtpoll_item;
  
      snd_mixer_selem_channel_id_t mixer_map[SND_MIXER_SCHN_LAST];
@@ -142,7 +142,7 @@ index 9578dac..1623e65 100644
  };
  
  static const char* const valid_modargs[] = {
-@@ -109,11 +135,232 @@ static const char* const valid_modargs[] = {
+@@ -108,11 +134,232 @@ static const char* const valid_modargs[] = {
      "rate",
      "fragments",
      "fragment_size",
@@ -375,7 +375,7 @@ index 9578dac..1623e65 100644
  static int mmap_write(struct userdata *u) {
      int work_done = 0;
  
-@@ -476,6 +723,33 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+@@ -475,6 +722,33 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
              }
  
              break;
@@ -409,7 +409,7 @@ index 9578dac..1623e65 100644
      }
  
      return pa_sink_process_msg(o, code, data, offset, chunk);
-@@ -723,8 +997,11 @@ int pa__init(pa_module*m) {
+@@ -722,8 +996,11 @@ int pa__init(pa_module*m) {
      pa_sample_spec ss;
      pa_channel_map map;
      uint32_t nfrags, frag_size;
@@ -421,7 +421,7 @@ index 9578dac..1623e65 100644
      snd_pcm_info_t *pcm_info = NULL;
      int err;
      char *t;
-@@ -732,6 +1009,7 @@ int pa__init(pa_module*m) {
+@@ -731,6 +1008,7 @@ int pa__init(pa_module*m) {
      char *name_buf = NULL;
      int namereg_fail;
      pa_bool_t use_mmap = TRUE, b, d;
@@ -429,7 +429,7 @@ index 9578dac..1623e65 100644
      pa_sink_new_data data;
  
      snd_pcm_info_alloca(&pcm_info);
-@@ -743,6 +1021,8 @@ int pa__init(pa_module*m) {
+@@ -742,6 +1020,8 @@ int pa__init(pa_module*m) {
          goto fail;
      }
  
@@ -438,7 +438,7 @@ index 9578dac..1623e65 100644
      ss = m->core->default_sample_spec;
      if (pa_modargs_get_sample_spec_and_channel_map(ma, &ss, &map, PA_CHANNEL_MAP_ALSA) < 0) {
          pa_log("Failed to parse sample specification and channel map");
-@@ -762,12 +1042,27 @@ int pa__init(pa_module*m) {
+@@ -761,12 +1041,27 @@ int pa__init(pa_module*m) {
      }
      period_size = frag_size/frame_size;
  
@@ -466,7 +466,7 @@ index 9578dac..1623e65 100644
      u->core = m->core;
      u->module = m;
      m->userdata = u;
-@@ -830,6 +1125,7 @@ int pa__init(pa_module*m) {
+@@ -829,6 +1124,7 @@ int pa__init(pa_module*m) {
  
      /* ALSA might tweak the sample spec, so recalculate the frame size */
      frame_size = pa_frame_size(&ss);
@@ -474,7 +474,7 @@ index 9578dac..1623e65 100644
  
      if ((err = snd_mixer_open(&u->mixer_handle, 0)) < 0)
          pa_log_warn("Error opening mixer: %s", snd_strerror(err));
-@@ -909,7 +1205,20 @@ int pa__init(pa_module*m) {
+@@ -908,7 +1204,20 @@ int pa__init(pa_module*m) {
      u->hwbuf_size = u->fragment_size * nfrags;
      u->period_size = period_size;
  
@@ -496,7 +496,7 @@ index 9578dac..1623e65 100644
  
      pa_memchunk_reset(&u->memchunk);
  
-@@ -955,6 +1264,10 @@ int pa__init(pa_module*m) {
+@@ -954,6 +1263,10 @@ int pa__init(pa_module*m) {
  
      pa_sink_put(u->sink);
  
@@ -507,7 +507,7 @@ index 9578dac..1623e65 100644
      pa_modargs_free(ma);
  
      return 0;
-@@ -977,6 +1290,8 @@ void pa__done(pa_module*m) {
+@@ -976,6 +1289,8 @@ void pa__done(pa_module*m) {
      if (!(u = m->userdata))
          return;
  
@@ -517,10 +517,10 @@ index 9578dac..1623e65 100644
          pa_sink_unlink(u->sink);
  
 diff --git a/src/modules/module-alsa-source-old.c b/src/modules/module-alsa-source-old.c
-index 63850f2..8fa2b53 100644
+index f6da6f9..eeb91be 100644
 --- a/src/modules/module-alsa-source-old.c
 +++ b/src/modules/module-alsa-source-old.c
-@@ -48,6 +48,12 @@
+@@ -47,6 +47,12 @@
  #include <pulsecore/thread-mq.h>
  #include <pulsecore/rtpoll.h>
  
@@ -533,7 +533,7 @@ index 63850f2..8fa2b53 100644
  #include "alsa-util.h"
  #include "module-alsa-source-old-symdef.h"
  
-@@ -64,8 +70,11 @@ PA_MODULE_USAGE(
+@@ -63,8 +69,11 @@ PA_MODULE_USAGE(
          "rate=<sample rate> "
          "fragments=<number of fragments> "
          "fragment_size=<fragment size> "
@@ -546,7 +546,7 @@ index 63850f2..8fa2b53 100644
  
  #define DEFAULT_DEVICE "default"
  
-@@ -89,6 +98,19 @@ struct userdata {
+@@ -88,6 +97,19 @@ struct userdata {
      snd_pcm_uframes_t period_size;
      unsigned nfragments;
  
@@ -566,7 +566,7 @@ index 63850f2..8fa2b53 100644
      char *device_name;
  
      pa_bool_t use_mmap;
-@@ -96,6 +118,12 @@ struct userdata {
+@@ -95,6 +117,12 @@ struct userdata {
      pa_rtpoll_item *alsa_rtpoll_item;
  
      snd_mixer_selem_channel_id_t mixer_map[SND_MIXER_SCHN_LAST];
@@ -579,7 +579,7 @@ index 63850f2..8fa2b53 100644
  };
  
  static const char* const valid_modargs[] = {
-@@ -107,11 +135,237 @@ static const char* const valid_modargs[] = {
+@@ -106,11 +134,237 @@ static const char* const valid_modargs[] = {
      "format",
      "fragments",
      "fragment_size",
@@ -817,7 +817,7 @@ index 63850f2..8fa2b53 100644
  static int mmap_read(struct userdata *u) {
      int work_done = 0;
  
-@@ -467,6 +721,30 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
+@@ -466,6 +720,30 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
              }
  
              break;
@@ -848,7 +848,7 @@ index 63850f2..8fa2b53 100644
      }
  
      return pa_source_process_msg(o, code, data, offset, chunk);
-@@ -704,8 +982,11 @@ int pa__init(pa_module*m) {
+@@ -703,8 +981,11 @@ int pa__init(pa_module*m) {
      pa_sample_spec ss;
      pa_channel_map map;
      uint32_t nfrags, frag_size;
@@ -860,7 +860,7 @@ index 63850f2..8fa2b53 100644
      snd_pcm_info_t *pcm_info = NULL;
      int err;
      char *t;
-@@ -714,6 +995,7 @@ int pa__init(pa_module*m) {
+@@ -713,6 +994,7 @@ int pa__init(pa_module*m) {
      int namereg_fail;
      pa_bool_t use_mmap = TRUE, b, d;
      pa_source_new_data data;
@@ -868,7 +868,7 @@ index 63850f2..8fa2b53 100644
  
      snd_pcm_info_alloca(&pcm_info);
  
-@@ -743,12 +1025,29 @@ int pa__init(pa_module*m) {
+@@ -742,12 +1024,29 @@ int pa__init(pa_module*m) {
      }
      period_size = frag_size/frame_size;
  
@@ -898,7 +898,7 @@ index 63850f2..8fa2b53 100644
      u->core = m->core;
      u->module = m;
      m->userdata = u;
-@@ -886,7 +1185,20 @@ int pa__init(pa_module*m) {
+@@ -885,7 +1184,20 @@ int pa__init(pa_module*m) {
      u->hwbuf_size = u->fragment_size * nfrags;
      u->period_size = period_size;
  
@@ -920,7 +920,7 @@ index 63850f2..8fa2b53 100644
  
      if (u->mixer_handle) {
          pa_assert(u->mixer_elem);
-@@ -929,6 +1241,9 @@ int pa__init(pa_module*m) {
+@@ -928,6 +1240,9 @@ int pa__init(pa_module*m) {
  
      pa_source_put(u->source);
  
@@ -930,7 +930,7 @@ index 63850f2..8fa2b53 100644
      pa_modargs_free(ma);
  
      return 0;
-@@ -951,6 +1266,8 @@ void pa__done(pa_module*m) {
+@@ -950,6 +1265,8 @@ void pa__done(pa_module*m) {
      if (!(u = m->userdata))
          return;
  

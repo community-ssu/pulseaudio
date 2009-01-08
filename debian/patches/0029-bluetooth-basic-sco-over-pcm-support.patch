@@ -1,4 +1,4 @@
-From da82979dba82c6c6653c28fc748beba0a0855c4d Mon Sep 17 00:00:00 2001
+From 7eed48a59f7cb9f6b57469dbec2a33c4d9b76912 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Sat, 13 Dec 2008 01:47:52 +0200
 Subject: [PATCH] bluetooth: basic sco over pcm support

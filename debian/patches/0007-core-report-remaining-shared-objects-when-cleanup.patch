@@ -1,4 +1,4 @@
-From 21e77432bf3615f927c53bbbba4ff227cff1e460 Mon Sep 17 00:00:00 2001
+From 5550e4a2ac85f413d1f059401145822f4bb4c2c6 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 4 Dec 2008 16:23:06 +0200
 Subject: [PATCH] core: report remaining shared objects when cleanup
