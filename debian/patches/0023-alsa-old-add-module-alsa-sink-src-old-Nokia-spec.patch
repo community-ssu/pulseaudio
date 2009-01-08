@@ -1,4 +1,4 @@
-From ffe380a34351c710c7011377b25554f01aed6090 Mon Sep 17 00:00:00 2001
+From b95745893ac337c15220e7b07a6291b0893590ee Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Wed, 27 Aug 2008 19:54:48 +0300
 Subject: [PATCH] alsa-old: add module-alsa-{sink,src}-old (Nokia specific)
@@ -17,10 +17,10 @@ Backported from 0.9.10 with minor modifications.
  create mode 100644 src/modules/module-alsa-source-old.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 2306825..788e53d 100644
+index 9b82968..22a82a4 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -882,7 +882,9 @@ if HAVE_ALSA
+@@ -920,7 +920,9 @@ if HAVE_ALSA
  modlibexec_LTLIBRARIES += \
  		libalsa-util.la \
  		module-alsa-sink.la \
@@ -31,7 +31,7 @@ index 2306825..788e53d 100644
  endif
  
  if HAVE_SOLARIS
-@@ -1005,7 +1007,9 @@ SYMDEF_FILES = \
+@@ -1043,7 +1045,9 @@ SYMDEF_FILES = \
  		modules/module-x11-xsmp-symdef.h \
  		modules/module-oss-symdef.h \
  		modules/module-alsa-sink-symdef.h \
@@ -41,7 +41,7 @@ index 2306825..788e53d 100644
  		modules/module-solaris-symdef.h \
  		modules/module-waveout-symdef.h \
  		modules/module-detect-symdef.h \
-@@ -1220,11 +1224,21 @@ module_alsa_sink_la_LDFLAGS = -module -avoid-version
+@@ -1258,11 +1262,21 @@ module_alsa_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
  module_alsa_sink_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
  module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
@@ -51,7 +51,7 @@ index 2306825..788e53d 100644
 +module_alsa_sink_old_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
 +
  module_alsa_source_la_SOURCES = modules/module-alsa-source.c
- module_alsa_source_la_LDFLAGS = -module -avoid-version
+ module_alsa_source_la_LDFLAGS = $(MODULE_LDFLAGS)
  module_alsa_source_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
  module_alsa_source_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  

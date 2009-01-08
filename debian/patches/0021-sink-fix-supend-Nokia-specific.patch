@@ -1,4 +1,4 @@
-From 95deb05237a8f7e31e48afdcd16364174348d356 Mon Sep 17 00:00:00 2001
+From 28de7892148fe7458ceb1bf79d963c3355e6ead5 Mon Sep 17 00:00:00 2001
 From: Sarha Jyri (Nokia-D/Helsinki) <Jyri.Sarha@nokia.com>
 Date: Wed, 1 Oct 2008 18:08:36 +0300
 Subject: [PATCH] sink: fix supend (Nokia specific)

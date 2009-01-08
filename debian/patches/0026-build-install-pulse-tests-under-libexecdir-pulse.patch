@@ -1,4 +1,4 @@
-From 05c58facb879515fdcad4b8ec6bfa61fed522b0d Mon Sep 17 00:00:00 2001
+From 6f781c6ea31c908bb767347a8f04b6c1652dc360 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 11 Dec 2008 22:05:31 +0200
 Subject: [PATCH] build: install pulse tests under $(libexecdir)/pulse-tests (Nokia specific)
@@ -8,7 +8,7 @@ Subject: [PATCH] build: install pulse tests under $(libexecdir)/pulse-tests (Nok
  1 files changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index e8306b3..110cae6 100644
+index e614429..0663d05 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -29,6 +29,7 @@ pulsecoreincludedir=$(includedir)/pulsecore
@@ -19,26 +19,28 @@ index e8306b3..110cae6 100644
  
  ###################################
  #            Defines              #
-@@ -217,7 +218,7 @@ pabrowse_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
- #         Test programs           #
- ###################################
+@@ -248,7 +249,7 @@ TESTS = \
+ 		lock-autospawn-test \
+ 		prioq-test
  
 -noinst_PROGRAMS = \
 +pulsetest_PROGRAMS = \
  		mainloop-test \
  		mcalign-test \
  		pacat-simple \
-@@ -254,13 +255,13 @@ noinst_PROGRAMS = \
- 		prioq-test
- 
- if HAVE_SIGXCPU
+@@ -288,7 +289,7 @@ if HAVE_SIGXCPU
+ #TESTS += \
+ #		cpulimit-test \
+ #		cpulimit-test2
 -noinst_PROGRAMS += \
 +pulsetest_PROGRAMS += \
  		cpulimit-test \
  		cpulimit-test2
  endif
- 
+@@ -296,7 +297,7 @@ endif
  if HAVE_GLIB20
+ TESTS += \
+ 		mainloop-test-glib
 -noinst_PROGRAMS += \
 +pulsetest_PROGRAMS += \
  		mainloop-test-glib

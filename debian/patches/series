@@ -23,10 +23,9 @@
 0023-alsa-old-add-module-alsa-sink-src-old-Nokia-spec.patch
 0024-alsa-old-only-transfer-full-periods-Nokia-specific.patch
 0025-alsa-old-dynamic-switching-of-buffer-metrics-Nokia.patch
-0026-build-build-libltdl-before-src.patch
-0027-build-install-pulse-tests-under-libexecdir-pulse.patch
-0028-build-add-pulsecore.pc-Nokia-specific.patch
-0029-build-libtool-fails-to-link-module-s-library-during.patch
-0030-bluetooth-basic-sco-over-pcm-support.patch
-0031-build-fix-build-on-scratchbox-with-rpath.patch
-0032-autofoo.patch
+0026-build-install-pulse-tests-under-libexecdir-pulse.patch
+0027-build-add-pulsecore.pc-Nokia-specific.patch
+0028-build-libtool-fails-to-link-module-s-library-during.patch
+0029-bluetooth-basic-sco-over-pcm-support.patch
+0030-build-fix-build-on-scratchbox-with-rpath.patch
+0031-autofoo.patch

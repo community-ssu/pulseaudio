@@ -1,4 +1,4 @@
-From 2242a7b941fb9fc1a07ee953c1c6d2bf933eff91 Mon Sep 17 00:00:00 2001
+From 3aefc8f16a4b7a2a15fdd14ffb0d7eefce3177e0 Mon Sep 17 00:00:00 2001
 From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
 Date: Mon, 17 Nov 2008 19:50:30 +0200
 Subject: [PATCH] alsa-old: dynamic switching of buffer metrics (Nokia specific)
@@ -10,10 +10,10 @@ Subject: [PATCH] alsa-old: dynamic switching of buffer metrics (Nokia specific)
  3 files changed, 650 insertions(+), 16 deletions(-)
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 788e53d..e8306b3 100644
+index 22a82a4..e614429 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -878,14 +878,23 @@ modlibexec_LTLIBRARIES += \
+@@ -916,14 +916,23 @@ modlibexec_LTLIBRARIES += \
  		module-oss.la
  endif
  
@@ -38,7 +38,7 @@ index 788e53d..e8306b3 100644
  
  if HAVE_SOLARIS
  modlibexec_LTLIBRARIES += \
-@@ -935,12 +944,6 @@ modlibexec_LTLIBRARIES += \
+@@ -973,12 +982,6 @@ modlibexec_LTLIBRARIES += \
  		module-hal-detect.la
  endif
  
@@ -51,7 +51,7 @@ index 788e53d..e8306b3 100644
  if HAVE_BLUEZ
  modlibexec_LTLIBRARIES += \
  		module-bluetooth-proximity.la \
-@@ -1213,7 +1216,6 @@ module_oss_la_LDFLAGS = -module -avoid-version
+@@ -1251,7 +1254,6 @@ module_oss_la_LDFLAGS = $(MODULE_LDFLAGS)
  module_oss_la_LIBADD = $(AM_LIBADD) liboss-util.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
  
  # ALSA
@@ -59,7 +59,7 @@ index 788e53d..e8306b3 100644
  libalsa_util_la_SOURCES = modules/alsa-util.c modules/alsa-util.h
  libalsa_util_la_LDFLAGS = -avoid-version
  libalsa_util_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
-@@ -1226,8 +1228,8 @@ module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
+@@ -1264,8 +1266,8 @@ module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
  module_alsa_sink_old_la_SOURCES = modules/module-alsa-sink-old.c
  module_alsa_sink_old_la_LDFLAGS = -module -avoid-version
@@ -69,8 +69,8 @@ index 788e53d..e8306b3 100644
 +module_alsa_sink_old_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS) $(DBUS_CFLAGS)
  
  module_alsa_source_la_SOURCES = modules/module-alsa-source.c
- module_alsa_source_la_LDFLAGS = -module -avoid-version
-@@ -1236,8 +1238,8 @@ module_alsa_source_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
+ module_alsa_source_la_LDFLAGS = $(MODULE_LDFLAGS)
+@@ -1274,8 +1276,8 @@ module_alsa_source_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
  module_alsa_source_old_la_SOURCES = modules/module-alsa-source-old.c
  module_alsa_source_old_la_LDFLAGS = -module -avoid-version

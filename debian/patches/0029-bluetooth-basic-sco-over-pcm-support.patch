@@ -1,4 +1,4 @@
-From 0890021468b37ef6266c4877319ff77a903547b9 Mon Sep 17 00:00:00 2001
+From da82979dba82c6c6653c28fc748beba0a0855c4d Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Sat, 13 Dec 2008 01:47:52 +0200
 Subject: [PATCH] bluetooth: basic sco over pcm support
@@ -9,7 +9,7 @@ Subject: [PATCH] bluetooth: basic sco over pcm support
  2 files changed, 101 insertions(+), 37 deletions(-)
 
 diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
-index 90bfef9..249ebe0 100644
+index bf0caa2..4ee1dc7 100644
 --- a/src/modules/bluetooth/module-bluetooth-device.c
 +++ b/src/modules/bluetooth/module-bluetooth-device.c
 @@ -43,6 +43,7 @@
@@ -50,7 +50,7 @@ index 90bfef9..249ebe0 100644
      NULL
  };
  
-@@ -829,6 +837,20 @@ int pa__init(pa_module* m) {
+@@ -837,6 +845,20 @@ int pa__init(pa_module* m) {
      }
      u->ss.channels = (uint8_t) channels;
  
@@ -71,7 +71,7 @@ index 90bfef9..249ebe0 100644
      /* connect to the bluez audio service */
      u->audioservice_fd = bt_audio_service_open();
      if (u->audioservice_fd <= 0) {
-@@ -861,43 +883,59 @@ int pa__init(pa_module* m) {
+@@ -869,43 +891,59 @@ int pa__init(pa_module* m) {
      }
      pa_log_debug("Got the device socket");
  

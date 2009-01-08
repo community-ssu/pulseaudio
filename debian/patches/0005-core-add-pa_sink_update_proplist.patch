@@ -1,4 +1,4 @@
-From c86df5d0f8b9b21db00bfcda302ea074ad650888 Mon Sep 17 00:00:00 2001
+From 6864a479f4320646a9156a721efd11409371fe49 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 31 Oct 2008 02:33:28 +0200
 Subject: [PATCH] core: add pa_sink_update_proplist

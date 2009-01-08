@@ -1,4 +1,4 @@
-From cfe216621d4fb78a2f3667b866ec41b19278ca0e Mon Sep 17 00:00:00 2001
+From f94806f0d2755d57e4a2431b17bcebd0714c9f0a Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 31 Oct 2008 02:38:00 +0200
 Subject: [PATCH] core: add pa_source_update_proplist

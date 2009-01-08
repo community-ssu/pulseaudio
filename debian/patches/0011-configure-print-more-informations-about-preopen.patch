@@ -1,4 +1,4 @@
-From 0eaddf206ef6d652d010778db764a4dcd85ff726 Mon Sep 17 00:00:00 2001
+From ba11580da8d549a6b7d61ab1b66a1c12cdd6864a Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 10 Nov 2008 19:11:40 +0200
 Subject: [PATCH] configure: print more informations about preopen
@@ -8,10 +8,10 @@ Subject: [PATCH] configure: print more informations about preopen
  1 files changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/configure.ac b/configure.ac
-index b36fec3..a93d2a1 100644
+index ae6dd96..05c18bb 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -1120,8 +1120,8 @@ AC_SUBST(modlibexecdir)
+@@ -1139,8 +1139,8 @@ AC_SUBST(modlibexecdir)
  AC_ARG_ENABLE(
          [force-preopen],
          AS_HELP_STRING([--enable-force-preopen],[Preopen modules, even when dlopen() is supported.]),
@@ -22,7 +22,7 @@ index b36fec3..a93d2a1 100644
  
  AC_CONFIG_FILES([
  Makefile
-@@ -1236,6 +1236,7 @@ echo "
+@@ -1255,6 +1255,7 @@ echo "
      System Config Path:            ${PA_SYSTEM_CONFIG_PATH}
      Compiler:                      ${CC}
      CFLAGS:                        ${CFLAGS}
@@ -30,7 +30,7 @@ index b36fec3..a93d2a1 100644
      Have X11:                      ${ENABLE_X11}
      Enable OSS:                    ${ENABLE_OSS}
      Enable Alsa:                   ${ENABLE_ALSA}
-@@ -1252,9 +1253,12 @@ echo "
+@@ -1271,9 +1272,12 @@ echo "
      Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}
      Enable PolicyKit:              ${ENABLE_POLKIT}
      Enable OpenSSL (for Airtunes): ${ENABLE_OPENSSL}

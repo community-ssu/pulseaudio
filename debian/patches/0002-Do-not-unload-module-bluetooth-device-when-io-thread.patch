@@ -1,4 +1,4 @@
-From ae48743007b1fba097ca5cc350852d66dfffb067 Mon Sep 17 00:00:00 2001
+From 5797b3db99f730565c7e9e7845b0946d98225ce4 Mon Sep 17 00:00:00 2001
 From: Luiz Augusto von Dentz <luiz.dentz@openbossa.org>
 Date: Tue, 25 Nov 2008 17:20:45 -0300
 Subject: [PATCH] Do not unload module-bluetooth-device when io thread fails.
@@ -10,10 +10,10 @@ otherwise modules may be unloading twice causing invalid reads.
  1 files changed, 0 insertions(+), 1 deletions(-)
 
 diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
-index 5974d48..90bfef9 100644
+index cb4746a..bf0caa2 100644
 --- a/src/modules/bluetooth/module-bluetooth-device.c
 +++ b/src/modules/bluetooth/module-bluetooth-device.c
-@@ -771,7 +771,6 @@ static void thread_func(void *userdata) {
+@@ -779,7 +779,6 @@ static void thread_func(void *userdata) {
  fail:
      /* If this was no regular exit from the loop we have to continue processing messages until we receive PA_MESSAGE_SHUTDOWN */
      pa_log_debug("IO thread failed");
