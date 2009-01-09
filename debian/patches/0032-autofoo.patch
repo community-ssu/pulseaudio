@@ -1,4 +1,4 @@
-From c70a2eecb5db8f660b1c65a4946c38f984819552 Mon Sep 17 00:00:00 2001
+From 35b3f718af04824b4abb7090c986124420d5e5a1 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 7 Jan 2009 12:20:34 +0200
 Subject: [PATCH] autofoo
@@ -6,8 +6,8 @@ Subject: [PATCH] autofoo
 ---
  Makefile.in     |   15 ++-
  configure       |   73 +++++++++---
- src/Makefile.in |  346 ++++++++++++++++++++++++++++++++++++++++++-------------
- 3 files changed, 326 insertions(+), 108 deletions(-)
+ src/Makefile.in |  353 ++++++++++++++++++++++++++++++++++++++++++-------------
+ 3 files changed, 333 insertions(+), 108 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
 index 57526f4..1b0b497 100644
@@ -294,7 +294,7 @@ index 2d00795..fe11024 100755
 +    Preopened modules:             ${PREOPEN_MODS}
  "
 diff --git a/src/Makefile.in b/src/Makefile.in
-index 1986886..dcab1ef 100644
+index 1986886..7106788 100644
 --- a/src/Makefile.in
 +++ b/src/Makefile.in
 @@ -82,8 +82,8 @@ TESTS = mainloop-test$(EXEEXT) strlist-test$(EXEEXT) \
@@ -1018,6 +1018,25 @@ index 1986886..dcab1ef 100644
  
  
  $(SYMDEF_FILES): modules/module-defs.h.m4
+@@ -6375,11 +6555,18 @@ install-exec-hook:
+ 	ln -sf pacat $(DESTDIR)$(bindir)/parec
+ 	rm -f $(DESTDIR)$(libdir)/libpulsedsp.la
+ 	rm -f $(DESTDIR)$(modlibexecdir)/*.la
++# Nokia pulsecore hack
++	mkdir -p $(DESTDIR)$(includedir)/pulsecore/modules
++	cp $(top_builddir)/config.h $(DESTDIR)$(includedir)/pulsecore/pulsecore-config.h
++	cp pulsecore/*.h $(DESTDIR)$(includedir)/pulsecore
++	cp modules/*-util.h $(DESTDIR)$(includedir)/pulsecore/modules
+ 
+ uninstall-hook:
+ 	rm -f $(DESTDIR)$(bindir)/parec
+ 	rm -f $(DESTDIR)$(libdir)/libpulsedsp.*
+ 	rm -f $(DESTDIR)$(modlibexecdir)/*.so
++# Nokia pulsecore hack
++	rm -rf $(DESTDIR)$(includedir)/pulsecore
+ 
+ massif: pulseaudio
+ 	libtool --mode=execute valgrind --tool=massif --depth=6  --alloc-fn=pa_xmalloc --alloc-fn=pa_xmalloc0 --alloc-fn=pa_xrealloc --alloc-fn=dbus_realloc --alloc-fn=pa_xnew0_internal --alloc-fn=pa_xnew_internal ./pulseaudio
 -- 
 1.6.0.2.514.g23abd3
 

@@ -1,2 +1,8 @@
+2009-01-09  gettextize  <bug-gnu-gettext@gnu.org>
+
+	* m4/gettext.m4: New file, from gettext-0.17.
+	* m4/po.m4: New file, from gettext-0.17.
+	* m4/progtest.m4: New file, from gettext-0.17.
+
 /bin/sh: line 3: git-changelog.perl: command not found
 git-changelog.perl failed.
