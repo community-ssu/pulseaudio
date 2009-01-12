@@ -1,4 +1,4 @@
-From 77224c2e179c4300c3d1f7ca1b02ced77f14d974 Mon Sep 17 00:00:00 2001
+From 144ad2382a0a685060ed6db2f377d4cc9025ef0a Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 11 Dec 2008 17:09:11 +0200
 Subject: [PATCH] build: libtool fails to link module's library during build time (Nokia specific)

@@ -1,4 +1,4 @@
-From 59666be992244f8aff81739f51ede469d568f3b9 Mon Sep 17 00:00:00 2001
+From 7108105f290deb3c0d8d87be94123b8f514e0f46 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 7 Jan 2009 18:18:26 +0200
 Subject: [PATCH] build: fix build on scratchbox with rpath
