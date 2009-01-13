@@ -185,6 +185,7 @@ pa_source* pa_source_new(
     s->volume = data->volume;
     s->muted = data->muted;
     s->refresh_volume = s->refresh_muted = FALSE;
+    s->base_volume = PA_VOLUME_NORM;
 
     reset_callbacks(s);
     s->userdata = NULL;
@@ -498,6 +499,9 @@ pa_usec_t pa_source_get_latency(pa_source *s) {
     pa_assert(PA_SOURCE_IS_LINKED(s->state));
 
     if (!PA_SOURCE_IS_OPENED(s->state))
+        return 0;
+
+    if (!(s->flags & PA_SOURCE_LATENCY))
         return 0;
 
     pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_GET_LATENCY, &usec, 0, NULL) == 0);

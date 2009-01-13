@@ -1,8 +1,4 @@
-2009-01-08  gettextize  <bug-gnu-gettext@gnu.org>
-
-	* Makefile.in.in: Upgrade to gettext-0.17.
-
-2009-01-08  gettextize  <bug-gnu-gettext@gnu.org>
+2009-01-13  gettextize  <bug-gnu-gettext@gnu.org>
 
 	* Makefile.in.in: New file, from gettext-0.17.
 	* boldquot.sed: New file, from gettext-0.17.
