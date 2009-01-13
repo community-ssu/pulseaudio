@@ -27,6 +27,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
 
 #include <liboil/liboilfuncs.h>
 #include <liboil/liboil.h>
@@ -34,8 +36,10 @@
 #include <pulse/timeval.h>
 
 #include <pulsecore/log.h>
+#include <pulsecore/core-error.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/g711.h>
+#include <pulsecore/core-util.h>
 
 #include "sample-util.h"
 #include "endianmacros.h"
@@ -477,7 +481,6 @@ size_t pa_mix(
 
         case PA_SAMPLE_FLOAT32RE: {
             unsigned channel = 0;
-            float linear[PA_CHANNELS_MAX];
 
             calc_linear_float_stream_volumes(streams, nstreams, volume, spec);
 
@@ -986,4 +989,63 @@ size_t pa_usec_to_bytes_round_up(pa_usec_t t, const pa_sample_spec *spec) {
     u *= pa_frame_size(spec);
 
     return (size_t) u;
+}
+
+void pa_memchunk_dump_to_file(pa_memchunk *c, const char *fn) {
+    FILE *f;
+    void *p;
+
+    pa_assert(c);
+    pa_assert(fn);
+
+    /* Only for debugging purposes */
+
+    f = fopen(fn, "a");
+
+    if (!f) {
+        pa_log_warn("Failed to open '%s': %s", fn, pa_cstrerror(errno));
+        return;
+    }
+
+    p = pa_memblock_acquire(c->memblock);
+
+    if (fwrite((uint8_t*) p + c->index, 1, c->length, f) != c->length)
+        pa_log_warn("Failed to write to '%s': %s", fn, pa_cstrerror(errno));
+
+    pa_memblock_release(c->memblock);
+
+    fclose(f);
+}
+
+static void calc_sine(float *f, size_t l, double freq) {
+    size_t i;
+
+    l /= sizeof(float);
+
+    for (i = 0; i < l; i++)
+        *(f++) = (float) 0.5f * sin((double) i*M_PI*2*freq / (double) l);
+}
+
+void pa_memchunk_sine(pa_memchunk *c, pa_mempool *pool, unsigned rate, unsigned freq) {
+    size_t l;
+    unsigned gcd, n;
+    void *p;
+
+    pa_memchunk_reset(c);
+
+    gcd = pa_gcd(rate, freq);
+    n = rate / gcd;
+
+    l = pa_mempool_block_size_max(pool) / sizeof(float);
+
+    l /= n;
+    if (l <= 0) l = 1;
+    l *= n;
+
+    c->length = l * sizeof(float);
+    c->memblock = pa_memblock_new(pool, c->length);
+
+    p = pa_memblock_acquire(c->memblock);
+    calc_sine(p, c->length, freq * l / rate);
+    pa_memblock_release(c->memblock);
 }

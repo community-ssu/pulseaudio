@@ -1,7 +1,7 @@
 /***
   This file is part of PulseAudio.
 
-  Copyright 2004-2006 Lennart Poettering
+  Copyright 2008 Lennart Poettering
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
@@ -35,6 +35,7 @@
 #include <sys/poll.h>
 
 #include <pulse/xmalloc.h>
+#include <pulse/timeval.h>
 
 #include <pulsecore/core-error.h>
 #include <pulsecore/source.h>
@@ -45,23 +46,21 @@
 #include <pulsecore/thread.h>
 #include <pulsecore/thread-mq.h>
 #include <pulsecore/rtpoll.h>
+#include <pulsecore/rtclock.h>
 
-#include "module-pipe-source-symdef.h"
+#include "module-sine-source-symdef.h"
 
 PA_MODULE_AUTHOR("Lennart Poettering");
-PA_MODULE_DESCRIPTION("UNIX pipe source");
+PA_MODULE_DESCRIPTION("Sine wave generator source");
 PA_MODULE_VERSION(PACKAGE_VERSION);
 PA_MODULE_LOAD_ONCE(FALSE);
 PA_MODULE_USAGE(
-        "source_name=<name for the source> "
-        "file=<path of the FIFO> "
-        "format=<sample format> "
-        "channels=<number of channels> "
         "rate=<sample rate> "
-        "channel_map=<channel map>");
+        "source_name=<name for the source> "
+        "frequency=<frequency in Hz>");
 
-#define DEFAULT_FILE_NAME "/tmp/music.input"
-#define DEFAULT_SOURCE_NAME "fifo_input"
+#define DEFAULT_SOURCE_NAME "sine_input"
+#define MAX_LATENCY_USEC (PA_USEC_PER_SEC * 2)
 
 struct userdata {
     pa_core *core;
@@ -72,21 +71,17 @@ struct userdata {
     pa_thread_mq thread_mq;
     pa_rtpoll *rtpoll;
 
-    char *filename;
-    int fd;
-
     pa_memchunk memchunk;
+    size_t peek_index;
 
-    pa_rtpoll_item *rtpoll_item;
+    pa_usec_t block_usec; /* how much to push at once */
+    pa_usec_t timestamp;  /* when to push next */
 };
 
 static const char* const valid_modargs[] = {
-    "file",
     "rate",
-    "channels",
-    "format",
     "source_name",
-    "channel_map",
+    "frequency",
     NULL
 };
 
@@ -101,16 +96,21 @@ static int source_process_msg(
 
     switch (code) {
 
+        case PA_SINK_MESSAGE_SET_STATE:
+
+            if (PA_PTR_TO_UINT(data) == PA_SINK_RUNNING)
+                u->timestamp = pa_rtclock_usec();
+
+            break;
+
         case PA_SOURCE_MESSAGE_GET_LATENCY: {
-            size_t n = 0;
-            int l;
+            pa_usec_t now, left_to_fill;
 
-#ifdef FIONREAD
-            if (ioctl(u->fd, FIONREAD, &l) >= 0 && l > 0)
-                n = (size_t) l;
-#endif
+            now = pa_rtclock_usec();
+            left_to_fill = u->timestamp > now ? u->timestamp - now : 0ULL;
 
-            *((pa_usec_t*) data) = pa_bytes_to_usec(n, &u->source->sample_spec);
+            *((pa_usec_t*) data) = u->block_usec > left_to_fill ? u->block_usec - left_to_fill : 0ULL;
+
             return 0;
         }
     }
@@ -118,9 +118,46 @@ static int source_process_msg(
     return pa_source_process_msg(o, code, data, offset, chunk);
 }
 
+static void source_update_requested_latency_cb(pa_source *s) {
+    struct userdata *u;
+
+    pa_source_assert_ref(s);
+    pa_assert_se(u = s->userdata);
+
+    u->block_usec = pa_source_get_requested_latency_within_thread(s);
+
+    if (u->block_usec == (pa_usec_t) -1)
+        u->block_usec = s->thread_info.max_latency;
+
+    pa_log_debug("new block msec = %lu", (unsigned long) (u->block_usec / PA_USEC_PER_MSEC));
+}
+
+static void process_render(struct userdata *u, pa_usec_t now) {
+    pa_assert(u);
+
+    while (u->timestamp < now + u->block_usec) {
+        pa_memchunk chunk;
+        size_t k;
+
+        k = pa_usec_to_bytes_round_up(now + u->block_usec - u->timestamp, &u->source->sample_spec);
+
+        chunk = u->memchunk;
+        chunk.index += u->peek_index;
+        chunk.length = PA_MIN(chunk.length - u->peek_index, k);
+
+/*         pa_log_debug("posting %lu", (unsigned long) chunk.length); */
+        pa_source_post(u->source, &chunk);
+
+        u->peek_index += chunk.length;
+        while (u->peek_index >= u->memchunk.length)
+            u->peek_index -= u->memchunk.length;
+
+        u->timestamp += pa_bytes_to_usec(chunk.length, &u->source->sample_spec);
+    }
+}
+
 static void thread_func(void *userdata) {
     struct userdata *u = userdata;
-    int read_type = 0;
 
     pa_assert(u);
 
@@ -129,69 +166,29 @@ static void thread_func(void *userdata) {
     pa_thread_mq_install(&u->thread_mq);
     pa_rtpoll_install(u->rtpoll);
 
+    u->timestamp = pa_rtclock_usec();
+
     for (;;) {
         int ret;
-        struct pollfd *pollfd;
 
-        pollfd = pa_rtpoll_item_get_pollfd(u->rtpoll_item, NULL);
+        if (PA_SOURCE_IS_OPENED(u->source->thread_info.state)) {
+            pa_usec_t now;
 
-        /* Try to read some data and pass it on to the source driver */
-        if (u->source->thread_info.state == PA_SOURCE_RUNNING && pollfd->revents) {
-            ssize_t l;
-            void *p;
+            now = pa_rtclock_usec();
 
-            if (!u->memchunk.memblock) {
-                u->memchunk.memblock = pa_memblock_new(u->core->mempool, PIPE_BUF);
-                u->memchunk.index = u->memchunk.length = 0;
-            }
+            if (u->timestamp <= now)
+                process_render(u, now);
 
-            pa_assert(pa_memblock_get_length(u->memchunk.memblock) > u->memchunk.index);
-
-            p = pa_memblock_acquire(u->memchunk.memblock);
-            l = pa_read(u->fd, (uint8_t*) p + u->memchunk.index, pa_memblock_get_length(u->memchunk.memblock) - u->memchunk.index, &read_type);
-            pa_memblock_release(u->memchunk.memblock);
-
-            pa_assert(l != 0); /* EOF cannot happen, since we opened the fifo for both reading and writing */
-
-            if (l < 0) {
-
-                if (errno == EINTR)
-                    continue;
-                else if (errno != EAGAIN) {
-                    pa_log("Faile to read data from FIFO: %s", pa_cstrerror(errno));
-                    goto fail;
-                }
-
-            } else {
-
-                u->memchunk.length = (size_t) l;
-                pa_source_post(u->source, &u->memchunk);
-                u->memchunk.index += (size_t) l;
-
-                if (u->memchunk.index >= pa_memblock_get_length(u->memchunk.memblock)) {
-                    pa_memblock_unref(u->memchunk.memblock);
-                    pa_memchunk_reset(&u->memchunk);
-                }
-
-                pollfd->revents = 0;
-            }
-        }
+            pa_rtpoll_set_timer_absolute(u->rtpoll, u->timestamp);
+        } else
+            pa_rtpoll_set_timer_disabled(u->rtpoll);
 
         /* Hmm, nothing to do. Let's sleep */
-        pollfd->events = (short) (u->source->thread_info.state == PA_SOURCE_RUNNING ? POLLIN : 0);
-
         if ((ret = pa_rtpoll_run(u->rtpoll, TRUE)) < 0)
             goto fail;
 
         if (ret == 0)
             goto finish;
-
-        pollfd = pa_rtpoll_item_get_pollfd(u->rtpoll_item, NULL);
-
-        if (pollfd->revents & ~POLLIN) {
-            pa_log("FIFO shutdown.");
-            goto fail;
-        }
     }
 
 fail:
@@ -204,14 +201,21 @@ finish:
     pa_log_debug("Thread shutting down");
 }
 
+static void calc_sine(float *f, size_t l, double freq) {
+    size_t i;
+
+    l /= sizeof(float);
+
+    for (i = 0; i < l; i++)
+        *(f++) = (float) 0.5f * sin((double) i*M_PI*2*freq / (double) l);
+}
+
 int pa__init(pa_module*m) {
     struct userdata *u;
-    struct stat st;
-    pa_sample_spec ss;
-    pa_channel_map map;
     pa_modargs *ma;
-    struct pollfd *pollfd;
     pa_source_new_data data;
+    uint32_t frequency;
+    pa_sample_spec ss;
 
     pa_assert(m);
 
@@ -220,48 +224,38 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
-    ss = m->core->default_sample_spec;
-    if (pa_modargs_get_sample_spec_and_channel_map(ma, &ss, &map, PA_CHANNEL_MAP_DEFAULT) < 0) {
-        pa_log("invalid sample format specification or channel map");
+    ss.format = PA_SAMPLE_FLOAT32;
+    ss.channels = 1;
+    ss.rate = 44100;
+
+    if (pa_modargs_get_value_u32(ma, "rate", &ss.rate) < 0 || ss.rate <= 1) {
+        pa_log("Invalid rate specification");
+        goto fail;
+    }
+
+    frequency = 440;
+    if (pa_modargs_get_value_u32(ma, "frequency", &frequency) < 0 || frequency < 1 || frequency > ss.rate/2) {
+        pa_log("Invalid frequency specification");
         goto fail;
     }
 
     m->userdata = u = pa_xnew0(struct userdata, 1);
     u->core = m->core;
     u->module = m;
-    pa_memchunk_reset(&u->memchunk);
     u->rtpoll = pa_rtpoll_new();
     pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
 
-    u->filename = pa_runtime_path(pa_modargs_get_value(ma, "file", DEFAULT_FILE_NAME));
-
-    mkfifo(u->filename, 0666);
-    if ((u->fd = open(u->filename, O_RDWR|O_NOCTTY)) < 0) {
-        pa_log("open('%s'): %s", u->filename, pa_cstrerror(errno));
-        goto fail;
-    }
-
-    pa_make_fd_cloexec(u->fd);
-    pa_make_fd_nonblock(u->fd);
-
-    if (fstat(u->fd, &st) < 0) {
-        pa_log("fstat('%s'): %s",u->filename, pa_cstrerror(errno));
-        goto fail;
-    }
-
-    if (!S_ISFIFO(st.st_mode)) {
-        pa_log("'%s' is not a FIFO.", u->filename);
-        goto fail;
-    }
+    u->peek_index = 0;
+    pa_memchunk_sine(&u->memchunk, m->core->mempool, ss.rate, frequency);
 
     pa_source_new_data_init(&data);
     data.driver = __FILE__;
     data.module = m;
     pa_source_new_data_set_name(&data, pa_modargs_get_value(ma, "source_name", DEFAULT_SOURCE_NAME));
-    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->filename);
-    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Unix FIFO source %s", u->filename);
+    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Sine source at %u Hz", (unsigned) frequency);
+    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_CLASS, "abstract");
+    pa_proplist_setf(data.proplist, "sine.hz", "%u", frequency);
     pa_source_new_data_set_sample_spec(&data, &ss);
-    pa_source_new_data_set_channel_map(&data, &map);
 
     u->source = pa_source_new(m->core, &data, PA_SOURCE_LATENCY);
     pa_source_new_data_done(&data);
@@ -272,15 +266,14 @@ int pa__init(pa_module*m) {
     }
 
     u->source->parent.process_msg = source_process_msg;
+    u->source->update_requested_latency = source_update_requested_latency_cb;
     u->source->userdata = u;
 
     pa_source_set_asyncmsgq(u->source, u->thread_mq.inq);
     pa_source_set_rtpoll(u->source, u->rtpoll);
 
-    u->rtpoll_item = pa_rtpoll_item_new(u->rtpoll, PA_RTPOLL_NEVER, 1);
-    pollfd = pa_rtpoll_item_get_pollfd(u->rtpoll_item, NULL);
-    pollfd->fd = u->fd;
-    pollfd->events = pollfd->revents = 0;
+    pa_source_set_latency_range(u->source, (pa_usec_t) -1, MAX_LATENCY_USEC);
+    u->block_usec = u->source->thread_info.max_latency;
 
     if (!(u->thread = pa_thread_new(thread_func, u))) {
         pa_log("Failed to create thread.");
@@ -326,19 +319,8 @@ void pa__done(pa_module*m) {
     if (u->memchunk.memblock)
         pa_memblock_unref(u->memchunk.memblock);
 
-    if (u->rtpoll_item)
-        pa_rtpoll_item_free(u->rtpoll_item);
-
     if (u->rtpoll)
         pa_rtpoll_free(u->rtpoll);
-
-    if (u->filename) {
-        unlink(u->filename);
-        pa_xfree(u->filename);
-    }
-
-    if (u->fd >= 0)
-        pa_assert_se(pa_close(u->fd) == 0);
 
     pa_xfree(u);
 }

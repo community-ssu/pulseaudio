@@ -1200,6 +1200,14 @@ module_simple_protocol_unix_la_LINK = $(LIBTOOL) --tag=CC \
 	$(module_simple_protocol_unix_la_LDFLAGS) $(LDFLAGS) -o $@
 @HAVE_AF_UNIX_TRUE@am_module_simple_protocol_unix_la_rpath = -rpath \
 @HAVE_AF_UNIX_TRUE@	$(modlibexecdir)
+module_sine_source_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	libpulsecore-@PA_MAJORMINORMICRO@.la \
+	libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+am_module_sine_source_la_OBJECTS = module-sine-source.lo
+module_sine_source_la_OBJECTS = $(am_module_sine_source_la_OBJECTS)
+module_sine_source_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(module_sine_source_la_LDFLAGS) $(LDFLAGS) -o $@
 module_sine_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 	libpulsecore-@PA_MAJORMINORMICRO@.la \
 	libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
@@ -1785,7 +1793,8 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libavahi_wrap_la_SOURCES) \
 	$(module_rtp_recv_la_SOURCES) $(module_rtp_send_la_SOURCES) \
 	$(module_simple_protocol_tcp_la_SOURCES) \
 	$(module_simple_protocol_unix_la_SOURCES) \
-	$(module_sine_la_SOURCES) $(module_solaris_la_SOURCES) \
+	$(module_sine_source_la_SOURCES) $(module_sine_la_SOURCES) \
+	$(module_solaris_la_SOURCES) \
 	$(module_stream_restore_la_SOURCES) \
 	$(module_suspend_on_idle_la_SOURCES) \
 	$(module_tunnel_sink_la_SOURCES) \
@@ -1869,7 +1878,8 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) $(libavahi_wrap_la_SOURCES) \
 	$(module_rtp_recv_la_SOURCES) $(module_rtp_send_la_SOURCES) \
 	$(module_simple_protocol_tcp_la_SOURCES) \
 	$(module_simple_protocol_unix_la_SOURCES) \
-	$(module_sine_la_SOURCES) $(module_solaris_la_SOURCES) \
+	$(module_sine_source_la_SOURCES) $(module_sine_la_SOURCES) \
+	$(module_solaris_la_SOURCES) \
 	$(module_stream_restore_la_SOURCES) \
 	$(module_suspend_on_idle_la_SOURCES) \
 	$(module_tunnel_sink_la_SOURCES) \
@@ -2599,14 +2609,14 @@ modlibexec_LTLIBRARIES = libcli.la libprotocol-cli.la \
 	libprotocol-native.la libprotocol-esound.la $(am__append_31) \
 	$(am__append_32) module-flat-volume.la module-cli.la \
 	module-cli-protocol-tcp.la module-simple-protocol-tcp.la \
-	module-null-sink.la module-detect.la module-volume-restore.la \
-	module-device-restore.la module-stream-restore.la \
-	module-default-device-restore.la module-always-sink.la \
-	module-rescue-streams.la module-suspend-on-idle.la \
-	module-http-protocol-tcp.la module-sine.la \
-	module-native-protocol-tcp.la module-native-protocol-fd.la \
-	module-esound-protocol-tcp.la module-combine.la \
-	module-remap-sink.la module-ladspa-sink.la \
+	module-null-sink.la module-sine-source.la module-detect.la \
+	module-volume-restore.la module-device-restore.la \
+	module-stream-restore.la module-default-device-restore.la \
+	module-always-sink.la module-rescue-streams.la \
+	module-suspend-on-idle.la module-http-protocol-tcp.la \
+	module-sine.la module-native-protocol-tcp.la \
+	module-native-protocol-fd.la module-esound-protocol-tcp.la \
+	module-combine.la module-remap-sink.la module-ladspa-sink.la \
 	module-esound-sink.la module-tunnel-sink.la \
 	module-tunnel-source.la module-position-event-sounds.la \
 	$(am__append_33) $(am__append_34) $(am__append_35) \
@@ -2681,6 +2691,7 @@ SYMDEF_FILES = \
 		modules/module-tunnel-sink-symdef.h \
 		modules/module-tunnel-source-symdef.h \
 		modules/module-null-sink-symdef.h \
+		modules/module-sine-source-symdef.h \
 		modules/module-esound-sink-symdef.h \
 		modules/module-zeroconf-publish-symdef.h \
 		modules/module-zeroconf-discover-symdef.h \
@@ -2806,6 +2817,9 @@ module_sine_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpul
 module_null_sink_la_SOURCES = modules/module-null-sink.c
 module_null_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_null_sink_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+module_sine_source_la_SOURCES = modules/module-sine-source.c
+module_sine_source_la_LDFLAGS = -module -avoid-version
+module_sine_source_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 # Couplings
 module_combine_la_SOURCES = modules/module-combine.c
@@ -3257,6 +3271,8 @@ module-simple-protocol-tcp.la: $(module_simple_protocol_tcp_la_OBJECTS) $(module
 	$(module_simple_protocol_tcp_la_LINK) -rpath $(modlibexecdir) $(module_simple_protocol_tcp_la_OBJECTS) $(module_simple_protocol_tcp_la_LIBADD) $(LIBS)
 module-simple-protocol-unix.la: $(module_simple_protocol_unix_la_OBJECTS) $(module_simple_protocol_unix_la_DEPENDENCIES) 
 	$(module_simple_protocol_unix_la_LINK) $(am_module_simple_protocol_unix_la_rpath) $(module_simple_protocol_unix_la_OBJECTS) $(module_simple_protocol_unix_la_LIBADD) $(LIBS)
+module-sine-source.la: $(module_sine_source_la_OBJECTS) $(module_sine_source_la_DEPENDENCIES) 
+	$(module_sine_source_la_LINK) -rpath $(modlibexecdir) $(module_sine_source_la_OBJECTS) $(module_sine_source_la_LIBADD) $(LIBS)
 module-sine.la: $(module_sine_la_OBJECTS) $(module_sine_la_DEPENDENCIES) 
 	$(module_sine_la_LINK) -rpath $(modlibexecdir) $(module_sine_la_OBJECTS) $(module_sine_la_LIBADD) $(LIBS)
 module-solaris.la: $(module_solaris_la_OBJECTS) $(module_solaris_la_DEPENDENCIES) 
@@ -3678,6 +3694,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-position-event-sounds.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-raop-sink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-remap-sink.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-sine-source.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-sine.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-solaris.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-tunnel.Plo@am__quote@
@@ -5096,6 +5113,13 @@ module_simple_protocol_unix_la-module-protocol-stub.lo: modules/module-protocol-
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-protocol-stub.c' object='module_simple_protocol_unix_la-module-protocol-stub.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_simple_protocol_unix_la_CFLAGS) $(CFLAGS) -c -o module_simple_protocol_unix_la-module-protocol-stub.lo `test -f 'modules/module-protocol-stub.c' || echo '$(srcdir)/'`modules/module-protocol-stub.c
+
+module-sine-source.lo: modules/module-sine-source.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module-sine-source.lo -MD -MP -MF $(DEPDIR)/module-sine-source.Tpo -c -o module-sine-source.lo `test -f 'modules/module-sine-source.c' || echo '$(srcdir)/'`modules/module-sine-source.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/module-sine-source.Tpo $(DEPDIR)/module-sine-source.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-sine-source.c' object='module-sine-source.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module-sine-source.lo `test -f 'modules/module-sine-source.c' || echo '$(srcdir)/'`modules/module-sine-source.c
 
 module-sine.lo: modules/module-sine.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module-sine.lo -MD -MP -MF $(DEPDIR)/module-sine.Tpo -c -o module-sine.lo `test -f 'modules/module-sine.c' || echo '$(srcdir)/'`modules/module-sine.c
