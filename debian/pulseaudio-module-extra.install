@@ -23,6 +23,7 @@ usr/lib/pulse-*/modules/module-rtp-recv.so
 usr/lib/pulse-*/modules/module-rtp-send.so
 usr/lib/pulse-*/modules/module-simple-protocol-tcp.so
 usr/lib/pulse-*/modules/module-sine.so
+usr/lib/pulse-*/modules/module-sine-source.so
 usr/lib/pulse-*/modules/module-tunnel-sink.so
 usr/lib/pulse-*/modules/module-tunnel-source.so
 usr/lib/pulse-*/modules/module-volume-restore.so

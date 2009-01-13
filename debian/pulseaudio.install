@@ -4,8 +4,8 @@ etc/pulse/system.pa
 etc/xdg/autostart/pulseaudio.desktop
 usr/bin/pulseaudio
 usr/bin/start-pulseaudio-x11
-usr/lib/libpulsecommon-0.9.14.so
-usr/lib/libpulsecore-0.9.14.so
+usr/lib/libpulsecommon-*.so
+usr/lib/libpulsecore-*.so
 usr/lib/pulse-*/modules/libalsa-util.so
 usr/lib/pulse-*/modules/libbluetooth-ipc.so
 usr/lib/pulse-*/modules/libbluetooth-sbc.so
