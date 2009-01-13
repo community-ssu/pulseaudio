@@ -1,4 +1,4 @@
-From 208199b2882faf1d454753f235518f08a842eef8 Mon Sep 17 00:00:00 2001
+From f3c980306d05697eb641dbcf6ced8dffa8c4de4c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 27 Oct 2008 21:14:50 +0200
 Subject: [PATCH] libpulse: add proplist_from_string
@@ -11,7 +11,7 @@ Subject: [PATCH] libpulse: add proplist_from_string
  4 files changed, 99 insertions(+), 3 deletions(-)
 
 diff --git a/src/map-file b/src/map-file
-index ca523b9..18e7273 100644
+index 82b9c38..59006fe 100644
 --- a/src/map-file
 +++ b/src/map-file
 @@ -156,6 +156,7 @@ pa_proplist_set;

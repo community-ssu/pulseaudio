@@ -1,4 +1,4 @@
-From 7108105f290deb3c0d8d87be94123b8f514e0f46 Mon Sep 17 00:00:00 2001
+From ddc7bcc31ddb62b4e50c5c617fc4b575ec74d3f6 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 7 Jan 2009 18:18:26 +0200
 Subject: [PATCH] build: fix build on scratchbox with rpath
@@ -12,7 +12,7 @@ X11 library solves it.. Geezz...
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 1515313..bdfe631 100644
+index fe9251d..36ec654 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -144,7 +144,7 @@ PREOPEN_LIBS = $(modlibexec_LTLIBRARIES)

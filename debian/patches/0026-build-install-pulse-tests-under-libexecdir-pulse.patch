@@ -1,4 +1,4 @@
-From b04596daed9887a525b9ef5b04c8d33cbb237a37 Mon Sep 17 00:00:00 2001
+From 2a0ddf210e033cf2d260c534a56509be8db6220f Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 11 Dec 2008 22:05:31 +0200
 Subject: [PATCH] build: install pulse tests under $(libexecdir)/pulse-tests (Nokia specific)
@@ -8,7 +8,7 @@ Subject: [PATCH] build: install pulse tests under $(libexecdir)/pulse-tests (Nok
  1 files changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index a2a6b64..51a3e1c 100644
+index 485a447..ddb1545 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -29,6 +29,7 @@ pulsecoreincludedir=$(includedir)/pulsecore

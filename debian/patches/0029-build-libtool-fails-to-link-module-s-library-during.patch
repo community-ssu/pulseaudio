@@ -1,4 +1,4 @@
-From 144ad2382a0a685060ed6db2f377d4cc9025ef0a Mon Sep 17 00:00:00 2001
+From 54da98756215e4a57b659d797a7c8c8ff90ba7f3 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 11 Dec 2008 17:09:11 +0200
 Subject: [PATCH] build: libtool fails to link module's library during build time (Nokia specific)
@@ -8,7 +8,7 @@ Subject: [PATCH] build: libtool fails to link module's library during build time
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 62e02f9..1515313 100644
+index 35625db..fe9251d 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -144,7 +144,7 @@ PREOPEN_LIBS = $(modlibexec_LTLIBRARIES)

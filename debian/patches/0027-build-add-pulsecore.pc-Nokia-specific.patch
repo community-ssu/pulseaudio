@@ -1,4 +1,4 @@
-From 57665e7457b425e78c210f6fc9e30c82a2df2f00 Mon Sep 17 00:00:00 2001
+From debfaeb5a78586316a07ce226d2983ad082d0a9e Mon Sep 17 00:00:00 2001
 From: Ismo Puustinen <ismo.h.puustinen@nokia.com>
 Date: Tue, 30 Sep 2008 18:45:55 +0300
 Subject: [PATCH] build: add pulsecore.pc (Nokia specific)
@@ -25,7 +25,7 @@ index f4dd998..cd687c6 100644
  if HAVE_AVAHI
  pkgconfig_DATA += \
 diff --git a/configure.ac b/configure.ac
-index 6be6757..c467fa9 100644
+index d2db9d1..8b7536d 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -1159,6 +1159,7 @@ libpulse.pc

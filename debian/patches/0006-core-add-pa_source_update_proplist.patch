@@ -1,4 +1,4 @@
-From 7aba50359ab06b81a884a451e00c6d81fc2f36a1 Mon Sep 17 00:00:00 2001
+From 18b0022918f1f223f1145b00509f4184c6b464ca Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 31 Oct 2008 02:38:00 +0200
 Subject: [PATCH] core: add pa_source_update_proplist
@@ -9,10 +9,10 @@ Subject: [PATCH] core: add pa_source_update_proplist
  2 files changed, 16 insertions(+), 0 deletions(-)
 
 diff --git a/src/pulsecore/source.c b/src/pulsecore/source.c
-index f113e29..65e2861 100644
+index 815ec27..e65c5ce 100644
 --- a/src/pulsecore/source.c
 +++ b/src/pulsecore/source.c
-@@ -600,6 +600,20 @@ pa_bool_t pa_source_get_mute(pa_source *s, pa_bool_t force_refresh) {
+@@ -604,6 +604,20 @@ pa_bool_t pa_source_get_mute(pa_source *s, pa_bool_t force_refresh) {
      return s->muted;
  }
  
@@ -34,10 +34,10 @@ index f113e29..65e2861 100644
  void pa_source_set_description(pa_source *s, const char *description) {
      const char *old;
 diff --git a/src/pulsecore/source.h b/src/pulsecore/source.h
-index aaf904b..55851ae 100644
+index b93e4ad..fd8c4bd 100644
 --- a/src/pulsecore/source.h
 +++ b/src/pulsecore/source.h
-@@ -232,6 +232,8 @@ const pa_cvolume *pa_source_get_volume(pa_source *source, pa_bool_t force_refres
+@@ -234,6 +234,8 @@ const pa_cvolume *pa_source_get_volume(pa_source *source, pa_bool_t force_refres
  void pa_source_set_mute(pa_source *source, pa_bool_t mute);
  pa_bool_t pa_source_get_mute(pa_source *source, pa_bool_t force_refresh);
  

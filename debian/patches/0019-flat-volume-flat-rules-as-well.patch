@@ -1,4 +1,4 @@
-From 760a361b51d47eb9fb86bdab2d9921b3a2472f5e Mon Sep 17 00:00:00 2001
+From 2dde83e66208a1cf7f445359324ddfb2ca0c9652 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Sun, 23 Nov 2008 16:55:53 +0200
 Subject: [PATCH] flat-volume: flat rules as well

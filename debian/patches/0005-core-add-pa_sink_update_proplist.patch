@@ -1,4 +1,4 @@
-From fa97d284da85d616367eab13982fa0b61c474d44 Mon Sep 17 00:00:00 2001
+From 416ed0f42a0033133e4cdbe06233d33b0e2876f0 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 31 Oct 2008 02:33:28 +0200
 Subject: [PATCH] core: add pa_sink_update_proplist
@@ -9,10 +9,10 @@ Subject: [PATCH] core: add pa_sink_update_proplist
  2 files changed, 16 insertions(+), 0 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index 1580cf2..30261c7 100644
+index a4d993c..d5082d5 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
-@@ -949,6 +949,20 @@ pa_bool_t pa_sink_get_mute(pa_sink *s, pa_bool_t force_refresh) {
+@@ -953,6 +953,20 @@ pa_bool_t pa_sink_get_mute(pa_sink *s, pa_bool_t force_refresh) {
      return s->muted;
  }
  
@@ -34,10 +34,10 @@ index 1580cf2..30261c7 100644
  void pa_sink_set_description(pa_sink *s, const char *description) {
      const char *old;
 diff --git a/src/pulsecore/sink.h b/src/pulsecore/sink.h
-index c5a7321..12d5340 100644
+index 254be3b..092e30f 100644
 --- a/src/pulsecore/sink.h
 +++ b/src/pulsecore/sink.h
-@@ -250,6 +250,8 @@ const pa_cvolume *pa_sink_get_volume(pa_sink *sink, pa_bool_t force_refresh);
+@@ -252,6 +252,8 @@ const pa_cvolume *pa_sink_get_volume(pa_sink *sink, pa_bool_t force_refresh);
  void pa_sink_set_mute(pa_sink *sink, pa_bool_t mute);
  pa_bool_t pa_sink_get_mute(pa_sink *sink, pa_bool_t force_refres);
  

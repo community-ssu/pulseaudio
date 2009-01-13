@@ -1,4 +1,4 @@
-From f1cbb7102b19425bada520878993cd1f77d468ba Mon Sep 17 00:00:00 2001
+From 0f3f8c079505c56fe188866cd3d29cbb51b95d7c Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Mon, 25 Aug 2008 18:51:01 +0300
 Subject: [PATCH] alsa-sink: fix the busy loop on arm (Nokia specific)
@@ -8,7 +8,7 @@ Subject: [PATCH] alsa-sink: fix the busy loop on arm (Nokia specific)
  1 files changed, 13 insertions(+), 3 deletions(-)
 
 diff --git a/src/modules/module-alsa-sink.c b/src/modules/module-alsa-sink.c
-index 95a8c97..39081dc 100644
+index f9fb9bd..85b3759 100644
 --- a/src/modules/module-alsa-sink.c
 +++ b/src/modules/module-alsa-sink.c
 @@ -72,7 +72,8 @@ PA_MODULE_USAGE(

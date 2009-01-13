@@ -1,4 +1,4 @@
-From dd557127f554fc65f1d503585091bc182fd4ceb2 Mon Sep 17 00:00:00 2001
+From 79b021129fadd043bdab20562f320851bb6c3fdb Mon Sep 17 00:00:00 2001
 From: Luiz Augusto von Dentz <luiz.dentz@openbossa.org>
 Date: Tue, 25 Nov 2008 17:20:45 -0300
 Subject: [PATCH] Do not unload module-bluetooth-device when io thread fails.
