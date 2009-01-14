@@ -34,5 +34,4 @@ usr/lib/pulse-*/modules/module-simple-protocol-unix.so
 usr/lib/pulse-*/modules/module-stream-restore.so
 usr/lib/pulse-*/modules/module-suspend-on-idle.so
 usr/share/lintian/overrides/pulseaudio
-usr/share/locale
 usr/share/man/man5/default.pa.5
