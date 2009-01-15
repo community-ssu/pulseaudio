@@ -2,7 +2,7 @@ pulseaudio (0.9.15~git20090113-0maemo1) unstable; urgency=low
 
   * Rebased on upstream git 0.9.15, since 0.9.14, released today, does not
     contains Bluez fixes and so forth.
-  * Disable locale support. NB#94144
+  * Disable locale support. Fixes: NB#94144
   * Ship a system upstart script, and disable user auto-spawning.
 
  -- Maemo Multimedia <multimedia@maemo.org>  Tue, 13 Jan 2009 15:26:05 +0200
