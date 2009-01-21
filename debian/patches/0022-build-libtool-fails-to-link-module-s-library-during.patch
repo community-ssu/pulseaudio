@@ -1,0 +1,25 @@
+From eee7c86f94b357c2c172960df417e3b1100d2e6b Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Thu, 11 Dec 2008 17:09:11 +0200
+Subject: [PATCH 22/25] build: libtool fails to link module's library during build time (Nokia specific)
+
+---
+ src/Makefile.am |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/src/Makefile.am b/src/Makefile.am
+index bc0b74a..026e42a 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -151,7 +151,7 @@ PREOPEN_LIBS = $(modlibexec_LTLIBRARIES)
+ endif
+ 
+ if FORCE_PREOPEN
+-pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlpreopen force $(foreach f,$(PREOPEN_LIBS),-dlpreopen $(f))
++pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlpreopen force $(foreach f,$(PREOPEN_LIBS),-dlpreopen $(f)) -Wl,--rpath -Wl,./.libs
+ else
+ pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlopen force $(foreach f,$(PREOPEN_LIBS),-dlopen $(f))
+ endif
+-- 
+1.6.1.224.gb56c
+

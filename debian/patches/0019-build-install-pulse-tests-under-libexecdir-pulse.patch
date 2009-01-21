@@ -1,0 +1,51 @@
+From 651e51d4e9fe9e017995289ce8225b1c0f221f9e Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Thu, 11 Dec 2008 22:05:31 +0200
+Subject: [PATCH 19/25] build: install pulse tests under $(libexecdir)/pulse-tests (Nokia specific)
+
+---
+ src/Makefile.am |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 310f97f..c3ed887 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -29,6 +29,7 @@ pulsecoreincludedir=$(includedir)/pulsecore
+ pulseconfdir=$(sysconfdir)/pulse
+ pulselibexecdir=$(libexecdir)/pulse
+ xdgautostartdir=$(sysconfdir)/xdg/autostart
++pulsetestdir=$(libexecdir)/pulse-tests
+ 
+ ###################################
+ #            Defines              #
+@@ -255,7 +256,7 @@ TESTS = \
+ 		lock-autospawn-test \
+ 		prioq-test
+ 
+-TESTS_BINARIES = \
++pulsetest_PROGRAMS = \
+ 		mainloop-test \
+ 		mcalign-test \
+ 		pacat-simple \
+@@ -295,7 +296,7 @@ if HAVE_SIGXCPU
+ #TESTS += \
+ #		cpulimit-test \
+ #		cpulimit-test2
+-TESTS_BINARIES += \
++pulsetest_PROGRAMS += \
+ 		cpulimit-test \
+ 		cpulimit-test2
+ endif
+@@ -303,7 +304,7 @@ endif
+ if HAVE_GLIB20
+ TESTS += \
+ 		mainloop-test-glib
+-TESTS_BINARIES += \
++pulsetest_PROGRAMS += \
+ 		mainloop-test-glib
+ endif
+ 
+-- 
+1.6.1.224.gb56c
+

@@ -50,10 +50,10 @@ clean::
 
 update-patch-series:
 	mkdir -p $(CURDIR)/debian/patches
-	git rm -f $(CURDIR)/patches/*
+	git rm -f $(CURDIR)/debian/patches || true
 	git format-patch -o $(CURDIR)/debian/patches patches ^upstream/master | \
 		xargs -n 1 basename > $(CURDIR)/debian/patches/series
-	git add $(CURDIR)/patches/*
+	git add $(CURDIR)/debian/patches/*
 
 DEB_CONFIGURE_EXTRA_FLAGS =			\
 	--with-realtime-group=pulse-rt		\
