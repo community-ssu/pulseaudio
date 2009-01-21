@@ -22,6 +22,7 @@ usr/lib/pulse-*/modules/module-always-sink.so
 usr/lib/pulse-*/modules/module-bluetooth-device.so
 usr/lib/pulse-*/modules/module-bluetooth-discover.so
 usr/lib/pulse-*/modules/module-cli.so
+usr/lib/pulse-*/modules/module-combine.so
 usr/lib/pulse-*/modules/module-device-restore.so
 usr/lib/pulse-*/modules/module-flat-volume.so
 usr/lib/pulse-*/modules/module-native-protocol-unix.so
