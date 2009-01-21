@@ -40,7 +40,7 @@ common-install-arch::
 	cp -a $(CURDIR)/debian/default.pa.maemo $(CURDIR)/debian/tmp/etc/pulse/default.pa
 	cp -a $(CURDIR)/debian/default.pa.maemo $(CURDIR)/debian/tmp/etc/pulse/system.pa
 	cp -a $(CURDIR)/config.h $(CURDIR)/debian/tmp/usr/include/pulsecore/pulsecore-config.h
-	chmod 750 $(CURDIR)/debian/tmp/usr/bin/pulseaudio # let's prevent user starting pulse for a while
+	chmod gu-x $(CURDIR)/debian/tmp/usr/bin/pulseaudio # let's prevent user starting pulse for a while
 
 common-binary-post-install-arch:: list-missing
 
