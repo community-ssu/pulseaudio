@@ -20,8 +20,8 @@ load-module module-stream-restore
 load-module module-alsa-sink-old sink_name=sink.hw0 device=hw:0 rate=48000 fragment_size=3840 fragments=2 alt_fragment_size=960 alt_fragments=2 dbus_type=system
 load-module module-alsa-source-old source_name=source.hw0 device=hw:0 rate=48000 fragment_size=1920 fragments=2 alt_fragment_size=960 alt_fragments=2 dbus_type=system
 
-load-module module-alsa-sink-old sink_name=sink.hw1 device=hw:0,1 rate=8000 channels=1 fragment_size=80 fragments=2
-load-module module-alsa-source-old source_name=source.hw1 device=hw:0,1 rate=8000 channels=1 fragment_size=80 fragments=2
+load-module module-alsa-sink-old sink_name=sink.hw1 device=hw:0,1 rate=8000 channels=1 fragment_size=80 fragments=2 dbus_type=system
+load-module module-alsa-source-old source_name=source.hw1 device=hw:0,1 rate=8000 channels=1 fragment_size=80 fragments=2 dbus_type=system
 
 .ifexists module-nokia-voice.so
 load-module module-nokia-voice master_sink=sink.hw0 master_source=source.hw0 dbus_type=system
