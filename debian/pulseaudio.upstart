@@ -1,0 +1,26 @@
+description "pulseaudio"
+author "Maemo Multimedia <multimedia@maemo.org>"
+
+start on started dbus
+
+stop on starting shutdown
+stop on ACT_DEAD
+
+console none
+
+post-start script
+	if [ -e /var/run/pulse/.esd_auth ]; then
+		chown pulse:pulse-access /var/run/pulse/.esd_auth
+		chmod 640 /var/run/pulse/.esd_auth
+	fi
+
+	if [ -e /var/run/pulse/.pulse-cookie ]; then
+		chown pulse:pulse-access /var/run/pulse/.pulse-cookie
+		chmod 640 /var/run/pulse/.pulse-cookie
+	fi
+end script
+
+exec /usr/bin/pulseaudio --system --high-priority --log-target=syslog --disallow-module-loading=1
+
+respawn
+

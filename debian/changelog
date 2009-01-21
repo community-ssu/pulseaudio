@@ -1,0 +1,578 @@
+pulseaudio (0.9.15~git20090113-0maemo1) unstable; urgency=low
+
+  * Rebased on upstream git 0.9.15, since 0.9.14, released today, does not
+    contains Bluez fixes and so forth.
+  * Disable locale support. Fixes: NB#94144
+  * Ship a system upstart script, and disable user auto-spawning.
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 13 Jan 2009 15:26:05 +0200
+
+pulseaudio (0.9.14~git20090107-0maemo1) unstable; urgency=low
+
+  * Rebased on upstream git for Bluez API changes.
+  * debian/control:
+    + Remove libltdl3-dev and bump libbluetooth3-dev dependency
+  * debian/pulseaudio.install, debian/pulseaudio-module-extra.install,
+    debian/pulseaudio-module-x11.install, debian/pulseaudio-dev.install:
+    + Removed libraries from usr/lib/pulse-*/modules/lib, which have been
+      merged in libpulsecommon and libpulsecore.
+  * debian/libpulse-dev.install:
+    + Removed static .a library.
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Wed, 07 Jan 2009 11:57:20 +0200
+
+pulseaudio (0.9.13git~20081020-0maemo9) unstable; urgency=low
+
+  * debian/default.pa.maemo:
+    + Add a null source "source.null" at 8kHz mono.
+    + Renamed module eap to music.
+  * More friendly patch series.
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Thu, 04 Dec 2008 18:41:08 +0200
+
+pulseaudio (0.9.13git~20081020-0maemo8) unstable; urgency=low
+
+  * debian/default.pa.maemo:
+    + Change to 2 fragments, use alternative confiuration sink/src.
+    + Move policy enforcement loading to the end.
+    + Add a null sink "sink.null".
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Fri, 14 Nov 2008 16:47:34 +0200
+
+pulseaudio (0.9.13git~20081020-0maemo7) unstable; urgency=low
+
+  * Use speex-fixed-2, now that we have a speex NEON-enabled resampler.
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 11 Nov 2008 21:51:35 +0200
+
+pulseaudio (0.9.13git~20081020-0maemo6) unstable; urgency=low
+
+  * debian/patches:
+    + Add virtual_volume on sink
+    + Only transfer full periods in module-alsa-sink-old and
+      module-alsa-source-old.
+  * debian/default.pa.maemo:
+    + Set default sink to music, and source to voice.
+  * Change maintainer to Maemo Multimedia <multimedia@maemo.org>
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Wed, 05 Nov 2008 15:43:40 +0200
+
+pulseaudio (0.9.13git~20081020-0maemo5) unstable; urgency=low
+
+  * Update git command to use non-dash version for git 1.6.
+  * Update patch series with the sink/source properties hooks patches.
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Mon, 03 Nov 2008 19:14:00 +0200
+
+pulseaudio (0.9.13git~20081020-0maemo4) unstable; urgency=low
+
+  * Fix location of pulsecore-config.h
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Fri, 24 Oct 2008 13:34:28 +0300
+
+pulseaudio (0.9.13git~20081020-0maemo3) unstable; urgency=low
+
+  * Add pulsecore/pulsecore-config.h from config.h (very dangerous!)
+  * Remove null-sink, it's no longer needed.
+  * Uncomment flat-module.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Thu, 23 Oct 2008 18:39:38 +0300
+
+pulseaudio (0.9.13git~20081020-0maemo2) unstable; urgency=low
+
+  * debian/patches/0008-Fix-a-crash-for-special-loop-case.patch:
+    + Add a fix for sink-input loop case.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Mon, 20 Oct 2008 15:53:42 +0300
+
+pulseaudio (0.9.13git~20081020-0maemo1) unstable; urgency=low
+
+  * Import d6750583, which has few bluetooth fixes.
+  * Comment out flat-volume, which conflict with policy atm.
+  * Add a null sink for policy convenience.
+  * Load policy module at first.
+  * Remove policy module from this PulseAudio packaging, it is now
+    packaged sperately.
+  * Do not start PulseAudio under scratchbox, people are complaining.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Mon, 20 Oct 2008 13:10:06 +0300
+
+pulseaudio (0.9.13git~20081010-0maemo1) unstable; urgency=low
+
+  * Import 8e3e88df, which has flat-volume.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Fri, 10 Oct 2008 17:18:25 +0300
+
+pulseaudio (0.9.13-0maemo1) unstable; urgency=low
+
+  * New Upstream Release
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Mon, 06 Oct 2008 15:42:58 +0300
+
+pulseaudio (0.9.12git~20080930-0maemo2) unstable; urgency=low
+
+  * Load module-policy-enforcement currently fails to load.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Thu, 02 Oct 2008 20:42:39 +0300
+
+pulseaudio (0.9.12git~20080930-0maemo1) unstable; urgency=low
+
+  * Import new version from git a84b72bf...
+    + It should fix the automatic configuration of bluetooth devices
+  * Include module-policy-enforcement.
+  * default.pa.maemo:
+    + Load module-policy-enforcement
+    + Load module-simple-protocol-unix (used by Flash)
+    + Change number of fragments to 4
+    + Load module-suspend-on-idle
+  * Include pulsecore.pc from Ismo in pulseaudio-dev.
+  * Include suspend patch workaround.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Tue, 30 Sep 2008 12:03:06 +0300
+
+pulseaudio (0.9.12git~20080915-0maemo2) unstable; urgency=low
+
+  * control, pulseaudio.install, pulseaudio-module-extra.install:
+    + Move some unused module to pulseaudio-module-extra package
+  * default.pa.maemo:
+    + Update configuration file.
+  * debian/rules:
+    + use --disable-per-user-esound-socket to create /tmp/.esd/socket
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Fri, 26 Sep 2008 20:41:39 +0300
+
+pulseaudio (0.9.12git~20080915-0maemo1) unstable; urgency=low
+
+  * Imported git version 618873, including 0.9.12 + Bluez + fix.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Wed, 24 Sep 2008 17:39:28 +0300
+
+pulseaudio (0.9.11-0maemo5) unstable; urgency=low
+
+  * Add missing system.pa, now should start fine.
+  * debian/default.pa.maemo:
+    + Add Jyri configuration
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Fri, 12 Sep 2008 15:48:44 +0300
+
+pulseaudio (0.9.11-0maemo4) unstable; urgency=low
+
+  * pulseaudio-dev depends on pulseaudio (for modules library)
+  * remove adduser depedency on x86.
+  * add libatomic-ops-dev dependency to pulseaudio-dev on x86.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Thu, 11 Sep 2008 16:26:05 +0300
+
+pulseaudio (0.9.11-0maemo3) unstable; urgency=low
+
+  [ Jyri Sarha ]
+  * pulseaudio-dev.install:
+    + install pulscore/*.h in /usr/include/pulsecore
+    + install modules*-util.h in /usr/include/pulsecore/modules
+
+  [ Marc-Andre Lureau ]
+  * pulseaudio.install, pulseaudio-module-hal.install:
+    + move libdbus-util.so to pulseaudio package.
+  * default.pa.maemo:
+    + updates according to Jyri voice configuration.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Mon, 08 Sep 2008 16:49:48 +0300
+
+pulseaudio (0.9.11-0maemo2) unstable; urgency=low
+
+  * Add missing alsa-source-old.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Thu, 04 Sep 2008 17:17:28 +0300
+
+pulseaudio (0.9.11-0maemo1) unstable; urgency=low
+
+  * New Upstream Version
+  * Start the PulseAudio sound server in system mode.
+  * Use custom maemo configuration files.
+  * Give "user" pulse-access permissions.
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Wed, 30 Jul 2008 16:51:10 +0300
+
+pulseaudio (0.9.11~git8885dd-0maemo1) unstable; urgency=low
+
+  * Import git master 8885dd (0.9.11).
+  * Add me as Maintainer, and move Debian maitainer to the
+    XSBC-Original-Maintainer.
+  * Update libpulsecore SOVERSION to 6 (oups)
+
+ -- Marc-Andre Lureau <marcandre.lureau@gmail.com>  Thu, 26 Jun 2008 19:59:34 +0300
+
+pulseaudio (0.9.11~svn2521-0maemo1) unstable; urgency=low
+
+  * Import trunk r2521.
+  * Add pulseaudio-module-dev packaging pulsecore headers.
+  * bootstrap during build (svn version).
+  * Added libgdbm-dev build dependency required by module-restore.
+  * Put Marc-Andre Lureau as a maemo Maintainer.
+
+ -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Thu, 12 Jun 2008 18:24:39 +0300
+
+pulseaudio (0.9.10-2maemo1) unstable; urgency=low
+
+  * Debian update.
+
+ -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Wed, 04 Jun 2008 16:21:08 +0300
+
+pulseaudio (0.9.13-1) experimental; urgency=low
+
+  [ Bas Zoetekouw ]
+  * debian/control: Build-Depend on libasound2-dev (>= 1.0.17)
+  * debian/pulseaudio-module-x11.install: No longer install an xdg autostart
+    file
+  * debian/pulseaudio.install: Install system.pa config file and various new
+    pulseaudio modules
+  * debian/rules: Add --disable-per-user-esound-socket to configure flags
+
+  [ Sjoerd Simons ]
+  * New Upstream Version
+  * Fixes FTBTS on GNU/kFreeBSD (Closes: #497624)
+  * Dropped patches for things that have been fixed upstream:
+    - 0003-Define-PULSE_INTERNAL.patch
+    - 0005-Reduce-RT-prio-logging-severity.patch
+    - 0006-fix-iteration-over-random-devices.patch
+  * rename 0003-load-module-gconf-earlier.patch to
+    0002-load-module-gconf-earlier.patch
+  * rename 0002-Fix-library-search-path-to-include-lib-and-usr-lib.patch
+    to 0001-Fix-library-search-path-to-include-lib-and-usr-lib.patch
+  * rename 0004-load-module-gconf-earlier.patch to
+    0003-load-module-gconf-earlier.patch
+  * 0001-Set-ESD-socket-to-tmp-.esd-socket-to-match-up-with.patch
+    - Dropped, not necessary anymore, the --disable-per-user-esound-socket
+      configure flag now has the same result
+  * debian/control: Add libspeexdsp-dev (>= 1.2~rc1) to Build-Depends
+  * debian/control: Add Build-Depends on libpolkit-dbus-dev and
+    libbluetooth-dev
+  * debian/pulseaudio.install: Install various new modules. Including bluetooth
+    and polkit, which will move into a separate package later.
+  * debian/pulseaudio.install: Install the new pulseaudio xdg autostart file
+  * debian/control: add a depend on consolekit. Might be downgrade to a
+    recommend later
+  * debian/control: Set the maintainer to the pkg-pulseaudio mailinglist
+  * debian/control: Add libgdbm-dev to build-depends
+  * debian/control: Add intltool to build-depends
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Oct 2008 21:05:13 +0100
+
+pulseaudio (0.9.10-3) unstable; urgency=low
+
+  * debian/patches/0006-fix-iteration-over-random-devices.patch
+    - Added. Iterate over the various random devices if opening fails
+      (Closes: #491270)
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 30 Aug 2008 14:24:51 +0100
+
+pulseaudio (0.9.10-2) unstable; urgency=low
+
+  * debian/patches/0003-Define-PULSE_INTERNAL.patch
+    - Added. Let the daemon put PULSE_INTERNAL in its environment so things
+    can detect when called from within pulseaudio
+  * debian/patches/0004-load-module-gconf-earlier.patch
+    - Added. Load module-gconf before module-volume-restore and
+    module-device-restore. Otherwise setting virtual sinks/sources as default
+    won't be persistent
+  * debian/patches/0005-Reduce-RT-prio-logging-severity.patch
+    - Added. Reduce the priority of the RT warnings. Not running with RT
+    priorities is the default.
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 10 May 2008 22:16:12 +0200
+
+pulseaudio (0.9.10-1maemo1) unstable; urgency=low
+
+  * UNRELEASED.
+  * Removed Jyri's patch, it's in upstream.
+  * Remove libatomic-dev, libcap-dev, libavahi-client-dev,
+    libjack0.100.0-dev, libwrap0-dev, liblircclient-dev, libasyncns-dev,
+    libatomic-ops-dev build dependencies on all architectures.
+
+ -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Mon, 17 Mar 2008 19:27:37 +0200
+
+pulseaudio (0.9.10-1) unstable; urgency=low
+
+  [ CJ van den Berg ]
+  * New Upstream Version
+  * debian/patches: Drop patches merged upstream
+    - 0002-Double-esound-maximum-sample-size.patch
+    - 0003-fix-uploading-of-samples-into-PA.-Problem-discovered.patch
+    - 0004-make-sure-to-create-.pulse-before-using-any-config.patch
+    - 0005-Don-t-add-protocol-fields-introduced-in-version-12-w.patch
+    - 0006-Implement-opcodes-added-in-version-12-in-the-tunnel.patch
+    - 0007-Change-config-to-not-fail-if-loading-of-esd-gconf-o.patch
+    - 0008-Fix-compilation-on-non-linux-platforms.patch
+  * debian/patches: Add patch to fix RPATHs.
+    + 0002-Fix-library-search-path-to-include-lib-and-usr-lib.patch
+  * debian/control:
+    + Make libpulsecore5-dbg depend on libpulsecore5, instead of pulseaudio.
+    + Make libpulse-browse0-dbg depend on libpulse-browse0.
+  * Update Standards-Version to 3.7.3 (no changes required).
+
+pulseaudio (0.9.9-2) UNRELEASED; urgency=low
+
+  [ Petter Reinholdtsen ]
+  * debian/pulseaudio.init: Fix problems with LSB header in init.d script.
+      (Closes: #470934)
+
+ -- CJ van den Berg <cj@vdbonline.com>  Sun, 30 Mar 2008 20:11:02 +0200
+
+pulseaudio (0.9.9-1maemo3) unstable; urgency=low
+
+  * Remove libsamplerate, the Sekret Rabbit code, for good on maemo.
+
+ -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Thu, 14 Feb 2008 15:21:49 +0200
+
+pulseaudio (0.9.9-1maemo2) unstable; urgency=low
+
+  * Add Kernel helper atomic operations for arm based Linux
+
+ -- Jyri Sarha <jyri.sarha@nokia.com>  Wed, 6 Feb 2008 15:59:10 +0200
+
+pulseaudio (0.9.9-1maemo1) unstable; urgency=low
+
+  * maemo port.
+  * Lower compat and debhelper to version 4.
+  * Add libltdl3-dev >= 1.5.24 to satisfy scratchbox!
+  * Remove build depedency (using [!armel]!)
+  * Remove avahi stuffs (browse module, pabrowse..)
+  * debian/pulseaudio.postinst:
+    + use groupadd and useradd instead of debian adduser tools.
+  * Add maemo omap2 dsp.
+
+ -- Marc-Andre Lureau <marc-andre.lureau@nokia.com>  Thu, 24 Jan 2008 16:28:34 +0200
+
+pulseaudio (0.9.9-1) unstable; urgency=high
+
+  * New Upstream Version.
+  * Fixes CVE-2008-008: Assert that dropping permissions succeeds.
+  * Priority high because it fixes a security issue.
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 24 Jan 2008 12:44:55 +0100
+
+pulseaudio (0.9.8-2) unstable; urgency=low
+
+  * Bump shlibs of libpulse and libpulse-browse. Upstream has started
+    versioning symbols.
+  * debian/p.../0005-Don-t-add-protocol-fields-introduced-in-version-12-w.patch
+    - Added. Don't send fields/opcodes adding in protocol version 12 to
+      clients using version 11. (Closes: #458556)
+  * debian/p.../0006-Implement-opcodes-added-in-version-12-in-the-tunnel.patch
+    - Added. Add dummy implementations of the opcodes added in protocol
+    version 12.
+  * debian/patches/0004-Force-module-tunnel-to-use-protocol-version-11.patch
+    - Removed. Obsoleted by the two previous patches
+  * debian/p.../0005-make-sure-to-create-.pulse-before-using-any-config.patch
+    - Renamed to 0004-make-sure-to-create-.pulse-before-using-any-config.patch
+  * debian/p.../0007-Change-config-to-not-fail-if-loading-of-esd-gconf-o.patch
+    - Added. Don't fail to load if esd, gconf or x11-publish fail.
+      (Closes: 456590, #456505)
+  * debian/patches/0008-Fix-compilation-on-non-linux-platforms.patch
+    - Added. Fixes compliation on non-linux platforms such as GNU/kFreeBSD.
+    Thanks to Aurelien Jarno for the patch (Closes: #454197)
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 04 Jan 2008 16:12:27 +0100
+
+pulseaudio (0.9.8-1) unstable; urgency=low
+
+  [ CJ van den Berg ]
+  * New upstream version.
+  * debian/overrides/pulseaudio: Remove override for setuid-binary.
+  * debian/control:
+    + Change the priority of all -dbg packages to extra.
+    + Stop recommending libao-pulse. libao2 has built-in pulseaudio support.
+    + Make pulseaudio conflict libltdl3 < 1.5.24-1 (Closes: #451638)
+    + Change XS-Vcs-* tags to Vcs-*.
+    + Add libpulsecore5-dbg package.
+    + Rename gstreamer plugin package in recommends.
+    + Add Homepage field.
+    + Bump libpulsecore so version number to 5.
+    + Conflict with all pre libpulsecore split packages.
+  * debian/patches/0002-Fix-pa_readlink-to-put-a-0-in-the-right-location.patch:
+    - Dropped, merged upstream.
+  * debian/p..s/0003-Define-__NR_eventfd-on-arm-if-it-wasn-t-defined-yet.patch:
+    - Dropped, merged upstream.
+  * debian/patches/0002-Double-esound-maximum-sample-size.patch:
+    + Added, from Ubuntu.
+  * debian/p..s/0003-fix-uploading-of-samples-into-PA.-Problem-discovered.patch:
+    + Added, svn commit r2074 from upstream.
+  * debian/patches/0004-Force-module-tunnel-to-use-protocol-version-11.patch:
+    + Added, fixes protocol errors in module-tunnel.
+  * debian/pa..es/0005-make-sure-to-create-.pulse-before-using-any-config.patch:
+    + Added, fixes module-volume-restore so that volumes are restored across
+      daemon restarts.
+  * debian/pulseaudio.manpages: Add manpages default.pa.5, pulse-client.conf.5
+      and pulse-daemon.conf.5
+  * debian/pulseaudio-utils.manpages: Add manpages pabrowse.1, pacat.1,
+      pacmd.1, pactl.1, padsp.1, paplay.1, pasuspender.1 and pax11publish.1
+  * debian/pulseaudio.default: Add a description of the preferred method of
+      running the daemon.
+
+  [Daniel T Chen]
+  * debian/control: Add lsb-base (>= 3) to pulseaudio's dependencies.
+  * debian/pulseaudio.init: LSB-ify.
+
+ -- CJ van den Berg <cj@vdbonline.com>  Thu, 22 Nov 2007 02:33:51 +0100
+
+pulseaudio (0.9.7-3) unstable; urgency=low
+
+  [ CJ van den Berg ]
+  * debian/control: Add depends on -utils to -module-x11. (Closes: #450840)
+
+  [ Sjoerd Simons ]
+  * Set pulseaudio setuid in postinst if the permissions aren't overriden by
+    dpkg-statoverride, instead of having the binary with suid perms in the deb
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 16 Nov 2007 18:41:28 +0100
+
+pulseaudio (0.9.7-2) unstable; urgency=low
+
+  * Use pulseaudio (<< 0.9.7) instead of pulseaudio (< 0.9.7) in
+    -esound-compat
+  * debian/patches/0002-Fix-pa_readlink-to-put-a-0-in-the-right-location.patch:
+    + Added. Fix pa_readlink to put a \0 directly after the link string. Fixes
+    issues with clients using the alsa compatibility layer
+  * deb/patches/0003-Define-__NR_eventfd-on-arm-if-it-wasn-t-defined-yet.patch:
+    + Added. Define __NR_eventfd. Fixes FTBS on arm, because libc6-dev does
+    define SYS_eventfd but older versions of linux-libc-dev don't define
+    __NR_eventfd yet.
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 04 Nov 2007 13:53:09 +0100
+
+pulseaudio (0.9.7-1) unstable; urgency=low
+
+  * New Upstream Version. (Closes: #446026, #436409)
+  * Drop all patches. All patches are merged upstream.
+  * debian/control:
+    + Replace ${Source-Version} with ${binary:Version}.
+    + Add XS-Vcs-* tags.
+    + Conflict pulseaudio < 0.9.7 in -esound-compat due to moved manpage.
+  * debian/rules:
+    + Add list-missing to catch new modules
+    + Remove all .la files.
+  * debian/overrides/pulseaudio: Update libpulsecore so version.
+  * debian/pulseaudio.install:
+    + Add new module-default-device-restore.so.
+    + Add new module-suspend-on-idle.so.
+    + Add new module-remap-sink.so.
+    + Add new module-ladspa-sink.so.
+    - Remove module-oss-mmap.so, removed upstream.
+  * debian/pulseaudio-module-x11.install: Add new module-x11-xsmp.so.
+  * debian/pulseaudio-module-zeroconf.install: Add new module-zeroconf-
+      discover.so.
+  * debian/pulseaudio-utils.install: Add pasuspender utility.
+  * debian/pulseaudio-esound-compat.links: Move esd link to pulseaudio-
+      esound-compat.
+  * debian/pulseaudio-esound-compat.manpages: Move esdcompat manpage to
+      pulseaudio-esound-compat.
+  * debian/libpulse0.shlibs: Add minimum version of 0.9.7 to libpulse0 shlibs.
+  * debian/patches:
+    + Added 0001-Set-ESD-socket-to-tmp-.esd-socket-to- match-up-with.patch
+
+ -- CJ van den Berg <cj@vdbonline.com>  Wed, 31 Oct 2007 15:31:44 +0100
+
+pulseaudio (0.9.6-2) unstable; urgency=low
+
+  * debian/control:
+    - Add -dbg packages.
+    - Make libcap-dev and libasound-dev arch specific build deps.
+    - Add recommends gnome-audio to pulseaudio-module-x11. (Closes: #437393)
+    - Make pulseaudio-module-zeroconf recommend avahi-daemon.
+    - Make pulseaudio-utils suggest avahi-daemon. (for pabrowse)
+  * debian/rules:
+    - Generate arch specific install files. (Closes: #430366)
+    - Install init script to start at 25 and stop at 15. (Closes: #428046)
+  * debian/overrides/pulseaudio: Update libpulsecore override to new
+      soversion.
+  * debian/copyright: Update e-mail address for Lennart Poettering.
+  * debian/patches: Reformat patch series. Add two new patches.
+    + 0003-Backported-padsp-improvements-from-upstream-trunk.patch
+    + 0004-New-realtime-safe-and-transport-free-JACK-module.patch
+
+ -- CJ van den Berg <cj@vdbonline.com>  Sun, 02 Sep 2007 20:22:19 +0200
+
+pulseaudio (0.9.6-1) unstable; urgency=low
+
+  * New Upstream Version.
+    + Fix remote DOS vulnerabilities. (CVE-2007-1804)
+    + Add support for suspended alsa sinks and sources.
+    + Correct parameter handling in esdcompat. (Closes: #414355)
+    + Handle ALSA frame size changes. (Closes: #423887)
+    + Don't unload module-hal-detect if HAL doesn't report any devices.
+             (Closes: #395893)
+  * debian/patches: Remove all patches merged upstream.
+    - 02_ifexists_else_endif.dpatch
+    - 03_r1352_firefox_workaround.dpatch
+    - 04_r1373_JavaSound_support.dpatch
+    - 05_t28_wrong-endian-convert.dpatch
+    - 06_pulseaudio-0.9.5-suspend.dpatch
+  * debian/rules: Port to CDBS.
+  * debian/patches: Rework patch series for quilt.
+  * debian/control: Add libatomic-ops-dev to Build-Depends.
+
+ -- CJ van den Berg <cj@vdbonline.com>  Mon, 28 May 2007 00:53:28 +0200
+
+pulseaudio (0.9.5-7) unstable; urgency=low
+
+  * debian/control: Make pulseaudio-module-hal depend on hal, not just
+    libhal. (Closes: #411501)
+
+ -- CJ van den Berg <cj@vdbonline.com>  Mon, 19 Feb 2007 22:11:48 +0100
+
+pulseaudio (0.9.5-6) unstable; urgency=low
+
+  * debian/patches/06_pulseaudio-0.9.5-suspend.dpatch:
+    + Added. Handle -ESTRPIPE correctly.  Allows pulseaudio to survive suspend
+      operations on ALSA devices (e.g. s2disk). Thanks to Tobias Diedrich.
+      (Closes: #406768)
+
+ -- CJ van den Berg <cj@vdbonline.com>  Mon, 12 Feb 2007 11:24:50 +0100
+
+pulseaudio (0.9.5-5) unstable; urgency=low
+
+  * debian/control: Make Build-deps more specific. (Closes: #401111)
+  * debian/pulseaudio.init: Make sure files in /var/run/pulse exist before
+      calling chown and chmod. (Closes: #405869)
+
+ -- CJ van den Berg <cj@vdbonline.com>  Mon,  8 Jan 2007 23:02:53 +0100
+
+pulseaudio (0.9.5-4) unstable; urgency=low
+
+  * Add comment about resampling methods and CPU consumption to
+    README.Debian (Closes: #391455)
+  * debian/patches/03_r1352_firefox_workaround.dpatch:
+    + Added. Fix padsp to work with firefox. Patch created from
+      SVN revision 1352.
+  * debian/patches/04_r1373_JavaSound_support.dpatch:
+    + Added. Fix padsp to work with JavaSound. Patch created from
+      SVN revision 1373.
+  * debian/patches/05_t28_wrong-endian-convert.dpatch:
+    + Added. Add additional sample conversions to sconv.c to support
+      BE <-> LE network audio.
+      Patch from http://www.pulseaudio.org/ticket/28
+
+ -- CJ van den Berg <cj@vdbonline.com>  Wed, 18 Oct 2006 23:10:47 +0200
+
+pulseaudio (0.9.5-3) unstable; urgency=low
+
+  * Add support for .ifexists configuration directive.
+  * Make default.pa use ifexists when loading optional modules.
+  * Recommend instead of Depend on pulseaudio-module-hal. (Closes: #391232)
+  * Recommend libasound2-plugins instead of -plugins-pulse. (Closes: #391254)
+
+ -- CJ van den Berg <cj@vdbonline.com>  Fri,  6 Oct 2006 01:12:05 +0200
+
+pulseaudio (0.9.5-2) unstable; urgency=low
+
+  * Add myself to uploaders
+  * Put libpulse-dev and libpulse0 in the right sections.
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Tue,  3 Oct 2006 15:49:12 +0200
+
+pulseaudio (0.9.5-1) unstable; urgency=low
+
+  * Initial release (Closes: #378626)
+
+ -- CJ van den Berg <cj@vdbonline.com>  Mon, 28 Aug 2006 00:31:10 +0200
+
