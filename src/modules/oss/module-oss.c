@@ -71,6 +71,11 @@
 #include <pulsecore/thread-mq.h>
 #include <pulsecore/rtpoll.h>
 
+#if defined(__NetBSD__) && !defined(SNDCTL_DSP_GETODELAY)
+#include <sys/audioio.h>
+#include <sys/syscall.h>
+#endif
+
 #include "oss-util.h"
 #include "module-oss-symdef.h"
 
@@ -121,7 +126,7 @@ struct userdata {
     int mixer_fd;
     int mixer_devmask;
 
-    int nfrags, frag_size;
+    int nfrags, frag_size, orig_frag_size;
 
     pa_bool_t use_mmap;
     unsigned out_mmap_current, in_mmap_current;
@@ -399,13 +404,27 @@ static pa_usec_t io_sink_get_latency(struct userdata *u) {
 
     if (u->use_getodelay) {
         int arg;
-
+#if defined(__NetBSD__) && !defined(SNDCTL_DSP_GETODELAY)
+#if defined(AUDIO_GETBUFINFO)
+        struct audio_info info;
+        if (syscall(SYS_ioctl, u->fd, AUDIO_GETBUFINFO, &info) < 0) {
+            pa_log_info("Device doesn't support AUDIO_GETBUFINFO: %s", pa_cstrerror(errno));
+            u->use_getodelay = 0;
+        } else {
+            arg = info.play.seek + info.blocksize / 2;
+            r = pa_bytes_to_usec((size_t) arg, &u->sink->sample_spec);
+        }
+#else
+        pa_log_info("System doesn't support AUDIO_GETBUFINFO");
+        u->use_getodelay = 0;
+#endif
+#else
         if (ioctl(u->fd, SNDCTL_DSP_GETODELAY, &arg) < 0) {
             pa_log_info("Device doesn't support SNDCTL_DSP_GETODELAY: %s", pa_cstrerror(errno));
             u->use_getodelay = 0;
         } else
             r = pa_bytes_to_usec((size_t) arg, &u->sink->sample_spec);
-
+#endif
     }
 
     if (!u->use_getodelay && u->use_getospace) {
@@ -536,7 +555,7 @@ static int unsuspend(struct userdata *u) {
     }
 
     if (u->nfrags >= 2 && u->frag_size >= 1)
-        if (pa_oss_set_fragments(u->fd, u->nfrags, u->frag_size) < 0) {
+        if (pa_oss_set_fragments(u->fd, u->nfrags, u->orig_frag_size) < 0) {
             pa_log_warn("Resume failed, couldn't set original fragment settings.");
             goto fail;
         }
@@ -601,10 +620,10 @@ static int unsuspend(struct userdata *u) {
 
     build_pollfd(u);
 
-    if (u->sink)
-        sink_get_volume(u->sink);
-    if (u->source)
-        source_get_volume(u->source);
+    if (u->sink && u->sink->get_volume)
+        u->sink->get_volume(u->sink);
+    if (u->source && u->source->get_volume)
+        u->source->get_volume(u->source);
 
     pa_log_info("Resumed successfully...");
 
@@ -681,6 +700,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
 
                     break;
 
+                case PA_SINK_INVALID_STATE:
                 case PA_SINK_UNLINKED:
                 case PA_SINK_INIT:
                     ;
@@ -762,6 +782,7 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
 
                 case PA_SOURCE_UNLINKED:
                 case PA_SOURCE_INIT:
+                case PA_SOURCE_INVALID_STATE:
                     ;
 
             }
@@ -877,7 +898,7 @@ static void thread_func(void *userdata) {
 
 /*        pa_log("loop");    */
 
-        if (PA_SINK_IS_OPENED(u->sink->thread_info.state))
+        if (u->sink && PA_SINK_IS_OPENED(u->sink->thread_info.state))
             if (u->sink->thread_info.rewind_requested)
                 pa_sink_process_rewind(u->sink, 0);
 
@@ -1144,7 +1165,7 @@ int pa__init(pa_module*m) {
     struct userdata *u = NULL;
     const char *dev;
     int fd = -1;
-    int nfrags, frag_size;
+    int nfrags, orig_frag_size, frag_size;
     int mode, caps;
     pa_bool_t record = TRUE, playback = TRUE, use_mmap = TRUE;
     pa_sample_spec ss;
@@ -1201,12 +1222,12 @@ int pa__init(pa_module*m) {
 
     if (use_mmap && (!(caps & DSP_CAP_MMAP) || !(caps & DSP_CAP_TRIGGER))) {
         pa_log_info("OSS device not mmap capable, falling back to UNIX read/write mode.");
-        use_mmap = 0;
+        use_mmap = FALSE;
     }
 
     if (use_mmap && mode == O_WRONLY) {
         pa_log_info("Device opened for playback only, cannot do memory mapping, falling back to UNIX write() mode.");
-        use_mmap = 0;
+        use_mmap = FALSE;
     }
 
     if (pa_oss_get_hw_description(dev, hwdesc, sizeof(hwdesc)) >= 0)
@@ -1216,6 +1237,7 @@ int pa__init(pa_module*m) {
 
     pa_log_info("Device opened in %s mode.", mode == O_WRONLY ? "O_WRONLY" : (mode == O_RDONLY ? "O_RDONLY" : "O_RDWR"));
 
+    orig_frag_size = frag_size;
     if (nfrags >= 2 && frag_size >= 1)
         if (pa_oss_set_fragments(fd, nfrags, frag_size) < 0)
             goto fail;
@@ -1235,6 +1257,7 @@ int pa__init(pa_module*m) {
     m->userdata = u;
     u->fd = fd;
     u->mixer_fd = -1;
+    u->mixer_devmask = 0;
     u->use_getospace = u->use_getispace = TRUE;
     u->use_getodelay = TRUE;
     u->mode = mode;
@@ -1242,6 +1265,7 @@ int pa__init(pa_module*m) {
     u->device_name = pa_xstrdup(dev);
     u->in_nfrags = u->out_nfrags = (uint32_t) (u->nfrags = nfrags);
     u->out_fragment_size = u->in_fragment_size = (uint32_t) (u->frag_size = frag_size);
+    u->orig_frag_size = orig_frag_size;
     u->use_mmap = use_mmap;
     u->rtpoll = pa_rtpoll_new();
     pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
@@ -1383,7 +1407,6 @@ int pa__init(pa_module*m) {
 
     if ((u->mixer_fd = pa_oss_open_mixer_for_device(u->device_name)) >= 0) {
         pa_bool_t do_close = TRUE;
-        u->mixer_devmask = 0;
 
         if (ioctl(fd, SOUND_MIXER_READ_DEVMASK, &u->mixer_devmask) < 0)
             pa_log_warn("SOUND_MIXER_READ_DEVMASK failed: %s", pa_cstrerror(errno));
@@ -1409,6 +1432,7 @@ int pa__init(pa_module*m) {
         if (do_close) {
             pa_close(u->mixer_fd);
             u->mixer_fd = -1;
+            u->mixer_devmask = 0;
         }
     }
 

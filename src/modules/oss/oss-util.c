@@ -45,6 +45,7 @@
 int pa_oss_open(const char *device, int *mode, int* pcaps) {
     int fd = -1;
     int caps;
+    char *t;
 
     pa_assert(device);
     pa_assert(mode);
@@ -92,7 +93,8 @@ int pa_oss_open(const char *device, int *mode, int* pcaps) {
 
 success:
 
-    pa_log_debug("capabilities:%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
+    t = pa_sprintf_malloc(
+            "%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
                  *pcaps & DSP_CAP_BATCH ? " BATCH" : "",
 #ifdef DSP_CAP_BIND
                  *pcaps & DSP_CAP_BIND ? " BIND" : "",
@@ -139,6 +141,9 @@ success:
                  "",
 #endif
                  *pcaps & DSP_CAP_TRIGGER ? " TRIGGER" : "");
+
+    pa_log_debug("capabilities:%s", t);
+    pa_xfree(t);
 
     pa_make_fd_cloexec(fd);
 
@@ -245,6 +250,8 @@ int pa_oss_set_fragments(int fd, int nfrags, int frag_size) {
     int arg;
     arg = ((int) nfrags << 16) | simple_log2(frag_size);
 
+    pa_log_debug("Asking for %i fragments of size %i (requested %i)", nfrags, 1 << simple_log2(frag_size), frag_size);
+
     if (ioctl(fd, SNDCTL_DSP_SETFRAGMENT, &arg) < 0) {
         pa_log("SNDCTL_DSP_SETFRAGMENT: %s", pa_cstrerror(errno));
         return -1;
@@ -302,7 +309,11 @@ static int get_device_number(const char *dev) {
     int r;
 
     if (!(p = rp = pa_readlink(dev))) {
+#ifdef ENOLINK
         if (errno != EINVAL && errno != ENOLINK) {
+#else
+        if (errno != EINVAL) {
+#endif
             r = -1;
             goto finish;
         }

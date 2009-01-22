@@ -715,6 +715,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
 
                 case PA_SINK_UNLINKED:
                 case PA_SINK_INIT:
+                case PA_SINK_INVALID_STATE:
                     ;
             }
 
@@ -870,6 +871,10 @@ static int sink_set_volume_cb(pa_sink *s) {
                 if ((err = snd_mixer_selem_get_playback_dB(u->mixer_elem, u->mixer_map[i], &alsa_vol)) < 0)
                     goto fail;
 
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+                VALGRIND_MAKE_MEM_DEFINED(&alsa_vol, sizeof(alsa_vol));
+#endif
+
                 r.values[i] = pa_sw_volume_from_dB((double) (alsa_vol - u->hw_dB_max) / 100.0);
 
             } else {
@@ -901,6 +906,10 @@ static int sink_set_volume_cb(pa_sink *s) {
 
             if ((err = snd_mixer_selem_get_playback_dB(u->mixer_elem, SND_MIXER_SCHN_MONO, &alsa_vol)) < 0)
                 goto fail;
+
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+            VALGRIND_MAKE_MEM_DEFINED(&alsa_vol, sizeof(alsa_vol));
+#endif
 
             pa_cvolume_set(&r, s->volume.channels, pa_sw_volume_from_dB((double) (alsa_vol - u->hw_dB_max) / 100.0));
 
@@ -1201,6 +1210,32 @@ finish:
     pa_log_debug("Thread shutting down");
 }
 
+static void set_sink_name(pa_sink_new_data *data, pa_modargs *ma, const char *device_id, const char *device_name) {
+    const char *n;
+    char *t;
+
+    pa_assert(data);
+    pa_assert(ma);
+    pa_assert(device_name);
+
+    if ((n = pa_modargs_get_value(ma, "sink_name", NULL))) {
+        pa_sink_new_data_set_name(data, n);
+        data->namereg_fail = TRUE;
+        return;
+    }
+
+    if ((n = pa_modargs_get_value(ma, "name", NULL)))
+        data->namereg_fail = TRUE;
+    else {
+        n = device_id ? device_id : device_name;
+        data->namereg_fail = FALSE;
+    }
+
+    t = pa_sprintf_malloc("alsa_output.%s", n);
+    pa_sink_new_data_set_name(data, t);
+    pa_xfree(t);
+}
+
 pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_card *card, const pa_alsa_profile_info *profile) {
 
     struct userdata *u = NULL;
@@ -1212,9 +1247,6 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     size_t frame_size;
     snd_pcm_info_t *pcm_info = NULL;
     int err;
-    const char *name;
-    char *name_buf = NULL;
-    pa_bool_t namereg_fail;
     pa_bool_t use_mmap = TRUE, b, use_tsched = TRUE, d;
     pa_usec_t usec;
     pa_sink_new_data data;
@@ -1396,22 +1428,11 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
         }
     }
 
-    if ((name = pa_modargs_get_value(ma, "sink_name", NULL)))
-        namereg_fail = TRUE;
-    else if ((name = pa_modargs_get_value(ma, "name", NULL))) {
-        name = name_buf = pa_sprintf_malloc("alsa_output.%s", name);
-        namereg_fail = TRUE;
-    } else {
-        name = name_buf = pa_sprintf_malloc("alsa_output.%s", u->device_name);
-        namereg_fail = FALSE;
-    }
-
     pa_sink_new_data_init(&data);
     data.driver = driver;
     data.module = m;
     data.card = card;
-    pa_sink_new_data_set_name(&data, name);
-    data.namereg_fail = namereg_fail;
+    set_sink_name(&data, ma, dev_id, u->device_name);
     pa_sink_new_data_set_sample_spec(&data, &ss);
     pa_sink_new_data_set_channel_map(&data, &map);
 
@@ -1428,7 +1449,6 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
 
     u->sink = pa_sink_new(m->core, &data, PA_SINK_HARDWARE|PA_SINK_LATENCY);
     pa_sink_new_data_done(&data);
-    pa_xfree(name_buf);
 
     if (!u->sink) {
         pa_log("Failed to create sink object");

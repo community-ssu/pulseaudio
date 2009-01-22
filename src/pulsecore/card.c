@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include <pulse/xmalloc.h>
+#include <pulse/util.h>
 
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
@@ -128,7 +129,7 @@ pa_card *pa_card_new(pa_core *core, pa_card_new_data *data) {
     c->core = core;
     c->name = pa_xstrdup(data->name);
     c->proplist = pa_proplist_copy(data->proplist);
-    c->driver = pa_xstrdup(data->driver);
+    c->driver = pa_xstrdup(pa_path_get_filename(data->driver));
     c->module = data->module;
 
     c->sinks = pa_idxset_new(NULL, NULL);
@@ -233,4 +234,21 @@ int pa_card_set_profile(pa_card *c, const char *name) {
     c->active_profile = profile;
 
     return 0;
+}
+
+int pa_card_suspend(pa_card *c, pa_bool_t suspend) {
+    pa_sink *sink;
+    pa_source *source;
+    uint32_t idx;
+    int ret = 0;
+
+    pa_assert(c);
+
+    for (sink = pa_idxset_first(c->sinks, &idx); sink; sink = pa_idxset_next(c->sinks, &idx))
+        ret -= pa_sink_suspend(sink, suspend) < 0;
+
+    for (source = pa_idxset_first(c->sources, &idx); source; source = pa_idxset_next(c->sources, &idx))
+        ret -= pa_source_suspend(source, suspend) < 0;
+
+    return ret;
 }
