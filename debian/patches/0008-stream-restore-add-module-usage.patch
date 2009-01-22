@@ -1,0 +1,26 @@
+From 8d734a04ff46f663c25b3d4653e18151a17efd91 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Thu, 27 Nov 2008 16:14:00 +0200
+Subject: [PATCH 08/25] stream-restore: add module usage
+
+---
+ src/modules/module-stream-restore.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
+index 2505ead..f3b0ccd 100644
+--- a/src/modules/module-stream-restore.c
++++ b/src/modules/module-stream-restore.c
+@@ -58,6 +58,9 @@ PA_MODULE_AUTHOR("Lennart Poettering");
+ PA_MODULE_DESCRIPTION("Automatically restore the volume/mute/device state of streams");
+ PA_MODULE_VERSION(PACKAGE_VERSION);
+ PA_MODULE_LOAD_ONCE(TRUE);
++PA_MODULE_USAGE("restore_device=<boolean> "
++		"restore_volume=<boolean> "
++		"restore_muted=<boolean>");
+ 
+ #define SAVE_INTERVAL 10
+ 
+-- 
+1.6.1.224.gb56c
+
