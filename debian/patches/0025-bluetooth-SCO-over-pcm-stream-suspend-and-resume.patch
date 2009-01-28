@@ -1,0 +1,156 @@
+From 460508581e27b9d8d8ecaa08bfcbb2ae69495e95 Mon Sep 17 00:00:00 2001
+From: Pekka Ervasti <peervast@gmail.com>
+Date: Mon, 26 Jan 2009 14:43:21 +0200
+Subject: [PATCH 25/26] bluetooth SCO over pcm stream suspend and resume
+
+---
+ src/modules/bluetooth/module-bluetooth-device.c |   98 +++++++++++++++++++++++
+ 1 files changed, 98 insertions(+), 0 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index 49b103f..722aba9 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -2,6 +2,7 @@
+     This file is part of PulseAudio.
+ 
+     Copyright 2008 Joao Paulo Rechi Vita
++    Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+ 
+     PulseAudio is free software; you can redistribute it and/or modify
+     it under the terms of the GNU Lesser General Public License as published
+@@ -121,6 +122,9 @@ struct userdata {
+ 
+     pa_sink *over_sink;
+     pa_source *over_source;
++
++    pa_hook_slot *sink_state_changed_slot;
++    pa_hook_slot *source_state_changed_slot;
+ };
+ 
+ static const char* const valid_modargs[] = {
+@@ -550,6 +554,7 @@ static int bt_getstreamfd(struct userdata *u) {
+     if (u->stream_fd >= 0)
+         pa_close(u->stream_fd);
+ 
++    if (!u->over_sink) {
+     u->stream_fd = bt_audio_service_get_data_fd(u->audioservice_fd);
+     if (u->stream_fd < 0) {
+         pa_log_error("Failed to get data fd: %s (%d)",pa_cstrerror(errno), errno);
+@@ -564,6 +569,7 @@ static int bt_getstreamfd(struct userdata *u) {
+     pa_make_fd_nonblock(u->stream_fd);
+ //    pa_make_socket_low_delay(u->stream_fd);
+ 
++    }
+     return 0;
+ }
+ 
+@@ -942,6 +948,95 @@ static int source_set_volume_cb(pa_source *s) {
+     return 0;
+ }
+ 
++static int sco_over_pcm_resume_stream(struct userdata *u) {
++    int e;
++    pa_assert(u);
++
++    /* Resume the audio stream by opening the bluetooth audioservice connection. */
++    if (u->audioservice_fd <= 0) {
++        u->audioservice_fd = bt_audio_service_open();
++        if (u->audioservice_fd <= 0) {
++            pa_log_error("Couldn't connect to bluetooth audio service");
++            return -1;
++        } else {
++            pa_log_debug("Connected to the bluetooth audio service");
++        }
++
++        e = bt_setconf(u);
++        if (e < 0) {
++            pa_log_error("Failed to set config");
++            return -2;
++        }
++        pa_log_debug("Connection to the device configured");
++
++        e = bt_getstreamfd(u);
++        if (e < 0) {
++            pa_log_error("Failed to get stream fd (%d)", e);
++            return -3;
++        }
++        pa_log_debug("Got the device socket");
++    }
++
++    return 0;
++}
++
++static int sco_over_pcm_suspend_stream(struct userdata *u) {
++    pa_assert(u);
++
++    /* Suspend the audio stream by closing the audioservice connection. */
++    if (u->audioservice_fd > 0) {
++        pa_close(u->audioservice_fd);
++        u->audioservice_fd = 0;
++        pa_log_debug("Disconnected from the bluetooth audio service");
++    }
++
++    return 0;
++}
++
++static void sco_over_pcm_state_update(struct userdata *u) {
++    pa_sink_state_t sink_state;
++    pa_source_state_t source_state;
++
++    pa_assert(u);
++
++    sink_state = pa_sink_get_state(u->over_sink);
++    source_state = pa_source_get_state(u->over_source);
++
++    if (PA_SINK_IS_OPENED(sink_state) || PA_SOURCE_IS_OPENED(source_state)) {
++        pa_log_debug("over_sink or over_source is open -> Audio connection to BT HS must be open");
++        sco_over_pcm_resume_stream(u);
++    } else {
++        pa_log_debug("over_sink and over_source are closed -> Audio connection to BT HS must be closed");
++        sco_over_pcm_suspend_stream(u);
++    }
++}
++
++static pa_hook_result_t sink_state_changed_hook_cb(pa_core *c, pa_sink *s, struct userdata *u) {
++    pa_assert(c);
++    pa_sink_assert_ref(s);
++    pa_assert(u);
++
++    if (s != u->over_sink)
++        return PA_HOOK_OK;
++
++    sco_over_pcm_state_update(u);
++
++    return PA_HOOK_OK;
++}
++
++static pa_hook_result_t source_state_changed_hook_cb(pa_core *c, pa_source *s, struct userdata *u) {
++    pa_assert(c);
++    pa_source_assert_ref(s);
++    pa_assert(u);
++
++    if (s != u->over_source)
++        return PA_HOOK_OK;
++
++    sco_over_pcm_state_update(u);
++
++    return PA_HOOK_OK;
++}
++
+ int pa__init(pa_module* m) {
+     int e;
+     pa_modargs *ma;
+@@ -1100,6 +1195,9 @@ int pa__init(pa_module* m) {
+ 	/* pa_proplist_update(u->over_source, PA_UPDATE_MERGE, p); */
+ 
+ 	/* pa_proplist_free(p); */
++
++        u->sink_state_changed_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_STATE_CHANGED], PA_HOOK_NORMAL, (pa_hook_cb_t) sink_state_changed_hook_cb, u);
++        u->source_state_changed_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_STATE_CHANGED], PA_HOOK_NORMAL, (pa_hook_cb_t) source_state_changed_hook_cb, u);
+     }
+ 
+     if (!u->path)
+-- 
+1.6.1.224.gb56c
+

@@ -1,7 +1,7 @@
 From 095660ee91df475da16608cc997b9c99c7836607 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 21 Jan 2009 19:11:44 +0200
-Subject: [PATCH 21/25] build: remove .gitignore (Nokia specific)
+Subject: [PATCH 21/26] build: remove .gitignore (Nokia specific)
 
 ---
  .gitignore             |   27 ---------------------

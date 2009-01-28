@@ -1,7 +1,7 @@
 From 3db81417a759d5b93d9df65135b68d70a3d15400 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 20 Nov 2008 18:47:15 +0200
-Subject: [PATCH 09/25] flat-volume: subscribe to stream-restore
+Subject: [PATCH 09/26] flat-volume: subscribe to stream-restore
 
 ---
  src/modules/module-flat-volume.c |   23 ++++++++++++++++++++++-

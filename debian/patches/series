@@ -22,4 +22,5 @@
 0022-bluetooth-hsp-volume-control.patch
 0023-bluetooth-cold-hsp-a2dp-device-detection.patch
 0024-bluetooth-basic-sco-over-pcm-support.patch
-0025-autofoo.patch
+0025-bluetooth-SCO-over-pcm-stream-suspend-and-resume.patch
+0026-autofoo.patch

@@ -1,7 +1,7 @@
 From f14091707369d4dcf6d0515623a1bed7ce2470e8 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 19 Jan 2009 19:58:41 +0200
-Subject: [PATCH 23/25] bluetooth: cold hsp/a2dp device detection
+Subject: [PATCH 23/26] bluetooth: cold hsp/a2dp device detection
 
 ---
  src/modules/bluetooth/module-bluetooth-discover.c |  287 +++++++++++++++++++++

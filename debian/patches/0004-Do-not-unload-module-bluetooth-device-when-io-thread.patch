@@ -1,7 +1,7 @@
 From 965c6c13ac7037a01ebf80781ec626b031b0d46b Mon Sep 17 00:00:00 2001
 From: Luiz Augusto von Dentz <luiz.dentz@openbossa.org>
 Date: Tue, 25 Nov 2008 17:20:45 -0300
-Subject: [PATCH 04/25] Do not unload module-bluetooth-device when io thread fails.
+Subject: [PATCH 04/26] Do not unload module-bluetooth-device when io thread fails.
 
 Let module-bluetooth-discover decide when to unload device module,
 otherwise modules may be unloading twice causing invalid reads.

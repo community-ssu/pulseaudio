@@ -1,15 +1,15 @@
-From 97d81bdd44235df8c845eaa8692ae7ef90626c2e Mon Sep 17 00:00:00 2001
+From 524207caa29b638953356aaa573e71b830656477 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 21 Jan 2009 18:54:11 +0200
-Subject: [PATCH 24/25] bluetooth: basic sco over pcm support
+Subject: [PATCH 24/26] bluetooth: basic sco over pcm support
 
 ---
- src/modules/bluetooth/module-bluetooth-device.c   |  113 ++++++++++++++-------
- src/modules/bluetooth/module-bluetooth-discover.c |   31 ++++++-
- 2 files changed, 105 insertions(+), 39 deletions(-)
+ src/modules/bluetooth/module-bluetooth-device.c   |  140 ++++++++++++++-------
+ src/modules/bluetooth/module-bluetooth-discover.c |   31 +++++-
+ 2 files changed, 123 insertions(+), 48 deletions(-)
 
 diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
-index f814084..2734eb5 100644
+index f814084..49b103f 100644
 --- a/src/modules/bluetooth/module-bluetooth-device.c
 +++ b/src/modules/bluetooth/module-bluetooth-device.c
 @@ -43,6 +43,7 @@
@@ -71,10 +71,18 @@ index f814084..2734eb5 100644
      /* connect to the bluez audio service */
      u->audioservice_fd = bt_audio_service_open();
      if (u->audioservice_fd <= 0) {
-@@ -1023,43 +1045,60 @@ int pa__init(pa_module* m) {
+@@ -1015,51 +1037,71 @@ int pa__init(pa_module* m) {
      }
-     pa_log_debug("Got the device socket");
+     pa_log_debug("Connection to the device configured");
  
+-    /* gets the device socket */
+-    e = bt_getstreamfd(u);
+-    if (e < 0) {
+-        pa_log_error("Failed to get stream fd (%d)", e);
+-        goto fail;
+-    }
+-    pa_log_debug("Got the device socket");
+-
 -    /* create sink */
 -    pa_sink_new_data_init(&data);
 -    data.driver = __FILE__;
@@ -111,6 +119,14 @@ index f814084..2734eb5 100644
 -        pa_log_error("Failed to create IO thread");
 -        goto fail;
 +    if (!u->over_sink) {
++        /* gets the device socket */
++        e = bt_getstreamfd(u);
++        if (e < 0) {
++            pa_log_error("Failed to get stream fd (%d)", e);
++            goto fail;
++        }
++        pa_log_debug("Got the device socket");
++
 +        /* create sink */
 +        pa_sink_new_data_init(&data);
 +        data.driver = __FILE__;
@@ -149,6 +165,9 @@ index f814084..2734eb5 100644
 +        }
 +        pa_sink_put(u->sink);
 +    } else {
++        u->sink = u->over_sink;
++        u->source = u->over_source;
++
 +        /* pa_proplist *p; */
 +
 +        /* p = pa_proplist_new(); */
@@ -168,6 +187,30 @@ index f814084..2734eb5 100644
      if (!u->path)
          goto end;
  
+@@ -1147,9 +1189,12 @@ void pa__done(pa_module *m) {
+     if (u->path)
+         pa_xfree(u->path);
+ 
+-    if (u->sink)
++    if (u->sink && !u->over_sink)
+         pa_sink_unlink(u->sink);
+ 
++    if (u->source && !u->over_source)
++      pa_sink_unlink(u->source);
++
+     if (u->thread) {
+         pa_asyncmsgq_send(u->thread_mq.inq, NULL, PA_MESSAGE_SHUTDOWN, NULL, 0, NULL);
+         pa_thread_free(u->thread);
+@@ -1158,6 +1203,9 @@ void pa__done(pa_module *m) {
+     if (u->sink)
+         pa_sink_unref(u->sink);
+ 
++    if (u->source)
++      pa_sink_unref(u->source);
++
+     pa_thread_mq_done(&u->thread_mq);
+ 
+     if (u->rtpoll_item)
 diff --git a/src/modules/bluetooth/module-bluetooth-discover.c b/src/modules/bluetooth/module-bluetooth-discover.c
 index 1bc05c0..6a9d70a 100644
 --- a/src/modules/bluetooth/module-bluetooth-discover.c

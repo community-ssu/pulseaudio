@@ -1,7 +1,7 @@
 From 2ef0adcfd249585c238e92f92747a944f9f59d98 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 19 Jan 2009 14:53:35 +0200
-Subject: [PATCH 22/25] bluetooth: hsp volume control
+Subject: [PATCH 22/26] bluetooth: hsp volume control
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c   |  224 ++++++++++++++++++++-

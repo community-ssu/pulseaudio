@@ -1,7 +1,7 @@
 From 197adc485544db2402263ef1252d9c9c158f5cee Mon Sep 17 00:00:00 2001
 From: Sarha Jyri (Nokia-D/Helsinki) <Jyri.Sarha@nokia.com>
 Date: Wed, 1 Oct 2008 18:08:36 +0300
-Subject: [PATCH 11/25] sink: fix supend (Nokia specific)
+Subject: [PATCH 11/26] sink: fix supend (Nokia specific)
 
 ---
  src/pulsecore/sink.c |    2 +-

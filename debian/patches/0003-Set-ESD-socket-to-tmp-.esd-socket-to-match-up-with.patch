@@ -1,7 +1,7 @@
 From 760346f37694986933bcecf18db480284f556c33 Mon Sep 17 00:00:00 2001
 From: CJ van den Berg <cj@vdbonline.com>
 Date: Wed, 31 Oct 2007 13:59:31 +0100
-Subject: [PATCH 03/25] Set ESD socket to /tmp/.esd/socket to match up with libesd
+Subject: [PATCH 03/26] Set ESD socket to /tmp/.esd/socket to match up with libesd
 
 ---
  src/daemon/default.pa.in |    2 +-

@@ -1,7 +1,7 @@
 From 8d734a04ff46f663c25b3d4653e18151a17efd91 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 27 Nov 2008 16:14:00 +0200
-Subject: [PATCH 08/25] stream-restore: add module usage
+Subject: [PATCH 08/26] stream-restore: add module usage
 
 ---
  src/modules/module-stream-restore.c |    3 +++
