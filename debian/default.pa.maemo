@@ -17,8 +17,8 @@ load-module module-stream-restore
 # glitch-free is off by default
 # load-module module-alsa-sink sink_name=sink.hw0 device=hw:0 rate=48000 fragment_size=960 fragments=4 tsched=0 hwbuf_min_frames_to_write=32
 
-load-module module-alsa-sink-old sink_name=sink.hw0 device=hw:0 rate=48000 fragment_size=3840 fragments=2 alt_fragment_size=960 alt_fragments=2 dbus_type=system
-load-module module-alsa-source-old source_name=source.hw0 device=hw:0 rate=48000 fragment_size=1920 fragments=2 alt_fragment_size=960 alt_fragments=2 dbus_type=system
+load-module module-alsa-sink-old sink_name=sink.hw0 device=hw:0 rate=48000 fragment_size=3840 fragments=2 alt_fragment_size=960 alt_fragments=2 dbus_type=system mixer=HP_DAC
+load-module module-alsa-source-old source_name=source.hw0 device=hw:0 rate=48000 fragment_size=1920 fragments=2 alt_fragment_size=960 alt_fragments=2 dbus_type=system mixer=PGA_Capture
 
 load-module module-alsa-sink-old sink_name=sink.hw1 device=hw:0,1 rate=8000 channels=1 fragment_size=80 fragments=2 dbus_type=system
 load-module module-alsa-source-old source_name=source.hw1 device=hw:0,1 rate=8000 channels=1 fragment_size=80 fragments=2 dbus_type=system
