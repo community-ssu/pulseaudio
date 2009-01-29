@@ -20,7 +20,7 @@ post-start script
 	fi
 end script
 
-exec /usr/bin/pulseaudio --system --high-priority --log-target=syslog --disallow-module-loading=1
+exec /usr/bin/pulseaudio --system --high-priority --log-target=syslog
 
 respawn
 
