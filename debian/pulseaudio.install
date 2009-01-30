@@ -1,7 +1,6 @@
 etc/pulse/daemon.conf
 etc/pulse/default.pa
 etc/pulse/system.pa
-etc/xdg/autostart/pulseaudio.desktop
 usr/bin/pulseaudio
 usr/bin/start-pulseaudio-x11
 usr/lib/libpulsecommon-*.so

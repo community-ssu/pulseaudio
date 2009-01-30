@@ -56,6 +56,7 @@ update-patch-series:
 
 DEB_CONFIGURE_EXTRA_FLAGS =			\
 	--with-realtime-group=pulse-rt		\
+	--disable-x11				\
 	--disable-nls				\
 	--disable-samplerate			\
 	--disable-per-user-esound-socket	\

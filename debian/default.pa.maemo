@@ -37,9 +37,9 @@ load-module module-nokia-music sink_name=sink.music master_sink=sink.voice.raw
 load-module module-bluetooth-discover over_sink=sink.hw1 over_source=source.hw1
 .endif
 
-.ifexists module-flat-volume.so
-load-module module-flat-volume
-.endif
+#.ifexists module-flat-volume.so
+#load-module module-flat-volume
+#.endif
 
 .ifexists module-rescue-streams.so
 load-module module-rescue-streams
