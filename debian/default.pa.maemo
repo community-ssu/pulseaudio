@@ -5,6 +5,7 @@ load-module module-simple-protocol-unix
 load-module module-suspend-on-idle
 load-module module-null-sink sink_name=sink.null
 load-module module-null-sink sink_name=source.null rate=8000 channels=1
+load-module module-null-sink sink_name=source.music
 
 .ifexists module-device-restore.so
 load-module module-device-restore
@@ -53,7 +54,7 @@ load-module module-position-event-sounds
 load-module module-esound-protocol-unix auth-anonymous=1
 .endif
 
-set-default-sink sink.music
+set-default-sink sink.voice.raw
 set-default-source source.voice
 
 .nofail
