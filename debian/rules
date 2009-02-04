@@ -48,8 +48,8 @@ clean::
 	rm -f debian/pulseaudio.install.kfreebsd-amd64
 
 update-patch-series:
+	git rm -rf $(CURDIR)/debian/patches || true
 	mkdir -p $(CURDIR)/debian/patches
-	git rm -f $(CURDIR)/debian/patches || true
 	git format-patch -o $(CURDIR)/debian/patches patches ^upstream/master | \
 		xargs -n 1 basename > $(CURDIR)/debian/patches/series
 	git add $(CURDIR)/debian/patches/*
