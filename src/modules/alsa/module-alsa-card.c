@@ -26,6 +26,7 @@
 #include <pulse/xmalloc.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/modargs.h>
+#include <pulsecore/queue.h>
 
 #include "alsa-util.h"
 #include "alsa-sink.h"
@@ -50,7 +51,8 @@ PA_MODULE_USAGE(
         "tsched=<enable system timer based scheduling mode?> "
         "tsched_buffer_size=<buffer size when using timer based scheduling> "
         "tsched_buffer_watermark=<lower fill watermark> "
-        "profile=<profile name>");
+        "profile=<profile name> "
+        "ignore_dB=<ignore dB information from the device?>");
 
 static const char* const valid_modargs[] = {
     "name",
@@ -67,6 +69,7 @@ static const char* const valid_modargs[] = {
     "tsched_buffer_size",
     "tsched_buffer_watermark",
     "profile",
+    "ignore_dB",
     NULL
 };
 
@@ -159,23 +162,49 @@ static int card_set_profile(pa_card *c, pa_card_profile *new_profile) {
     od = PA_CARD_PROFILE_DATA(c->active_profile);
 
     if (od->sink_profile != nd->sink_profile) {
+        pa_queue *inputs = NULL;
+
         if (u->sink) {
+            if (nd->sink_profile)
+                inputs = pa_sink_move_all_start(u->sink);
+
             pa_alsa_sink_free(u->sink);
             u->sink = NULL;
         }
 
-        if (nd->sink_profile)
+        if (nd->sink_profile) {
             u->sink = pa_alsa_sink_new(c->module, u->modargs, __FILE__, c, nd->sink_profile);
+
+            if (inputs) {
+                if (u->sink)
+                    pa_sink_move_all_finish(u->sink, inputs, FALSE);
+                else
+                    pa_sink_move_all_fail(inputs);
+            }
+        }
     }
 
     if (od->source_profile != nd->source_profile) {
+        pa_queue *outputs = NULL;
+
         if (u->source) {
+            if (nd->source_profile)
+                outputs = pa_source_move_all_start(u->source);
+
             pa_alsa_source_free(u->source);
             u->source = NULL;
         }
 
-        if (nd->source_profile)
+        if (nd->source_profile) {
             u->source = pa_alsa_source_new(c->module, u->modargs, __FILE__, c, nd->source_profile);
+
+            if (outputs) {
+                if (u->source)
+                    pa_source_move_all_finish(u->source, outputs, FALSE);
+                else
+                    pa_source_move_all_fail(outputs);
+            }
+        }
     }
 
     return 0;
@@ -254,7 +283,7 @@ int pa__init(pa_module*m) {
     pa_card_new_data_init(&data);
     data.driver = __FILE__;
     data.module = m;
-    pa_alsa_init_proplist_card(data.proplist, alsa_card_index);
+    pa_alsa_init_proplist_card(m->core, data.proplist, alsa_card_index);
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->device_id);
     set_card_name(&data, ma, u->device_id);
 

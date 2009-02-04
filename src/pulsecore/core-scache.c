@@ -120,9 +120,6 @@ static pa_scache_entry* scache_add_item(pa_core *c, const char *name) {
         e->core = c;
         e->proplist = pa_proplist_new();
 
-        if (!c->scache)
-            c->scache = pa_idxset_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
-
         pa_idxset_put(c->scache, e, &e->index);
 
         pa_subscription_post(c, PA_SUBSCRIPTION_EVENT_SAMPLE_CACHE|PA_SUBSCRIPTION_EVENT_NEW, e->index);
@@ -137,6 +134,7 @@ static pa_scache_entry* scache_add_item(pa_core *c, const char *name) {
     pa_sample_spec_init(&e->sample_spec);
     pa_channel_map_init(&e->channel_map);
     pa_cvolume_init(&e->volume);
+    e->volume_is_set = FALSE;
 
     pa_proplist_sets(e->proplist, PA_PROP_MEDIA_ROLE, "event");
 
@@ -175,6 +173,7 @@ int pa_scache_add_item(
     pa_sample_spec_init(&e->sample_spec);
     pa_channel_map_init(&e->channel_map);
     pa_cvolume_init(&e->volume);
+    e->volume_is_set = FALSE;
 
     if (ss) {
         e->sample_spec = *ss;
@@ -285,29 +284,25 @@ int pa_scache_remove_item(pa_core *c, const char *name) {
     return 0;
 }
 
-static void free_cb(void *p, void *userdata) {
-    pa_scache_entry *e = p;
-    pa_assert(e);
+void pa_scache_free_all(pa_core *c) {
+    pa_scache_entry *e;
 
-    free_entry(e);
-}
-
-void pa_scache_free(pa_core *c) {
     pa_assert(c);
 
-    if (c->scache) {
-        pa_idxset_free(c->scache, free_cb, NULL);
-        c->scache = NULL;
-    }
+    while ((e = pa_idxset_steal_first(c->scache, NULL)))
+        free_entry(e);
 
-    if (c->scache_auto_unload_event)
+    if (c->scache_auto_unload_event) {
         c->mainloop->time_free(c->scache_auto_unload_event);
+        c->scache_auto_unload_event = NULL;
+    }
 }
 
 int pa_scache_play_item(pa_core *c, const char *name, pa_sink *sink, pa_volume_t volume, pa_proplist *p, uint32_t *sink_input_idx) {
     pa_scache_entry *e;
     pa_cvolume r;
     pa_proplist *merged;
+    pa_bool_t pass_volume;
 
     pa_assert(c);
     pa_assert(name);
@@ -324,10 +319,12 @@ int pa_scache_play_item(pa_core *c, const char *name, pa_sink *sink, pa_volume_t
 
         pa_subscription_post(c, PA_SUBSCRIPTION_EVENT_SAMPLE_CACHE|PA_SUBSCRIPTION_EVENT_CHANGE, e->index);
 
-        if (pa_cvolume_valid(&e->volume))
-            pa_cvolume_remap(&e->volume, &old_channel_map, &e->channel_map);
-        else
-            pa_cvolume_reset(&e->volume, e->sample_spec.channels);
+        if (e->volume_is_set) {
+            if (pa_cvolume_valid(&e->volume))
+                pa_cvolume_remap(&e->volume, &old_channel_map, &e->channel_map);
+            else
+                pa_cvolume_reset(&e->volume, e->sample_spec.channels);
+        }
     }
 
     if (!e->memchunk.memblock)
@@ -335,19 +332,26 @@ int pa_scache_play_item(pa_core *c, const char *name, pa_sink *sink, pa_volume_t
 
     pa_log_debug("Playing sample \"%s\" on \"%s\"", name, sink->name);
 
-    pa_cvolume_set(&r, e->volume.channels, volume);
-    pa_sw_cvolume_multiply(&r, &r, &e->volume);
+    pass_volume = TRUE;
+
+    if (e->volume_is_set && volume != (pa_volume_t) -1) {
+        pa_cvolume_set(&r, e->sample_spec.channels, volume);
+        pa_sw_cvolume_multiply(&r, &r, &e->volume);
+    } else if (e->volume_is_set)
+        r = e->volume;
+    else if (volume != (pa_volume_t) -1)
+        pa_cvolume_set(&r, e->sample_spec.channels, volume);
+    else
+        pass_volume = FALSE;
 
     merged = pa_proplist_new();
-
     pa_proplist_setf(merged, PA_PROP_MEDIA_NAME, "Sample %s", name);
-
     pa_proplist_update(merged, PA_UPDATE_REPLACE, e->proplist);
 
     if (p)
         pa_proplist_update(merged, PA_UPDATE_REPLACE, p);
 
-    if (pa_play_memchunk(sink, &e->sample_spec, &e->channel_map, &e->memchunk, &r, merged, sink_input_idx) < 0) {
+    if (pa_play_memchunk(sink, &e->sample_spec, &e->channel_map, &e->memchunk, pass_volume ? &r : NULL, merged, sink_input_idx) < 0) {
         pa_proplist_free(merged);
         return -1;
     }

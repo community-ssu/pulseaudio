@@ -64,6 +64,7 @@ static const pa_daemon_conf default_conf = {
     .realtime_priority = 5,  /* Half of JACK's default rtprio */
     .disallow_module_loading = FALSE,
     .disallow_exit = FALSE,
+    .flat_volumes = TRUE,
     .exit_idle_time = 20,
     .scache_idle_time = 20,
     .auto_log_target = 1,
@@ -97,11 +98,15 @@ static const pa_daemon_conf default_conf = {
 #ifdef RLIMIT_NPROC
    ,.rlimit_nproc = { .value = 0, .is_set = FALSE }
 #endif
+#ifdef RLIMIT_NOFILE
    ,.rlimit_nofile = { .value = 256, .is_set = TRUE }
+#endif
 #ifdef RLIMIT_MEMLOCK
    ,.rlimit_memlock = { .value = 0, .is_set = FALSE }
 #endif
+#ifdef RLIMIT_AS
    ,.rlimit_as = { .value = 0, .is_set = FALSE }
+#endif
 #ifdef RLIMIT_LOCKS
    ,.rlimit_locks = { .value = 0, .is_set = FALSE }
 #endif
@@ -414,6 +419,7 @@ int pa_daemon_conf_load(pa_daemon_conf *c, const char *filename) {
         { "system-instance",            pa_config_parse_bool,     NULL },
         { "no-cpu-limit",               pa_config_parse_bool,     NULL },
         { "disable-shm",                pa_config_parse_bool,     NULL },
+        { "flat-volumes",               pa_config_parse_bool,     NULL },
         { "exit-idle-time",             pa_config_parse_int,      NULL },
         { "scache-idle-time",           pa_config_parse_int,      NULL },
         { "realtime-priority",          parse_rtprio,             NULL },
@@ -442,8 +448,12 @@ int pa_daemon_conf_load(pa_daemon_conf *c, const char *filename) {
         { "rlimit-stack",               parse_rlimit,             NULL },
         { "rlimit-core",                parse_rlimit,             NULL },
         { "rlimit-rss",                 parse_rlimit,             NULL },
+#ifdef RLIMIT_NOFILE
         { "rlimit-nofile",              parse_rlimit,             NULL },
+#endif
+#ifdef RLIMIT_AS
         { "rlimit-as",                  parse_rlimit,             NULL },
+#endif
 #ifdef RLIMIT_NPROC
         { "rlimit-nproc",               parse_rlimit,             NULL },
 #endif
@@ -482,6 +492,7 @@ int pa_daemon_conf_load(pa_daemon_conf *c, const char *filename) {
     table[i++].data = &c->system_instance;
     table[i++].data = &c->no_cpu_limit;
     table[i++].data = &c->disable_shm;
+    table[i++].data = &c->flat_volumes;
     table[i++].data = &c->exit_idle_time;
     table[i++].data = &c->scache_idle_time;
     table[i++].data = c;
@@ -508,10 +519,14 @@ int pa_daemon_conf_load(pa_daemon_conf *c, const char *filename) {
     table[i++].data = &c->rlimit_fsize;
     table[i++].data = &c->rlimit_data;
     table[i++].data = &c->rlimit_stack;
-    table[i++].data = &c->rlimit_as;
     table[i++].data = &c->rlimit_core;
+    table[i++].data = &c->rlimit_rss;
+#ifdef RLIMIT_NOFILE
     table[i++].data = &c->rlimit_nofile;
+#endif
+#ifdef RLIMIT_AS
     table[i++].data = &c->rlimit_as;
+#endif
 #ifdef RLIMIT_NPROC
     table[i++].data = &c->rlimit_nproc;
 #endif
@@ -638,6 +653,7 @@ char *pa_daemon_conf_dump(pa_daemon_conf *c) {
     pa_strbuf_printf(s, "system-instance = %s\n", pa_yes_no(c->system_instance));
     pa_strbuf_printf(s, "no-cpu-limit = %s\n", pa_yes_no(c->no_cpu_limit));
     pa_strbuf_printf(s, "disable-shm = %s\n", pa_yes_no(c->disable_shm));
+    pa_strbuf_printf(s, "flat-volumes = %s\n", pa_yes_no(c->flat_volumes));
     pa_strbuf_printf(s, "exit-idle-time = %i\n", c->exit_idle_time);
     pa_strbuf_printf(s, "scache-idle-time = %i\n", c->scache_idle_time);
     pa_strbuf_printf(s, "dl-search-path = %s\n", pa_strempty(c->dl_search_path));
@@ -662,12 +678,16 @@ char *pa_daemon_conf_dump(pa_daemon_conf *c) {
     pa_strbuf_printf(s, "rlimit-data = %li\n", c->rlimit_data.is_set ? (long int) c->rlimit_data.value : -1);
     pa_strbuf_printf(s, "rlimit-stack = %li\n", c->rlimit_stack.is_set ? (long int) c->rlimit_stack.value : -1);
     pa_strbuf_printf(s, "rlimit-core = %li\n", c->rlimit_core.is_set ? (long int) c->rlimit_core.value : -1);
-    pa_strbuf_printf(s, "rlimit-as = %li\n", c->rlimit_as.is_set ? (long int) c->rlimit_as.value : -1);
     pa_strbuf_printf(s, "rlimit-rss = %li\n", c->rlimit_rss.is_set ? (long int) c->rlimit_rss.value : -1);
+#ifdef RLIMIT_AS
+    pa_strbuf_printf(s, "rlimit-as = %li\n", c->rlimit_as.is_set ? (long int) c->rlimit_as.value : -1);
+#endif
 #ifdef RLIMIT_NPROC
     pa_strbuf_printf(s, "rlimit-nproc = %li\n", c->rlimit_nproc.is_set ? (long int) c->rlimit_nproc.value : -1);
 #endif
+#ifdef RLIMIT_NOFILE
     pa_strbuf_printf(s, "rlimit-nofile = %li\n", c->rlimit_nofile.is_set ? (long int) c->rlimit_nofile.value : -1);
+#endif
 #ifdef RLIMIT_MEMLOCK
     pa_strbuf_printf(s, "rlimit-memlock = %li\n", c->rlimit_memlock.is_set ? (long int) c->rlimit_memlock.value : -1);
 #endif

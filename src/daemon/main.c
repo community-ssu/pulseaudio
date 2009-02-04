@@ -298,7 +298,9 @@ static void set_all_rlimits(const pa_daemon_conf *conf) {
 #ifdef RLIMIT_NPROC
     set_one_rlimit(&conf->rlimit_nproc, RLIMIT_NPROC, "RLIMIT_NPROC");
 #endif
+#ifdef RLIMIT_NOFILE
     set_one_rlimit(&conf->rlimit_nofile, RLIMIT_NOFILE, "RLIMIT_NOFILE");
+#endif
 #ifdef RLIMIT_MEMLOCK
     set_one_rlimit(&conf->rlimit_memlock, RLIMIT_MEMLOCK, "RLIMIT_MEMLOCK");
 #endif
@@ -915,6 +917,7 @@ int main(int argc, char *argv[]) {
     c->disable_lfe_remixing = !!conf->disable_lfe_remixing;
     c->running_as_daemon = !!conf->daemonize;
     c->disallow_exit = conf->disallow_exit;
+    c->flat_volumes = conf->flat_volumes;
 
     pa_assert_se(pa_signal_init(pa_mainloop_get_api(mainloop)) == 0);
     pa_signal_new(SIGINT, signal_callback, c);
@@ -965,11 +968,6 @@ int main(int argc, char *argv[]) {
 
     if (!c->modules || pa_idxset_size(c->modules) == 0) {
         pa_log(_("Daemon startup without any loaded modules, refusing to work."));
-        goto finish;
-    }
-
-    if (c->default_sink_name && !pa_namereg_get(c, c->default_sink_name, PA_NAMEREG_SINK) && conf->fail) {
-        pa_log_error(_("Default sink name (%s) does not exist in name register."), c->default_sink_name);
         goto finish;
     }
 

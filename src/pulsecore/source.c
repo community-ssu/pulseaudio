@@ -119,6 +119,7 @@ pa_source* pa_source_new(
     pa_source *s;
     const char *name;
     char st[PA_SAMPLE_SPEC_SNPRINT_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+    char *pt;
 
     pa_assert(core);
     pa_assert(data);
@@ -187,10 +188,12 @@ pa_source* pa_source_new(
     s->n_corked = 0;
     s->monitor_of = NULL;
 
-    s->volume = data->volume;
+    s->virtual_volume = data->volume;
+    pa_cvolume_reset(&s->soft_volume, s->sample_spec.channels);
+    s->base_volume = PA_VOLUME_NORM;
+    s->n_volume_steps = PA_VOLUME_NORM+1;
     s->muted = data->muted;
     s->refresh_volume = s->refresh_muted = FALSE;
-    s->base_volume = PA_VOLUME_NORM;
 
     reset_callbacks(s);
     s->userdata = NULL;
@@ -206,8 +209,8 @@ pa_source* pa_source_new(
             0);
 
     s->thread_info.outputs = pa_hashmap_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
-    pa_cvolume_reset(&s->thread_info.soft_volume, s->sample_spec.channels);
-    s->thread_info.soft_muted = FALSE;
+    s->thread_info.soft_volume = s->soft_volume;
+    s->thread_info.soft_muted = s->muted;
     s->thread_info.state = s->state;
     s->thread_info.max_rewind = 0;
     s->thread_info.requested_latency_valid = FALSE;
@@ -220,11 +223,14 @@ pa_source* pa_source_new(
     if (s->card)
         pa_assert_se(pa_idxset_put(s->card->sources, s, NULL) >= 0);
 
-    pa_log_info("Created source %u \"%s\" with sample spec %s and channel map %s",
+    pt = pa_proplist_to_string_sep(s->proplist, "\n    ");
+    pa_log_info("Created source %u \"%s\" with sample spec %s and channel map %s\n    %s",
                 s->index,
                 s->name,
                 pa_sample_spec_snprint(st, sizeof(st), &s->sample_spec),
-                pa_channel_map_snprint(cm, sizeof(cm), &s->channel_map));
+                pa_channel_map_snprint(cm, sizeof(cm), &s->channel_map),
+                pt);
+    pa_xfree(pt);
 
     return s;
 }
@@ -261,6 +267,11 @@ static int source_set_state(pa_source *s, pa_source_state_t state) {
 
     s->state = state;
 
+    if (state != PA_SOURCE_UNLINKED) { /* if we enter UNLINKED state pa_source_unlink() will fire the apropriate events */
+        pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SOURCE_STATE_CHANGED], s);
+        pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SOURCE | PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
+    }
+
     if (suspend_change) {
         pa_source_output *o;
         uint32_t idx;
@@ -268,12 +279,13 @@ static int source_set_state(pa_source *s, pa_source_state_t state) {
         /* We're suspending or resuming, tell everyone about it */
 
         for (o = PA_SOURCE_OUTPUT(pa_idxset_first(s->outputs, &idx)); o; o = PA_SOURCE_OUTPUT(pa_idxset_next(s->outputs, &idx)))
-            if (o->suspend)
+            if (s->state == PA_SOURCE_SUSPENDED &&
+                (o->flags & PA_SOURCE_OUTPUT_FAIL_ON_SUSPEND))
+                pa_source_output_kill(o);
+            else if (o->suspend)
                 o->suspend(o, state == PA_SOURCE_SUSPENDED);
     }
 
-    if (state != PA_SOURCE_UNLINKED) /* if we enter UNLINKED state pa_source_unlink() will fire the apropriate events */
-        pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SOURCE_STATE_CHANGED], s);
 
     return 0;
 }
@@ -293,9 +305,12 @@ void pa_source_put(pa_source *s) {
     if (!(s->flags & PA_SOURCE_HW_VOLUME_CTRL)) {
         s->flags |= PA_SOURCE_DECIBEL_VOLUME;
 
-        s->thread_info.soft_volume = s->volume;
+        s->thread_info.soft_volume = s->soft_volume;
         s->thread_info.soft_muted = s->muted;
     }
+
+    if (s->flags & PA_SOURCE_DECIBEL_VOLUME)
+        s->n_volume_steps = PA_VOLUME_NORM+1;
 
     pa_assert_se(source_set_state(s, PA_SOURCE_IDLE) == 0);
 
@@ -412,13 +427,68 @@ int pa_source_suspend(pa_source *s, pa_bool_t suspend) {
         return source_set_state(s, pa_source_used_by(s) ? PA_SOURCE_RUNNING : PA_SOURCE_IDLE);
 }
 
+/* Called from main context */
+pa_queue *pa_source_move_all_start(pa_source *s) {
+    pa_queue *q;
+    pa_source_output *o, *n;
+    uint32_t idx;
+
+    pa_source_assert_ref(s);
+    pa_assert(PA_SOURCE_IS_LINKED(s->state));
+
+    q = pa_queue_new();
+
+    for (o = PA_SOURCE_OUTPUT(pa_idxset_first(s->outputs, &idx)); o; o = n) {
+        n = PA_SOURCE_OUTPUT(pa_idxset_next(s->outputs, &idx));
+
+        if (pa_source_output_start_move(o) >= 0)
+            pa_queue_push(q, pa_source_output_ref(o));
+    }
+
+    return q;
+}
+
+/* Called from main context */
+void pa_source_move_all_finish(pa_source *s, pa_queue *q, pa_bool_t save) {
+    pa_source_output *o;
+
+    pa_source_assert_ref(s);
+    pa_assert(PA_SOURCE_IS_LINKED(s->state));
+    pa_assert(q);
+
+    while ((o = PA_SOURCE_OUTPUT(pa_queue_pop(q)))) {
+        if (pa_source_output_finish_move(o, s, save) < 0)
+            pa_source_output_unlink(o);
+
+        pa_source_output_unref(o);
+    }
+
+    pa_queue_free(q, NULL, NULL);
+}
+
+/* Called from main context */
+void pa_source_move_all_fail(pa_queue *q) {
+    pa_source_output *o;
+    pa_assert(q);
+
+    while ((o = PA_SOURCE_OUTPUT(pa_queue_pop(q)))) {
+        pa_source_output_unlink(o);
+        pa_source_output_unref(o);
+    }
+
+    pa_queue_free(q, NULL, NULL);
+}
+
 /* Called from IO thread context */
 void pa_source_process_rewind(pa_source *s, size_t nbytes) {
     pa_source_output *o;
     void *state = NULL;
 
     pa_source_assert_ref(s);
-    pa_assert(PA_SOURCE_IS_OPENED(s->thread_info.state));
+    pa_assert(PA_SOURCE_IS_LINKED(s->thread_info.state));
+
+    if (s->thread_info.state == PA_SOURCE_SUSPENDED)
+        return;
 
     if (nbytes <= 0)
         return;
@@ -437,8 +507,11 @@ void pa_source_post(pa_source*s, const pa_memchunk *chunk) {
     void *state = NULL;
 
     pa_source_assert_ref(s);
-    pa_assert(PA_SOURCE_IS_OPENED(s->thread_info.state));
+    pa_assert(PA_SOURCE_IS_LINKED(s->thread_info.state));
     pa_assert(chunk);
+
+    if (s->thread_info.state == PA_SOURCE_SUSPENDED)
+        return;
 
     if (s->thread_info.soft_muted || !pa_cvolume_is_norm(&s->thread_info.soft_volume)) {
         pa_memchunk vchunk = *chunk;
@@ -473,10 +546,13 @@ void pa_source_post(pa_source*s, const pa_memchunk *chunk) {
 /* Called from IO thread context */
 void pa_source_post_direct(pa_source*s, pa_source_output *o, const pa_memchunk *chunk) {
     pa_source_assert_ref(s);
-    pa_assert(PA_SOURCE_IS_OPENED(s->thread_info.state));
+    pa_assert(PA_SOURCE_IS_LINKED(s->thread_info.state));
     pa_source_output_assert_ref(o);
     pa_assert(o->thread_info.direct_on_input);
     pa_assert(chunk);
+
+    if (s->thread_info.state == PA_SOURCE_SUSPENDED)
+        return;
 
     if (s->thread_info.soft_muted || !pa_cvolume_is_norm(&s->thread_info.soft_volume)) {
         pa_memchunk vchunk = *chunk;
@@ -503,7 +579,7 @@ pa_usec_t pa_source_get_latency(pa_source *s) {
     pa_source_assert_ref(s);
     pa_assert(PA_SOURCE_IS_LINKED(s->state));
 
-    if (!PA_SOURCE_IS_OPENED(s->state))
+    if (s->state == PA_SOURCE_SUSPENDED)
         return 0;
 
     if (!(s->flags & PA_SOURCE_LATENCY))
@@ -516,32 +592,38 @@ pa_usec_t pa_source_get_latency(pa_source *s) {
 
 /* Called from main thread */
 void pa_source_set_volume(pa_source *s, const pa_cvolume *volume) {
-    pa_bool_t changed;
+    pa_cvolume old_virtual_volume;
+    pa_bool_t virtual_volume_changed;
 
     pa_source_assert_ref(s);
     pa_assert(PA_SOURCE_IS_LINKED(s->state));
     pa_assert(volume);
+    pa_assert(pa_cvolume_valid(volume));
+    pa_assert(pa_cvolume_compatible(volume, &s->sample_spec));
 
-    changed = !pa_cvolume_equal(volume, &s->volume);
-    s->volume = *volume;
+    old_virtual_volume = s->virtual_volume;
+    s->virtual_volume = *volume;
+    virtual_volume_changed = !pa_cvolume_equal(&old_virtual_volume, &s->virtual_volume);
 
-    if (s->set_volume && s->set_volume(s) < 0)
-        s->set_volume = NULL;
+    if (s->set_volume) {
+        pa_cvolume_reset(&s->soft_volume, s->sample_spec.channels);
+        s->set_volume(s);
+    } else
+        s->soft_volume = s->virtual_volume;
 
-    if (!s->set_volume)
-        pa_source_set_soft_volume(s, volume);
+    pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_SET_VOLUME, NULL, 0, NULL) == 0);
 
-    if (changed)
+    if (virtual_volume_changed)
         pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SOURCE|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
 }
 
-/* Called from main thread */
+/* Called from main thread. Only to be called by source implementor */
 void pa_source_set_soft_volume(pa_source *s, const pa_cvolume *volume) {
     pa_source_assert_ref(s);
     pa_assert(volume);
 
     if (PA_SOURCE_IS_LINKED(s->state))
-        pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_SET_VOLUME, volume, 0, NULL);
+        pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_SET_VOLUME, NULL, 0, NULL) == 0);
     else
         s->thread_info.soft_volume = *volume;
 }
@@ -552,38 +634,36 @@ const pa_cvolume *pa_source_get_volume(pa_source *s, pa_bool_t force_refresh) {
     pa_assert(PA_SOURCE_IS_LINKED(s->state));
 
     if (s->refresh_volume || force_refresh) {
-        pa_cvolume old_volume = s->volume;
+        pa_cvolume old_virtual_volume = s->virtual_volume;
 
-        if (s->get_volume && s->get_volume(s) < 0)
-            s->get_volume = NULL;
+        if (s->get_volume)
+            s->get_volume(s);
 
-        if (!s->get_volume)
-            pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_GET_VOLUME, &s->volume, 0, NULL);
+        pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_GET_VOLUME, NULL, 0, NULL) == 0);
 
-        if (!pa_cvolume_equal(&old_volume, &s->volume))
+        if (!pa_cvolume_equal(&old_virtual_volume, &s->virtual_volume))
             pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SOURCE|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
     }
 
-    return &s->volume;
+    return &s->virtual_volume;
 }
 
 /* Called from main thread */
 void pa_source_set_mute(pa_source *s, pa_bool_t mute) {
-    pa_bool_t changed;
+    pa_bool_t old_muted;
 
     pa_source_assert_ref(s);
     pa_assert(PA_SOURCE_IS_LINKED(s->state));
 
-    changed = s->muted != mute;
+    old_muted = s->muted;
     s->muted = mute;
 
-    if (s->set_mute && s->set_mute(s) < 0)
-        s->set_mute = NULL;
+    if (s->set_mute)
+        s->set_mute(s);
 
-    if (!s->set_mute)
-        pa_asyncmsgq_post(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_SET_MUTE, PA_UINT_TO_PTR(mute), 0, NULL, NULL);
+    pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_SET_MUTE, NULL, 0, NULL) == 0);
 
-    if (changed)
+    if (old_muted != s->muted)
         pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SOURCE|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
 }
 
@@ -596,11 +676,10 @@ pa_bool_t pa_source_get_mute(pa_source *s, pa_bool_t force_refresh) {
     if (s->refresh_muted || force_refresh) {
         pa_bool_t old_muted = s->muted;
 
-        if (s->get_mute && s->get_mute(s) < 0)
-            s->get_mute = NULL;
+        if (s->get_mute)
+            s->get_mute(s);
 
-        if (!s->get_mute)
-            pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_GET_MUTE, &s->muted, 0, NULL);
+        pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_GET_MUTE, NULL, 0, NULL) == 0);
 
         if (old_muted != s->muted)
             pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SOURCE|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
@@ -609,9 +688,10 @@ pa_bool_t pa_source_get_mute(pa_source *s, pa_bool_t force_refresh) {
     return s->muted;
 }
 
+/* Called from main thread */
 pa_bool_t pa_source_update_proplist(pa_source *s, pa_update_mode_t mode, pa_proplist *p) {
-
     pa_source_assert_ref(s);
+    pa_assert(p);
 
     pa_proplist_update(s->proplist, mode, p);
 
@@ -762,19 +842,17 @@ int pa_source_process_msg(pa_msgobject *object, int code, void *userdata, int64_
         }
 
         case PA_SOURCE_MESSAGE_SET_VOLUME:
-            s->thread_info.soft_volume = *((pa_cvolume*) userdata);
-            return 0;
-
-        case PA_SOURCE_MESSAGE_SET_MUTE:
-            s->thread_info.soft_muted = PA_PTR_TO_UINT(userdata);
+            s->thread_info.soft_volume = s->soft_volume;
             return 0;
 
         case PA_SOURCE_MESSAGE_GET_VOLUME:
-            *((pa_cvolume*) userdata) = s->thread_info.soft_volume;
+            return 0;
+
+        case PA_SOURCE_MESSAGE_SET_MUTE:
+            s->thread_info.soft_muted = s->muted;
             return 0;
 
         case PA_SOURCE_MESSAGE_GET_MUTE:
-            *((pa_bool_t*) userdata) = s->thread_info.soft_muted;
             return 0;
 
         case PA_SOURCE_MESSAGE_SET_STATE:
@@ -937,7 +1015,7 @@ pa_usec_t pa_source_get_requested_latency(pa_source *s) {
     pa_source_assert_ref(s);
     pa_assert(PA_SOURCE_IS_LINKED(s->state));
 
-    if (!PA_SOURCE_IS_OPENED(s->state))
+    if (s->state == PA_SOURCE_SUSPENDED)
         return 0;
 
     pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_GET_REQUESTED_LATENCY, &usec, 0, NULL) == 0);

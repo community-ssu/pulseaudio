@@ -29,6 +29,7 @@
 #include <pulse/gccmacro.h>
 #include <pulse/sample.h>
 #include <pulse/channelmap.h>
+#include <pulse/version.h>
 
 /** \page volume Volume Control
  *
@@ -227,7 +228,7 @@ double pa_sw_volume_to_linear(pa_volume_t v) PA_GCC_CONST;
 #endif
 
 /** Remap a volume from one channel mapping to a different channel mapping. \since 0.9.12 */
-pa_cvolume *pa_cvolume_remap(pa_cvolume *v, pa_channel_map *from, pa_channel_map *to);
+pa_cvolume *pa_cvolume_remap(pa_cvolume *v, const pa_channel_map *from, const pa_channel_map *to);
 
 /** Return non-zero if the specified volume is compatible with
  * the specified sample spec. \since 0.9.13 */
@@ -235,17 +236,44 @@ int pa_cvolume_compatible(const pa_cvolume *v, const pa_sample_spec *ss) PA_GCC_
 
 /** Calculate a 'balance' value for the specified volume with the
  * specified channel map. The return value will range from -1.0f
- * (left) to +1.0f (right) \since 0.9.15 */
-float pa_cvolume_get_balance(const pa_channel_map *map, const pa_cvolume *v) PA_GCC_PURE;
+ * (left) to +1.0f (right). If no balance value is applicable to this
+ * channel map the return value will always be 0.0f. See
+ * pa_channel_map_can_balance(). \since 0.9.15 */
+float pa_cvolume_get_balance(const pa_cvolume *v, const pa_channel_map *map) PA_GCC_PURE;
 
 /** Adjust the 'balance' value for the specified volume with the
  * specified channel map. v will be modified in place and
  * returned. The balance is a value between -1.0f and +1.0f. This
- * operation might not be reversable! Also, after this call
+ * operation might not be reversible! Also, after this call
  * pa_cvolume_get_balance() is not guaranteed to actually return the
- * requested balance (e.g. when the input volume was zero anyway for
- * all channels)- \since 0.9.15 */
-pa_cvolume* pa_cvolume_set_balance(const pa_channel_map *map, pa_cvolume *v, float new_balance);
+ * requested balance value (e.g. when the input volume was zero anyway for
+ * all channels). If no balance value is applicable to
+ * this channel map the volume will not be modified. See
+ * pa_channel_map_can_balance(). \since 0.9.15 */
+pa_cvolume* pa_cvolume_set_balance(pa_cvolume *v, const pa_channel_map *map, float new_balance);
+
+/** Calculate a 'fade' value (i.e. 'balance' between front and rear)
+ * for the specified volume with the specified channel map. The return
+ * value will range from -1.0f (rear) to +1.0f (left). If no fade
+ * value is applicable to this channel map the return value will
+ * always be 0.0f. See pa_channel_map_can_fade(). \since 0.9.15 */
+float pa_cvolume_get_fade(const pa_cvolume *v, const pa_channel_map *map) PA_GCC_PURE;
+
+/** Adjust the 'fade' value (i.e. 'balance' between front and rear)
+ * for the specified volume with the specified channel map. v will be
+ * modified in place and returned. The balance is a value between
+ * -1.0f and +1.0f. This operation might not be reversible! Also,
+ * after this call pa_cvolume_get_fade() is not guaranteed to actually
+ * return the requested fade value (e.g. when the input volume was
+ * zero anyway for all channels). If no fade value is applicable to
+ * this channel map the volume will not be modified. See
+ * pa_channel_map_can_fade(). \since 0.9.15 */
+pa_cvolume* pa_cvolume_set_fade(pa_cvolume *v, const pa_channel_map *map, float new_fade);
+
+/** Scale the passed pa_cvolume structure so that the maximum volume
+ * of all channels equals max. The proportions between the channel
+ * volumes are kept. \since 0.9.15 */
+pa_cvolume* pa_cvolume_scale(pa_cvolume *v, pa_volume_t max);
 
 PA_C_DECL_END
 

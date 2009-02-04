@@ -70,7 +70,8 @@ typedef struct pa_daemon_conf {
         load_default_script_file,
         disallow_exit,
         log_meta,
-        log_time;
+        log_time,
+        flat_volumes;
     int exit_idle_time,
         scache_idle_time,
         auto_log_target,
@@ -84,7 +85,14 @@ typedef struct pa_daemon_conf {
     char *config_file;
 
 #ifdef HAVE_SYS_RESOURCE_H
-    pa_rlimit rlimit_fsize, rlimit_data, rlimit_stack, rlimit_core, rlimit_rss, rlimit_nofile, rlimit_as;
+    pa_rlimit rlimit_fsize, rlimit_data, rlimit_stack, rlimit_core, rlimit_rss;
+
+#ifdef RLIMIT_NOFILE
+    pa_rlimit rlimit_nofile;
+#endif
+#ifdef RLIMIT_AS
+    pa_rlimit rlimit_as;
+#endif
 #ifdef RLIMIT_NPROC
     pa_rlimit rlimit_nproc;
 #endif

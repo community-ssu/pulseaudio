@@ -40,6 +40,15 @@ run_versioned() {
 
 set -ex
 
+# We check for this here, because if pkg-config is not found in the
+# system, it's likely that the pkg.m4 macro file is also not present,
+# which will make PKG_PROG_PKG_CONFIG be undefined and the generated
+# configure file faulty.
+if ! pkg-config --version &>/dev/null; then
+    echo "pkg-config is required to bootstrap this program" &>/dev/null
+    exit 1
+fi
+
 if [ "x$1" = "xam" ] ; then
     run_versioned automake "$VERSION" -a -c --foreign
     ./config.status
@@ -57,7 +66,7 @@ else
     test "x$LIBTOOLIZE" = "x" && LIBTOOLIZE=libtoolize
 
     intltoolize --copy --force --automake
-    "$LIBTOOLIZE" -c --force --ltdl --recursive
+    "$LIBTOOLIZE" -c --force
     run_versioned aclocal "$VERSION" -I m4
     run_versioned autoconf 2.63 -Wall
     run_versioned autoheader 2.63

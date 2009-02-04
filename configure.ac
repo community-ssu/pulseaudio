@@ -22,18 +22,21 @@
 
 AC_PREREQ(2.63)
 
-m4_define(PA_MAJOR, [0])
-m4_define(PA_MINOR, [9])
-m4_define(PA_MICRO, [15])
+m4_define(pa_major, [0])
+m4_define(pa_minor, [9])
+m4_define(pa_micro, [15])
 
-AC_INIT([pulseaudio],[PA_MAJOR.PA_MINOR.PA_MICRO],[mzchyfrnhqvb (at) 0pointer (dot) net])
+AC_INIT([pulseaudio],[pa_major.pa_minor.pa_micro],[mzchyfrnhqvb (at) 0pointer (dot) net])
 AC_CONFIG_SRCDIR([src/daemon/main.c])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([foreign 1.10 -Wall])
 
-AC_SUBST(PA_MAJORMINOR, PA_MAJOR.PA_MINOR)
-AC_SUBST(PA_MAJORMINORMICRO, PA_MAJOR.PA_MINOR.PA_MICRO)
+AC_SUBST(PA_MAJOR, pa_major)
+AC_SUBST(PA_MINOR, pa_minor)
+AC_SUBST(PA_MICRO, pa_micro)
+AC_SUBST(PA_MAJORMINOR, pa_major.pa_minor)
+AC_SUBST(PA_MAJORMINORMICRO, pa_major.pa_minor.pa_micro)
 AC_SUBST(PACKAGE_URL, [http://pulseaudio.org/])
 
 AC_SUBST(PA_API_VERSION, 12)
@@ -95,7 +98,7 @@ if test "x$M4" = xno ; then
 fi
 
 dnl Compiler flags
-DESIRED_FLAGS="-Wall -W -Wextra -pedantic -pipe -Wno-long-long -Winline -Wvla -Wno-overlength-strings -Wunsafe-loop-optimizations -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wpacked -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-align -Wstrict-aliasing=2 -Wwrite-strings -Wno-unused-parameter -ffast-math -Wp,-D_FORTIFY_SOURCE=2 -fno-common -fdiagnostics-show-option"
+DESIRED_FLAGS="-Wall -W -Wextra -pipe -Wno-long-long -Winline -Wvla -Wno-overlength-strings -Wunsafe-loop-optimizations -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-align -Wstrict-aliasing=2 -Wwrite-strings -Wno-unused-parameter -ffast-math -Wp,-D_FORTIFY_SOURCE=2 -fno-common -fdiagnostics-show-option"
 
 for flag in $DESIRED_FLAGS ; do
   CC_CHECK_CFLAGS([$flag], [CFLAGS="$CFLAGS $flag"])
@@ -105,7 +108,7 @@ dnl Check whether to build tests by default (as compile-test) or not
 AC_ARG_ENABLE([default-build-tests],
     AS_HELP_STRING([--disable-default-build-tests], [Build test programs only during make check]))
 
-AM_CONDITIONAL([BUILD_TESTS_DEFAULT], [test "x$enable_default_build_tests" = "xno"])
+AM_CONDITIONAL([BUILD_TESTS_DEFAULT], [test "x$enable_default_build_tests" != "xno"])
 
 # Native atomic operation support
 AC_ARG_ENABLE([atomic-arm-linux-helpers],
@@ -237,9 +240,32 @@ AS_IF([test "$pulseaudio_cv__Bool" = "yes"], [
 
 #### libtool stuff ####
 LT_PREREQ(2.2)
-LT_CONFIG_LTDL_DIR([libltdl])
 LT_INIT([dlopen win32-dll disable-static])
-LTDL_INIT([convenience recursive])
+
+dnl Unfortunately, even up to libtool 2.2.6a there is no way to know
+dnl exactly which version of libltdl is present in the system, so we
+dnl just assume that it's a working version as long as we have the
+dnl library and the header files.
+dnl
+dnl As an extra safety device, check for lt_dladvise_init() which is
+dnl only implemented in libtool 2.x, and refine as we go if we have
+dnl refined requirements.
+dnl
+dnl Check the header files first since the system may have a
+dnl libltdl.so for runtime, but no headers, and we want to bail out as
+dnl soon as possible.
+dnl
+dnl We don't need any special variable for this though, since the user
+dnl can give the proper place to find libltdl through the standard
+dnl variables like LDFLAGS and CPPFLAGS.
+
+AC_CHECK_HEADER([ltdl.h],
+    [AC_CHECK_LIB([ltdl], [lt_dladvise_init], [LIBLTDL=-lltdl], [LIBLTDL=])],
+    [LIBLTDL=])
+
+AS_IF([test "x$LIBLTDL" = "x"],
+    [AC_MSG_ERROR([Unable to find libltdl.])])
+AC_SUBST([LIBLTDL])
 
 #### Determine build environment ####
 
@@ -370,7 +396,7 @@ AC_FUNC_SELECT_ARGTYPES
 AC_CHECK_FUNCS([chmod chown clock_gettime getaddrinfo getgrgid_r getgrnam_r \
     getpwnam_r getpwuid_r gettimeofday getuid inet_ntop inet_pton mlock nanosleep \
     pipe posix_fadvise posix_madvise posix_memalign setpgid setsid shm_open \
-    sigaction sleep sysconf])
+    sigaction sleep sysconf pthread_setaffinity_np])
 AC_CHECK_FUNCS([mkfifo], [HAVE_MKFIFO=1], [HAVE_MKFIFO=0])
 
 AM_CONDITIONAL(HAVE_MKFIFO, test "x$HAVE_MKFIFO" = "x1")
@@ -442,14 +468,6 @@ AC_SUBST(pulselocaledir)
 ###################################
 
 #### pkg-config ####
-
-# Check for pkg-config manually first, as if its not installed the
-# PKG_PROG_PKG_CONFIG macro won't be defined.
-AC_CHECK_PROG(have_pkg_config, pkg-config, yes, no)
-
-if test x"$have_pkg_config" = "xno"; then
-    AC_MSG_ERROR(pkg-config is required to install this program)
-fi
 
 PKG_PROG_PKG_CONFIG
 
@@ -901,7 +919,10 @@ AC_ARG_ENABLE([hal],
         [hal=auto])
 if test "x${hal}" != xno -a \( "x$HAVE_OSS" = "x1" -o "x$HAVE_ALSA" = "x1" \) ; then
     PKG_CHECK_MODULES(HAL, [ hal >= 0.5.11 ],
-        HAVE_HAL=1,
+        [
+            HAVE_HAL=1
+            AC_DEFINE([HAVE_HAL], 1, [Have HAL.])
+        ],
         [
             HAVE_HAL=0
             if test "x$hal" = xyes ; then
@@ -1174,7 +1195,6 @@ AM_CONDITIONAL([FORCE_PREOPEN], [test "x$FORCE_PREOPEN" = "xyes"])
 
 AC_CONFIG_FILES([
 Makefile
-libltdl/Makefile
 src/Makefile
 man/Makefile
 libpulse.pc

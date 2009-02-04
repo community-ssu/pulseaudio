@@ -25,6 +25,8 @@
 #include <pulse/mainloop-api.h>
 #include <pulse/sample.h>
 
+typedef struct pa_core pa_core;
+
 #include <pulsecore/idxset.h>
 #include <pulsecore/hashmap.h>
 #include <pulsecore/memblock.h>
@@ -34,12 +36,17 @@
 #include <pulsecore/hook-list.h>
 #include <pulsecore/asyncmsgq.h>
 #include <pulsecore/sample-util.h>
-
-typedef struct pa_core pa_core;
-
+#include <pulsecore/sink.h>
+#include <pulsecore/source.h>
 #include <pulsecore/core-subscribe.h>
 #include <pulsecore/sink-input.h>
 #include <pulsecore/msgobject.h>
+
+typedef enum pa_core_state {
+    PA_CORE_STARTUP,
+    PA_CORE_RUNNING,
+    PA_CORE_SHUTDOWN
+} pa_core_state_t;
 
 typedef enum pa_core_hook {
     PA_CORE_HOOK_SINK_NEW,
@@ -49,7 +56,6 @@ typedef enum pa_core_hook {
     PA_CORE_HOOK_SINK_UNLINK_POST,
     PA_CORE_HOOK_SINK_STATE_CHANGED,
     PA_CORE_HOOK_SINK_PROPLIST_CHANGED,
-    PA_CORE_HOOK_SINK_SET_VOLUME,
     PA_CORE_HOOK_SOURCE_NEW,
     PA_CORE_HOOK_SOURCE_FIXATE,
     PA_CORE_HOOK_SOURCE_PUT,
@@ -62,8 +68,8 @@ typedef enum pa_core_hook {
     PA_CORE_HOOK_SINK_INPUT_PUT,
     PA_CORE_HOOK_SINK_INPUT_UNLINK,
     PA_CORE_HOOK_SINK_INPUT_UNLINK_POST,
-    PA_CORE_HOOK_SINK_INPUT_MOVE,
-    PA_CORE_HOOK_SINK_INPUT_MOVE_POST,
+    PA_CORE_HOOK_SINK_INPUT_MOVE_START,
+    PA_CORE_HOOK_SINK_INPUT_MOVE_FINISH,
     PA_CORE_HOOK_SINK_INPUT_STATE_CHANGED,
     PA_CORE_HOOK_SINK_INPUT_PROPLIST_CHANGED,
     PA_CORE_HOOK_SINK_INPUT_SET_VOLUME,
@@ -72,8 +78,8 @@ typedef enum pa_core_hook {
     PA_CORE_HOOK_SOURCE_OUTPUT_PUT,
     PA_CORE_HOOK_SOURCE_OUTPUT_UNLINK,
     PA_CORE_HOOK_SOURCE_OUTPUT_UNLINK_POST,
-    PA_CORE_HOOK_SOURCE_OUTPUT_MOVE,
-    PA_CORE_HOOK_SOURCE_OUTPUT_MOVE_POST,
+    PA_CORE_HOOK_SOURCE_OUTPUT_MOVE_START,
+    PA_CORE_HOOK_SOURCE_OUTPUT_MOVE_FINISH,
     PA_CORE_HOOK_SOURCE_OUTPUT_STATE_CHANGED,
     PA_CORE_HOOK_SOURCE_OUTPUT_PROPLIST_CHANGED,
     PA_CORE_HOOK_CLIENT_NEW,
@@ -92,6 +98,8 @@ typedef enum pa_core_hook {
 struct pa_core {
     pa_msgobject parent;
 
+    pa_core_state_t state;
+
     /* A random value which may be used to identify this instance of
      * PulseAudio. Not cryptographically secure in any way. */
     uint32_t cookie;
@@ -104,8 +112,9 @@ struct pa_core {
     /* Some hashmaps for all sorts of entities */
     pa_hashmap *namereg, *shared;
 
-    /* The name of the default sink/source */
-    char *default_source_name, *default_sink_name;
+    /* The default sink/source */
+    pa_source *default_source;
+    pa_sink *default_sink;
 
     pa_sample_spec default_sample_spec;
     unsigned default_n_fragments, default_fragment_size_msec;
@@ -120,12 +129,12 @@ struct pa_core {
     pa_mempool *mempool;
     pa_silence_cache silence_cache;
 
-    int exit_idle_time, scache_idle_time;
-
     pa_time_event *exit_event;
-
     pa_time_event *scache_auto_unload_event;
 
+    int exit_idle_time, scache_idle_time;
+
+    pa_bool_t flat_volumes:1;
     pa_bool_t disallow_module_loading:1;
     pa_bool_t disallow_exit:1;
     pa_bool_t running_as_daemon:1;

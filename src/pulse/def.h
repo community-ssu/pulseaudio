@@ -29,6 +29,7 @@
 
 #include <pulse/cdecl.h>
 #include <pulse/sample.h>
+#include <pulse/version.h>
 
 /** \file
  * Global definitions */
@@ -236,12 +237,17 @@ typedef enum pa_stream_flags {
      * checked whether the device this stream is connected to should
      * auto-suspend. \since 0.9.15 */
 
-    PA_STREAM_START_UNMUTED = 0x10000U
+    PA_STREAM_START_UNMUTED = 0x10000U,
     /**< Create in unmuted state. If neither PA_STREAM_START_UNMUTED
      * nor PA_STREAM_START_MUTED it is left to the server to decide
      * whether to create the stream in muted or in unmuted
      * state. \since 0.9.15 */
 
+    PA_STREAM_FAIL_ON_SUSPEND = 0x20000U
+    /**< If the sink/source this stream is connected to is suspended
+     * during the creation of this stream, cause it to fail. If the
+     * sink/source is being suspended during creation of this stream,
+     * make sure this stream is terminated. \since 0.9.15 */
 } pa_stream_flags_t;
 
 /** \cond fulldocs */
@@ -267,6 +273,7 @@ typedef enum pa_stream_flags {
 #define PA_STREAM_EARLY_REQUESTS PA_STREAM_EARLY_REQUESTS
 #define PA_STREAM_DONT_INHIBIT_AUTO_SUSPEND PA_STREAM_DONT_INHIBIT_AUTO_SUSPEND
 #define PA_STREAM_START_UNMUTED PA_STREAM_START_UNMUTED
+#define PA_STREAM_FAIL_ON_SUSPEND PA_STREAM_FAIL_ON_SUSPEND
 
 /** \endcond */
 
@@ -357,8 +364,37 @@ enum {
     PA_ERR_UNKNOWN,                /**< The error code was unknown to the client */
     PA_ERR_NOEXTENSION,            /**< Extension does not exist. \since 0.9.12 */
     PA_ERR_OBSOLETE,               /**< Obsolete functionality. \since 0.9.15 */
+    PA_ERR_NOTIMPLEMENTED,         /**< Missing implementation. \since 0.9.15 */
     PA_ERR_MAX                     /**< Not really an error but the first invalid error code */
 };
+
+/** \cond fulldocs */
+#define PA_OK PA_OK
+#define PA_ERR_ACCESS PA_ERR_ACCESS
+#define PA_ERR_COMMAND PA_ERR_COMMAND
+#define PA_ERR_INVALID PA_ERR_INVALID
+#define PA_ERR_EXIST PA_ERR_EXIST
+#define PA_ERR_NOENTITY PA_ERR_NOENTITY
+#define PA_ERR_CONNECTIONREFUSED PA_ERR_CONNECTIONREFUSED
+#define PA_ERR_PROTOCOL PA_ERR_PROTOCOL
+#define PA_ERR_TIMEOUT PA_ERR_TIMEOUT
+#define PA_ERR_AUTHKEY PA_ERR_AUTHKEY
+#define PA_ERR_INTERNAL PA_ERR_INTERNAL
+#define PA_ERR_CONNECTIONTERMINATED PA_ERR_CONNECTIONTERMINATED
+#define PA_ERR_KILLED PA_ERR_KILLED
+#define PA_ERR_INVALIDSERVER PA_ERR_INVALIDSERVER
+#define PA_ERR_MODINITFAILED PA_ERR_MODINITFAILED
+#define PA_ERR_BADSTATE PA_ERR_BADSTATE
+#define PA_ERR_NODATA PA_ERR_NODATA
+#define PA_ERR_VERSION PA_ERR_VERSION
+#define PA_ERR_TOOLARGE PA_ERR_TOOLARGE
+#define PA_ERR_NOTSUPPORTED PA_ERR_NOTSUPPORTED
+#define PA_ERR_UNKNOWN PA_ERR_UNKNOWN
+#define PA_ERR_NOEXTENSION PA_ERR_NOEXTENSION
+#define PA_ERR_OBSOLETE PA_ERR_OBSOLETE
+#define PA_ERR_NOTIMPLEMENTED PA_ERR_NOTIMPLEMENTED
+#define PA_ERR_MAX PA_ERR_MAX
+/** \endcond */
 
 /** Subscription event mask, as used by pa_context_subscribe() */
 typedef enum pa_subscription_mask {
@@ -599,9 +635,13 @@ typedef enum pa_sink_flags {
     PA_SINK_HW_MUTE_CTRL = 0x0010U,
     /**< Supports hardware mute control \since 0.9.11 */
 
-    PA_SINK_DECIBEL_VOLUME = 0x0020U
+    PA_SINK_DECIBEL_VOLUME = 0x0020U,
     /**< Volume can be translated to dB with pa_sw_volume_to_dB()
      * \since 0.9.11 */
+
+    PA_SINK_FLAT_VOLUME = 0x0040U
+    /**< This sink is in flat volume mode, i.e. always the maximum of
+     * the volume of all connected inputs. \since 0.9.15 */
 } pa_sink_flags_t;
 
 /** \cond fulldocs */
@@ -611,6 +651,7 @@ typedef enum pa_sink_flags {
 #define PA_SINK_NETWORK PA_SINK_NETWORK
 #define PA_SINK_HW_MUTE_CTRL PA_SINK_HW_MUTE_CTRL
 #define PA_SINK_DECIBEL_VOLUME PA_SINK_DECIBEL_VOLUME
+#define PA_SINK_FLAT_VOLUME PA_SINK_FLAT_VOLUME
 /** \endcond */
 
 /** Sink state. \since 0.9.15 */

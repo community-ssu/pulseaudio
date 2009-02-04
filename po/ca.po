@@ -19,395 +19,399 @@ msgid ""
 msgstr ""
 "Project-Id-Version: pulseaudio\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-01-08 19:36+0100\n"
-"PO-Revision-Date: 1008-11-08 HO:MI+ZONE\n"
-"Last-Translator: Xavier Conde Rueda <xavi.conde@gmail.com>\n"
+"POT-Creation-Date: 2008-11-08 01:48+0000\n"
+"PO-Revision-Date: 2009-01-31 06:12+0100\n"
+"Last-Translator: Agustí Grau <fletxa@gmail.com>\n"
 "Language-Team: Catalan <fedora@softcatala.net>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../src/daemon/ltdl-bind-now.c:124
-#, fuzzy
-msgid "Failed to find original lt_dlopen loader."
-msgstr "No s'ha trobat el carregador dlopen original."
-
-#: ../src/daemon/ltdl-bind-now.c:129
-#, fuzzy
-msgid "Failed to allocate new dl loader."
-msgstr "No s'ha trobat el carregador dlopen original."
-
-#: ../src/daemon/ltdl-bind-now.c:142
+#: ../src/daemon/ltdl-bind-now.c:177
+#: ../src/daemon/ltdl-bind-now.c:197
 msgid "Failed to add bind-now-loader."
-msgstr ""
+msgstr "S'ha produït un error en afegir bind-now-loader."
+
+#: ../src/daemon/ltdl-bind-now.c:184
+msgid "Failed to find original dlopen loader."
+msgstr "No s'ha trobat el carregador dlopen original."
 
 #: ../src/daemon/polkit.c:55
 #, c-format
 msgid "Cannot connect to system bus: %s"
-msgstr ""
+msgstr "No s'ha pogut connectar al bus del sistema: %s"
 
 #: ../src/daemon/polkit.c:65
 #, c-format
 msgid "Cannot get caller from PID: %s"
-msgstr ""
+msgstr "No s'ha pogut obtenir el cridador amb el PID: %s"
 
 #: ../src/daemon/polkit.c:77
 msgid "Cannot set UID on caller object."
-msgstr ""
+msgstr "No s'ha pogut especificar l'UID en l'objecte cridador."
 
+# CK: ConsoleKit
 #: ../src/daemon/polkit.c:82
 msgid "Failed to get CK session."
-msgstr ""
+msgstr "S'ha produït un error en obtenir la sessió del CK."
 
 #: ../src/daemon/polkit.c:90
 msgid "Cannot set UID on session object."
-msgstr ""
+msgstr "No s'ha pogut especificar l'UID en l'objecte sessió."
 
 #: ../src/daemon/polkit.c:95
 msgid "Cannot allocate PolKitAction."
-msgstr ""
+msgstr "No s'ha pogut allotjar PolKitAction"
 
 #: ../src/daemon/polkit.c:100
 msgid "Cannot set action_id"
-msgstr ""
+msgstr "No s'ha pogut especificar action_id"
 
 #: ../src/daemon/polkit.c:105
 msgid "Cannot allocate PolKitContext."
-msgstr ""
+msgstr "No s'ha pogut allotjar PolKitContext"
 
 #: ../src/daemon/polkit.c:110
 #, c-format
 msgid "Cannot initialize PolKitContext: %s"
-msgstr ""
+msgstr "No s'ha pogut inicialitzar PolKitContext: %s"
 
 #: ../src/daemon/polkit.c:119
 #, c-format
 msgid "Could not determine whether caller is authorized: %s"
-msgstr ""
+msgstr "S'ha produït un error en determinar si el cridador està autoritzada: %s"
 
 #: ../src/daemon/polkit.c:139
 #, c-format
 msgid "Cannot obtain auth: %s"
-msgstr ""
+msgstr "No s'ha pogut obtenir autorització: %s"
 
 #: ../src/daemon/polkit.c:148
 #, c-format
 msgid "PolicyKit responded with '%s'"
-msgstr ""
+msgstr "PolicyKit ha respost '%s'"
 
 #: ../src/daemon/main.c:134
 #, c-format
 msgid "Got signal %s."
-msgstr ""
+msgstr "S'ha obtingut la senyal %s."
 
 #: ../src/daemon/main.c:161
 msgid "Exiting."
-msgstr ""
+msgstr "S'està sortint."
 
 #: ../src/daemon/main.c:179
 #, c-format
 msgid "Failed to find user '%s'."
-msgstr ""
+msgstr "S'ha produït un error en trobar l'usuari '%s'."
 
 #: ../src/daemon/main.c:184
 #, c-format
 msgid "Failed to find group '%s'."
-msgstr ""
+msgstr "S'ha produït un error en trobar el grup '%s'."
 
 #: ../src/daemon/main.c:188
 #, c-format
 msgid "Found user '%s' (UID %lu) and group '%s' (GID %lu)."
-msgstr ""
+msgstr "S'han trobat l'usuari '%s' (UID %lu) i el grup '%s' (GID %lu)."
 
 #: ../src/daemon/main.c:193
 #, c-format
 msgid "GID of user '%s' and of group '%s' don't match."
-msgstr ""
+msgstr "El GID de l'usuari '%s' i del grup '%s' no coincideixen"
 
 #: ../src/daemon/main.c:198
 #, c-format
 msgid "Home directory of user '%s' is not '%s', ignoring."
-msgstr ""
+msgstr "El directori d'inici de l'usuari '%s' no és '%s', s'ignorarà."
 
-#: ../src/daemon/main.c:201 ../src/daemon/main.c:206
+#: ../src/daemon/main.c:201
+#: ../src/daemon/main.c:206
 #, c-format
 msgid "Failed to create '%s': %s"
-msgstr ""
+msgstr "S'ha produït un error durant la creació de '%s': %s"
 
 #: ../src/daemon/main.c:213
 #, c-format
 msgid "Failed to change group list: %s"
-msgstr ""
+msgstr "S'ha produït un error en canviar la llista del grup :%s"
 
 #: ../src/daemon/main.c:229
 #, c-format
 msgid "Failed to change GID: %s"
-msgstr ""
+msgstr "S'ha produït un error en canviar el GID: %s"
 
 #: ../src/daemon/main.c:245
 #, c-format
 msgid "Failed to change UID: %s"
-msgstr ""
+msgstr "S'ha produït un error en canviar l'UID: %s"
 
 #: ../src/daemon/main.c:259
 msgid "Successfully dropped root privileges."
-msgstr ""
+msgstr "S'han lliberat els permissos de root amb éxit."
 
 #: ../src/daemon/main.c:267
 msgid "System wide mode unsupported on this platform."
-msgstr ""
+msgstr "El mode de sistema no està disponible en aquesta plataforma."
 
 #: ../src/daemon/main.c:285
 #, c-format
 msgid "setrlimit(%s, (%u, %u)) failed: %s"
-msgstr ""
+msgstr "S'ha produït un error en setrlimit(%s, (%u, %u)): %s"
 
 #: ../src/daemon/main.c:425
 msgid "Failed to parse command line."
-msgstr ""
+msgstr "S'ha produït un error en interpretar la línia d'ordres."
 
-#: ../src/daemon/main.c:447
+#: ../src/daemon/main.c:441
 #, c-format
 msgid "We're in the group '%s', allowing high-priority scheduling."
-msgstr ""
+msgstr "Aquesta aplicació està en el grup '%s', s'està establint la planificació amb prioritat alta."
 
-#: ../src/daemon/main.c:454
+#: ../src/daemon/main.c:448
 #, c-format
 msgid "We're in the group '%s', allowing real-time scheduling."
-msgstr ""
+msgstr "Aquesta aplicació està en el grup '%s', s'està establint la planificació amb prioritat en temps real."
 
-#: ../src/daemon/main.c:462
+#: ../src/daemon/main.c:456
 msgid "PolicyKit grants us acquire-high-priority privilege."
-msgstr ""
+msgstr "PolicyKit ha permés el permís acquire-high-priority."
 
-#: ../src/daemon/main.c:465
+#: ../src/daemon/main.c:459
 msgid "PolicyKit refuses acquire-high-priority privilege."
-msgstr ""
+msgstr "PolicyKit ha rebutjat el permís acquire-high-priority."
 
-#: ../src/daemon/main.c:470
+#: ../src/daemon/main.c:464
 msgid "PolicyKit grants us acquire-real-time privilege."
-msgstr ""
+msgstr "PolicyKit ha permés el permís acquire-real-time."
 
-#: ../src/daemon/main.c:473
+#: ../src/daemon/main.c:467
 msgid "PolicyKit refuses acquire-real-time privilege."
-msgstr ""
+msgstr "PolicyKit ha rebutjat el permís acquire-real-time."
 
-#: ../src/daemon/main.c:502
+#: ../src/daemon/main.c:479
 msgid ""
-"Called SUID root and real-time and/or high-priority scheduling was requested "
-"in the configuration. However, we lack the necessary privileges:\n"
+"Called SUID root and real-time/high-priority scheduling was requested in the configuration. However, we lack the necessary priviliges:\n"
 "We are not in group '"
 msgstr ""
+"S'han especificat la crida SUID root i la planificació amb prioritat alta/temps real en la configuració, però no té els permissos necessaris:\n"
+"No es pertany al grup '"
 
-#: ../src/daemon/main.c:526
+#: ../src/daemon/main.c:480
 msgid ""
-"High-priority scheduling enabled in configuration but not allowed by policy."
+"' and PolicyKit refuse to grant us priviliges. Dropping SUID again.\n"
+"For enabling real-time scheduling please acquire the appropriate PolicyKit priviliges, or become a member of '"
 msgstr ""
+"' i PolicyKit ha denegat els permissos. S'està lliberant SUID. \n"
+"Per habilitar la prioritat en temps real, s'ha d'adquirir els permissos de PolicyKit, o pertanyer a '"
 
-#: ../src/daemon/main.c:555
+#: ../src/daemon/main.c:481
+msgid "', or increase the RLIMIT_NICE/RLIMIT_RTPRIO resource limits for this user."
+msgstr "', o incrementar els límits de recursos RLIMIT_NICE/RLIMIT_RTPRIO per a aquest usuari."
+
+#: ../src/daemon/main.c:497
+msgid "High-priority scheduling enabled in configuration but not allowed by policy."
+msgstr "La prioritat alta està habilitada en la configuració però no està permesa per la política."
+
+#: ../src/daemon/main.c:522
 msgid "Successfully increased RLIMIT_RTPRIO"
-msgstr ""
+msgstr "S'ha incrementat el valor de RLIMIT_RTPRIO amb éxit."
 
-#: ../src/daemon/main.c:558
+#: ../src/daemon/main.c:525
 #, c-format
 msgid "RLIMIT_RTPRIO failed: %s"
-msgstr ""
+msgstr "S'ha produït un error amb RLIMIT_RTPRIO: %s"
 
-#: ../src/daemon/main.c:565
+#: ../src/daemon/main.c:532
 msgid "Giving up CAP_NICE"
-msgstr ""
+msgstr "No es continuarà amb CAP_NICE"
 
-#: ../src/daemon/main.c:572
-msgid ""
-"Real-time scheduling enabled in configuration but not allowed by policy."
-msgstr ""
+#: ../src/daemon/main.c:539
+msgid "Real-time scheduling enabled in configuration but not allowed by policy."
+msgstr "La prioritat de planificació de temps real està habilitada en la configuració però no està permesa per la política."
 
-#: ../src/daemon/main.c:633
+#: ../src/daemon/main.c:597
 msgid "Daemon not running"
-msgstr ""
+msgstr "El dimoni no s'està executant."
 
-#: ../src/daemon/main.c:635
+#: ../src/daemon/main.c:599
 #, c-format
 msgid "Daemon running as PID %u"
-msgstr ""
+msgstr "El dimoni s'està executant amb PID %u"
 
-#: ../src/daemon/main.c:645
+#: ../src/daemon/main.c:609
 #, c-format
 msgid "Failed to kill daemon: %s"
-msgstr ""
+msgstr "S'ha produït un error en matar el dimoni: %s"
 
-#: ../src/daemon/main.c:663
-msgid ""
-"This program is not intended to be run as root (unless --system is "
-"specified)."
-msgstr ""
+#: ../src/daemon/main.c:627
+msgid "This program is not intended to be run as root (unless --system is specified)."
+msgstr "No és necessari executar aquesta aplicació com a root (excepte si s'especifica --system)"
 
-#: ../src/daemon/main.c:665
-msgid "Root privileges required."
-msgstr ""
+#: ../src/daemon/main.c:629
+msgid "Root priviliges required."
+msgstr "Es requereixen permisos de root."
 
-#: ../src/daemon/main.c:670
+#: ../src/daemon/main.c:634
 msgid "--start not supported for system instances."
-msgstr ""
+msgstr "L'opció --start no està disponible per a instàncies de sistema."
 
-#: ../src/daemon/main.c:675
+#: ../src/daemon/main.c:639
 msgid "Running in system mode, but --disallow-exit not set!"
-msgstr ""
+msgstr "S'està executant en mode sistema, però no s'ha especificat l'opció --disallow-exit."
 
-#: ../src/daemon/main.c:678
+#: ../src/daemon/main.c:642
 msgid "Running in system mode, but --disallow-module-loading not set!"
-msgstr ""
+msgstr "S'està executant en mode sistema, però no s'ha especificat l'opció --disallow-module-loading."
 
-#: ../src/daemon/main.c:681
+#: ../src/daemon/main.c:645
 msgid "Running in system mode, forcibly disabling SHM mode!"
-msgstr ""
+msgstr "S'està executant en mode sistema, es forçarà la inhabilitació del mode SHM"
 
-#: ../src/daemon/main.c:686
+#: ../src/daemon/main.c:650
 msgid "Running in system mode, forcibly disabling exit idle time!"
-msgstr ""
+msgstr "S'està executant en mode sistema, la sortida per temps d'inactivitat es deshabilita."
 
-#: ../src/daemon/main.c:713
+#: ../src/daemon/main.c:677
 msgid "Failed to acquire stdio."
-msgstr ""
+msgstr "S'ha produït un error en adquirir stdio."
 
-#: ../src/daemon/main.c:719
+#: ../src/daemon/main.c:683
 #, c-format
 msgid "pipe failed: %s"
-msgstr ""
+msgstr "Ha fallat la canonada: %s"
 
-#: ../src/daemon/main.c:724
+#: ../src/daemon/main.c:688
 #, c-format
 msgid "fork() failed: %s"
-msgstr ""
+msgstr "Ha fallat fork(): %s"
 
-#: ../src/daemon/main.c:738
+#: ../src/daemon/main.c:702
 #, c-format
 msgid "read() failed: %s"
-msgstr ""
+msgstr "Ha fallat read(): %s"
 
-#: ../src/daemon/main.c:744
+#: ../src/daemon/main.c:708
 msgid "Daemon startup failed."
-msgstr ""
+msgstr "S'ha produït un error en iniciar el dimoni."
 
-#: ../src/daemon/main.c:746
+#: ../src/daemon/main.c:710
 msgid "Daemon startup successful."
-msgstr ""
+msgstr "S'ha iniciat el dimoni."
 
-#: ../src/daemon/main.c:816
+#: ../src/daemon/main.c:780
 #, c-format
 msgid "This is PulseAudio %s"
-msgstr ""
+msgstr "Aquest és el PulseAudio %s"
 
-#: ../src/daemon/main.c:817
+#: ../src/daemon/main.c:781
 #, c-format
 msgid "Compilation host: %s"
-msgstr ""
+msgstr "Host de compilació: %s"
+
+#: ../src/daemon/main.c:782
+#, c-format
+msgid "Compilation CFLAGS: %s"
+msgstr "CFLAGS de compilació: %s"
+
+#: ../src/daemon/main.c:785
+#, c-format
+msgid "Running on host: %s"
+msgstr "S'està executant en el host: %s"
+
+#: ../src/daemon/main.c:788
+#, c-format
+msgid "Page size is %lu bytes"
+msgstr "La mida de pàgina és de %lu bytes."
+
+#: ../src/daemon/main.c:791
+msgid "Compiled with Valgrind support: yes"
+msgstr "Compilat amb suport per a Valgrind: sí"
+
+#: ../src/daemon/main.c:793
+msgid "Compiled with Valgrind support: no"
+msgstr "Compilat amb suport per a Valgrind: no"
+
+#: ../src/daemon/main.c:796
+#, c-format
+msgid "Running in valgrind mode: %s"
+msgstr "S'està executant amb el mode valgrind: %s"
+
+#: ../src/daemon/main.c:799
+msgid "Optimized build: yes"
+msgstr "Construcció optimitzada: sí"
+
+#: ../src/daemon/main.c:801
+msgid "Optimized build: no"
+msgstr "Construcció optmitzada: no"
+
+#: ../src/daemon/main.c:805
+msgid "Failed to get machine ID"
+msgstr "S'ha produït un error en obtenir l'ID de la màquina"
+
+#: ../src/daemon/main.c:808
+#, c-format
+msgid "Machine ID is %s."
+msgstr "La ID de la màquina és %s."
+
+#: ../src/daemon/main.c:813
+#, c-format
+msgid "Using runtime directory %s."
+msgstr "S'esta utilitzant el directori d'execució %s."
 
 #: ../src/daemon/main.c:818
 #, c-format
-msgid "Compilation CFLAGS: %s"
-msgstr ""
+msgid "Using state directory %s."
+msgstr "S'està utilitzant el directori d'estat %s."
 
 #: ../src/daemon/main.c:821
 #, c-format
-msgid "Running on host: %s"
-msgstr ""
-
-#: ../src/daemon/main.c:824
-#, c-format
-msgid "Page size is %lu bytes"
-msgstr ""
-
-#: ../src/daemon/main.c:827
-msgid "Compiled with Valgrind support: yes"
-msgstr ""
-
-#: ../src/daemon/main.c:829
-msgid "Compiled with Valgrind support: no"
-msgstr ""
-
-#: ../src/daemon/main.c:832
-#, c-format
-msgid "Running in valgrind mode: %s"
-msgstr ""
-
-#: ../src/daemon/main.c:835
-msgid "Optimized build: yes"
-msgstr ""
-
-#: ../src/daemon/main.c:837
-msgid "Optimized build: no"
-msgstr ""
-
-#: ../src/daemon/main.c:841
-msgid "Failed to get machine ID"
-msgstr ""
-
-#: ../src/daemon/main.c:844
-#, c-format
-msgid "Machine ID is %s."
-msgstr ""
-
-#: ../src/daemon/main.c:849
-#, c-format
-msgid "Using runtime directory %s."
-msgstr ""
-
-#: ../src/daemon/main.c:854
-#, c-format
-msgid "Using state directory %s."
-msgstr ""
-
-#: ../src/daemon/main.c:857
-#, c-format
 msgid "Running in system mode: %s"
-msgstr ""
+msgstr "S'està executant en mode sistema: %s"
 
-#: ../src/daemon/main.c:872
+#: ../src/daemon/main.c:836
 msgid "pa_pid_file_create() failed."
-msgstr ""
+msgstr "S'ha produït un error en pa_pid_file_create()."
 
-#: ../src/daemon/main.c:884
+#: ../src/daemon/main.c:848
 msgid "Fresh high-resolution timers available! Bon appetit!"
-msgstr ""
+msgstr "Estan disponibles els temporitzadors d'alta resolució."
 
-#: ../src/daemon/main.c:886
-msgid ""
-"Dude, your kernel stinks! The chef's recommendation today is Linux with high-"
-"resolution timers enabled!"
-msgstr ""
+#: ../src/daemon/main.c:850
+msgid "Dude, your kernel stinks! The chef's recommendation today is Linux with high-resolution timers enabled!"
+msgstr "Es recomana la utilització d'un nucli amb els temporitzadors d'alta resolució habilitats."
 
-#: ../src/daemon/main.c:896
+#: ../src/daemon/main.c:860
 msgid "pa_core_new() failed."
-msgstr ""
+msgstr "S'ha produït un error en pa_core_new()."
 
-#: ../src/daemon/main.c:957
+#: ../src/daemon/main.c:921
 msgid "Failed to initialize daemon."
-msgstr ""
+msgstr "S'ha produït un error en inicialitzar el dimoni."
 
-#: ../src/daemon/main.c:962
+#: ../src/daemon/main.c:926
 msgid "Daemon startup without any loaded modules, refusing to work."
-msgstr ""
+msgstr "El dimoni s'ha iniciat sense cap mòdul carregat, no funcionarà."
 
-#: ../src/daemon/main.c:967
+#: ../src/daemon/main.c:931
 #, c-format
 msgid "Default sink name (%s) does not exist in name register."
-msgstr ""
+msgstr "El nom per omissió del conducte (%s) no existeix en el registre de noms."
 
-#: ../src/daemon/main.c:980
+#: ../src/daemon/main.c:944
 msgid "Daemon startup complete."
-msgstr ""
+msgstr "S'ha completat la inicialització del dimoni."
 
-#: ../src/daemon/main.c:986
+#: ../src/daemon/main.c:950
 msgid "Daemon shutdown initiated."
-msgstr ""
+msgstr "S'ha iniciat l'aturada del dimoni."
 
-#: ../src/daemon/main.c:1007
+#: ../src/daemon/main.c:971
 msgid "Daemon terminated."
-msgstr ""
+msgstr "S'ha aturat el dimoni."
 
-#: ../src/daemon/cmdline.c:123
-#, c-format
+#: ../src/daemon/cmdline.c:117
+#, fuzzy, c-format
 msgid ""
 "%s [options]\n"
 "\n"
@@ -417,48 +421,34 @@ msgid ""
 "      --dump-conf                       Dump default configuration\n"
 "      --dump-modules                    Dump list of available modules\n"
 "      --dump-resample-methods           Dump available resample methods\n"
-"      --cleanup-shm                     Cleanup stale shared memory "
-"segments\n"
-"      --start                           Start the daemon if it is not "
-"running\n"
+"      --cleanup-shm                     Cleanup stale shared memory segments\n"
+"      --start                           Start the daemon if it is not running\n"
 "  -k  --kill                            Kill a running daemon\n"
-"      --check                           Check for a running daemon (only "
-"returns exit code)\n"
+"      --check                           Check for a running daemon\n"
 "\n"
 "OPTIONS:\n"
 "      --system[=BOOL]                   Run as system-wide instance\n"
 "  -D, --daemonize[=BOOL]                Daemonize after startup\n"
 "      --fail[=BOOL]                     Quit when startup fails\n"
 "      --high-priority[=BOOL]            Try to set high nice level\n"
-"                                        (only available as root, when SUID "
-"or\n"
+"                                        (only available as root, when SUID or\n"
 "                                        with elevated RLIMIT_NICE)\n"
 "      --realtime[=BOOL]                 Try to enable realtime scheduling\n"
-"                                        (only available as root, when SUID "
-"or\n"
+"                                        (only available as root, when SUID or\n"
 "                                        with elevated RLIMIT_RTPRIO)\n"
-"      --disallow-module-loading[=BOOL]  Disallow module user requested "
-"module\n"
+"      --disallow-module-loading[=BOOL]  Disallow module user requested module\n"
 "                                        loading/unloading after startup\n"
 "      --disallow-exit[=BOOL]            Disallow user requested exit\n"
-"      --exit-idle-time=SECS             Terminate the daemon when idle and "
-"this\n"
+"      --exit-idle-time=SECS             Terminate the daemon when idle and this\n"
 "                                        time passed\n"
-"      --module-idle-time=SECS           Unload autoloaded modules when idle "
-"and\n"
+"      --module-idle-time=SECS           Unload autoloaded modules when idle and\n"
 "                                        this time passed\n"
-"      --scache-idle-time=SECS           Unload autoloaded samples when idle "
-"and\n"
+"      --scache-idle-time=SECS           Unload autoloaded samples when idle and\n"
 "                                        this time passed\n"
 "      --log-level[=LEVEL]               Increase or set verbosity level\n"
 "  -v                                    Increase the verbosity level\n"
 "      --log-target={auto,syslog,stderr} Specify the log target\n"
-"      --log-meta[=BOOL]                 Include code location in log "
-"messages\n"
-"      --log-time[=BOOL]                 Include timestamps in log messages\n"
-"      --log-backtrace=FRAMES            Include a backtrace in log messages\n"
-"  -p, --dl-search-path=PATH             Set the search path for dynamic "
-"shared\n"
+"  -p, --dl-search-path=PATH             Set the search path for dynamic shared\n"
 "                                        objects (plugins)\n"
 "      --resample-method=METHOD          Use the specified resampling method\n"
 "                                        (See --dump-resample-methods for\n"
@@ -469,79 +459,120 @@ msgid ""
 "      --disable-shm[=BOOL]              Disable shared memory support.\n"
 "\n"
 "STARTUP SCRIPT:\n"
-"  -L, --load=\"MODULE ARGUMENTS\"         Load the specified plugin module "
-"with\n"
+"  -L, --load=\"MODULE ARGUMENTS\"         Load the specified plugin module with\n"
 "                                        the specified argument\n"
 "  -F, --file=FILENAME                   Run the specified script\n"
-"  -C                                    Open a command line on the running "
-"TTY\n"
+"  -C                                    Open a command line on the running TTY\n"
 "                                        after startup\n"
 "\n"
 "  -n                                    Don't load default script file\n"
 msgstr ""
+"%s [opcions]\n"
+"\n"
+"ORDRES:\n"
+"  -h, --help                            Mostra aquesta ajuda\n"
+"      --version                         Mostra la versió\n"
+"      --dump-conf                       Volca la configuració per omissió\n"
+"      --dump-modules                    Volca la llista de mòduls\n"
+"      --dump-resample-methods           Volca els mètodes disponibles de remostratge\n"
+"      --cleanup-shm                     Neteja els segments de memòria compartida no emprats\n"
+"      --start                           Inicia el dimoni si no està corrent\n"
+"  -k  --kill                            Mata el dimoni en execució\n"
+"      --check                           Comprova l'execució del dimoni\n"
+"\n"
+"OPCIONS:\n"
+"      --system[=BOOL]                   Executa com a instància de sistema\n"
+"  -D, --daemonize[=BOOL]                Converteix en dimoni després de la inicialització\n"
+"      --fail[=BOOL]                     Surt quan falli la inicialització\n"
+"      --high-priority[=BOOL]            Prova d'establir un nivell\n"
+"                                        de prioritat alt (només disponible com a root,\n"
+"                                        amb SUID o amb un elevat RLIMIT_NICE)\n"
+"      --realtime[=BOOL]                 Try to enable realtime scheduling\n"
+"                                        (only available as root, when SUID or\n"
+"                                        with elevated RLIMIT_RTPRIO)\n"
+"      --disallow-module-loading[=BOOL]  Disallow module user requested module\n"
+"                                        loading/unloading after startup\n"
+"      --disallow-exit[=BOOL]            Disallow user requested exit\n"
+"      --exit-idle-time=SECS             Terminate the daemon when idle and this\n"
+"                                        time passed\n"
+"      --module-idle-time=SECS           Unload autoloaded modules when idle and\n"
+"                                        this time passed\n"
+"      --scache-idle-time=SECS           Unload autoloaded samples when idle and\n"
+"                                        this time passed\n"
+"      --log-level[=LEVEL]               Increase or set verbosity level\n"
+"  -v                                    Increase the verbosity level\n"
+"      --log-target={auto,syslog,stderr} Specify the log target\n"
+"  -p, --dl-search-path=PATH             Set the search path for dynamic shared\n"
+"                                        objects (plugins)\n"
+"      --resample-method=METHOD          Use the specified resampling method\n"
+"                                        (See --dump-resample-methods for\n"
+"                                        possible values)\n"
+"      --use-pid-file[=BOOL]             Create a PID file\n"
+"      --no-cpu-limit[=BOOL]             Do not install CPU load limiter on\n"
+"                                        platforms that support it.\n"
+"      --disable-shm[=BOOL]              Disable shared memory support.\n"
+"\n"
+"STARTUP SCRIPT:\n"
+"  -L, --load=\"MODULE ARGUMENTS\"         Load the specified plugin module with\n"
+"                                        the specified argument\n"
+"  -F, --file=FILENAME                   Run the specified script\n"
+"  -C                                    Open a command line on the running TTY\n"
+"                                        after startup\n"
+"\n"
+"  -n                                    Don't load default script file\n"
 
-#: ../src/daemon/cmdline.c:254
+#: ../src/daemon/cmdline.c:245
 msgid "--daemonize expects boolean argument"
-msgstr ""
+msgstr "--daemonize necessita un argument booleà"
 
-#: ../src/daemon/cmdline.c:261
+#: ../src/daemon/cmdline.c:252
 msgid "--fail expects boolean argument"
-msgstr ""
+msgstr "--fail necessita un argument booleà"
 
-#: ../src/daemon/cmdline.c:271
-msgid ""
-"--log-level expects log level argument (either numeric in range 0..4 or one "
-"of debug, info, notice, warn, error)."
-msgstr ""
+#: ../src/daemon/cmdline.c:262
+msgid "--log-level expects log level argument (either numeric in range 0..4 or one of debug, info, notice, warn, error)."
+msgstr "--log-level necessita un argument de nivell de log (valor númeric 0..4 o 'debug', 'info', 'notice', 'warn', 'error')."
 
-#: ../src/daemon/cmdline.c:283
+#: ../src/daemon/cmdline.c:274
 msgid "--high-priority expects boolean argument"
-msgstr ""
+msgstr "--high-priority necessita un argument booleà"
 
-#: ../src/daemon/cmdline.c:290
+#: ../src/daemon/cmdline.c:281
 msgid "--realtime expects boolean argument"
-msgstr ""
+msgstr "--realtime necessita un argument booleà"
 
-#: ../src/daemon/cmdline.c:297
+#: ../src/daemon/cmdline.c:288
 msgid "--disallow-module-loading expects boolean argument"
-msgstr ""
+msgstr "--disallow-module-loading necessita un argument booleà"
 
-#: ../src/daemon/cmdline.c:304
+#: ../src/daemon/cmdline.c:295
 msgid "--disallow-exit boolean argument"
-msgstr ""
+msgstr "--disallow-exit necessita un argument booleà"
 
-#: ../src/daemon/cmdline.c:311
+#: ../src/daemon/cmdline.c:302
 msgid "--use-pid-file expects boolean argument"
-msgstr ""
+msgstr "--use-pid-file necessita un argument booleà"
 
-#: ../src/daemon/cmdline.c:328
+#: ../src/daemon/cmdline.c:319
 msgid "Invalid log target: use either 'syslog', 'stderr' or 'auto'."
-msgstr ""
+msgstr "Objectiu de registre invàlid: utilitzeu 'syslog', 'stderr' o 'auto'."
 
-#: ../src/daemon/cmdline.c:335
-msgid "--log-time boolean argument"
-msgstr ""
-
-#: ../src/daemon/cmdline.c:342
-msgid "--log-meta boolean argument"
-msgstr ""
-
-#: ../src/daemon/cmdline.c:365
+#: ../src/daemon/cmdline.c:338
 #, c-format
 msgid "Invalid resample method '%s'."
-msgstr ""
+msgstr "Mètode de remostratge invàlid '%s'."
 
-#: ../src/daemon/cmdline.c:372
+#: ../src/daemon/cmdline.c:345
 msgid "--system expects boolean argument"
-msgstr ""
+msgstr "--system necessita un argument booleà"
 
-#: ../src/daemon/cmdline.c:379
+#: ../src/daemon/cmdline.c:352
 msgid "--no-cpu-limit expects boolean argument"
-msgstr ""
+msgstr "--no-cpu-limit necessita un argument booleà"
 
-#: ../src/daemon/cmdline.c:386
+#: ../src/daemon/cmdline.c:359
 msgid "--disable-shm expects boolean argument"
-msgstr ""
+msgstr "--disable-shm necessita un argument booleà"
 
 #: ../src/daemon/dumpmodules.c:60
 #, c-format
@@ -583,73 +614,73 @@ msgstr ""
 msgid "Path: %s\n"
 msgstr ""
 
-#: ../src/daemon/daemon-conf.c:208
+#: ../src/daemon/daemon-conf.c:205
 #, c-format
 msgid "[%s:%u] Invalid log target '%s'."
 msgstr ""
 
-#: ../src/daemon/daemon-conf.c:224
+#: ../src/daemon/daemon-conf.c:221
 #, c-format
 msgid "[%s:%u] Invalid log level '%s'."
 msgstr ""
 
-#: ../src/daemon/daemon-conf.c:240
+#: ../src/daemon/daemon-conf.c:237
 #, c-format
 msgid "[%s:%u] Invalid resample method '%s'."
 msgstr ""
 
-#: ../src/daemon/daemon-conf.c:263
+#: ../src/daemon/daemon-conf.c:260
 #, c-format
 msgid "[%s:%u] Invalid rlimit '%s'."
 msgstr ""
 
-#: ../src/daemon/daemon-conf.c:270
+#: ../src/daemon/daemon-conf.c:267
 #, c-format
 msgid "[%s:%u] rlimit not supported on this platform."
 msgstr ""
 
-#: ../src/daemon/daemon-conf.c:286
+#: ../src/daemon/daemon-conf.c:283
 #, c-format
 msgid "[%s:%u] Invalid sample format '%s'."
 msgstr ""
 
-#: ../src/daemon/daemon-conf.c:304
+#: ../src/daemon/daemon-conf.c:301
 #, c-format
 msgid "[%s:%u] Invalid sample rate '%s'."
 msgstr ""
 
-#: ../src/daemon/daemon-conf.c:322
+#: ../src/daemon/daemon-conf.c:319
 #, c-format
 msgid "[%s:%u] Invalid sample channels '%s'."
 msgstr ""
 
-#: ../src/daemon/daemon-conf.c:340
+#: ../src/daemon/daemon-conf.c:337
 #, c-format
 msgid "[%s:%u] Invalid number of fragments '%s'."
 msgstr ""
 
-#: ../src/daemon/daemon-conf.c:358
+#: ../src/daemon/daemon-conf.c:355
 #, c-format
 msgid "[%s:%u] Invalid fragment size '%s'."
 msgstr ""
 
-#: ../src/daemon/daemon-conf.c:376
+#: ../src/daemon/daemon-conf.c:373
 #, c-format
 msgid "[%s:%u] Invalid nice level '%s'."
 msgstr ""
 
-#: ../src/daemon/daemon-conf.c:554
+#: ../src/daemon/daemon-conf.c:570
 #, c-format
 msgid "Failed to open configuration file: %s"
 msgstr ""
 
-#: ../src/daemon/daemon-conf.c:628
+#: ../src/daemon/daemon-conf.c:644
 #, c-format
 msgid "### Read from configuration file: %s ###\n"
 msgstr ""
 
 #: ../src/daemon/caps.c:63
-msgid "Dropping root privileges."
+msgid "Dropping root priviliges."
 msgstr ""
 
 #: ../src/daemon/caps.c:103
@@ -860,8 +891,10 @@ msgstr ""
 msgid "Top Rear Right"
 msgstr ""
 
-#: ../src/pulse/channelmap.c:472 ../src/pulse/sample.c:144
-#: ../src/pulse/volume.c:163 ../src/pulse/volume.c:194
+#: ../src/pulse/channelmap.c:472
+#: ../src/pulse/sample.c:144
+#: ../src/pulse/volume.c:163
+#: ../src/pulse/volume.c:194
 msgid "(invalid)"
 msgstr ""
 
@@ -953,7 +986,8 @@ msgstr ""
 msgid "No such extension"
 msgstr ""
 
-#: ../src/pulse/client-conf-x11.c:55 ../src/utils/pax11publish.c:100
+#: ../src/pulse/client-conf-x11.c:55
+#: ../src/utils/pax11publish.c:100
 msgid "XOpenDisplay() failed"
 msgstr ""
 
@@ -985,177 +1019,182 @@ msgstr ""
 msgid "Received message for unknown extension '%s'"
 msgstr ""
 
-#: ../src/utils/pacat.c:94
+#: ../src/utils/pacat.c:93
 #, c-format
 msgid "pa_stream_write() failed: %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:133
+#: ../src/utils/pacat.c:132
 #, c-format
 msgid "pa_stream_peek() failed: %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:142
+#: ../src/utils/pacat.c:141
 #, c-format
 msgid "Buffer overrun, dropping incoming data\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:144
+#: ../src/utils/pacat.c:143
 #, c-format
 msgid "pa_stream_drop() failed: %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:170
+#: ../src/utils/pacat.c:169
 #, c-format
 msgid "Stream successfully created.\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:173
+#: ../src/utils/pacat.c:172
 #, c-format
 msgid "pa_stream_get_buffer_attr() failed: %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:177
+#: ../src/utils/pacat.c:176
 #, c-format
 msgid "Buffer metrics: maxlength=%u, tlength=%u, prebuf=%u, minreq=%u\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:180
+#: ../src/utils/pacat.c:179
 #, c-format
 msgid "Buffer metrics: maxlength=%u, fragsize=%u\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:184
+#: ../src/utils/pacat.c:183
 #, c-format
 msgid "Using sample spec '%s', channel map '%s'.\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:188
+#: ../src/utils/pacat.c:187
 #, c-format
 msgid "Connected to device %s (%u, %ssuspended).\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:198
+#: ../src/utils/pacat.c:197
 #, c-format
 msgid "Stream error: %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:208
+#: ../src/utils/pacat.c:207
 #, c-format
 msgid "Stream device suspended.%s \n"
 msgstr ""
 
-#: ../src/utils/pacat.c:210
+#: ../src/utils/pacat.c:209
 #, c-format
 msgid "Stream device resumed.%s \n"
 msgstr ""
 
-#: ../src/utils/pacat.c:218
+#: ../src/utils/pacat.c:217
 #, c-format
 msgid "Stream underrun.%s \n"
 msgstr ""
 
-#: ../src/utils/pacat.c:225
+#: ../src/utils/pacat.c:224
 #, c-format
 msgid "Stream overrun.%s \n"
 msgstr ""
 
-#: ../src/utils/pacat.c:232
+#: ../src/utils/pacat.c:231
 #, c-format
 msgid "Stream started.%s \n"
 msgstr ""
 
-#: ../src/utils/pacat.c:239
+#: ../src/utils/pacat.c:238
 #, c-format
 msgid "Stream moved to device %s (%u, %ssuspended).%s \n"
 msgstr ""
 
-#: ../src/utils/pacat.c:239
+#: ../src/utils/pacat.c:238
 msgid "not "
 msgstr ""
 
-#: ../src/utils/pacat.c:260
+#: ../src/utils/pacat.c:259
 #, c-format
 msgid "Connection established.%s \n"
 msgstr ""
 
-#: ../src/utils/pacat.c:263
+#: ../src/utils/pacat.c:262
 #, c-format
 msgid "pa_stream_new() failed: %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:288
+#: ../src/utils/pacat.c:287
 #, c-format
 msgid "pa_stream_connect_playback() failed: %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:294
+#: ../src/utils/pacat.c:293
 #, c-format
 msgid "pa_stream_connect_record() failed: %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:308 ../src/utils/pasuspender.c:159
-#: ../src/utils/pactl.c:666 ../src/utils/paplay.c:183
+#: ../src/utils/pacat.c:307
+#: ../src/utils/pasuspender.c:159
+#: ../src/utils/pactl.c:666
+#: ../src/utils/paplay.c:183
 #, c-format
 msgid "Connection failure: %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:329 ../src/utils/paplay.c:75
+#: ../src/utils/pacat.c:328
+#: ../src/utils/paplay.c:75
 #, c-format
 msgid "Failed to drain stream: %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:334 ../src/utils/paplay.c:80
+#: ../src/utils/pacat.c:333
+#: ../src/utils/paplay.c:80
 #, c-format
 msgid "Playback stream drained.\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:344 ../src/utils/paplay.c:92
+#: ../src/utils/pacat.c:343
+#: ../src/utils/paplay.c:92
 #, c-format
 msgid "Draining connection to server.\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:370
+#: ../src/utils/pacat.c:369
 #, c-format
 msgid "Got EOF.\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:376
+#: ../src/utils/pacat.c:375
 #, c-format
 msgid "pa_stream_drain(): %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:386
+#: ../src/utils/pacat.c:385
 #, c-format
 msgid "read() failed: %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:418
+#: ../src/utils/pacat.c:417
 #, c-format
 msgid "write() failed: %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:439
+#: ../src/utils/pacat.c:438
 #, c-format
 msgid "Got signal, exiting.\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:453
+#: ../src/utils/pacat.c:452
 #, c-format
 msgid "Failed to get latency: %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:458
+#: ../src/utils/pacat.c:457
 #, c-format
 msgid "Time: %0.3f sec; Latency: %0.0f usec.  \r"
 msgstr ""
 
-#: ../src/utils/pacat.c:478
+#: ../src/utils/pacat.c:477
 #, c-format
 msgid "pa_stream_update_timing_info() failed: %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:491
+#: ../src/utils/pacat.c:490
 #, c-format
 msgid ""
 "%s [options]\n"
@@ -1168,47 +1207,30 @@ msgid ""
 "\n"
 "  -v, --verbose                         Enable verbose operations\n"
 "\n"
-"  -s, --server=SERVER                   The name of the server to connect "
-"to\n"
-"  -d, --device=DEVICE                   The name of the sink/source to "
-"connect to\n"
-"  -n, --client-name=NAME                How to call this client on the "
-"server\n"
-"      --stream-name=NAME                How to call this stream on the "
-"server\n"
-"      --volume=VOLUME                   Specify the initial (linear) volume "
-"in range 0...65536\n"
-"      --rate=SAMPLERATE                 The sample rate in Hz (defaults to "
-"44100)\n"
-"      --format=SAMPLEFORMAT             The sample type, one of s16le, "
-"s16be, u8, float32le,\n"
-"                                        float32be, ulaw, alaw, s32le, s32be "
-"(defaults to s16ne)\n"
-"      --channels=CHANNELS               The number of channels, 1 for mono, "
-"2 for stereo\n"
+"  -s, --server=SERVER                   The name of the server to connect to\n"
+"  -d, --device=DEVICE                   The name of the sink/source to connect to\n"
+"  -n, --client-name=NAME                How to call this client on the server\n"
+"      --stream-name=NAME                How to call this stream on the server\n"
+"      --volume=VOLUME                   Specify the initial (linear) volume in range 0...65536\n"
+"      --rate=SAMPLERATE                 The sample rate in Hz (defaults to 44100)\n"
+"      --format=SAMPLEFORMAT             The sample type, one of s16le, s16be, u8, float32le,\n"
+"                                        float32be, ulaw, alaw, s32le, s32be (defaults to s16ne)\n"
+"      --channels=CHANNELS               The number of channels, 1 for mono, 2 for stereo\n"
 "                                        (defaults to 2)\n"
-"      --channel-map=CHANNELMAP          Channel map to use instead of the "
-"default\n"
-"      --fix-format                      Take the sample format from the sink "
-"the stream is\n"
+"      --channel-map=CHANNELMAP          Channel map to use instead of the default\n"
+"      --fix-format                      Take the sample format from the sink the stream is\n"
 "                                        being connected to.\n"
-"      --fix-rate                        Take the sampling rate from the sink "
-"the stream is\n"
+"      --fix-rate                        Take the sampling rate from the sink the stream is\n"
 "                                        being connected to.\n"
-"      --fix-channels                    Take the number of channels and the "
-"channel map\n"
-"                                        from the sink the stream is being "
-"connected to.\n"
+"      --fix-channels                    Take the number of channels and the channel map\n"
+"                                        from the sink the stream is being connected to.\n"
 "      --no-remix                        Don't upmix or downmix channels.\n"
-"      --no-remap                        Map channels by index instead of "
-"name.\n"
-"      --latency=BYTES                   Request the specified latency in "
-"bytes.\n"
-"      --process-time=BYTES              Request the specified process time "
-"per request in bytes.\n"
+"      --no-remap                        Map channels by index instead of name.\n"
+"      --latency=BYTES                   Request the specified latency in bytes.\n"
+"      --process-time=BYTES              Request the specified process time per request in bytes.\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:592
+#: ../src/utils/pacat.c:591
 #, c-format
 msgid ""
 "pacat %s\n"
@@ -1216,88 +1238,94 @@ msgid ""
 "Linked with libpulse %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:649
+#: ../src/utils/pacat.c:647
 #, c-format
 msgid "Invalid channel map '%s'\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:678
+#: ../src/utils/pacat.c:676
 #, c-format
 msgid "Invalid latency specification '%s'\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:685
+#: ../src/utils/pacat.c:683
 #, c-format
 msgid "Invalid process time specification '%s'\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:696
+#: ../src/utils/pacat.c:694
 #, c-format
 msgid "Invalid sample specification\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:701
+#: ../src/utils/pacat.c:699
 #, c-format
 msgid "Channel map doesn't match sample specification\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:708
+#: ../src/utils/pacat.c:706
 #, c-format
 msgid "Opening a %s stream with sample specification '%s'.\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:708
+#: ../src/utils/pacat.c:706
 msgid "recording"
 msgstr ""
 
-#: ../src/utils/pacat.c:708
+#: ../src/utils/pacat.c:706
 msgid "playback"
 msgstr ""
 
-#: ../src/utils/pacat.c:716
+#: ../src/utils/pacat.c:714
 #, c-format
 msgid "open(): %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:721
+#: ../src/utils/pacat.c:719
 #, c-format
 msgid "dup2(): %s\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:731
+#: ../src/utils/pacat.c:729
 #, c-format
 msgid "Too many arguments.\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:744 ../src/utils/pasuspender.c:280
-#: ../src/utils/pactl.c:909 ../src/utils/paplay.c:381
+#: ../src/utils/pacat.c:742
+#: ../src/utils/pasuspender.c:280
+#: ../src/utils/pactl.c:909
+#: ../src/utils/paplay.c:381
 #, c-format
 msgid "pa_mainloop_new() failed.\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:765
+#: ../src/utils/pacat.c:763
 #, c-format
 msgid "io_new() failed.\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:771 ../src/utils/pasuspender.c:293
-#: ../src/utils/pactl.c:923 ../src/utils/paplay.c:396
+#: ../src/utils/pacat.c:769
+#: ../src/utils/pasuspender.c:293
+#: ../src/utils/pactl.c:923
+#: ../src/utils/paplay.c:396
 #, c-format
 msgid "pa_context_new() failed.\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:779
+#: ../src/utils/pacat.c:777
 #, c-format
 msgid "pa_context_connect() failed: %s"
 msgstr ""
 
-#: ../src/utils/pacat.c:790
+#: ../src/utils/pacat.c:788
 #, c-format
 msgid "time_new() failed.\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:797 ../src/utils/pasuspender.c:301
-#: ../src/utils/pactl.c:931 ../src/utils/paplay.c:407
+#: ../src/utils/pacat.c:795
+#: ../src/utils/pasuspender.c:301
+#: ../src/utils/pactl.c:931
+#: ../src/utils/paplay.c:407
 #, c-format
 msgid "pa_mainloop_run() failed.\n"
 msgstr ""
@@ -1327,7 +1355,8 @@ msgstr ""
 msgid "WARNING: Sound server is not local, not suspending.\n"
 msgstr ""
 
-#: ../src/utils/pasuspender.c:176 ../src/utils/pactl.c:672
+#: ../src/utils/pasuspender.c:176
+#: ../src/utils/pactl.c:672
 #: ../src/utils/paplay.c:191
 #, c-format
 msgid "Got SIGINT, exiting.\n"
@@ -1345,8 +1374,7 @@ msgid ""
 "\n"
 "  -h, --help                            Show this help\n"
 "      --version                         Show version\n"
-"  -s, --server=SERVER                   The name of the server to connect "
-"to\n"
+"  -s, --server=SERVER                   The name of the server to connect to\n"
 "\n"
 msgstr ""
 
@@ -1418,7 +1446,8 @@ msgid ""
 "%s"
 msgstr ""
 
-#: ../src/utils/pactl.c:193 ../src/utils/pactl.c:371
+#: ../src/utils/pactl.c:193
+#: ../src/utils/pactl.c:371
 msgid "muted"
 msgstr ""
 
@@ -1444,10 +1473,18 @@ msgid ""
 "%s"
 msgstr ""
 
-#: ../src/utils/pactl.c:246 ../src/utils/pactl.c:289 ../src/utils/pactl.c:322
-#: ../src/utils/pactl.c:366 ../src/utils/pactl.c:367 ../src/utils/pactl.c:374
-#: ../src/utils/pactl.c:418 ../src/utils/pactl.c:419 ../src/utils/pactl.c:425
-#: ../src/utils/pactl.c:468 ../src/utils/pactl.c:469 ../src/utils/pactl.c:473
+#: ../src/utils/pactl.c:246
+#: ../src/utils/pactl.c:289
+#: ../src/utils/pactl.c:322
+#: ../src/utils/pactl.c:366
+#: ../src/utils/pactl.c:367
+#: ../src/utils/pactl.c:374
+#: ../src/utils/pactl.c:418
+#: ../src/utils/pactl.c:419
+#: ../src/utils/pactl.c:425
+#: ../src/utils/pactl.c:468
+#: ../src/utils/pactl.c:469
+#: ../src/utils/pactl.c:473
 msgid "n/a"
 msgstr ""
 
@@ -1570,7 +1607,8 @@ msgstr ""
 msgid "source"
 msgstr ""
 
-#: ../src/utils/pactl.c:511 ../src/utils/pactl.c:521
+#: ../src/utils/pactl.c:511
+#: ../src/utils/pactl.c:521
 #, c-format
 msgid "Failure: %s\n"
 msgstr ""
@@ -1604,10 +1642,8 @@ msgid ""
 "  -h, --help                            Show this help\n"
 "      --version                         Show version\n"
 "\n"
-"  -s, --server=SERVER                   The name of the server to connect "
-"to\n"
-"  -n, --client-name=NAME                How to call this client on the "
-"server\n"
+"  -s, --server=SERVER                   The name of the server to connect to\n"
+"  -n, --client-name=NAME                How to call this client on the server\n"
 msgstr ""
 
 #: ../src/utils/pactl.c:729
@@ -1660,16 +1696,12 @@ msgstr ""
 
 #: ../src/utils/pactl.c:875
 #, c-format
-msgid ""
-"You may not specify more than one sink. You have to specify at least one "
-"boolean value.\n"
+msgid "You may not specify more than one sink. You have to specify at least one boolean value.\n"
 msgstr ""
 
 #: ../src/utils/pactl.c:888
 #, c-format
-msgid ""
-"You may not specify more than one source. You have to specify at least one "
-"boolean value.\n"
+msgid "You may not specify more than one source. You have to specify at least one boolean value.\n"
 msgstr ""
 
 #: ../src/utils/pactl.c:904
@@ -1684,8 +1716,7 @@ msgid ""
 "\n"
 " -d    Show current PulseAudio data attached to X11 display (default)\n"
 " -e    Export local PulseAudio data to X11 display\n"
-" -i    Import PulseAudio data from X11 display to local environment "
-"variables and cookie file.\n"
+" -i    Import PulseAudio data from X11 display to local environment variables and cookie file.\n"
 " -r    Remove PulseAudio data from X11 display\n"
 msgstr ""
 
@@ -1772,12 +1803,14 @@ msgstr ""
 msgid "select(): %s"
 msgstr "select(): %s"
 
-#: ../src/utils/pacmd.c:124 ../src/utils/pacmd.c:140
+#: ../src/utils/pacmd.c:124
+#: ../src/utils/pacmd.c:140
 #, c-format
 msgid "read(): %s"
 msgstr "read(): %s"
 
-#: ../src/utils/pacmd.c:153 ../src/utils/pacmd.c:167
+#: ../src/utils/pacmd.c:153
+#: ../src/utils/pacmd.c:167
 #, c-format
 msgid "write(): %s"
 msgstr "write(): %s"
@@ -1807,15 +1840,11 @@ msgid ""
 "\n"
 "  -v, --verbose                         Enable verbose operation\n"
 "\n"
-"  -s, --server=SERVER                   The name of the server to connect "
-"to\n"
+"  -s, --server=SERVER                   The name of the server to connect to\n"
 "  -d, --device=DEVICE                   The name of the sink to connect to\n"
-"  -n, --client-name=NAME                How to call this client on the "
-"server\n"
-"      --stream-name=NAME                How to call this stream on the "
-"server\n"
-"      --volume=VOLUME                   Specify the initial (linear) volume "
-"in range 0...65536\n"
+"  -n, --client-name=NAME                How to call this client on the server\n"
+"      --stream-name=NAME                How to call this stream on the server\n"
+"      --volume=VOLUME                   Specify the initial (linear) volume in range 0...65536\n"
 "      --channel-map=CHANNELMAP          Set the channel map to the use\n"
 msgstr ""
 
@@ -1847,6 +1876,8 @@ msgstr ""
 msgid "Using sample spec '%s'\n"
 msgstr ""
 
-#: ../src/pulsecore/lock-autospawn.c:126 ../src/pulsecore/lock-autospawn.c:207
+#: ../src/pulsecore/lock-autospawn.c:126
+#: ../src/pulsecore/lock-autospawn.c:207
 msgid "Cannot access autospawn lock."
 msgstr ""
+

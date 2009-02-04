@@ -32,6 +32,7 @@ typedef struct pa_source_output pa_source_output;
 #include <pulsecore/resampler.h>
 #include <pulsecore/module.h>
 #include <pulsecore/client.h>
+#include <pulsecore/sink-input.h>
 
 typedef enum pa_source_output_state {
     PA_SOURCE_OUTPUT_INIT,
@@ -53,7 +54,8 @@ typedef enum pa_source_output_flags {
     PA_SOURCE_OUTPUT_FIX_FORMAT = 32,
     PA_SOURCE_OUTPUT_FIX_RATE = 64,
     PA_SOURCE_OUTPUT_FIX_CHANNELS = 128,
-    PA_SOURCE_OUTPUT_DONT_INHIBIT_AUTO_SUSPEND = 256
+    PA_SOURCE_OUTPUT_DONT_INHIBIT_AUTO_SUSPEND = 256,
+    PA_SOURCE_OUTPUT_FAIL_ON_SUSPEND = 512
 } pa_source_output_flags_t;
 
 struct pa_source_output {
@@ -71,7 +73,7 @@ struct pa_source_output {
     pa_module *module;                    /* may be NULL */
     pa_client *client;                    /* may be NULL */
 
-    pa_source *source;
+    pa_source *source; /* NULL while being moved */
 
     /* A source output can monitor just a single input of a sink, in which case we find it here */
     pa_sink_input *direct_on_input;       /* may be NULL */
@@ -79,7 +81,12 @@ struct pa_source_output {
     pa_sample_spec sample_spec;
     pa_channel_map channel_map;
 
-    pa_resample_method_t resample_method;
+    /* if TRUE then the source we are connected to is worth
+     * remembering, i.e. was explicitly chosen by the user and not
+     * automatically. module-stream-restore looks for this.*/
+    pa_bool_t save_source:1;
+
+    pa_resample_method_t requested_resample_method, actual_resample_method;
 
     /* Pushes a new memchunk into the output. Called from IO thread
      * context. */
@@ -139,7 +146,7 @@ struct pa_source_output {
     struct {
         pa_source_output_state_t state;
 
-        pa_bool_t attached; /* True only between ->attach() and ->detach() calls */
+        pa_bool_t attached:1; /* True only between ->attach() and ->detach() calls */
 
         pa_sample_spec sample_spec;
 
@@ -187,6 +194,8 @@ typedef struct pa_source_output_new_data {
 
     pa_bool_t sample_spec_is_set:1;
     pa_bool_t channel_map_is_set:1;
+
+    pa_bool_t save_source:1;
 } pa_source_output_new_data;
 
 pa_source_output_new_data* pa_source_output_new_data_init(pa_source_output_new_data *data);
@@ -194,14 +203,10 @@ void pa_source_output_new_data_set_sample_spec(pa_source_output_new_data *data, 
 void pa_source_output_new_data_set_channel_map(pa_source_output_new_data *data, const pa_channel_map *map);
 void pa_source_output_new_data_done(pa_source_output_new_data *data);
 
-typedef struct pa_source_output_move_hook_data {
-    pa_source_output *source_output;
-    pa_source *destination;
-} pa_source_output_move_hook_data;
-
 /* To be called by the implementing module only */
 
-pa_source_output* pa_source_output_new(
+int pa_source_output_new(
+        pa_source_output**o,
         pa_core *core,
         pa_source_output_new_data *data,
         pa_source_output_flags_t flags);
@@ -228,8 +233,15 @@ pa_bool_t pa_source_output_update_proplist(pa_source_output *o, pa_update_mode_t
 
 pa_resample_method_t pa_source_output_get_resample_method(pa_source_output *o);
 
+pa_bool_t pa_source_output_may_move(pa_source_output *o);
 pa_bool_t pa_source_output_may_move_to(pa_source_output *o, pa_source *dest);
-int pa_source_output_move_to(pa_source_output *o, pa_source *dest);
+int pa_source_output_move_to(pa_source_output *o, pa_source *dest, pa_bool_t save);
+
+/* The same as pa_source_output_move_to() but in two seperate steps,
+ * first the detaching from the old source, then the attaching to the
+ * new source */
+int pa_source_output_start_move(pa_source_output *o);
+int pa_source_output_finish_move(pa_source_output *o, pa_source *dest, pa_bool_t save);
 
 #define pa_source_output_get_state(o) ((o)->state)
 

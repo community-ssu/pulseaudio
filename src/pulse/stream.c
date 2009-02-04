@@ -877,7 +877,7 @@ static int create_stream(
     PA_CHECK_VALIDITY(s->context, s->direct_on_input == PA_INVALID_INDEX || direction == PA_STREAM_RECORD, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY(s->context, !(flags & ~(PA_STREAM_START_CORKED|
                                               PA_STREAM_INTERPOLATE_TIMING|
-                                              PA_STREAM_NOT_MONOTONOUS|
+                                              PA_STREAM_NOT_MONOTONIC|
                                               PA_STREAM_AUTO_TIMING_UPDATE|
                                               PA_STREAM_NO_REMAP_CHANNELS|
                                               PA_STREAM_NO_REMIX_CHANNELS|
@@ -891,7 +891,8 @@ static int create_stream(
                                               PA_STREAM_ADJUST_LATENCY|
                                               PA_STREAM_EARLY_REQUESTS|
                                               PA_STREAM_DONT_INHIBIT_AUTO_SUSPEND|
-                                              PA_STREAM_START_UNMUTED)), PA_ERR_INVALID);
+                                              PA_STREAM_START_UNMUTED|
+                                              PA_STREAM_FAIL_ON_SUSPEND)), PA_ERR_INVALID);
 
     PA_CHECK_VALIDITY(s->context, s->context->version >= 12 || !(flags & PA_STREAM_VARIABLE_RATE), PA_ERR_NOTSUPPORTED);
     PA_CHECK_VALIDITY(s->context, s->context->version >= 13 || !(flags & PA_STREAM_PEAK_DETECT), PA_ERR_NOTSUPPORTED);
@@ -1017,6 +1018,7 @@ static int create_stream(
             pa_tagstruct_put_boolean(t, flags & (PA_STREAM_START_MUTED|PA_STREAM_START_UNMUTED));
 
         pa_tagstruct_put_boolean(t, flags & PA_STREAM_DONT_INHIBIT_AUTO_SUSPEND);
+        pa_tagstruct_put_boolean(t, flags & PA_STREAM_FAIL_ON_SUSPEND);
     }
 
     pa_pstream_send_tagstruct(s->context->pstream, t);
@@ -1902,7 +1904,7 @@ int pa_stream_get_time(pa_stream *s, pa_usec_t *r_usec) {
         usec = calc_time(s, FALSE);
 
     /* Make sure the time runs monotonically */
-    if (!(s->flags & PA_STREAM_NOT_MONOTONOUS)) {
+    if (!(s->flags & PA_STREAM_NOT_MONOTONIC)) {
         if (usec < s->previous_time)
             usec = s->previous_time;
         else

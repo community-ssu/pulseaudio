@@ -58,6 +58,7 @@ typedef enum pa_sink_input_flags {
     PA_SINK_INPUT_FIX_RATE = 64,
     PA_SINK_INPUT_FIX_CHANNELS = 128,
     PA_SINK_INPUT_DONT_INHIBIT_AUTO_SUSPEND = 256,
+    PA_SINK_INPUT_FAIL_ON_SUSPEND = 512
 } pa_sink_input_flags_t;
 
 struct pa_sink_input {
@@ -78,7 +79,7 @@ struct pa_sink_input {
     pa_module *module;                  /* may be NULL */
     pa_client *client;                  /* may be NULL */
 
-    pa_sink *sink;
+    pa_sink *sink; /* NULL while we are being moved */
 
     /* A sink input may be connected to multiple source outputs
      * directly, so that they don't get mixed data of the entire
@@ -90,12 +91,16 @@ struct pa_sink_input {
 
     pa_sink_input *sync_prev, *sync_next;
 
-    pa_cvolume virtual_volume;
+    pa_cvolume virtual_volume, soft_volume;
+    pa_bool_t muted:1;
 
-    pa_cvolume volume;
-    pa_bool_t muted;
+    /* if TRUE then the source we are connected to and/or the volume
+     * set is worth remembering, i.e. was explicitly chosen by the
+     * user and not automatically. module-stream-restore looks for
+     * this.*/
+    pa_bool_t save_sink:1, save_volume:1, save_muted:1;
 
-    pa_resample_method_t resample_method;
+    pa_resample_method_t requested_resample_method, actual_resample_method;
 
     /* Returns the chunk of audio data and drops it from the
      * queue. Returns -1 on failure. Called from IO thread context. If
@@ -170,7 +175,15 @@ struct pa_sink_input {
         pa_sink_input_state_t state;
         pa_atomic_t drained;
 
-        pa_bool_t attached; /* True only between ->attach() and ->detach() calls */
+        pa_cvolume soft_volume;
+        pa_bool_t muted:1;
+
+        pa_bool_t attached:1; /* True only between ->attach() and ->detach() calls */
+
+        /* 0: rewrite nothing, (size_t) -1: rewrite everything, otherwise how many bytes to rewrite */
+        pa_bool_t rewrite_flush:1, dont_rewind_render:1;
+        size_t rewrite_nbytes;
+        uint64_t underrun_for, playing_for;
 
         pa_sample_spec sample_spec;
 
@@ -179,15 +192,7 @@ struct pa_sink_input {
         /* We maintain a history of resampled audio data here. */
         pa_memblockq *render_memblockq;
 
-        /* 0: rewrite nothing, (size_t) -1: rewrite everything, otherwise how many bytes to rewrite */
-        size_t rewrite_nbytes;
-        pa_bool_t rewrite_flush, dont_rewind_render;
-        uint64_t underrun_for, playing_for;
-
         pa_sink_input *sync_prev, *sync_next;
-
-        pa_cvolume volume;
-        pa_bool_t muted;
 
         /* The requested latency for the sink */
         pa_usec_t requested_sink_latency;
@@ -202,8 +207,8 @@ PA_DECLARE_CLASS(pa_sink_input);
 #define PA_SINK_INPUT(o) pa_sink_input_cast(o)
 
 enum {
-    PA_SINK_INPUT_MESSAGE_SET_VOLUME,
-    PA_SINK_INPUT_MESSAGE_SET_MUTE,
+    PA_SINK_INPUT_MESSAGE_SET_SOFT_VOLUME,
+    PA_SINK_INPUT_MESSAGE_SET_SOFT_MUTE,
     PA_SINK_INPUT_MESSAGE_GET_LATENCY,
     PA_SINK_INPUT_MESSAGE_SET_RATE,
     PA_SINK_INPUT_MESSAGE_SET_STATE,
@@ -228,38 +233,32 @@ typedef struct pa_sink_input_new_data {
     pa_sample_spec sample_spec;
     pa_channel_map channel_map;
 
-    pa_cvolume virtual_volume;
-
-    pa_cvolume volume;
+    pa_cvolume virtual_volume, soft_volume;
     pa_bool_t muted:1;
 
     pa_bool_t sample_spec_is_set:1;
     pa_bool_t channel_map_is_set:1;
-    pa_bool_t volume_is_set:1;
+
+    pa_bool_t virtual_volume_is_set:1, soft_volume_is_set:1;
     pa_bool_t muted_is_set:1;
+
+    pa_bool_t virtual_volume_is_absolute:1;
+
+    pa_bool_t save_sink:1, save_volume:1, save_muted:1;
 } pa_sink_input_new_data;
 
 pa_sink_input_new_data* pa_sink_input_new_data_init(pa_sink_input_new_data *data);
 void pa_sink_input_new_data_set_sample_spec(pa_sink_input_new_data *data, const pa_sample_spec *spec);
 void pa_sink_input_new_data_set_channel_map(pa_sink_input_new_data *data, const pa_channel_map *map);
-void pa_sink_input_new_data_set_volume(pa_sink_input_new_data *data, const pa_cvolume *volume);
+void pa_sink_input_new_data_set_soft_volume(pa_sink_input_new_data *data, const pa_cvolume *volume);
+void pa_sink_input_new_data_set_virtual_volume(pa_sink_input_new_data *data, const pa_cvolume *volume);
 void pa_sink_input_new_data_set_muted(pa_sink_input_new_data *data, pa_bool_t mute);
 void pa_sink_input_new_data_done(pa_sink_input_new_data *data);
 
-typedef struct pa_sink_input_move_hook_data {
-    pa_sink_input *sink_input;
-    pa_sink *destination;
-} pa_sink_input_move_hook_data;
-
-typedef struct pa_sink_set_input_volume_data {
-  pa_sink_input *sink_input;
-  pa_cvolume virtual_volume;
-  pa_cvolume volume;
-} pa_sink_input_set_volume_data;
-
 /* To be called by the implementing module only */
 
-pa_sink_input* pa_sink_input_new(
+int pa_sink_input_new(
+        pa_sink_input **i,
         pa_core *core,
         pa_sink_input_new_data *data,
         pa_sink_input_flags_t flags);
@@ -291,16 +290,23 @@ void pa_sink_input_kill(pa_sink_input*i);
 
 pa_usec_t pa_sink_input_get_latency(pa_sink_input *i, pa_usec_t *sink_latency);
 
-void pa_sink_input_set_volume(pa_sink_input *i, const pa_cvolume *volume);
+void pa_sink_input_set_volume(pa_sink_input *i, const pa_cvolume *volume, pa_bool_t save);
 const pa_cvolume *pa_sink_input_get_volume(pa_sink_input *i);
-void pa_sink_input_set_mute(pa_sink_input *i, pa_bool_t mute);
+void pa_sink_input_set_mute(pa_sink_input *i, pa_bool_t mute, pa_bool_t save);
 pa_bool_t pa_sink_input_get_mute(pa_sink_input *i);
 pa_bool_t pa_sink_input_update_proplist(pa_sink_input *i, pa_update_mode_t mode, pa_proplist *p);
 
 pa_resample_method_t pa_sink_input_get_resample_method(pa_sink_input *i);
 
-int pa_sink_input_move_to(pa_sink_input *i, pa_sink *dest);
-pa_bool_t pa_sink_input_may_move_to(pa_sink_input *i, pa_sink *dest);
+int pa_sink_input_move_to(pa_sink_input *i, pa_sink *dest, pa_bool_t save);
+pa_bool_t pa_sink_input_may_move(pa_sink_input *i); /* may this sink input move at all? */
+pa_bool_t pa_sink_input_may_move_to(pa_sink_input *i, pa_sink *dest); /* may this sink input move to this sink? */
+
+/* The same as pa_sink_input_move_to() but in two seperate steps,
+ * first the detaching from the old sink, then the attaching to the
+ * new sink */
+int pa_sink_input_start_move(pa_sink_input *i);
+int pa_sink_input_finish_move(pa_sink_input *i, pa_sink *dest, pa_bool_t save);
 
 pa_sink_input_state_t pa_sink_input_get_state(pa_sink_input *i);
 
@@ -308,7 +314,7 @@ pa_usec_t pa_sink_input_get_requested_latency(pa_sink_input *i);
 
 /* To be used exclusively by the sink driver IO thread */
 
-int pa_sink_input_peek(pa_sink_input *i, size_t length, pa_memchunk *chunk, pa_cvolume *volume);
+void pa_sink_input_peek(pa_sink_input *i, size_t length, pa_memchunk *chunk, pa_cvolume *volume);
 void pa_sink_input_drop(pa_sink_input *i, size_t length);
 void pa_sink_input_process_rewind(pa_sink_input *i, size_t nbytes /* in the sink's sample spec */);
 void pa_sink_input_update_max_rewind(pa_sink_input *i, size_t nbytes  /* in the sink's sample spec */);

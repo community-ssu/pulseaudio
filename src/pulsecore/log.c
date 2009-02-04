@@ -47,6 +47,7 @@
 #include <pulsecore/core-util.h>
 #include <pulsecore/rtclock.h>
 #include <pulsecore/once.h>
+#include <pulsecore/ratelimit.h>
 
 #include "log.h"
 
@@ -277,7 +278,8 @@ void pa_log_levelv_meta(
             n++;
         }
 
-        if (!*t)
+        /* We ignore strings only made out of whitespace */
+        if (t[strspn(t, "\t ")] == 0)
             continue;
 
         switch (log_target) {
@@ -374,4 +376,11 @@ void pa_log_level(pa_log_level_t level, const char *format, ...) {
     va_start(ap, format);
     pa_log_levelv_meta(level, NULL, 0, NULL, format, ap);
     va_end(ap);
+}
+
+pa_bool_t pa_log_ratelimit(void) {
+    /* Not more than 10 messages every 5s */
+    static PA_DEFINE_RATELIMIT(ratelimit, 5 * PA_USEC_PER_SEC, 10);
+
+    return pa_ratelimit_test(&ratelimit);
 }
