@@ -1,0 +1,376 @@
+From fbff3c74213f5f4e9284cb4fcc5a35cf3913e591 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Thu, 4 Dec 2008 18:02:21 +0200
+Subject: [PATCH 06/22] module: new null-source module
+
+---
+ src/Makefile.am                         |    6 +
+ src/modules/module-null-source-symdef.h |   25 +++
+ src/modules/module-null-source.c        |  292 +++++++++++++++++++++++++++++++
+ 3 files changed, 323 insertions(+), 0 deletions(-)
+ create mode 100644 src/modules/module-null-source-symdef.h
+ create mode 100644 src/modules/module-null-source.c
+
+diff --git a/src/Makefile.am b/src/Makefile.am
+index d2917a0..453d80e 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -868,6 +868,7 @@ modlibexec_LTLIBRARIES += \
+ 		module-simple-protocol-tcp.la \
+ 		module-null-sink.la \
+ 		module-sine-source.la \
++		module-null-source.la \
+ 		module-detect.la \
+ 		module-volume-restore.la \
+ 		module-device-restore.la \
+@@ -1047,6 +1048,7 @@ SYMDEF_FILES = \
+ 		modules/module-tunnel-source-symdef.h \
+ 		modules/module-null-sink-symdef.h \
+ 		modules/module-sine-source-symdef.h \
++		modules/module-null-source-symdef.h \
+ 		modules/module-esound-sink-symdef.h \
+ 		modules/module-zeroconf-publish-symdef.h \
+ 		modules/module-zeroconf-discover-symdef.h \
+@@ -1198,6 +1200,10 @@ module_sine_source_la_SOURCES = modules/module-sine-source.c
+ module_sine_source_la_LDFLAGS = -module -avoid-version
+ module_sine_source_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+ 
++module_null_source_la_SOURCES = modules/module-null-source.c
++module_null_source_la_LDFLAGS = -module -avoid-version
++module_null_source_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
++
+ # Couplings
+ 
+ module_combine_la_SOURCES = modules/module-combine.c
+diff --git a/src/modules/module-null-source-symdef.h b/src/modules/module-null-source-symdef.h
+new file mode 100644
+index 0000000..021d1fa
+--- /dev/null
++++ b/src/modules/module-null-source-symdef.h
+@@ -0,0 +1,25 @@
++#ifndef foomodulenullsourcesymdeffoo
++#define foomodulenullsourcesymdeffoo
++
++#include <pulsecore/core.h>
++#include <pulsecore/module.h>
++#include <pulsecore/macro.h>
++
++#define pa__init module_null_source_LTX_pa__init
++#define pa__done module_null_source_LTX_pa__done
++#define pa__get_author module_null_source_LTX_pa__get_author
++#define pa__get_description module_null_source_LTX_pa__get_description
++#define pa__get_usage module_null_source_LTX_pa__get_usage
++#define pa__get_version module_null_source_LTX_pa__get_version
++#define pa__load_once module_null_source_LTX_pa__load_once
++
++int pa__init(pa_module*m);
++void pa__done(pa_module*m);
++
++const char* pa__get_author(void);
++const char* pa__get_description(void);
++const char* pa__get_usage(void);
++const char* pa__get_version(void);
++pa_bool_t pa__load_once(void);
++
++#endif
+diff --git a/src/modules/module-null-source.c b/src/modules/module-null-source.c
+new file mode 100644
+index 0000000..47b386f
+--- /dev/null
++++ b/src/modules/module-null-source.c
+@@ -0,0 +1,292 @@
++/***
++  This file is part of PulseAudio.
++
++  Copyright 2004-2008 Lennart Poettering
++  Copyright (C) 2008 Nokia Corporation and/or its subsidiary(-ies).
++
++  PulseAudio is free software; you can redistribute it and/or modify
++  it under the terms of the GNU Lesser General Public License as published
++  by the Free Software Foundation; either version 2 of the License,
++  or (at your option) any later version.
++
++  PulseAudio is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  General Public License for more details.
++
++  You should have received a copy of the GNU Lesser General Public License
++  along with PulseAudio; if not, write to the Free Software
++  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
++  USA.
++***/
++
++#ifdef HAVE_CONFIG_H
++#include <config.h>
++#endif
++
++#include <stdlib.h>
++#include <sys/stat.h>
++#include <stdio.h>
++#include <errno.h>
++#include <string.h>
++#include <fcntl.h>
++#include <unistd.h>
++#include <limits.h>
++
++#include <pulse/timeval.h>
++#include <pulse/xmalloc.h>
++
++#include <pulsecore/macro.h>
++#include <pulsecore/source.h>
++#include <pulsecore/module.h>
++#include <pulsecore/core-util.h>
++#include <pulsecore/core-error.h>
++#include <pulsecore/modargs.h>
++#include <pulsecore/log.h>
++#include <pulsecore/thread.h>
++#include <pulsecore/thread-mq.h>
++#include <pulsecore/rtpoll.h>
++#include <pulsecore/rtclock.h>
++
++#include "module-null-source-symdef.h"
++
++PA_MODULE_AUTHOR("Lennart Poettering & Marc-Andre Lureau");
++PA_MODULE_DESCRIPTION("Clocked NULL source");
++PA_MODULE_VERSION(PACKAGE_VERSION);
++PA_MODULE_LOAD_ONCE(FALSE);
++PA_MODULE_USAGE(
++        "format=<sample format> "
++        "channels=<number of channels> "
++        "rate=<sample rate> "
++        "source_name=<name of source> "
++        "channel_map=<channel map> "
++        "description=<description for the source> "
++        "latency_time=<latency time in ms>");
++
++#define DEFAULT_SOURCE_NAME "source.null"
++#define DEFAULT_LATENCY_TIME 20
++#define MAX_LATENCY_USEC (PA_USEC_PER_SEC * 2)
++
++struct userdata {
++    pa_core *core;
++    pa_module *module;
++    pa_source *source;
++
++    pa_thread *thread;
++    pa_thread_mq thread_mq;
++    pa_rtpoll *rtpoll;
++
++    size_t block_size;
++
++    pa_usec_t block_usec;
++    pa_usec_t timestamp;
++    pa_usec_t latency_time;
++};
++
++static const char* const valid_modargs[] = {
++    "rate",
++    "format",
++    "channels",
++    "source_name",
++    "channel_map",
++    "description",
++    "latency_time",
++    NULL
++};
++
++static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t offset, pa_memchunk *chunk) {
++    struct userdata *u = PA_SOURCE(o)->userdata;
++
++    switch (code) {
++        case PA_SOURCE_MESSAGE_SET_STATE:
++
++            if (PA_PTR_TO_UINT(data) == PA_SOURCE_RUNNING)
++                u->timestamp = pa_rtclock_usec();
++
++            break;
++
++        case PA_SOURCE_MESSAGE_GET_LATENCY: {
++            pa_usec_t now;
++
++            now = pa_rtclock_usec();
++            *((pa_usec_t*) data) = u->timestamp > now ? u->timestamp - now : 0;
++
++            return 0;
++        }
++    }
++
++    return pa_source_process_msg(o, code, data, offset, chunk);
++}
++
++static void source_update_requested_latency_cb(pa_source *s) {
++    struct userdata *u;
++
++    pa_source_assert_ref(s);
++    u = s->userdata;
++    pa_assert(u);
++
++    u->block_usec = pa_source_get_requested_latency_within_thread(s);
++}
++
++static void thread_func(void *userdata) {
++    struct userdata *u = userdata;
++
++    pa_assert(u);
++
++    pa_log_debug("Thread starting up");
++
++    pa_thread_mq_install(&u->thread_mq);
++    pa_rtpoll_install(u->rtpoll);
++
++    u->timestamp = pa_rtclock_usec();
++
++    for (;;) {
++        int ret;
++
++        /* Generate some null data */
++        if (PA_SOURCE_IS_OPENED(u->source->thread_info.state)) {
++            pa_usec_t now;
++            pa_memchunk chunk;
++
++            now = pa_rtclock_usec();
++
++            if ((chunk.length = pa_usec_to_bytes(now - u->timestamp, &u->source->sample_spec)) > 0) {
++
++                chunk.memblock = pa_memblock_new(u->core->mempool, (size_t) -1); /* or chunk.length? */
++                chunk.index = 0;
++                pa_source_post(u->source, &chunk);
++                pa_memblock_unref(chunk.memblock);
++
++                u->timestamp = now;
++	    }
++
++            pa_rtpoll_set_timer_absolute(u->rtpoll, u->timestamp + u->latency_time * PA_USEC_PER_MSEC);
++        } else
++            pa_rtpoll_set_timer_disabled(u->rtpoll);
++
++        /* Hmm, nothing to do. Let's sleep */
++        if ((ret = pa_rtpoll_run(u->rtpoll, TRUE)) < 0)
++            goto fail;
++
++        if (ret == 0)
++            goto finish;
++    }
++
++fail:
++    /* If this was no regular exit from the loop we have to continue
++     * processing messages until we received PA_MESSAGE_SHUTDOWN */
++    pa_asyncmsgq_post(u->thread_mq.outq, PA_MSGOBJECT(u->core), PA_CORE_MESSAGE_UNLOAD_MODULE, u->module, 0, NULL, NULL);
++    pa_asyncmsgq_wait_for(u->thread_mq.inq, PA_MESSAGE_SHUTDOWN);
++
++finish:
++    pa_log_debug("Thread shutting down");
++}
++
++int pa__init(pa_module*m) {
++    struct userdata *u = NULL;
++    pa_sample_spec ss;
++    pa_channel_map map;
++    pa_modargs *ma = NULL;
++    pa_source_new_data data;
++
++    pa_assert(m);
++
++    if (!(ma = pa_modargs_new(m->argument, valid_modargs))) {
++        pa_log("Failed to parse module arguments.");
++        goto fail;
++    }
++
++    ss = m->core->default_sample_spec;
++    if (pa_modargs_get_sample_spec_and_channel_map(ma, &ss, &map, PA_CHANNEL_MAP_DEFAULT) < 0) {
++        pa_log("Invalid sample format specification or channel map");
++        goto fail;
++    }
++
++    m->userdata = u = pa_xnew0(struct userdata, 1);
++    u->core = m->core;
++    u->module = m;
++    u->rtpoll = pa_rtpoll_new();
++    pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
++
++    pa_source_new_data_init(&data);
++    data.driver = __FILE__;
++    data.module = m;
++    pa_source_new_data_set_name(&data, pa_modargs_get_value(ma, "source_name", DEFAULT_SOURCE_NAME));
++    pa_source_new_data_set_sample_spec(&data, &ss);
++    pa_source_new_data_set_channel_map(&data, &map);
++    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_DESCRIPTION, pa_modargs_get_value(ma, "description", "Null Input"));
++    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_CLASS, "abstract");
++
++    u->source = pa_source_new(m->core, &data, PA_SOURCE_LATENCY);
++    pa_source_new_data_done(&data);
++
++    if (!u->source) {
++        pa_log("Failed to create source object.");
++        goto fail;
++    }
++
++    u->latency_time = DEFAULT_LATENCY_TIME;
++    if (pa_modargs_get_value_u32(ma, "latency_time", &u->latency_time) < 0) {
++        pa_log("Failed to parse latency_time value.");
++        goto fail;
++    }
++
++    u->source->parent.process_msg = source_process_msg;
++    u->source->update_requested_latency = source_update_requested_latency_cb;
++    u->source->userdata = u;
++
++    pa_source_set_asyncmsgq(u->source, u->thread_mq.inq);
++    pa_source_set_rtpoll(u->source, u->rtpoll);
++
++    pa_source_set_latency_range(u->source, (pa_usec_t) -1, MAX_LATENCY_USEC);
++    u->block_usec = u->source->thread_info.max_latency;
++
++    u->source->thread_info.max_rewind =
++        pa_usec_to_bytes(u->block_usec, &u->source->sample_spec);
++
++    if (!(u->thread = pa_thread_new(thread_func, u))) {
++        pa_log("Failed to create thread.");
++        goto fail;
++    }
++
++    pa_source_put(u->source);
++
++    pa_modargs_free(ma);
++
++    return 0;
++
++fail:
++    if (ma)
++        pa_modargs_free(ma);
++
++    pa__done(m);
++
++    return -1;
++}
++
++void pa__done(pa_module*m) {
++    struct userdata *u;
++
++    pa_assert(m);
++
++    if (!(u = m->userdata))
++        return;
++
++    if (u->source)
++        pa_source_unlink(u->source);
++
++    if (u->thread) {
++        pa_asyncmsgq_send(u->thread_mq.inq, NULL, PA_MESSAGE_SHUTDOWN, NULL, 0, NULL);
++        pa_thread_free(u->thread);
++    }
++
++    pa_thread_mq_done(&u->thread_mq);
++
++    if (u->source)
++        pa_source_unref(u->source);
++
++    if (u->rtpoll)
++        pa_rtpoll_free(u->rtpoll);
++
++    pa_xfree(u);
++}
+-- 
+1.6.1.224.gb56c
+

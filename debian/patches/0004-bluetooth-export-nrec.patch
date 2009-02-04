@@ -1,0 +1,93 @@
+From 5f6ee787f097ce7a4cee836e99a783aa79261628 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Tue, 3 Feb 2009 18:43:54 +0200
+Subject: [PATCH 04/22] bluetooth: export nrec
+
+---
+ src/modules/bluetooth/module-bluetooth-device.c |   41 +++++++++++++++-------
+ 1 files changed, 28 insertions(+), 13 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index 32e97b3..3bc5796 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -104,6 +104,7 @@ struct a2dp_info {
+ };
+ 
+ struct hsp_info {
++    pcm_capabilities_t pcm_capabilities;
+     pa_sink *sco_sink;
+     pa_source *sco_source;
+     pa_hook_slot *sink_state_changed_slot;
+@@ -271,23 +272,33 @@ static int parse_caps(struct userdata *u, const struct bt_get_capabilities_rsp *
+         return -1;
+     }
+ 
+-    if (u->profile != PROFILE_A2DP)
+-        return 0;
++    if (u->profile == PROFILE_HSP) {
++        if (bytes_left <= 0 || codec->length != sizeof(u->hsp.pcm_capabilities))
++            return -1;
+ 
+-    while (bytes_left > 0) {
+-        if (codec->type == BT_A2DP_CODEC_SBC)
+-            break;
++        pa_assert(codec->type == BT_HFP_CODEC_PCM);
+ 
+-        bytes_left -= codec->length;
+-        codec = (const codec_capabilities_t*) ((const uint8_t*) codec + codec->length);
++        memcpy(&u->hsp.pcm_capabilities, codec, sizeof(u->hsp.pcm_capabilities));
+     }
+ 
+-    if (bytes_left <= 0 || codec->length != sizeof(u->a2dp.sbc_capabilities))
+-        return -1;
++    if (u->profile == PROFILE_A2DP) {
++
++        while (bytes_left > 0) {
++            if (codec->type == BT_A2DP_CODEC_SBC)
++                break;
++
++            bytes_left -= codec->length;
++            codec = (const codec_capabilities_t*) ((const uint8_t*) codec + codec->length);
++        }
++
++        if (bytes_left <= 0 || codec->length != sizeof(u->a2dp.sbc_capabilities))
++            return -1;
++
++        pa_assert(codec->type == BT_A2DP_CODEC_SBC);
+ 
+-    pa_assert(codec->type == BT_A2DP_CODEC_SBC);
++        memcpy(&u->a2dp.sbc_capabilities, codec, sizeof(u->a2dp.sbc_capabilities));
++    }
+ 
+-    memcpy(&u->a2dp.sbc_capabilities, codec, sizeof(u->a2dp.sbc_capabilities));
+     return 0;
+ }
+ 
+@@ -1333,10 +1344,9 @@ static int add_sink(struct userdata *u) {
+ }
+ 
+ static int add_source(struct userdata *u) {
++    pa_proplist *p;
+ 
+     if (USE_SCO_OVER_PCM(u)) {
+-        pa_proplist *p;
+-
+         u->source = u->hsp.sco_source;
+         u->source->card = u->card; /* FIXME! */
+         p = pa_proplist_new();
+@@ -1377,6 +1387,11 @@ static int add_source(struct userdata *u) {
+ /*     u->source->get_volume = source_get_volume_cb; */
+ /*     u->source->set_volume = source_set_volume_cb; */
+ 
++    p = pa_proplist_new();
++    pa_proplist_sets(p, "bluetooth.nrec", pa_yes_no(u->hsp.pcm_capabilities.flags & BT_PCM_FLAG_NREC));
++    pa_proplist_update(u->source->proplist, PA_UPDATE_MERGE, p);
++    pa_proplist_free(p);
++
+     return 0;
+ }
+ 
+-- 
+1.6.1.224.gb56c
+

@@ -1,0 +1,25 @@
+From bcaaeb38344d1f9797370cbc393b16f5c5369cf4 Mon Sep 17 00:00:00 2001
+From: CJ van den Berg <cj@vdbonline.com>
+Date: Wed, 31 Oct 2007 13:59:31 +0100
+Subject: [PATCH 05/22] Set ESD socket to /tmp/.esd/socket to match up with libesd
+
+---
+ src/daemon/default.pa.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/src/daemon/default.pa.in b/src/daemon/default.pa.in
+index 91a1c61..aa63529 100755
+--- a/src/daemon/default.pa.in
++++ b/src/daemon/default.pa.in
+@@ -60,7 +60,7 @@ load-module module-detect
+ 
+ ### Load several protocols
+ .ifexists module-esound-protocol-unix@PA_SOEXT@
+-load-module module-esound-protocol-unix
++load-module module-esound-protocol-unix socket="/tmp/.esd/socket"
+ .endif
+ load-module module-native-protocol-unix
+ 
+-- 
+1.6.1.224.gb56c
+
