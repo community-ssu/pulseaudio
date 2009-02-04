@@ -71,7 +71,6 @@ DEB_CONFIGURE_EXTRA_FLAGS =			\
 	bluetooth-discover			\
 	cli					\
 	device-restore				\
-	flat-volume				\
 	native-protocol-unix			\
 	null-sink				\
 	null-source				\
