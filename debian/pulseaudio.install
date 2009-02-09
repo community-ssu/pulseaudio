@@ -6,6 +6,7 @@ usr/bin/start-pulseaudio-x11
 usr/lib/libpulsecommon-*.so
 usr/lib/libpulsecore-*.so
 usr/lib/pulse-*/modules/libalsa-util.so
+usr/lib/pulse-*/modules/libbluetooth-util.so
 usr/lib/pulse-*/modules/libbluetooth-ipc.so
 usr/lib/pulse-*/modules/libbluetooth-sbc.so
 usr/lib/pulse-*/modules/libcli.so
