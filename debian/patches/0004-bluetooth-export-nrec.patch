@@ -1,7 +1,7 @@
 From 5f6ee787f097ce7a4cee836e99a783aa79261628 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Tue, 3 Feb 2009 18:43:54 +0200
-Subject: [PATCH 04/22] bluetooth: export nrec
+Subject: [PATCH 04/21] bluetooth: export nrec
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |   41 +++++++++++++++-------

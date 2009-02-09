@@ -1,7 +1,7 @@
 From fc6a3115ac542d1f4e207029f99bb20c76e95ad0 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Tue, 3 Feb 2009 17:15:41 +0200
-Subject: [PATCH 02/22] bluetooth: SCO over PCM
+Subject: [PATCH 02/21] bluetooth: SCO over PCM
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c   |  146 +++++++++++++++------

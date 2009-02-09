@@ -1,7 +1,7 @@
 From 1d622c7c9c8e0d5bc0c81351fe96ca0a07cb26fb Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Tue, 3 Feb 2009 18:17:20 +0200
-Subject: [PATCH 03/22] bluetooth: suspend SCO state when over PCM
+Subject: [PATCH 03/21] bluetooth: suspend SCO state when over PCM
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |   70 +++++++++++++++++++++++

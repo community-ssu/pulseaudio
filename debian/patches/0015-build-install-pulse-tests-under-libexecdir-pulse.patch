@@ -1,7 +1,7 @@
-From c3001de5881259fd9726d023313e2a5dd843ef97 Mon Sep 17 00:00:00 2001
+From 68a26656c38c64d93c6be1c95345829c17e52641 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 11 Dec 2008 22:05:31 +0200
-Subject: [PATCH 12/22] build: install pulse tests under $(libexecdir)/pulse-tests (Nokia specific)
+Subject: [PATCH 15/21] build: install pulse tests under $(libexecdir)/pulse-tests (Nokia specific)
 
 ---
  src/Makefile.am |    7 ++++---
