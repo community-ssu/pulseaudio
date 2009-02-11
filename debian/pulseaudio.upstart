@@ -2,9 +2,9 @@ description "pulseaudio"
 author "Maemo Multimedia <multimedia@maemo.org>"
 
 start on started dbus
+start on started dbus-actdead
 
 stop on starting shutdown
-stop on ACT_DEAD
 
 console none
 
