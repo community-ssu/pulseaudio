@@ -1,7 +1,7 @@
 From 539abc365f8e12a5241694920a2e09e0bfe05710 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Mon, 2 Feb 2009 11:06:31 +0200
-Subject: [PATCH 01/21] bluetooth: typo
+Subject: [PATCH 01/25] bluetooth: typo
 
 ---
  src/modules/bluetooth/module-bluetooth-discover.c |    2 +-

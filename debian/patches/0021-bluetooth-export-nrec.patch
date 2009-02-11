@@ -1,14 +1,14 @@
-From 5f6ee787f097ce7a4cee836e99a783aa79261628 Mon Sep 17 00:00:00 2001
+From cac0f9ef2b91462778600821f456248efffb2517 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Tue, 3 Feb 2009 18:43:54 +0200
-Subject: [PATCH 04/21] bluetooth: export nrec
+Subject: [PATCH 21/25] bluetooth: export nrec
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |   41 +++++++++++++++-------
  1 files changed, 28 insertions(+), 13 deletions(-)
 
 diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
-index 32e97b3..3bc5796 100644
+index c70a79d..fa9d6bf 100644
 --- a/src/modules/bluetooth/module-bluetooth-device.c
 +++ b/src/modules/bluetooth/module-bluetooth-device.c
 @@ -104,6 +104,7 @@ struct a2dp_info {
@@ -64,7 +64,7 @@ index 32e97b3..3bc5796 100644
      return 0;
  }
  
-@@ -1333,10 +1344,9 @@ static int add_sink(struct userdata *u) {
+@@ -1334,10 +1345,9 @@ static int add_sink(struct userdata *u) {
  }
  
  static int add_source(struct userdata *u) {
@@ -76,7 +76,7 @@ index 32e97b3..3bc5796 100644
          u->source = u->hsp.sco_source;
          u->source->card = u->card; /* FIXME! */
          p = pa_proplist_new();
-@@ -1377,6 +1387,11 @@ static int add_source(struct userdata *u) {
+@@ -1379,6 +1389,11 @@ static int add_source(struct userdata *u) {
  /*     u->source->get_volume = source_get_volume_cb; */
  /*     u->source->set_volume = source_set_volume_cb; */
  

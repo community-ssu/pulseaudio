@@ -1,7 +1,7 @@
 From 92a73c477fbe399d731023a603bce753fca3436f Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 20 Nov 2008 16:59:13 +0200
-Subject: [PATCH 07/21] stream-restore: post a module change in trigger_save
+Subject: [PATCH 04/25] stream-restore: post a module change in trigger_save
 
 ---
  src/modules/module-stream-restore.c |    2 ++

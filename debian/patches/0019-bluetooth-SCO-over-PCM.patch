@@ -1,15 +1,15 @@
-From fc6a3115ac542d1f4e207029f99bb20c76e95ad0 Mon Sep 17 00:00:00 2001
+From c8a240cddd23eba83c4d3fc901fe2e42a871823f Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Tue, 3 Feb 2009 17:15:41 +0200
-Subject: [PATCH 02/21] bluetooth: SCO over PCM
+Subject: [PATCH 19/25] bluetooth: SCO over PCM
 
 ---
- src/modules/bluetooth/module-bluetooth-device.c   |  146 +++++++++++++++------
+ src/modules/bluetooth/module-bluetooth-device.c   |  156 +++++++++++++++------
  src/modules/bluetooth/module-bluetooth-discover.c |   21 +++-
- 2 files changed, 125 insertions(+), 42 deletions(-)
+ 2 files changed, 131 insertions(+), 46 deletions(-)
 
 diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
-index de6bded..1b6ca37 100644
+index 0067d91..2302b1d 100644
 --- a/src/modules/bluetooth/module-bluetooth-device.c
 +++ b/src/modules/bluetooth/module-bluetooth-device.c
 @@ -43,6 +43,7 @@
@@ -198,7 +198,7 @@ index de6bded..1b6ca37 100644
      return 0;
  }
  
-@@ -1316,6 +1357,11 @@ static int setup_bt(struct userdata *u) {
+@@ -1318,6 +1359,11 @@ static int setup_bt(struct userdata *u) {
  
      pa_log_debug("Connection to the device configured");
  
@@ -210,7 +210,7 @@ index de6bded..1b6ca37 100644
      if (setup_stream_fd(u) < 0)
          return -1;
  
-@@ -1375,6 +1421,12 @@ static int start_thread(struct userdata *u) {
+@@ -1377,6 +1423,12 @@ static int start_thread(struct userdata *u) {
      pa_assert(!u->thread);
      pa_assert(!u->rtpoll_item);
  
@@ -223,7 +223,24 @@ index de6bded..1b6ca37 100644
      u->rtpoll_item = pa_rtpoll_item_new(u->rtpoll, PA_RTPOLL_NEVER, 1);
      pollfd = pa_rtpoll_item_get_pollfd(u->rtpoll_item, NULL);
      pollfd->fd = u->stream_fd;
-@@ -1602,6 +1654,18 @@ int pa__init(pa_module* m) {
+@@ -1410,12 +1462,14 @@ static int card_set_profile(pa_card *c, pa_card_profile *new_profile) {
+ 
+     if (u->sink) {
+         inputs = pa_sink_move_all_start(u->sink);
+-        pa_sink_unlink(u->sink);
++	if (!USE_SCO_OVER_PCM(u))
++            pa_sink_unlink(u->sink);
+     }
+ 
+     if (u->source) {
+         outputs = pa_source_move_all_start(u->source);
+-        pa_source_unlink(u->source);
++	if (!USE_SCO_OVER_PCM(u))
++            pa_source_unlink(u->source);
+     }
+ 
+     stop_thread(u);
+@@ -1604,6 +1658,18 @@ int pa__init(pa_module* m) {
      u->sample_spec = m->core->default_sample_spec;
      u->modargs = ma;
  
@@ -242,6 +259,19 @@ index de6bded..1b6ca37 100644
      if (pa_modargs_get_value_u32(ma, "rate", &u->sample_spec.rate) < 0 ||
          u->sample_spec.rate <= 0 || u->sample_spec.rate > PA_RATE_MAX) {
          pa_log_error("Failed to get rate from module arguments");
+@@ -1704,10 +1770,10 @@ void pa__done(pa_module *m) {
+     if (!(u = m->userdata))
+         return;
+ 
+-    if (u->sink)
++    if (u->sink && !USE_SCO_OVER_PCM(u))
+         pa_sink_unlink(u->sink);
+ 
+-    if (u->source)
++    if (u->source && !USE_SCO_OVER_PCM(u))
+         pa_source_unlink(u->source);
+ 
+     stop_thread(u);
 diff --git a/src/modules/bluetooth/module-bluetooth-discover.c b/src/modules/bluetooth/module-bluetooth-discover.c
 index 0523648..3f8a751 100644
 --- a/src/modules/bluetooth/module-bluetooth-discover.c
