@@ -26,7 +26,6 @@ usr/lib/pulse-*/modules/module-card-restore.so
 usr/lib/pulse-*/modules/module-cli.so
 usr/lib/pulse-*/modules/module-combine.so
 usr/lib/pulse-*/modules/module-device-restore.so
-usr/lib/pulse-*/modules/module-esound-protocol-unix.so
 usr/lib/pulse-*/modules/module-native-protocol-unix.so
 usr/lib/pulse-*/modules/module-null-sink.so
 usr/lib/pulse-*/modules/module-null-source.so
