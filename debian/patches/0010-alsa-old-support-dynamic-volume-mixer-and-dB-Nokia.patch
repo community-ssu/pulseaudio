@@ -1,18 +1,18 @@
-From 2785f82a345996b3294003d45e8dd81e62deb391 Mon Sep 17 00:00:00 2001
+From 0667a0508b5957cfdb258658a5a873be980ba4d7 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Mon, 2 Feb 2009 12:56:03 +0200
-Subject: [PATCH 08/17] alsa-old: support dynamic volume mixer and dB (Nokia specific)
+Subject: [PATCH 10/17] alsa-old: support dynamic volume mixer and dB (Nokia specific)
 
 - Set mixer controls during init, and dynamic switching by properties.
 - Modify ALSA volume steps using properties (as comma separated values)
 ---
- src/modules/alsa/module-alsa-sink-old.c   |  848 +++++++++++++++++++++++------
+ src/modules/alsa/module-alsa-sink-old.c   |  854 +++++++++++++++++++++++------
  src/modules/alsa/module-alsa-sink-old.h   |   13 +-
  src/modules/alsa/module-alsa-source-old.c |  327 +++++++++--
- 3 files changed, 945 insertions(+), 243 deletions(-)
+ 3 files changed, 951 insertions(+), 243 deletions(-)
 
 diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
-index 1a0d766..64675a7 100644
+index 1a0d766..455801d 100644
 --- a/src/modules/alsa/module-alsa-sink-old.c
 +++ b/src/modules/alsa/module-alsa-sink-old.c
 @@ -32,6 +32,10 @@
@@ -299,11 +299,11 @@ index 1a0d766..64675a7 100644
 +    if (!pa_cvolume_equal(&u->active_mixer->hardware_volume, &r)) {
 +
 +        s->virtual_volume = u->active_mixer->hardware_volume = r;
- 
--fail:
++
 +        if (u->active_mixer->hw_dB_supported) {
 +            pa_cvolume reset;
-+
+ 
+-fail:
 +            /* Hmm, so the hardware volume changed, let's reset our software volume */
 +            pa_cvolume_reset(&reset, u->sink->sample_spec.channels);
 +            pa_sink_set_soft_volume(s, &reset);
@@ -780,24 +780,24 @@ index 1a0d766..64675a7 100644
 -        snd_mixer_elem_set_callback_private(mixer_elem, u);
 +        pa_xfree(m);
 +    }
-+
-+    return NULL;
-+}
  
 -        u->mixer_elem = mixer_elem;
 -        u->mixer_fdl = mixer_fdl;
 -        memcpy(&u->mixer_map, &mixer_map, sizeof(snd_mixer_selem_channel_id_t)*SND_MIXER_SCHN_LAST);
++    return NULL;
++}
+ 
+-        /* Remember selected mixer name */
+-        if (u->mixer_name && ret > -1) {
+-            pa_xfree(u->mixer_name);
+-            u->mixer_name = NULL;
 +static int get_mixer_elements(struct userdata *u, const char *mixer_list) {
 +    const char *state = NULL;
 +    struct mixer_control_t *m = NULL;
 +    char *mixer;
 +    pa_assert(u);
 +    pa_assert(mixer_list);
- 
--        /* Remember selected mixer name */
--        if (u->mixer_name && ret > -1) {
--            pa_xfree(u->mixer_name);
--            u->mixer_name = NULL;
++
 +    while ((mixer = pa_split(mixer_list, ",", &state))) {
 +        if (mixer) {
 +            m = get_mixer_element(u, mixer);
@@ -855,8 +855,10 @@ index 1a0d766..64675a7 100644
 -        u->mixer_fdl = NULL;
 +        pa_log_warn("Step count <= 0");
 +        return 1;
-+    }
-+
+     }
+ 
+-done:
+-    return ret;
 +    while ((num_str = pa_split(step_list, ",", &state))) {
 +        if (num_str) {
 +            if (i >= m->gain_step_count) {
@@ -871,10 +873,8 @@ index 1a0d766..64675a7 100644
 +            i++;
 +            pa_xfree(num_str);
 +        }
-     }
- 
--done:
--    return ret;
++    }
++
 +    if (i != m->gain_step_count)
 +        goto bad_data;
 +
@@ -993,7 +993,7 @@ index 1a0d766..64675a7 100644
  
      snd_pcm_info_alloca(&pcm_info);
  
-@@ -975,11 +1399,26 @@ int pa__init(pa_module*m) {
+@@ -975,11 +1399,29 @@ int pa__init(pa_module*m) {
          goto fail;
      }
  
@@ -1013,6 +1013,9 @@ index 1a0d766..64675a7 100644
 +        mixer_load = pa_xstrdup(pa_modargs_get_value(ma, "mixer_load", NULL));
 +        replace_chars(mixer_load, '_', ' ');
 +        pa_log_info("preload mixers %s", mixer_load);
++    } else {
++        /* Default to loading alsa_mixer, if mixer_load is not defined. */
++        mixer_load = pa_xstrdup(alsa_mixer);
 +    }
 +
 +    mixer_off_volume = -1; /* Default to mixer_off_volume disabled */
@@ -1024,7 +1027,7 @@ index 1a0d766..64675a7 100644
      }
  
      frame_size = pa_frame_size(&ss);
-@@ -1017,11 +1456,19 @@ int pa__init(pa_module*m) {
+@@ -1017,11 +1459,19 @@ int pa__init(pa_module*m) {
      }
  
      u = pa_xnew0(struct userdata, 1);
@@ -1044,7 +1047,7 @@ index 1a0d766..64675a7 100644
      u->core = m->core;
      u->module = m;
      m->userdata = u;
-@@ -1087,7 +1534,39 @@ int pa__init(pa_module*m) {
+@@ -1087,7 +1537,39 @@ int pa__init(pa_module*m) {
      frame_size = pa_frame_size(&ss);
      alt_frame_size = pa_frame_size(&ss);
  
@@ -1085,7 +1088,7 @@ index 1a0d766..64675a7 100644
  
      if ((name = pa_modargs_get_value(ma, "sink_name", NULL)))
          namereg_fail = 1;
-@@ -1104,7 +1583,7 @@ int pa__init(pa_module*m) {
+@@ -1104,7 +1586,7 @@ int pa__init(pa_module*m) {
      pa_sink_new_data_set_sample_spec(&data, &ss);
      pa_sink_new_data_set_channel_map(&data, &map);
  
@@ -1094,7 +1097,7 @@ index 1a0d766..64675a7 100644
      pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->device_name);
      pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE, "%lu", (unsigned long) (period_size * frame_size * nfrags));
      pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE, "%lu", (unsigned long) (period_size * frame_size));
-@@ -1154,6 +1633,7 @@ int pa__init(pa_module*m) {
+@@ -1154,6 +1636,7 @@ int pa__init(pa_module*m) {
          u->alt_period_size = alt_period_size;
      }
  
@@ -1102,7 +1105,7 @@ index 1a0d766..64675a7 100644
      pa_log_info("PRI: Using %u fragments of size %lu bytes.", nfrags, (long unsigned) u->fragment_size);
      if (u->switching_enabled)
          pa_log_info("ALT: Using %u fragments of size %lu bytes.", alt_nfrags, (long unsigned) u->alt_fragment_size);
-@@ -1161,45 +1641,59 @@ int pa__init(pa_module*m) {
+@@ -1161,45 +1644,59 @@ int pa__init(pa_module*m) {
      pa_memchunk_reset(&u->memchunk);
  
      u->channel_map = map;
@@ -1178,17 +1181,20 @@ index 1a0d766..64675a7 100644
      if (ma)
          pa_modargs_free(ma);
  
-@@ -1216,6 +1710,9 @@ void pa__done(pa_module*m) {
+@@ -1216,6 +1713,12 @@ void pa__done(pa_module*m) {
      if (!(u = m->userdata))
          return;
  
++    if (u->sink_proplist_changed_slot)
++        pa_hook_slot_free(u->sink_proplist_changed_slot);
++
 +    if (u->mixer_list)
 +        free_mixer_elements(u);
 +
      if (u->sink)
          pa_sink_unlink(u->sink);
  
-@@ -1238,9 +1735,6 @@ void pa__done(pa_module*m) {
+@@ -1238,9 +1741,6 @@ void pa__done(pa_module*m) {
      if (u->rtpoll)
          pa_rtpoll_free(u->rtpoll);
  
@@ -1198,7 +1204,7 @@ index 1a0d766..64675a7 100644
      if (u->mixer_handle)
          snd_mixer_close(u->mixer_handle);
  
-@@ -1249,8 +1743,6 @@ void pa__done(pa_module*m) {
+@@ -1249,8 +1749,6 @@ void pa__done(pa_module*m) {
          snd_pcm_close(u->pcm_handle);
      }
  

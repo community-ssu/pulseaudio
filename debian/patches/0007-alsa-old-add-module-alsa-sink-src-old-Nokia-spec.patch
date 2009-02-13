@@ -1,7 +1,7 @@
-From f585ae5e362665e1d6378cfd24706a1afaee7bc8 Mon Sep 17 00:00:00 2001
+From f5bdc5678f8842e87bb9a28999591ecba0e991c7 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Wed, 27 Aug 2008 19:54:48 +0300
-Subject: [PATCH 05/17] alsa-old: add module-alsa-{sink,src}-old (Nokia specific)
+Subject: [PATCH 07/17] alsa-old: add module-alsa-{sink,src}-old (Nokia specific)
 
 Backported from 0.9.10 with minor modifications.
 ---
@@ -17,10 +17,10 @@ Backported from 0.9.10 with minor modifications.
  create mode 100644 src/modules/alsa/module-alsa-source-old.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 9c5c50e..efccb4c 100644
+index 811b120..28fa44d 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -953,7 +953,9 @@ modlibexec_LTLIBRARIES += \
+@@ -952,7 +952,9 @@ modlibexec_LTLIBRARIES += \
  		libalsa-util.la \
  		module-alsa-sink.la \
  		module-alsa-source.la \
@@ -31,7 +31,7 @@ index 9c5c50e..efccb4c 100644
  endif
  
  if HAVE_SOLARIS
-@@ -1067,6 +1069,8 @@ SYMDEF_FILES = \
+@@ -1065,6 +1067,8 @@ SYMDEF_FILES = \
  		modules/alsa/module-alsa-sink-symdef.h \
  		modules/alsa/module-alsa-source-symdef.h \
  		modules/alsa/module-alsa-card-symdef.h \
@@ -40,7 +40,7 @@ index 9c5c50e..efccb4c 100644
  		modules/module-solaris-symdef.h \
  		modules/module-waveout-symdef.h \
  		modules/module-detect-symdef.h \
-@@ -1298,6 +1302,16 @@ module_alsa_card_la_LDFLAGS = $(MODULE_LDFLAGS)
+@@ -1292,6 +1296,16 @@ module_alsa_card_la_LDFLAGS = $(MODULE_LDFLAGS)
  module_alsa_card_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
  module_alsa_card_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
