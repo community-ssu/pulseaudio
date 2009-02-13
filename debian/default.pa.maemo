@@ -79,7 +79,7 @@ load-module module-zeroconf-discover
 .endif
 
 .ifexists module-policy-enforcement.so
-load-module module-policy-enforcement
+#load-module module-policy-enforcement
 .endif
 
 .ifexists module-nokia-audiots.so
