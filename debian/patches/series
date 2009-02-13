@@ -14,3 +14,4 @@
 0014-build-remove-.gitignore-Nokia-specific.patch
 0015-interpol-test-remove-unused-include-getopt.h.patch
 0016-tests-improve-resampler-test.patch
+0017-autofoo.patch
