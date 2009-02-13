@@ -1,7 +1,7 @@
-From 9785fb387fbe0756762131792f175ca591222940 Mon Sep 17 00:00:00 2001
+From 85e21f5a7050d2ad8fd6ee8d2f9d718bc2e11eaa Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 7 Jan 2009 18:18:26 +0200
-Subject: [PATCH 16/25] build: fix build on scratchbox with rpath
+Subject: [PATCH 13/16] build: fix build on scratchbox with rpath
 
 X11 depends on libraries that are not listed during link. Those
 libraries symbol fail to be found, because -rpath seems to override
@@ -12,7 +12,7 @@ X11 library solves it.. Geezz...
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 0844398..e7ca921 100644
+index 9c77493..96c4f03 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -150,7 +150,7 @@ PREOPEN_LIBS = $(modlibexec_LTLIBRARIES)

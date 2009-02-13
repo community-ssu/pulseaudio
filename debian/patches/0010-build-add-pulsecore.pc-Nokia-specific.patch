@@ -1,7 +1,7 @@
-From 2953422f2806f92855cb33037a485cb499b24384 Mon Sep 17 00:00:00 2001
+From 4b5f3f206602bb37d0623b63e72152b46fc09b48 Mon Sep 17 00:00:00 2001
 From: Ismo Puustinen <ismo.h.puustinen@nokia.com>
 Date: Tue, 30 Sep 2008 18:45:55 +0300
-Subject: [PATCH 13/25] build: add pulsecore.pc (Nokia specific)
+Subject: [PATCH 10/16] build: add pulsecore.pc (Nokia specific)
 
 Original patch updated for 0.9.14 with pulse/pulsecore/pulsecommon.
 ---
@@ -25,7 +25,7 @@ index 8735d31..d1c595f 100644
  if HAVE_AVAHI
  pkgconfig_DATA += \
 diff --git a/configure.ac b/configure.ac
-index 18d7cd9..6ce7156 100644
+index fbe134c..499af8f 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -1201,6 +1201,7 @@ libpulse.pc

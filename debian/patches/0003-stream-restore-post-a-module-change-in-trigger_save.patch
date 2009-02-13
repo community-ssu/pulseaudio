@@ -1,17 +1,17 @@
-From 92a73c477fbe399d731023a603bce753fca3436f Mon Sep 17 00:00:00 2001
+From f382978457ac105312ebb2ab65c931ef1ed74694 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 20 Nov 2008 16:59:13 +0200
-Subject: [PATCH 04/25] stream-restore: post a module change in trigger_save
+Subject: [PATCH 03/16] stream-restore: post a module change in trigger_save
 
 ---
  src/modules/module-stream-restore.c |    2 ++
  1 files changed, 2 insertions(+), 0 deletions(-)
 
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index 0c9bd4f..19abaaf 100644
+index 2dd2045..08b6f28 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
-@@ -214,6 +214,8 @@ static void trigger_save(struct userdata *u) {
+@@ -229,6 +229,8 @@ static void trigger_save(struct userdata *u) {
          pa_pstream_send_tagstruct(pa_native_connection_get_pstream(c), t);
      }
  

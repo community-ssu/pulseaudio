@@ -1,37 +1,26 @@
-From 7a74f81c355fd2a6273ed5a68b2533d7294b6b23 Mon Sep 17 00:00:00 2001
+From 76713f13398b13188aca7f2ababa6c4fe2f9c93a Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Mon, 17 Nov 2008 19:50:30 +0200
-Subject: [PATCH 10/25] alsa-old: various dynamic switching (Nokia specific)
+Subject: [PATCH 07/16] alsa-old: various dynamic switching (Nokia specific)
 
 Buffer switching with property list
 Cconfiguration parameter to select mixer
 Runtime mixer switching using property lists
 ---
- src/Makefile.am                           |   17 +-
+ src/Makefile.am                           |    5 +-
  src/modules/alsa/module-alsa-sink-old.c   |  350 ++++++++++++++++++++++++-----
  src/modules/alsa/module-alsa-sink-old.h   |   11 +
  src/modules/alsa/module-alsa-source-old.c |  169 ++++++++++++++-
  src/modules/alsa/module-alsa-source-old.h |   11 +
- 5 files changed, 493 insertions(+), 65 deletions(-)
+ 5 files changed, 487 insertions(+), 59 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-old.h
  create mode 100644 src/modules/alsa/module-alsa-source-old.h
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 1347de6..83d8aa0 100644
+index efccb4c..d779e63 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -938,15 +938,24 @@ modlibexec_LTLIBRARIES += \
- 		module-oss.la
- endif
- 
-+if HAVE_DBUS
-+modlibexec_LTLIBRARIES += \
-+		libdbus-util.la \
-+		module-console-kit.la
-+endif
-+
- if HAVE_ALSA
- modlibexec_LTLIBRARIES += \
+@@ -953,10 +953,13 @@ modlibexec_LTLIBRARIES += \
  		libalsa-util.la \
  		module-alsa-sink.la \
  		module-alsa-source.la \
@@ -46,19 +35,6 @@ index 1347de6..83d8aa0 100644
  
  if HAVE_SOLARIS
  modlibexec_LTLIBRARIES += \
-@@ -996,12 +1005,6 @@ modlibexec_LTLIBRARIES += \
- 		module-hal-detect.la
- endif
- 
--if HAVE_DBUS
--modlibexec_LTLIBRARIES += \
--		libdbus-util.la \
--		module-console-kit.la
--endif
--
- if HAVE_BLUEZ
- modlibexec_LTLIBRARIES += \
- 		module-bluetooth-proximity.la \
 diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
 index 781c180..1a0d766 100644
 --- a/src/modules/alsa/module-alsa-sink-old.c
