@@ -15,7 +15,7 @@
 0015-build-fix-build-on-scratchbox-with-rpath.patch
 0016-build-remove-.gitignore-Nokia-specific.patch
 0017-sbc-add-implementation-info.patch
-0018-bluetooth-print-SBC-encoder-implementation-info.patch
-0019-bluetooth-don-t-crash-on-pa_thread_mq_done-if-pa_.patch
-0020-bluetooth-print-SBC-encoder-implementation-info.patch
+0018-bluetooth-don-t-crash-on-pa_thread_mq_done-if-pa_.patch
+0019-bluetooth-print-SBC-encoder-implementation-info.patch
+0020-bluetooth-fix-message-queue-rtpoll.patch
 0021-autofoo.patch
