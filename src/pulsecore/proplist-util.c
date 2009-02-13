@@ -27,6 +27,13 @@
 #include <locale.h>
 #include <dlfcn.h>
 
+#ifdef __APPLE__
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
+#elif !HAVE_DECL_ENVIRON
+extern char **environ;
+#endif
+
 #include <pulse/proplist.h>
 #include <pulse/utf8.h>
 #include <pulse/xmalloc.h>
@@ -37,10 +44,8 @@
 #include "proplist-util.h"
 
 void pa_init_proplist(pa_proplist *p) {
-#if !HAVE_DECL_ENVIRON
-    extern char **environ;
-#endif
     char **e;
+    const char *pp;
 
     pa_assert(p);
 
@@ -64,14 +69,18 @@ void pa_init_proplist(pa_proplist *p) {
 
                 k = pa_xstrndup(*e+11, kl);
 
-                if (pa_proplist_contains(p, k)) {
-                    pa_xfree(k);
-                    continue;
-                }
-
                 pa_proplist_sets(p, k, *e+11+kl+1);
                 pa_xfree(k);
             }
+        }
+    }
+
+    if ((pp = getenv("PULSE_PROP"))) {
+        pa_proplist *t;
+
+        if ((t = pa_proplist_from_string(pp))) {
+            pa_proplist_update(p, PA_UPDATE_REPLACE, t);
+            pa_proplist_free(t);
         }
     }
 

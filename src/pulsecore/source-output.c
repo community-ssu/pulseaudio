@@ -92,6 +92,7 @@ static void reset_callbacks(pa_source_output *o) {
     o->get_latency = NULL;
     o->state_change = NULL;
     o->may_move_to = NULL;
+    o->send_event = NULL;
 }
 
 /* Called from main context */
@@ -109,6 +110,9 @@ int pa_source_output_new(
     pa_assert(_o);
     pa_assert(core);
     pa_assert(data);
+
+    if (data->client)
+        pa_proplist_update(data->proplist, PA_UPDATE_MERGE, data->client->proplist);
 
     if ((r = pa_hook_fire(&core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_NEW], data)) < 0)
         return r;
@@ -158,9 +162,6 @@ int pa_source_output_new(
         data->resample_method = core->resample_method;
 
     pa_return_val_if_fail(data->resample_method < PA_RESAMPLER_MAX, -PA_ERR_INVALID);
-
-    if (data->client)
-        pa_proplist_update(data->proplist, PA_UPDATE_MERGE, data->client->proplist);
 
     if ((r = pa_hook_fire(&core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_FIXATE], data)) < 0)
         return r;
@@ -615,18 +616,16 @@ void pa_source_output_set_name(pa_source_output *o, const char *name) {
 }
 
 /* Called from main thread */
-pa_bool_t pa_source_output_update_proplist(pa_source_output *o, pa_update_mode_t mode, pa_proplist *p) {
+void pa_source_output_update_proplist(pa_source_output *o, pa_update_mode_t mode, pa_proplist *p) {
+    pa_source_output_assert_ref(o);
+    pa_assert(p);
 
-  pa_source_output_assert_ref(o);
+    pa_proplist_update(o->proplist, mode, p);
 
-  pa_proplist_update(o->proplist, mode, p);
-
-  if (PA_SINK_IS_LINKED(o->state)) {
-    pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_PROPLIST_CHANGED], o);
-    pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE, o->index);
-  }
-
-  return TRUE;
+    if (PA_SINK_IS_LINKED(o->state)) {
+        pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_PROPLIST_CHANGED], o);
+        pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE, o->index);
+    }
 }
 
 /* Called from main context */
@@ -868,4 +867,31 @@ int pa_source_output_process_msg(pa_msgobject *mo, int code, void *userdata, int
     }
 
     return -PA_ERR_NOTIMPLEMENTED;
+}
+
+void pa_source_output_send_event(pa_source_output *o, const char *event, pa_proplist *data) {
+    pa_proplist *pl = NULL;
+    pa_source_output_send_event_hook_data hook_data;
+
+    pa_source_output_assert_ref(o);
+    pa_assert(event);
+
+    if (!o->send_event)
+        return;
+
+    if (!data)
+        data = pl = pa_proplist_new();
+
+    hook_data.source_output = o;
+    hook_data.data = data;
+    hook_data.event = event;
+
+    if (pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_SEND_EVENT], &hook_data) < 0)
+        goto finish;
+
+    o->send_event(o, event, data);
+
+finish:
+    if (pl)
+        pa_proplist_free(pl);
 }

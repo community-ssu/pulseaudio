@@ -39,7 +39,7 @@ PA_C_DECL_BEGIN
  *    media.filename
  *    media.icon                    Binary blob containing PNG icon data
  *    media.icon_name               Name from XDG icon naming spec
- *    media.role                    video, music, game, event, phone, production, filter, abstract, stream
+ *    media.role                    video, music, game, event, phone, animation, production, filter, abstract, stream
  *    event.id                      Name from XDG sound naming spec
  *    event.description             "Button blabla clicked" for a11y
  *    event.mouse.x
@@ -136,7 +136,7 @@ PA_C_DECL_BEGIN
 #define PA_PROP_MODULE_USAGE                   "module.usage"
 #define PA_PROP_MODULE_VERSION                 "module.version"
 
-/** A property list object. Basically a dictionary with UTF-8 strings
+/** A property list object. Basically a dictionary with ASCII strings
  * as keys and arbitrary data as values. \since 0.9.11 */
 typedef struct pa_proplist pa_proplist;
 
@@ -193,6 +193,12 @@ typedef enum pa_update_mode {
      *  old entries that share a common key with the new property
      *  list. */
 } pa_update_mode_t;
+
+/** \cond fulldocs */
+#define PA_UPDATE_SET PA_UPDATE_SET
+#define PA_UPDATE_MERGE PA_UPDATE_MERGE
+#define PA_UPDATE_REPLACE PA_UPDATE_REPLACE
+/** \endcond */
 
 /** Merge property list "other" into "p", adhering the merge mode as
  * specified in "mode". \since 0.9.11 */

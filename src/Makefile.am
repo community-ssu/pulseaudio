@@ -862,6 +862,13 @@ libavahi_wrap_la_LIBADD = $(AM_LIBADD) $(AVAHI_CFLAGS) libpulsecore-@PA_MAJORMIN
 #        Plug-in libraries        #
 ###################################
 
+if HAVE_DBUS
+# Serveral module (e.g. libalsa-util.la)
+modlibexec_LTLIBRARIES += \
+		libdbus-util.la \
+		module-console-kit.la
+endif
+
 modlibexec_LTLIBRARIES += \
 		module-cli.la \
 		module-cli-protocol-tcp.la \
@@ -888,7 +895,9 @@ modlibexec_LTLIBRARIES += \
 		module-esound-sink.la \
 		module-tunnel-sink.la \
 		module-tunnel-source.la \
-		module-position-event-sounds.la
+		module-position-event-sounds.la \
+		module-augment-properties.la \
+		module-cork-music-on-phone.la
 
 
 # See comment at librtp.la above
@@ -928,7 +937,8 @@ if HAVE_X11
 modlibexec_LTLIBRARIES += \
 		module-x11-bell.la \
 		module-x11-publish.la \
-		module-x11-xsmp.la
+		module-x11-xsmp.la \
+		module-x11-cork-request.la
 endif
 
 if HAVE_OSS
@@ -989,21 +999,14 @@ endif
 
 if HAVE_HAL
 modlibexec_LTLIBRARIES += \
-		libdbus-util.la \
 		module-hal-detect.la
-endif
-
-if HAVE_DBUS
-modlibexec_LTLIBRARIES += \
-		libdbus-util.la \
-		module-console-kit.la
 endif
 
 if HAVE_BLUEZ
 modlibexec_LTLIBRARIES += \
+		libbluetooth-util.la \
 		module-bluetooth-proximity.la \
 		module-bluetooth-discover.la \
-		libbluetooth-util.la \
 		libbluetooth-ipc.la \
 		libbluetooth-sbc.la \
 		module-bluetooth-device.la
@@ -1057,6 +1060,7 @@ SYMDEF_FILES = \
 		modules/module-x11-bell-symdef.h \
 		modules/module-x11-publish-symdef.h \
 		modules/module-x11-xsmp-symdef.h \
+		modules/module-x11-cork-request-symdef.h \
 		modules/oss/module-oss-symdef.h \
 		modules/alsa/module-alsa-sink-symdef.h \
 		modules/alsa/module-alsa-source-symdef.h \
@@ -1084,6 +1088,8 @@ SYMDEF_FILES = \
 		modules/module-raop-discover-symdef.h \
 		modules/gconf/module-gconf-symdef.h \
 		modules/module-position-event-sounds-symdef.h \
+		modules/module-augment-properties-symdef.h \
+		modules/module-cork-music-on-phone-symdef.h \
 		modules/module-console-kit-symdef.h
 
 EXTRA_DIST += $(SYMDEF_FILES)
@@ -1243,6 +1249,11 @@ module_x11_xsmp_la_CFLAGS = $(AM_CFLAGS) $(X11_CFLAGS)
 module_x11_xsmp_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_x11_xsmp_la_LIBADD = $(AM_LIBADD) $(X11_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
+module_x11_cork_request_la_SOURCES = modules/module-x11-cork-request.c
+module_x11_cork_request_la_CFLAGS = $(AM_CFLAGS) $(X11_CFLAGS)
+module_x11_cork_request_la_LDFLAGS = $(MODULE_LDFLAGS)
+module_x11_cork_request_la_LIBADD = $(AM_LIBADD) $(X11_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+
 # OSS
 
 liboss_util_la_SOURCES = modules/oss/oss-util.c modules/oss/oss-util.h
@@ -1336,7 +1347,20 @@ module_volume_restore_la_CFLAGS = $(AM_CFLAGS)
 module_position_event_sounds_la_SOURCES = modules/module-position-event-sounds.c
 module_position_event_sounds_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_position_event_sounds_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
-module_position_event_sounds_CFLAGS = $(AM_CFLAGS)
+module_position_event_sounds_la_CFLAGS = $(AM_CFLAGS)
+
+# Augment properties from XDG .desktop files
+module_augment_properties_la_SOURCES = modules/module-augment-properties.c
+module_augment_properties_la_LDFLAGS = $(MODULE_LDFLAGS)
+module_augment_properties_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+#module_augment_properties_la_CFLAGS = $(AM_CFLAGS) -DDESKTOPFILEDIR=\"$(datadir)/applications\"
+module_augment_properties_la_CFLAGS = $(AM_CFLAGS) -DDESKTOPFILEDIR=\"/usr/share/applications\"
+
+# Cork music streams while a phone stream is active
+module_cork_music_on_phone_la_SOURCES = modules/module-cork-music-on-phone.c
+module_cork_music_on_phone_la_LDFLAGS = $(MODULE_LDFLAGS)
+module_cork_music_on_phone_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+module_cork_music_on_phone_la_CFLAGS = $(AM_CFLAGS)
 
 # Device volume/muted restore module
 module_device_restore_la_SOURCES = modules/module-device-restore.c
