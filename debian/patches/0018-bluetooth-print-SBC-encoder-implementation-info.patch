@@ -1,0 +1,25 @@
+From 509574ae58e69e673be685b591b600794eee3fd7 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Fri, 13 Feb 2009 15:09:16 +0200
+Subject: [PATCH 18/21] bluetooth: print SBC encoder implementation info
+
+---
+ src/modules/bluetooth/module-bluetooth-device.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index 6daae83..84e0dd5 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -506,6 +506,8 @@ static void setup_sbc(struct a2dp_info *a2dp) {
+         sbc_init(&a2dp->sbc, 0);
+     a2dp->sbc_initialized = TRUE;
+ 
++    pa_log_debug("Using SBC encoder implementation: %s", pa_strnull(sbc_get_implementation_info(&a2dp->sbc)));
++
+     switch (active_capabilities->frequency) {
+         case BT_SBC_SAMPLING_FREQ_16000:
+             a2dp->sbc.frequency = SBC_FREQ_16000;
+-- 
+1.6.1.224.gb56c
+

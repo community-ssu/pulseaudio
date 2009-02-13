@@ -1,7 +1,7 @@
 From 0667a0508b5957cfdb258658a5a873be980ba4d7 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Mon, 2 Feb 2009 12:56:03 +0200
-Subject: [PATCH 10/17] alsa-old: support dynamic volume mixer and dB (Nokia specific)
+Subject: [PATCH 10/21] alsa-old: support dynamic volume mixer and dB (Nokia specific)
 
 - Set mixer controls during init, and dynamic switching by properties.
 - Modify ALSA volume steps using properties (as comma separated values)
