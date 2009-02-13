@@ -15,7 +15,7 @@ else
 endif
 
 ifneq (,$(findstring vfp,$(DEB_BUILD_OPTIONS)))
-	CFLAGS += -mfpu=neon -mfloat-abi=softfp -ftree-vectorize
+	CFLAGS += -mfpu=neon -mfloat-abi=softfp
 endif
 
 ifneq (,$(findstring thumb,$(DEB_BUILD_OPTIONS)))

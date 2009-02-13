@@ -11,6 +11,8 @@ pulseaudio (0.9.15~git20090203-0maemo2) unstable; urgency=low
       full-fledged module for that.
   * debian/default.pa.maemo:
     + Overall cleaning, to make it usable with regular x86 desktop.
+  * debian/rules:
+    + Remove broken -ftree-vectorize.
 
  -- Maemo Multimedia <multimedia@maemo.org>  Wed, 11 Feb 2009 15:54:29 +0200
 
