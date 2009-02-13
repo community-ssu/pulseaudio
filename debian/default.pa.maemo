@@ -1,63 +1,87 @@
 .fail
 
+###################################
+#       PA initialization         #
+###################################
+
 load-module module-native-protocol-unix
 load-module module-simple-protocol-unix
+
+### Automatically restore the volume of streams and devices
+load-module module-device-restore
+load-module module-card-restore
+load-module module-stream-restore
+load-module module-rescue-streams
 load-module module-suspend-on-idle
+
+### Automatically augment property information from .desktop files
+### stored in /usr/share/application
+load-module module-augment-properties
+
 load-module module-null-sink sink_name=sink.null
 load-module module-null-sink sink_name=source.null rate=8000 channels=1
+
+### FIXME, why do we have this?
 load-module module-null-sink sink_name=source.music
 
-.ifexists module-device-restore.so
-load-module module-device-restore
-.endif
+###################################
+#       default sink/src          #
+###################################
 
-.ifexists module-stream-restore.so
-load-module module-stream-restore
-.endif
+### Default static drivers
+load-module module-alsa-sink-old sink_name=sink.hw0 device=hw:0 rate=48000 fragment_size=960 fragments=10
+load-module module-alsa-source-old source_name=source.hw0 device=hw:0 rate=48000 fragment_size=960 fragments=10
 
-# glitch-free is off by default
 # load-module module-alsa-sink sink_name=sink.hw0 device=hw:0 rate=48000 fragment_size=960 fragments=4 tsched=0 hwbuf_min_frames_to_write=32
 
-load-module module-alsa-sink-old sink_name=sink.hw0 device=hw:0 rate=48000 fragment_size=3840 fragments=2 alt_fragment_size=960 alt_fragments=2 mixer=HP_DAC
-load-module module-alsa-source-old source_name=source.hw0 device=hw:0 rate=48000 fragment_size=1920 fragments=2 alt_fragment_size=960 alt_fragments=2 mixer=PGA_Capture
-
-load-module module-alsa-sink-old sink_name=sink.hw1 device=hw:0,1 rate=8000 channels=1 fragment_size=80 fragments=2
-load-module module-alsa-source-old source_name=source.hw1 device=hw:0,1 rate=8000 channels=1 fragment_size=80 fragments=2
-
+### Nokia audio enhancements modules
 .ifexists module-nokia-voice.so
 load-module module-nokia-voice master_sink=sink.hw0 master_source=source.hw0 dbus_type=system
 .endif
-
 .ifexists module-nokia-music.so
 load-module module-nokia-music sink_name=sink.music master_sink=sink.voice.raw
 .endif
 
+set-default-sink sink.music
+set-default-source source.voice
+
+### Bluetooth OMAP SCO over PCM
 .nofail
 
-.ifexists module-bluetooth-discover.so
-load-module module-bluetooth-discover over_sink=sink.hw1 over_source=source.hw1
-.endif
+load-module module-alsa-sink-old sink_name=sink.hw1 device=hw:0,1 rate=8000 channels=1 fragment_size=80 fragments=2
+load-module module-alsa-source-old source_name=source.hw1 device=hw:0,1 rate=8000 channels=1 fragment_size=80 fragments=2
 
-.ifexists module-rescue-streams.so
-load-module module-rescue-streams
-.endif
+### Automatically load driver modules for Bluetooth hardware
+load-module module-bluetooth-discover sco_sink=sink.hw1 sco_source=source.hw1
+
+###################################
+#         other modules           #
+###################################
 
 .ifexists module-position-event-sounds.so
 load-module module-position-event-sounds
 .endif
 
 .ifexists module-esound-protocol-unix.so
-load-module module-esound-protocol-unix auth-anonymous=1
+load-module module-esound-protocol-unix
 .endif
 
-.ifexists module-nokia-audiots.so
-load-module module-nokia-audiots hw_sink_name=sink.hw0 port=3001
+.ifexists module-native-protocol-tcp.so
+load-module module-native-protocol-tcp auth-anonymous=1
 .endif
 
-set-default-sink sink.music
-set-default-source source.voice
+.ifexists module-zeroconf-publish.so
+load-module module-zeroconf-publish
+.endif
+
+.ifexists module-zeroconf-discover.so
+load-module module-zeroconf-discover
+.endif
 
 .ifexists module-policy-enforcement.so
 load-module module-policy-enforcement
 .endif
 
+.ifexists module-nokia-audiots.so
+load-module module-nokia-audiots hw_sink_name=sink.hw0 port=3001
+.endif

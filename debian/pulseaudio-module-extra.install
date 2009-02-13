@@ -4,8 +4,8 @@ usr/lib/pulse-*/modules/librtp.so
 usr/lib/pulse-*/modules/module-bluetooth-proximity.so
 usr/lib/pulse-*/modules/module-cli-protocol-tcp.so
 usr/lib/pulse-*/modules/module-cli-protocol-unix.so
-usr/lib/pulse-*/modules/module-card-restore.so
 usr/lib/pulse-*/modules/module-console-kit.so
+usr/lib/pulse-*/modules/module-cork-music-on-phone.so
 usr/lib/pulse-*/modules/module-default-device-restore.so
 usr/lib/pulse-*/modules/module-detect.so
 usr/lib/pulse-*/modules/module-esound-sink.so
