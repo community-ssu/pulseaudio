@@ -15,11 +15,15 @@ else
 endif
 
 ifneq (,$(findstring vfp,$(DEB_BUILD_OPTIONS)))
+ifeq ($(DEB_BUILD_ARCH), armel)
 	CFLAGS += -mfpu=neon -mfloat-abi=softfp
+endif
 endif
 
 ifneq (,$(findstring thumb,$(DEB_BUILD_OPTIONS)))
+ifeq ($(DEB_BUILD_ARCH), armel)
 	CFLAGS += -mthumb
+endif
 endif
 
 binary-install/pulseaudio::
