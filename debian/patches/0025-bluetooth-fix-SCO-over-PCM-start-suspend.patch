@@ -1,0 +1,90 @@
+From 1b3a9da133593231a09663dcb1ceeab6e7dc4467 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Tue, 17 Feb 2009 17:53:28 +0200
+Subject: [PATCH 25/27] bluetooth: fix SCO over PCM start/suspend
+
+---
+ src/modules/bluetooth/module-bluetooth-device.c |   21 ++++++++++++++-------
+ 1 files changed, 14 insertions(+), 7 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index d632c3b..5d348fc 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -158,6 +158,8 @@ struct userdata {
+     int service_write_type, service_read_type;
+ };
+ 
++#define USE_SCO_OVER_PCM(u) (u->profile == PROFILE_HSP && (u->hsp.sco_sink && u->hsp.sco_source))
++
+ static int init_bt(struct userdata *u);
+ static int init_profile(struct userdata *u);
+ 
+@@ -651,7 +653,7 @@ static int set_conf(struct userdata *u) {
+     return 0;
+ }
+ 
+-/* from IO thread */
++/* from IO thread, except in SCO over PCM */
+ static int start_stream_fd(struct userdata *u) {
+     union {
+         bt_audio_msg_header_t rsp;
+@@ -716,7 +718,7 @@ static int stop_stream_fd(struct userdata *u, pa_object *requester) {
+     pa_assert(u->rtpoll_item);
+     pa_assert(u->stream_fd >= 0);
+ 
+-    if (u->profile == PROFILE_HSP) {
++    if (u->profile == PROFILE_HSP && !USE_SCO_OVER_PCM(u)) {
+         pa_assert(requester);
+ 
+         /* only suspend when both are SUSPENDED */
+@@ -1341,8 +1343,6 @@ static char *get_name(const char *type, pa_modargs *ma, const char *device_id, p
+     return pa_sprintf_malloc("bluez_%s.%s", type, n);
+ }
+ 
+-#define USE_SCO_OVER_PCM(u) (u->profile == PROFILE_HSP && (u->hsp.sco_sink && u->hsp.sco_source))
+-
+ static void sco_over_pcm_state_update(struct userdata *u) {
+     pa_assert(u);
+     pa_assert(USE_SCO_OVER_PCM(u));
+@@ -1357,11 +1357,14 @@ static void sco_over_pcm_state_update(struct userdata *u) {
+         if ((init_bt(u) < 0) || (init_profile(u) < 0))
+             pa_log("Can't resume SCO over PCM");
+ 
++        start_stream_fd(u);
+     } else {
+ 
+         if (u->service_fd <= 0)
+             return;
+ 
++        stop_stream_fd(u, NULL);
++
+         pa_log_debug("Closing SCO over PCM");
+         pa_close(u->service_fd);
+         u->service_fd = -1;
+@@ -1610,15 +1613,19 @@ static int start_thread(struct userdata *u) {
+     pa_assert(!u->rtpoll);
+     pa_assert(!u->rtpoll_item);
+ 
++    u->rtpoll = pa_rtpoll_new();
++    pa_thread_mq_init(&u->thread_mq, u->core->mainloop, u->rtpoll);
++
+     if (USE_SCO_OVER_PCM(u)) {
++        if (start_stream_fd(u) < 0)
++            return -1;
++
+         pa_sink_ref(u->sink);
+         pa_source_ref(u->source);
++        /* FIXME: monitor stream_fd error */
+         return 0;
+     }
+ 
+-    u->rtpoll = pa_rtpoll_new();
+-    pa_thread_mq_init(&u->thread_mq, u->core->mainloop, u->rtpoll);
+-
+     if (!(u->thread = pa_thread_new(thread_func, u))) {
+         pa_log_error("Failed to create IO thread");
+         stop_thread(u);
+-- 
+1.6.1.224.gb56c
+

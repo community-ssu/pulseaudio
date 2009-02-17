@@ -1,21 +1,39 @@
-From 02019832fa9e6310aef158527db1a658ea675ec2 Mon Sep 17 00:00:00 2001
-From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
-Date: Fri, 13 Feb 2009 15:09:02 +0200
-Subject: [PATCH 17/21] sbc: add implementation info
+From db66c35fe144d1910270716870bcdb8d77ffc6aa Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Wed, 18 Feb 2009 15:20:08 +0200
+Subject: [PATCH 18/27] bluetooth: update SBC from upstream
 
 ---
- src/modules/bluetooth/sbc.c                 |   14 ++++++++++++++
+ src/modules/bluetooth/sbc.c                 |   18 ++++++++++++++++--
  src/modules/bluetooth/sbc.h                 |    1 +
  src/modules/bluetooth/sbc_primitives.c      |    1 +
  src/modules/bluetooth/sbc_primitives.h      |    1 +
  src/modules/bluetooth/sbc_primitives_mmx.c  |    1 +
  src/modules/bluetooth/sbc_primitives_neon.c |    1 +
- 6 files changed, 19 insertions(+), 0 deletions(-)
+ 6 files changed, 21 insertions(+), 2 deletions(-)
 
 diff --git a/src/modules/bluetooth/sbc.c b/src/modules/bluetooth/sbc.c
-index 29258d0..e2e7c61 100644
+index 29258d0..a33ed57 100644
 --- a/src/modules/bluetooth/sbc.c
 +++ b/src/modules/bluetooth/sbc.c
+@@ -985,7 +985,7 @@ int sbc_decode(sbc_t *sbc, void *input, int input_len, void *output,
+ 	char *ptr;
+ 	int i, ch, framelen, samples;
+ 
+-	if (!sbc && !input)
++	if (!sbc || !input)
+ 		return -EIO;
+ 
+ 	priv = sbc->priv;
+@@ -1053,7 +1053,7 @@ int sbc_encode(sbc_t *sbc, void *input, int input_len, void *output,
+ 			const uint8_t *pcm, int16_t X[2][SBC_X_BUFFER_SIZE],
+ 			int nsamples, int nchannels);
+ 
+-	if (!sbc && !input)
++	if (!sbc || !input)
+ 		return -EIO;
+ 
+ 	priv = sbc->priv;
 @@ -1221,6 +1221,20 @@ uint16_t sbc_get_codesize(sbc_t *sbc)
  	return subbands * blocks * channels * 2;
  }

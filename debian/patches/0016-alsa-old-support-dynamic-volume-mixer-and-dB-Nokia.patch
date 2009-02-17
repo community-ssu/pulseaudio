@@ -1,18 +1,36 @@
-From 0667a0508b5957cfdb258658a5a873be980ba4d7 Mon Sep 17 00:00:00 2001
+From ff7a26eef05eafc8516fd4ba02c4f035f081a571 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Mon, 2 Feb 2009 12:56:03 +0200
-Subject: [PATCH 10/21] alsa-old: support dynamic volume mixer and dB (Nokia specific)
+Subject: [PATCH 16/27] alsa-old: support dynamic volume mixer and dB (Nokia specific)
 
 - Set mixer controls during init, and dynamic switching by properties.
 - Modify ALSA volume steps using properties (as comma separated values)
 ---
- src/modules/alsa/module-alsa-sink-old.c   |  854 +++++++++++++++++++++++------
- src/modules/alsa/module-alsa-sink-old.h   |   13 +-
- src/modules/alsa/module-alsa-source-old.c |  327 +++++++++--
- 3 files changed, 951 insertions(+), 243 deletions(-)
+ src/modules/alsa/module-alsa-sink-old-symdef.h   |    2 +
+ src/modules/alsa/module-alsa-sink-old.c          |  856 +++++++++++++++++-----
+ src/modules/alsa/module-alsa-sink-old.h          |   13 +-
+ src/modules/alsa/module-alsa-source-old-symdef.h |    2 +
+ src/modules/alsa/module-alsa-source-old.c        |  327 +++++++--
+ 5 files changed, 958 insertions(+), 242 deletions(-)
 
+diff --git a/src/modules/alsa/module-alsa-sink-old-symdef.h b/src/modules/alsa/module-alsa-sink-old-symdef.h
+index 4df382b..0c74afc 100644
+--- a/src/modules/alsa/module-alsa-sink-old-symdef.h
++++ b/src/modules/alsa/module-alsa-sink-old-symdef.h
+@@ -12,9 +12,11 @@
+ #define pa__get_usage module_alsa_sink_old_LTX_pa__get_usage
+ #define pa__get_version module_alsa_sink_old_LTX_pa__get_version
+ #define pa__load_once module_alsa_sink_old_LTX_pa__load_once
++#define pa__get_n_used module_alsa_sink_old_LTX_pa__get_n_used
+ 
+ int pa__init(pa_module*m);
+ void pa__done(pa_module*m);
++int pa__get_n_used(pa_module*m);
+ 
+ const char* pa__get_author(void);
+ const char* pa__get_description(void);
 diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
-index 1a0d766..455801d 100644
+index 1a0d766..3a38420 100644
 --- a/src/modules/alsa/module-alsa-sink-old.c
 +++ b/src/modules/alsa/module-alsa-sink-old.c
 @@ -32,6 +32,10 @@
@@ -35,10 +53,12 @@ index 1a0d766..455801d 100644
          "fragments=<number of fragments> "
          "fragment_size=<fragment size> "
          "alt_fragments=<number of fragments> "
-@@ -75,6 +81,28 @@ PA_MODULE_USAGE(
+@@ -74,6 +80,31 @@ PA_MODULE_USAGE(
+ 
  #define SINK_SWITCH_PRIMARY (0)
  #define SINK_SWITCH_ALTERNATIVE (1)
- 
++#define SINK_DEFAULT_FLAGS PA_SINK_HARDWARE|PA_SINK_LATENCY
++
 +struct mixer_control_t {
 +    char *name;
 +    pa_alsa_fdlist *mixer_fdl;
@@ -48,10 +68,12 @@ index 1a0d766..455801d 100644
 +    unsigned gain_step_count;
 +    long *gain_step;
 +
++    pa_bool_t hw_volume_control;
++
 +    long hw_volume_max, hw_volume_min;
 +    long hw_dB_max, hw_dB_min;
 +    pa_bool_t hw_dB_supported;
-+    pa_bool_t mixer_seperate_channels;
++    pa_bool_t mixer_separate_channels;
 +    pa_cvolume hardware_volume;
 +
 +    /* cache proplist strings */
@@ -60,11 +82,10 @@ index 1a0d766..455801d 100644
 +
 +    PA_LLIST_FIELDS(struct mixer_control_t);
 +};
-+
+ 
  struct userdata {
      pa_core *core;
-     pa_module *module;
-@@ -85,11 +113,7 @@ struct userdata {
+@@ -85,11 +116,7 @@ struct userdata {
      pa_rtpoll *rtpoll;
  
      snd_pcm_t *pcm_handle;
@@ -76,7 +97,7 @@ index 1a0d766..455801d 100644
  
      size_t frame_size, fragment_size, hwbuf_size;
      snd_pcm_uframes_t period_size;
-@@ -107,18 +131,22 @@ struct userdata {
+@@ -107,18 +134,22 @@ struct userdata {
      pa_bool_t switching_enabled;
      int switch_mode;
  
@@ -103,7 +124,7 @@ index 1a0d766..455801d 100644
  };
  
  static const char* const valid_modargs[] = {
-@@ -129,6 +157,8 @@ static const char* const valid_modargs[] = {
+@@ -129,6 +160,8 @@ static const char* const valid_modargs[] = {
      "channels",
      "rate",
      "mixer",
@@ -112,7 +133,7 @@ index 1a0d766..455801d 100644
      "fragments",
      "fragment_size",
      "alt_fragments",
-@@ -138,6 +168,14 @@ static const char* const valid_modargs[] = {
+@@ -138,6 +171,14 @@ static const char* const valid_modargs[] = {
      NULL
  };
  
@@ -127,7 +148,7 @@ index 1a0d766..455801d 100644
  
  static void switch_buffers(struct userdata *u, int switch_mode) {
      unsigned num_inputs = 0;
-@@ -176,6 +214,8 @@ static void switch_buffers(struct userdata *u, int switch_mode) {
+@@ -176,6 +217,8 @@ static void switch_buffers(struct userdata *u, int switch_mode) {
          u->nfragments = u->alt_nfragments;
          u->period_size = u->alt_period_size;
      }
@@ -136,7 +157,7 @@ index 1a0d766..455801d 100644
      pa_proplist_setf(u->sink->proplist,
                       PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE,
                       "%lu", (unsigned long) (u->period_size * u->frame_size * u->nfragments));
-@@ -218,7 +258,7 @@ static int mmap_write(struct userdata *u) {
+@@ -218,7 +261,7 @@ static int mmap_write(struct userdata *u) {
              return -1;
          }
  
@@ -145,7 +166,7 @@ index 1a0d766..455801d 100644
  
          frames = n - (n % u->period_size);
  
-@@ -284,7 +324,7 @@ static int mmap_write(struct userdata *u) {
+@@ -284,7 +327,7 @@ static int mmap_write(struct userdata *u) {
          if (frames >= (snd_pcm_uframes_t) n)
              return work_done;
  
@@ -154,7 +175,7 @@ index 1a0d766..455801d 100644
      }
  }
  
-@@ -313,7 +353,7 @@ static int unix_write(struct userdata *u) {
+@@ -313,7 +356,7 @@ static int unix_write(struct userdata *u) {
  
          l = snd_pcm_status_get_avail(status) * u->frame_size;
  
@@ -163,7 +184,7 @@ index 1a0d766..455801d 100644
  
          l = l - (l % u->fragment_size);
  
-@@ -329,7 +369,7 @@ static int unix_write(struct userdata *u) {
+@@ -329,7 +372,7 @@ static int unix_write(struct userdata *u) {
          t = snd_pcm_writei(u->pcm_handle, (const uint8_t*) p + u->memchunk.index, u->memchunk.length / u->frame_size);
          pa_memblock_release(u->memchunk.memblock);
  
@@ -172,7 +193,7 @@ index 1a0d766..455801d 100644
  
          pa_assert(t != 0);
  
-@@ -491,7 +531,7 @@ static int unsuspend(struct userdata *u) {
+@@ -491,7 +534,7 @@ static int unsuspend(struct userdata *u) {
  
      return 0;
  
@@ -181,7 +202,7 @@ index 1a0d766..455801d 100644
      if (u->pcm_handle) {
          snd_pcm_close(u->pcm_handle);
          u->pcm_handle = NULL;
-@@ -545,7 +585,10 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+@@ -545,7 +588,10 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
  
                  case PA_SINK_UNLINKED:
                  case PA_SINK_INIT:
@@ -193,7 +214,7 @@ index 1a0d766..455801d 100644
              }
  
              break;
-@@ -554,6 +597,9 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+@@ -554,6 +600,9 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
              break;
          case PA_SINK_MESSAGE_REMOVE_INPUT:
              break;
@@ -203,7 +224,7 @@ index 1a0d766..455801d 100644
      }
  
      return pa_sink_process_msg(o, code, data, offset, chunk);
-@@ -576,110 +622,274 @@ static int mixer_callback(snd_mixer_elem_t *elem, unsigned int mask) {
+@@ -576,110 +625,279 @@ static int mixer_callback(snd_mixer_elem_t *elem, unsigned int mask) {
      return 0;
  }
  
@@ -237,7 +258,7 @@ index 1a0d766..455801d 100644
  
 -    for (i = 0; i < s->sample_spec.channels; i++) {
 -        long set_vol, vol;
-+    if (u->active_mixer->mixer_seperate_channels) {
++    if (u->active_mixer->mixer_separate_channels) {
  
 -        pa_assert(snd_mixer_selem_has_playback_channel(u->mixer_elem, u->mixer_map[i]));
 +        r.channels = u->sink->sample_spec.channels;
@@ -302,8 +323,7 @@ index 1a0d766..455801d 100644
 +
 +        if (u->active_mixer->hw_dB_supported) {
 +            pa_cvolume reset;
- 
--fail:
++
 +            /* Hmm, so the hardware volume changed, let's reset our software volume */
 +            pa_cvolume_reset(&reset, u->sink->sample_spec.channels);
 +            pa_sink_set_soft_volume(s, &reset);
@@ -311,7 +331,8 @@ index 1a0d766..455801d 100644
 +    }
 +
 +    return;
-+
+ 
+-fail:
 + fail:
      pa_log_error("Unable to read volume: %s", snd_strerror(err));
 +}
@@ -353,7 +374,7 @@ index 1a0d766..455801d 100644
  
 -    for (i = 0; i < s->sample_spec.channels; i++) {
 -        long alsa_vol;
-+    if (m->mixer_seperate_channels) {
++    if (m->mixer_separate_channels) {
 +
 +        r.channels = u->sink->sample_spec.channels;
 +
@@ -472,18 +493,23 @@ index 1a0d766..455801d 100644
 -    s->set_volume = NULL;
 -    return -1;
 +    return 1;
-+}
-+
+ }
+ 
+-static int sink_get_mute_cb(pa_sink *s) {
 +static void sink_set_volume_cb(pa_sink *s) {
 +    struct userdata *u = s->userdata;
++
++    if (!u->active_mixer) {
++        pa_log_warn("%s: no active mixer (sink_set_volume_cb)", u->device_name);
++        return;
++    }
 +
 +    if (set_alsa_mixer_volumes(u, u->active_mixer, &s->virtual_volume)) {
 +        s->get_volume = NULL;
 +        s->set_volume = NULL;
 +    }
- }
- 
--static int sink_get_mute_cb(pa_sink *s) {
++}
++
 +static void sink_get_mute_cb(pa_sink *s) {
      struct userdata *u = s->userdata;
      int err, sw;
@@ -530,7 +556,7 @@ index 1a0d766..455801d 100644
  }
  
  static void thread_func(void *userdata) {
-@@ -783,130 +993,297 @@ static void thread_func(void *userdata) {
+@@ -783,130 +1001,295 @@ static void thread_func(void *userdata) {
          }
      }
  
@@ -574,24 +600,45 @@ index 1a0d766..455801d 100644
 -            char *md = pa_sprintf_malloc("hw:%s", dev_id);
 +    for (m = u->mixer_list; m; m = m->next) {
 +        if (strcmp(mixer, m->name) == 0) {
++            pa_log_info("%s: setting active mixer to %s", u->device_name, m->name);
++
++            u->sink->flags = SINK_DEFAULT_FLAGS;
++
++            if (m->hw_volume_control) {
++                if (m->hw_dB_supported) {
++                    if (m->hw_dB_max > 0) {
++                        u->sink->base_volume = pa_sw_volume_from_dB(- (double) m->hw_dB_max/100.0);
++                        pa_log_info("Fixing base volume to %0.2f dB", pa_sw_volume_to_dB(u->sink->base_volume));
++                    } else
++                        pa_log_info("No particular base volume set, fixing to 0 dB");
++                }
++                u->sink->get_volume = sink_get_volume_cb;
++                u->sink->set_volume = sink_set_volume_cb;
  
 -            if (strcmp(u->device_name, md))
 -                if (pa_alsa_prepare_mixer(u->mixer_handle, md) >= 0)
 -                    found = TRUE;
-+            if (snd_mixer_selem_has_playback_volume(m->mixer_elem))
-+                if (pa_alsa_calc_mixer_map(m->mixer_elem, &u->channel_map, m->mixer_map, TRUE) >= 0) {
-+                    u->sink->get_volume = sink_get_volume_cb;
-+                    u->sink->set_volume = sink_set_volume_cb;
-+                    u->sink->flags |= PA_SINK_HW_VOLUME_CTRL;
-+                }
++                u->sink->flags |= PA_SINK_HW_VOLUME_CTRL | (m->hw_dB_supported ? PA_SINK_DECIBEL_VOLUME : 0);
++                pa_log_info("Using hardware volume control. Hardware dB scale %s.", m->hw_dB_supported ? "supported" : "not supported");
  
 -            pa_xfree(md);
--        }
-+            if (snd_mixer_selem_has_playback_switch(m->mixer_elem)) {
-+                u->sink->get_mute = sink_get_mute_cb;
-+                u->sink->set_mute = sink_set_mute_cb;
-+                u->sink->flags |= PA_SINK_HW_VOLUME_CTRL;
++                if (!m->hw_dB_supported)
++                    u->sink->n_volume_steps = m->hw_volume_max - m->hw_volume_min + 1;
++            } else {
++                u->sink->get_volume = NULL;
++                u->sink->set_volume = NULL;
++                pa_log_info("Using software volume control.");
 +            }
++
++        if (snd_mixer_selem_has_playback_switch(m->mixer_elem)) {
++            u->sink->get_mute = sink_get_mute_cb;
++            u->sink->set_mute = sink_set_mute_cb;
++            u->sink->flags |= PA_SINK_HW_MUTE_CTRL;
++        } else {
++            u->sink->get_mute = NULL;
++            u->sink->set_mute = NULL;
++            pa_log_info("Using software mute control.");
+         }
  
 -        if (!found) {
 -            snd_mixer_close(u->mixer_handle);
@@ -605,7 +652,6 @@ index 1a0d766..455801d 100644
 -    return 0;
 +
 +    if (found) {
-+        pa_log_info("%s: setting active mixer to %s", u->device_name, u->active_mixer->name);
 +        return 0;
 +    } else {
 +        pa_log_info("%s: no preloaded mixer %s found", u->device_name, mixer);
@@ -663,6 +709,10 @@ index 1a0d766..455801d 100644
  
 -        if (snd_mixer_selem_has_playback_volume(mixer_elem))
 -            if (pa_alsa_calc_mixer_map(mixer_elem, &u->channel_map, mixer_map, TRUE) >= 0) {
+-                u->sink->get_volume = sink_get_volume_cb;
+-                u->sink->set_volume = sink_set_volume_cb;
+-                snd_mixer_selem_get_playback_volume_range(mixer_elem, &u->hw_volume_min, &u->hw_volume_max);
+-                u->sink->flags |= PA_SINK_HW_VOLUME_CTRL;
 +        m = pa_xnew0(struct mixer_control_t, 1);
 +        PA_LLIST_INIT(struct mixer_control_t, m);
 +
@@ -679,8 +729,12 @@ index 1a0d766..455801d 100644
 +            else {
 +                pa_log_info("Volume ranges from %li to %li.", m->hw_volume_min, m->hw_volume_max);
 +                suitable = TRUE;
-+            }
-+
+             }
+ 
+-        if (snd_mixer_selem_has_playback_switch(mixer_elem)) {
+-            u->sink->get_mute = sink_get_mute_cb;
+-            u->sink->set_mute = sink_set_mute_cb;
+-            u->sink->flags |= PA_SINK_HW_VOLUME_CTRL;
 +            if (suitable) {
 +                if (u->ignore_dB || snd_mixer_selem_get_playback_dB_range(m->mixer_elem, &m->hw_dB_min, &m->hw_dB_max) < 0)
 +                    pa_log_info("Mixer doesn't support dB information or data is ignored.");
@@ -695,12 +749,6 @@ index 1a0d766..455801d 100644
 +                    else {
 +                        pa_log_info("Volume ranges from %0.2f dB to %0.2f dB.", (double) m->hw_dB_min/100.0, (double) m->hw_dB_max/100.0);
 +                        m->hw_dB_supported = TRUE;
-+
-+                        if (m->hw_dB_max > 0) {
-+                            u->sink->base_volume = pa_sw_volume_from_dB(- (double) m->hw_dB_max/100.0);
-+                            pa_log_info("Fixing base volume to %0.2f dB", pa_sw_volume_to_dB(u->sink->base_volume));
-+                        } else
-+                            pa_log_info("No particular base volume set, fixing to 0 dB");
 +                    }
 +                }
 +
@@ -712,35 +760,13 @@ index 1a0d766..455801d 100644
 +                }
 +            }
 +
++            m->hw_volume_control = suitable;
++
 +            if (suitable) {
-+                m->mixer_seperate_channels = pa_alsa_calc_mixer_map(m->mixer_elem, &map, m->mixer_map, TRUE) >= 0;
-+
-                 u->sink->get_volume = sink_get_volume_cb;
-                 u->sink->set_volume = sink_set_volume_cb;
--                snd_mixer_selem_get_playback_volume_range(mixer_elem, &u->hw_volume_min, &u->hw_volume_max);
--                u->sink->flags |= PA_SINK_HW_VOLUME_CTRL;
--            }
- 
--        if (snd_mixer_selem_has_playback_switch(mixer_elem)) {
-+                /* FIXME: Hmmm.. mouhahaha! */
-+                u->sink->flags |= PA_SINK_HW_VOLUME_CTRL | (m->hw_dB_supported ? PA_SINK_DECIBEL_VOLUME : 0);
-+                pa_log_info("Using hardware volume control. Hardware dB scale %s.", m->hw_dB_supported ? "supported" : "not supported");
-+
-+                if (!m->hw_dB_supported)
-+                    u->sink->n_volume_steps = m->hw_volume_max - m->hw_volume_min + 1;
++                m->mixer_separate_channels = (pa_alsa_calc_mixer_map(m->mixer_elem, &map, m->mixer_map, TRUE) >= 0);
 +            } else
 +                pa_log_info("Using software volume control.");
-+        }
-+
-+        if (snd_mixer_selem_has_playback_switch(m->mixer_elem)) {
-             u->sink->get_mute = sink_get_mute_cb;
-             u->sink->set_mute = sink_set_mute_cb;
--            u->sink->flags |= PA_SINK_HW_VOLUME_CTRL;
--        }
-+            /* FIXME: Hmmm.. mouhahaha! */
-+            u->sink->flags |= PA_SINK_HW_MUTE_CTRL;
-+        } else
-+            pa_log_info("Using software mute control.");
+         }
  
 -        mixer_fdl = pa_alsa_fdlist_new();
 +        m->mixer_fdl = pa_alsa_fdlist_new();
@@ -751,11 +777,16 @@ index 1a0d766..455801d 100644
 -            //return -1; // goto fail;
 -            goto done;
 +            goto fail;
-+        }
-+
+         }
+ 
+-        snd_mixer_elem_set_callback(mixer_elem, mixer_callback);
+-        snd_mixer_elem_set_callback_private(mixer_elem, u);
 +        snd_mixer_elem_set_callback(m->mixer_elem, mixer_callback);
 +        snd_mixer_elem_set_callback_private(m->mixer_elem, u);
-+
+ 
+-        u->mixer_elem = mixer_elem;
+-        u->mixer_fdl = mixer_fdl;
+-        memcpy(&u->mixer_map, &mixer_map, sizeof(snd_mixer_selem_channel_id_t)*SND_MIXER_SCHN_LAST);
 +        /* cache proplist strings */
 +        m->prop_mixer_gain_step_count = pa_sprintf_malloc(PA_ALSA_SINK_PROP_MIXER_GAIN_STEP_COUNT, m->name);
 +        replace_chars(m->prop_mixer_gain_step_count, ' ', '_');
@@ -763,11 +794,12 @@ index 1a0d766..455801d 100644
 +        replace_chars(m->prop_mixer_gain_step, ' ', '_');
 +
 +        pa_log_info("%s: new mixer found: %s", u->device_name, m->name);
-+
-+    } else {
-+        m->mixer_fdl = NULL;
 +    }
-+
+ 
+-        /* Remember selected mixer name */
+-        if (u->mixer_name && ret > -1) {
+-            pa_xfree(u->mixer_name);
+-            u->mixer_name = NULL;
 +    return m;
 + fail:
 +    if (m) {
@@ -775,22 +807,15 @@ index 1a0d766..455801d 100644
 +            pa_alsa_fdlist_free(m->mixer_fdl);
 +            m->mixer_fdl = NULL;
          }
- 
--        snd_mixer_elem_set_callback(mixer_elem, mixer_callback);
--        snd_mixer_elem_set_callback_private(mixer_elem, u);
+-        if (!u->mixer_name)
+-            u->mixer_name = pa_xstrdup(mixer);
++
 +        pa_xfree(m);
 +    }
- 
--        u->mixer_elem = mixer_elem;
--        u->mixer_fdl = mixer_fdl;
--        memcpy(&u->mixer_map, &mixer_map, sizeof(snd_mixer_selem_channel_id_t)*SND_MIXER_SCHN_LAST);
++
 +    return NULL;
 +}
- 
--        /* Remember selected mixer name */
--        if (u->mixer_name && ret > -1) {
--            pa_xfree(u->mixer_name);
--            u->mixer_name = NULL;
++
 +static int get_mixer_elements(struct userdata *u, const char *mixer_list) {
 +    const char *state = NULL;
 +    struct mixer_control_t *m = NULL;
@@ -805,9 +830,7 @@ index 1a0d766..455801d 100644
 +                PA_LLIST_PREPEND(struct mixer_control_t, u->mixer_list, m);
 +            }
 +            pa_xfree(mixer);
-         }
--        if (!u->mixer_name)
--            u->mixer_name = pa_xstrdup(mixer);
++        }
 +    }
 +
 +    return 0;
@@ -830,6 +853,8 @@ index 1a0d766..455801d 100644
 +static void free_mixer_elements(struct userdata *u) {
 +    struct mixer_control_t *m;
 +    pa_log_debug("free mixer elements");
++
++    u->active_mixer = NULL;
 +
 +    while ((m = u->mixer_list)) {
 +        PA_LLIST_REMOVE(struct mixer_control_t, u->mixer_list, m);
@@ -855,10 +880,8 @@ index 1a0d766..455801d 100644
 -        u->mixer_fdl = NULL;
 +        pa_log_warn("Step count <= 0");
 +        return 1;
-     }
- 
--done:
--    return ret;
++    }
++
 +    while ((num_str = pa_split(step_list, ",", &state))) {
 +        if (num_str) {
 +            if (i >= m->gain_step_count) {
@@ -873,8 +896,10 @@ index 1a0d766..455801d 100644
 +            i++;
 +            pa_xfree(num_str);
 +        }
-+    }
-+
+     }
+ 
+-done:
+-    return ret;
 +    if (i != m->gain_step_count)
 +        goto bad_data;
 +
@@ -905,43 +930,36 @@ index 1a0d766..455801d 100644
  
      pa_assert(u);
      pa_assert(s);
-@@ -921,17 +1298,60 @@ static pa_hook_result_t sink_proplist_changed_hook_callback(pa_core *c, pa_sink
-         }
-     }
+@@ -923,15 +1306,56 @@ static pa_hook_result_t sink_proplist_changed_hook_callback(pa_core *c, pa_sink
  
--    v = pa_proplist_gets(s->proplist, PA_ALSA_SINK_PROP_MIXER);
--    if (v) {
+     v = pa_proplist_gets(s->proplist, PA_ALSA_SINK_PROP_MIXER);
+     if (v) {
 -        if (strcmp(v, u->mixer_name) != 0) {
--            pa_log_info("select mixer: %s", v);
++        if (!u->active_mixer || strcmp(v, u->active_mixer->name) != 0) {
++
+             pa_log_info("select mixer: %s", v);
 -            if (set_alsa_mixer(u, v) < 0) {
 -                pa_log_debug("reset old mixer name");
 -                pa_proplist_sets(s->proplist, PA_ALSA_SINK_PROP_MIXER, u->mixer_name);
-+    if (u->active_mixer) {
-+        v = pa_proplist_gets(s->proplist, PA_ALSA_SINK_PROP_MIXER);
-+        if (v) {
-+            if (strcmp(v, u->active_mixer->name) != 0) {
 +
-+                pa_log_info("select mixer: %s", v);
-+
-+                vol = pa_sink_get_volume(u->sink, TRUE);
-+                muted = pa_sink_get_mute(u->sink, TRUE);
-+                if (u->mixer_off_volume.channels > 0)
-+                    set_alsa_mixer_volumes(u, u->active_mixer, &u->mixer_off_volume);
++            vol = pa_sink_get_volume(u->sink, TRUE);
++            muted = pa_sink_get_mute(u->sink, TRUE);
++            if (u->mixer_off_volume.channels > 0)
++                set_alsa_mixer_volumes(u, u->active_mixer, &u->mixer_off_volume);
++            if (set_mixer_elem_by_name(u, v)) {
++                /* try to load new mixer element */
++                get_mixer_elements(u, v);
 +                if (set_mixer_elem_by_name(u, v)) {
-+                    /* try to load new mixer element */
-+                    get_mixer_elements(u, v);
-+                    if (set_mixer_elem_by_name(u, v)) {
-+                        pa_log_error("%s: cannot load new mixer control %s", u->device_name, v);
-+                        /* set correct mixer name to properties */
-+                        pa_proplist_sets(s->proplist, PA_ALSA_SINK_PROP_MIXER, u->active_mixer->name);
-+                    }
++                    pa_log_error("%s: cannot load new mixer control %s", u->device_name, v);
++                    /* set correct mixer name to properties */
++                    pa_proplist_sets(s->proplist, PA_ALSA_SINK_PROP_MIXER, u->active_mixer->name);
 +                }
+             }
 +
-+                update_volumes = TRUE;
-+            }
-+        }
-+    }
-+
++            update_volumes = TRUE;
+         }
+     }
+ 
 +    if (u->active_mixer) {
 +        v = pa_proplist_gets(s->proplist, u->active_mixer->prop_mixer_gain_step_count);
 +        if (v) {
@@ -961,10 +979,10 @@ index 1a0d766..455801d 100644
 +                    }
 +                    update_volumes = TRUE;
 +                }
-             }
-         }
-     }
- 
++            }
++        }
++    }
++
 +    if (update_volumes) {
 +        pa_sink_set_volume(u->sink, vol, TRUE, TRUE);
 +        pa_sink_set_mute(u->sink, muted);
@@ -973,7 +991,7 @@ index 1a0d766..455801d 100644
      return PA_HOOK_OK;
  }
  
-@@ -943,7 +1363,9 @@ int pa__init(pa_module*m) {
+@@ -943,7 +1367,9 @@ int pa__init(pa_module*m) {
      pa_sample_spec ss;
      pa_channel_map map;
      char *alsa_mixer = NULL;
@@ -984,7 +1002,7 @@ index 1a0d766..455801d 100644
      uint32_t nfrags, frag_size;
      uint32_t alt_nfrags, alt_frag_size;
      snd_pcm_uframes_t period_size;
-@@ -959,6 +1381,8 @@ int pa__init(pa_module*m) {
+@@ -959,6 +1385,8 @@ int pa__init(pa_module*m) {
      pa_bool_t use_mmap = TRUE, b, d;
      pa_sink_new_data data;
      const pa_alsa_profile_info *profile;
@@ -993,7 +1011,7 @@ index 1a0d766..455801d 100644
  
      snd_pcm_info_alloca(&pcm_info);
  
-@@ -975,11 +1399,29 @@ int pa__init(pa_module*m) {
+@@ -975,11 +1403,29 @@ int pa__init(pa_module*m) {
          goto fail;
      }
  
@@ -1027,7 +1045,7 @@ index 1a0d766..455801d 100644
      }
  
      frame_size = pa_frame_size(&ss);
-@@ -1017,11 +1459,19 @@ int pa__init(pa_module*m) {
+@@ -1017,11 +1463,19 @@ int pa__init(pa_module*m) {
      }
  
      u = pa_xnew0(struct userdata, 1);
@@ -1047,7 +1065,7 @@ index 1a0d766..455801d 100644
      u->core = m->core;
      u->module = m;
      m->userdata = u;
-@@ -1087,7 +1537,39 @@ int pa__init(pa_module*m) {
+@@ -1087,7 +1541,39 @@ int pa__init(pa_module*m) {
      frame_size = pa_frame_size(&ss);
      alt_frame_size = pa_frame_size(&ss);
  
@@ -1088,7 +1106,7 @@ index 1a0d766..455801d 100644
  
      if ((name = pa_modargs_get_value(ma, "sink_name", NULL)))
          namereg_fail = 1;
-@@ -1104,7 +1586,7 @@ int pa__init(pa_module*m) {
+@@ -1104,7 +1590,7 @@ int pa__init(pa_module*m) {
      pa_sink_new_data_set_sample_spec(&data, &ss);
      pa_sink_new_data_set_channel_map(&data, &map);
  
@@ -1097,7 +1115,16 @@ index 1a0d766..455801d 100644
      pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->device_name);
      pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE, "%lu", (unsigned long) (period_size * frame_size * nfrags));
      pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE, "%lu", (unsigned long) (period_size * frame_size));
-@@ -1154,6 +1636,7 @@ int pa__init(pa_module*m) {
+@@ -1132,7 +1618,7 @@ int pa__init(pa_module*m) {
+                                     use_mmap ? " via DMA" : ""));
+     pa_xfree(t);
+ 
+-    u->sink->flags = PA_SINK_HARDWARE|PA_SINK_LATENCY;
++    u->sink->flags = SINK_DEFAULT_FLAGS;
+ 
+     u->frame_size = frame_size;
+     u->fragment_size = frag_size = period_size * frame_size;
+@@ -1154,6 +1640,7 @@ int pa__init(pa_module*m) {
          u->alt_period_size = alt_period_size;
      }
  
@@ -1105,7 +1132,7 @@ index 1a0d766..455801d 100644
      pa_log_info("PRI: Using %u fragments of size %lu bytes.", nfrags, (long unsigned) u->fragment_size);
      if (u->switching_enabled)
          pa_log_info("ALT: Using %u fragments of size %lu bytes.", alt_nfrags, (long unsigned) u->alt_fragment_size);
-@@ -1161,45 +1644,59 @@ int pa__init(pa_module*m) {
+@@ -1161,45 +1648,59 @@ int pa__init(pa_module*m) {
      pa_memchunk_reset(&u->memchunk);
  
      u->channel_map = map;
@@ -1181,7 +1208,7 @@ index 1a0d766..455801d 100644
      if (ma)
          pa_modargs_free(ma);
  
-@@ -1216,6 +1713,12 @@ void pa__done(pa_module*m) {
+@@ -1216,6 +1717,12 @@ void pa__done(pa_module*m) {
      if (!(u = m->userdata))
          return;
  
@@ -1194,7 +1221,7 @@ index 1a0d766..455801d 100644
      if (u->sink)
          pa_sink_unlink(u->sink);
  
-@@ -1238,9 +1741,6 @@ void pa__done(pa_module*m) {
+@@ -1238,9 +1745,6 @@ void pa__done(pa_module*m) {
      if (u->rtpoll)
          pa_rtpoll_free(u->rtpoll);
  
@@ -1204,7 +1231,7 @@ index 1a0d766..455801d 100644
      if (u->mixer_handle)
          snd_mixer_close(u->mixer_handle);
  
-@@ -1249,8 +1749,6 @@ void pa__done(pa_module*m) {
+@@ -1249,8 +1753,6 @@ void pa__done(pa_module*m) {
          snd_pcm_close(u->pcm_handle);
      }
  
@@ -1236,6 +1263,22 @@ index 69309cd..c230680 100644
  #define PA_ALSA_SINK_PROP_BUFFERS_PRIMARY     "primary"
  #define PA_ALSA_SINK_PROP_BUFFERS_ALTERNATIVE "alternative"
  
+diff --git a/src/modules/alsa/module-alsa-source-old-symdef.h b/src/modules/alsa/module-alsa-source-old-symdef.h
+index 0b5f047..033edd6 100644
+--- a/src/modules/alsa/module-alsa-source-old-symdef.h
++++ b/src/modules/alsa/module-alsa-source-old-symdef.h
+@@ -12,9 +12,11 @@
+ #define pa__get_usage module_alsa_source_old_LTX_pa__get_usage
+ #define pa__get_version module_alsa_source_old_LTX_pa__get_version
+ #define pa__load_once module_alsa_source_old_LTX_pa__load_once
++#define pa__get_n_used module_alsa_source_old_LTX_pa__get_n_used
+ 
+ int pa__init(pa_module*m);
+ void pa__done(pa_module*m);
++int pa__get_n_used(pa_module*m);
+ 
+ const char* pa__get_author(void);
+ const char* pa__get_description(void);
 diff --git a/src/modules/alsa/module-alsa-source-old.c b/src/modules/alsa/module-alsa-source-old.c
 index df873d3..814f2f3 100644
 --- a/src/modules/alsa/module-alsa-source-old.c

@@ -1,0 +1,74 @@
+From 4ca4590876f84befa2789fdb5bb460accf91d4ae Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Tue, 17 Feb 2009 15:43:46 +0200
+Subject: [PATCH 22/27] bluetooth: solve suspend/resume on hsp
+
+Well, this is one way to do it, not sure if it's the best, but I sort
+of liked it. :)
+---
+ src/modules/bluetooth/module-bluetooth-device.c |   22 ++++++++++++++++++----
+ 1 files changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index bd84413..ee0651d 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -702,7 +702,7 @@ static int start_stream_fd(struct userdata *u) {
+ }
+ 
+ /* from IO thread */
+-static int stop_stream_fd(struct userdata *u) {
++static int stop_stream_fd(struct userdata *u, pa_object *requester) {
+     union {
+         bt_audio_msg_header_t rsp;
+         struct bt_stop_stream_req start_req;
+@@ -716,7 +716,16 @@ static int stop_stream_fd(struct userdata *u) {
+     pa_assert(u->rtpoll_item);
+     pa_assert(u->stream_fd >= 0);
+ 
+-    /* FIXME: HSP, only when sink&source suspended */
++    if (u->profile == PROFILE_HSP) {
++        pa_assert(requester);
++
++        /* only suspend when both are SUSPENDED */
++        if (pa_sink_isinstance(requester) && u->source->thread_info.state != PA_SOURCE_SUSPENDED)
++            return 0;
++        if (pa_source_isinstance(requester) && u->sink->thread_info.state != PA_SINK_SUSPENDED)
++            return 0;
++    }
++
+     pa_rtpoll_item_free(u->rtpoll_item);
+     u->rtpoll_item = NULL;
+ 
+@@ -751,7 +760,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+                 case PA_SINK_SUSPENDED:
+                     pa_assert(PA_SINK_IS_OPENED(u->sink->thread_info.state));
+ 
+-                    stop_stream_fd(u); /* FIXME: return value */
++                    stop_stream_fd(u, PA_OBJECT(u->sink)); /* FIXME: return value */
+ 
+                     break;
+ 
+@@ -796,13 +805,18 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
+             switch ((pa_source_state_t) PA_PTR_TO_UINT(data)) {
+ 
+                 case PA_SOURCE_SUSPENDED:
++                    stop_stream_fd(u, PA_OBJECT(u->source)); /* FIXME: return value */
+                     pa_smoother_pause(u->read_smoother, pa_rtclock_usec());
+                     break;
+ 
+                 case PA_SOURCE_IDLE:
+                 case PA_SOURCE_RUNNING:
+-                    if (u->source->thread_info.state == PA_SOURCE_SUSPENDED)
++                    if (u->source->thread_info.state == PA_SOURCE_SUSPENDED) {
++                        if (u->rtpoll_item == NULL)
++                            start_stream_fd(u); /* FIXME: return value */
+                         pa_smoother_resume(u->read_smoother, pa_rtclock_usec());
++                    }
++
+                     break;
+ 
+                 case PA_SOURCE_UNLINKED:
+-- 
+1.6.1.224.gb56c
+

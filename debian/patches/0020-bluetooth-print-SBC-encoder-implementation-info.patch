@@ -1,7 +1,7 @@
-From 571bd1bbbfa995376e196809f2de4ce5466c9682 Mon Sep 17 00:00:00 2001
-From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+From c9ceb374db1a02cff22e1f800e4611ec665b972e Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Fri, 13 Feb 2009 15:09:16 +0200
-Subject: [PATCH 19/21] bluetooth: print SBC encoder implementation info
+Subject: [PATCH 20/27] bluetooth: print SBC encoder implementation info
 
 The encoder initialization is done lazily, so we can only get the
 information once encoding start. This is abit annoying..
@@ -10,7 +10,7 @@ information once encoding start. This is abit annoying..
  1 files changed, 5 insertions(+), 0 deletions(-)
 
 diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
-index ce73be9..b50e43d 100644
+index 748a2d4..b8f6729 100644
 --- a/src/modules/bluetooth/module-bluetooth-device.c
 +++ b/src/modules/bluetooth/module-bluetooth-device.c
 @@ -904,6 +904,11 @@ static int a2dp_process_render(struct userdata *u) {

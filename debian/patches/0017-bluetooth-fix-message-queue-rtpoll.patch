@@ -1,17 +1,17 @@
-From 33a43ecf1d10cd46f95ea670f0986ea15ea78ba0 Mon Sep 17 00:00:00 2001
+From b1e1c7ee4d4cbf762ff677d8d4502122691e4630 Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Fri, 13 Feb 2009 00:14:48 +0200
-Subject: [PATCH 20/21] bluetooth: fix message queue/rtpoll
+Subject: [PATCH 17/27] bluetooth: fix message queue/rtpoll
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |   16 ++++++++--------
  1 files changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
-index b50e43d..b8f6729 100644
+index 6daae83..35338dc 100644
 --- a/src/modules/bluetooth/module-bluetooth-device.c
 +++ b/src/modules/bluetooth/module-bluetooth-device.c
-@@ -1354,9 +1354,6 @@ static int add_sink(struct userdata *u) {
+@@ -1349,9 +1349,6 @@ static int add_sink(struct userdata *u) {
  
          u->sink->userdata = u;
          u->sink->parent.process_msg = sink_process_msg;
@@ -21,7 +21,7 @@ index b50e43d..b8f6729 100644
      }
  
  /*     u->sink->get_volume = sink_get_volume_cb; */
-@@ -1401,9 +1398,6 @@ static int add_source(struct userdata *u) {
+@@ -1396,9 +1393,6 @@ static int add_source(struct userdata *u) {
  
          u->source->userdata = u;
          u->source->parent.process_msg = source_process_msg;
@@ -31,7 +31,7 @@ index b50e43d..b8f6729 100644
      }
  
  /*     u->source->get_volume = source_get_volume_cb; */
-@@ -1564,11 +1558,17 @@ static int start_thread(struct userdata *u) {
+@@ -1559,11 +1553,17 @@ static int start_thread(struct userdata *u) {
          return -1;
      }
  
