@@ -11,7 +11,6 @@ pulseaudio (0.9.15~git20090203-0maemo2) UNRELEASED; urgency=low
       full-fledged module for that.
   * debian/default.pa.maemo:
     + Overall cleaning, to make it usable with regular x86 desktop.
-    + Disable policy temporarily.
   * debian/rules:
     + Remove broken -ftree-vectorize.
     + Add --disable-legacy-runtime-dir. Fixes NB#101620
