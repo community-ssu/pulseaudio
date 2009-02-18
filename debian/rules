@@ -60,6 +60,7 @@ update-patch-series:
 
 DEB_CONFIGURE_EXTRA_FLAGS =			\
 	--with-realtime-group=pulse-rt		\
+	--disable-legacy-runtime-dir		\
 	--disable-x11				\
 	--disable-nls				\
 	--disable-samplerate			\
