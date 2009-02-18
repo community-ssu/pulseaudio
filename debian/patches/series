@@ -23,5 +23,6 @@
 0023-bluetooth-ignore-a-SCO-socket-read-bug.patch
 0024-bluetooth-do-not-call-stop_stream_fd-if-no-rtpoll_i.patch
 0025-bluetooth-fix-SCO-over-PCM-start-suspend.patch
-0026-autofoo.patch
-0027-Lower-pool-to-16MB-max-Nokia-specific.patch
+0026-Lower-pool-to-16MB-max-Nokia-specific.patch
+0027-pulse-context-add-enable-legacy-runtime-dir.patch
+0028-autofoo.patch

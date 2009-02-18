@@ -1,7 +1,7 @@
 From 6278dc8e228e9bf83e50bda6589f64a14a900485 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 17 Feb 2009 17:04:09 +0200
-Subject: [PATCH 24/27] bluetooth: do not call stop_stream_fd if no rtpoll_item
+Subject: [PATCH 24/28] bluetooth: do not call stop_stream_fd if no rtpoll_item
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |    6 ++++--

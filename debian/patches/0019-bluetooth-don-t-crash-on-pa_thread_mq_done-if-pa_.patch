@@ -1,7 +1,7 @@
 From 44d97da03dd21a0f6df8ec84c388ab0b71ec2e42 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Fri, 13 Feb 2009 12:18:14 +0200
-Subject: [PATCH 19/27] bluetooth: don't crash on pa_thread_mq_done() if pa_init() fail
+Subject: [PATCH 19/28] bluetooth: don't crash on pa_thread_mq_done() if pa_init() fail
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |    4 ++--

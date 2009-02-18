@@ -1,7 +1,7 @@
 From db66c35fe144d1910270716870bcdb8d77ffc6aa Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 18 Feb 2009 15:20:08 +0200
-Subject: [PATCH 18/27] bluetooth: update SBC from upstream
+Subject: [PATCH 18/28] bluetooth: update SBC from upstream
 
 ---
  src/modules/bluetooth/sbc.c                 |   18 ++++++++++++++++--

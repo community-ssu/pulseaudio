@@ -1,7 +1,7 @@
 From b1e1c7ee4d4cbf762ff677d8d4502122691e4630 Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Fri, 13 Feb 2009 00:14:48 +0200
-Subject: [PATCH 17/27] bluetooth: fix message queue/rtpoll
+Subject: [PATCH 17/28] bluetooth: fix message queue/rtpoll
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |   16 ++++++++--------

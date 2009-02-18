@@ -1,0 +1,64 @@
+From b4bc258881ac081f50e4872dc617d15d4035d848 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Wed, 18 Feb 2009 16:51:37 +0200
+Subject: [PATCH 27/28] pulse/context: add --enable-legacy-runtime-dir
+
+---
+ configure.ac        |    6 ++++++
+ src/pulse/context.c |    6 +++++-
+ 2 files changed, 11 insertions(+), 1 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 499af8f..fa333a0 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1160,6 +1160,12 @@ AC_SUBST(PA_SYSTEM_STATE_PATH)
+ #            Output               #
+ ###################################
+ 
++AC_ARG_ENABLE([legacy-runtime-dir],
++        AS_HELP_STRING([--disable-legacy-runtime-dir], [Try to connect on legacy (< 0.9.12) socket paths.]))
++if test "x$enable_legacy_runtime_dir" != "xno" ; then
++        AC_DEFINE(ENABLE_LEGACY_RUNTIME_DIR, [1], [Legacy runtime dir])
++fi
++
+ AC_ARG_ENABLE(
+         [static-bins],
+         AS_HELP_STRING([--enable-static-bins],[Statically link executables.]),
+diff --git a/src/pulse/context.c b/src/pulse/context.c
+index 8105091..d59bb54 100644
+--- a/src/pulse/context.c
++++ b/src/pulse/context.c
+@@ -558,6 +558,7 @@ static void setup_context(pa_context *c, pa_iochannel *io) {
+     pa_context_unref(c);
+ }
+ 
++#if ENABLE_LEGACY_RUNTIME_DIR
+ static char *get_old_legacy_runtime_dir(void) {
+     char *p, u[128];
+     struct stat st;
+@@ -601,10 +602,12 @@ static char *get_very_old_legacy_runtime_dir(void) {
+ 
+     return p;
+ }
+-
++#endif
+ 
+ static pa_strlist *prepend_per_user(pa_strlist *l) {
+     char *ufn;
++
++#if ENABLE_LEGACY_RUNTIME_DIR
+     static char *legacy_dir;
+ 
+     /* The very old per-user instance path (< 0.9.11). This is supported only to ease upgrades */
+@@ -622,6 +625,7 @@ static pa_strlist *prepend_per_user(pa_strlist *l) {
+         pa_xfree(p);
+         pa_xfree(legacy_dir);
+     }
++#endif
+ 
+     /* The per-user instance */
+     if ((ufn = pa_runtime_path(PA_NATIVE_DEFAULT_UNIX_SOCKET))) {
+-- 
+1.6.1.224.gb56c
+
