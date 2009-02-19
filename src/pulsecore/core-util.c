@@ -704,7 +704,7 @@ void pa_reset_priority(void) {
 #endif
 }
 
-static int match(const char *expr, const char *v) {
+int pa_match(const char *expr, const char *v) {
     int k;
     regex_t re;
     int r;
@@ -744,12 +744,12 @@ int pa_parse_boolean(const char *v) {
     /* And then we check language dependant */
     if ((expr = nl_langinfo(YESEXPR)))
         if (expr[0])
-            if ((r = match(expr, v)) > 0)
+            if ((r = pa_match(expr, v)) > 0)
                 return 1;
 
     if ((expr = nl_langinfo(NOEXPR)))
         if (expr[0])
-            if ((r = match(expr, v)) > 0)
+            if ((r = pa_match(expr, v)) > 0)
                 return 0;
 
     errno = EINVAL;
@@ -1411,6 +1411,7 @@ static int make_random_dir_and_link(mode_t m, const char *k) {
         return -1;
     }
 
+    pa_xfree(p);
     return 0;
 }
 
@@ -1443,6 +1444,7 @@ char *pa_get_runtime_dir(void) {
 
     if (pa_make_secure_dir(d, m, (uid_t) -1, (gid_t) -1) < 0)  {
         pa_log_error("Failed to create secure directory: %s", pa_cstrerror(errno));
+        pa_xfree(d);
         goto fail;
     }
 
@@ -2459,7 +2461,7 @@ char *pa_machine_id(void) {
 
         pa_strip_nl(ln);
 
-        if (ln[0])
+        if (r && ln[0])
             return pa_xstrdup(ln);
     }
 
@@ -2603,4 +2605,29 @@ char *pa_unescape(char *p) {
     *d = 0;
 
     return p;
+}
+
+char *pa_realpath(const char *path) {
+    char *r, *t;
+    pa_assert(path);
+
+    /* We want only abolsute paths */
+    if (path[0] != '/') {
+        errno = EINVAL;
+        return NULL;
+    }
+
+#ifndef __GLIBC__
+#error "It's not clear whether this system supports realpath(..., NULL) like GNU libc does. If it doesn't we need a private version of realpath() here."
+#endif
+
+    if (!(r = realpath(path, NULL)))
+        return NULL;
+
+    /* We copy this here in case our pa_xmalloc() is not implemented
+     * on top of libc malloc() */
+    t = pa_xstrdup(r);
+    pa_xfree(r);
+
+    return t;
 }

@@ -638,7 +638,7 @@ AC_ARG_ENABLE([alsa],
         [alsa=auto])
 
 if test "x${alsa}" != xno ; then
-    PKG_CHECK_MODULES(ASOUNDLIB, [ alsa >= 1.0.17 ],
+    PKG_CHECK_MODULES(ASOUNDLIB, [ alsa >= 1.0.19 ],
         [
             HAVE_ALSA=1
             AC_DEFINE([HAVE_ALSA], 1, [Have ALSA?])
@@ -646,7 +646,7 @@ if test "x${alsa}" != xno ; then
         [
             HAVE_ALSA=0
             if test "x$alsa" = xyes ; then
-                AC_MSG_ERROR([*** Needed alsa >= 1.0.17 support not found])
+                AC_MSG_ERROR([*** Needed alsa >= 1.0.19 support not found])
             fi
         ])
 else
@@ -720,6 +720,45 @@ AC_SUBST(GLIB20_CFLAGS)
 AC_SUBST(GLIB20_LIBS)
 AC_SUBST(HAVE_GLIB20)
 AM_CONDITIONAL([HAVE_GLIB20], [test "x$HAVE_GLIB20" = x1])
+
+if test "x$HAVE_GLIB20" = x1 ; then
+   AC_DEFINE([HAVE_GLIB], 1, [Have GLIB?])
+fi
+
+#### GTK2 support (optional) ####
+
+AC_ARG_ENABLE([gtk2],
+    AS_HELP_STRING([--disable-gtk2],[Disable optional Gtk+ 2 support]),
+        [
+            case "${enableval}" in
+                yes) gtk2=yes ;;
+                no) gtk2=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-gtk2) ;;
+            esac
+        ],
+        [gtk2=auto])
+
+if test "x${gtk2}" != xno ; then
+    PKG_CHECK_MODULES(GTK20, [ gtk+-2.0 >= 2.4.0 ],
+        HAVE_GTK20=1,
+        [
+            HAVE_GTK20=0
+            if test "x$gtk2" = xyes ; then
+                AC_MSG_ERROR([*** Gtk+ 2 support not found])
+            fi
+        ])
+else
+    HAVE_GTK20=0
+fi
+
+AC_SUBST(GTK20_CFLAGS)
+AC_SUBST(GTK20_LIBS)
+AC_SUBST(HAVE_GTK20)
+AM_CONDITIONAL([HAVE_GTK20], [test "x$HAVE_GTK20" = x1])
+
+if test "x$HAVE_GTK20" = x1 ; then
+   AC_DEFINE([HAVE_GTK], 1, [Have GTK?])
+fi
 
 #### GConf support (optional) ####
 
@@ -1048,6 +1087,27 @@ AC_SUBST(POLKIT_LIBS)
 AC_SUBST(HAVE_POLKIT)
 AM_CONDITIONAL([HAVE_POLKIT], [test "x$HAVE_POLKIT" = x1])
 
+
+### IPv6 connection support (optional) ###
+
+AC_ARG_ENABLE([ipv6],
+    AS_HELP_STRING([--disable-ipv6],[Disable optional IPv6 support]),
+        [
+            case "${enableval}" in
+                yes) ipv6=yes ;;
+                no) ipv6=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-ipv6) ;;
+            esac
+        ],
+        [ipv6=auto])
+
+if test "x${ipv6}" != xno ; then
+    AC_DEFINE([HAVE_IPV6], [1], [Define this to enable IPv6 connection support])
+    HAVE_IPV6=1
+else
+    HAVE_IPV6=0
+fi
+
 #### OpenSSL support (optional) ####
 
 AC_ARG_ENABLE([openssl],
@@ -1160,6 +1220,12 @@ AC_SUBST(PA_SYSTEM_STATE_PATH)
 #            Output               #
 ###################################
 
+AC_ARG_ENABLE([legacy-runtime-dir],
+        AS_HELP_STRING([--disable-legacy-runtime-dir], [Try to connect on legacy (< 0.9.12) socket paths.]))
+if test "x$enable_legacy_runtime_dir" != "xno" ; then
+        AC_DEFINE(ENABLE_LEGACY_RUNTIME_DIR, [1], [Legacy runtime dir])
+fi
+
 AC_ARG_ENABLE(
         [static-bins],
         AS_HELP_STRING([--enable-static-bins],[Statically link executables.]),
@@ -1229,6 +1295,11 @@ if test "x$HAVE_SOLARIS" = "x1" ; then
    ENABLE_SOLARIS=yes
 fi
 
+ENABLE_GTK20=no
+if test "x$HAVE_GTK20" = "x1" ; then
+   ENABLE_GTK20=yes
+fi
+
 ENABLE_GLIB20=no
 if test "x$HAVE_GLIB20" = "x1" ; then
    ENABLE_GLIB20=yes
@@ -1289,6 +1360,11 @@ if test "x${HAVE_OPENSSL}" = "x1" ; then
    ENABLE_OPENSSL=yes
 fi
 
+ENABLE_IPV6=no
+if test "x${HAVE_IPV6}" = "x1" ; then
+   ENABLE_IPV6=yes
+fi
+
 ENABLE_PER_USER_ESOUND_SOCKET=no
 if test "x$per_user_esound_socket" = "x1" ; then
    ENABLE_PER_USER_ESOUND_SOCKET=yes
@@ -1311,6 +1387,7 @@ echo "
     Enable Alsa:                   ${ENABLE_ALSA}
     Enable Solaris:                ${ENABLE_SOLARIS}
     Enable GLib 2.0:               ${ENABLE_GLIB20}
+    Enable Gtk+ 2.0:               ${ENABLE_GTK20}
     Enable GConf:                  ${ENABLE_GCONF}
     Enable Avahi:                  ${ENABLE_AVAHI}
     Enable Jack:                   ${ENABLE_JACK}
@@ -1321,6 +1398,7 @@ echo "
     Enable TCP Wrappers:           ${ENABLE_TCPWRAP}
     Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}
     Enable PolicyKit:              ${ENABLE_POLKIT}
+    Enable IPv6:                   ${ENABLE_IPV6}
     Enable OpenSSL (for Airtunes): ${ENABLE_OPENSSL}
 
     System User:                   ${PA_SYSTEM_USER}

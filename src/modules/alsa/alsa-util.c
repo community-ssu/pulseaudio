@@ -1,7 +1,7 @@
 /***
   This file is part of PulseAudio.
 
-  Copyright 2004-2006 Lennart Poettering
+  Copyright 2004-2009 Lennart Poettering
   Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
 
   PulseAudio is free software; you can redistribute it and/or modify
@@ -37,6 +37,7 @@
 #include <pulsecore/macro.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/atomic.h>
+#include <pulsecore/core-error.h>
 
 #include "alsa-util.h"
 
@@ -112,7 +113,7 @@ static void io_cb(pa_mainloop_api*a, pa_io_event* e, int fd, pa_io_event_flags_t
 static void defer_cb(pa_mainloop_api*a, pa_defer_event* e, void *userdata) {
     struct pa_alsa_fdlist *fdl = userdata;
     unsigned num_fds, i;
-    int err;
+    int err, n;
     struct pollfd *temp;
 
     pa_assert(a);
@@ -121,7 +122,11 @@ static void defer_cb(pa_mainloop_api*a, pa_defer_event* e, void *userdata) {
 
     a->defer_enable(fdl->defer, 0);
 
-    num_fds = (unsigned) snd_mixer_poll_descriptors_count(fdl->mixer);
+    if ((n = snd_mixer_poll_descriptors_count(fdl->mixer)) < 0) {
+        pa_log("snd_mixer_poll_descriptors_count() failed: %s", snd_strerror(n));
+        return;
+    }
+    num_fds = (unsigned) n;
 
     if (num_fds != fdl->num_fds) {
         if (fdl->fds)
@@ -342,7 +347,8 @@ int pa_alsa_set_hw_params(
         goto finish;
 
     if (_use_mmap) {
-        if ((ret = snd_pcm_hw_params_set_access(pcm_handle, hwparams, SND_PCM_ACCESS_MMAP_INTERLEAVED)) < 0) {
+
+        if (snd_pcm_hw_params_set_access(pcm_handle, hwparams, SND_PCM_ACCESS_MMAP_INTERLEAVED) < 0) {
 
             /* mmap() didn't work, fall back to interleaved */
 
@@ -805,8 +811,7 @@ snd_pcm_t *pa_alsa_open_by_device_string(
                                 SND_PCM_NO_AUTO_CHANNELS|
                                 (reformat ? 0 : SND_PCM_NO_AUTO_FORMAT))) < 0) {
             pa_log_info("Error opening PCM device %s: %s", d, snd_strerror(err));
-            pa_xfree(d);
-            return NULL;
+            goto fail;
         }
 
         if ((err = pa_alsa_set_hw_params(pcm_handle, ss, nfrags, period_size, tsched_size, use_mmap, use_tsched, require_exact_channel_number)) < 0) {
@@ -834,9 +839,9 @@ snd_pcm_t *pa_alsa_open_by_device_string(
             }
 
             pa_log_info("Failed to set hardware parameters on %s: %s", d, snd_strerror(err));
-            pa_xfree(d);
             snd_pcm_close(pcm_handle);
-            return NULL;
+
+            goto fail;
         }
 
         if (dev)
@@ -849,6 +854,11 @@ snd_pcm_t *pa_alsa_open_by_device_string(
 
         return pcm_handle;
     }
+
+fail:
+    pa_xfree(d);
+
+    return NULL;
 }
 
 int pa_alsa_probe_profiles(
@@ -1055,6 +1065,86 @@ success:
         pa_log_info("Using mixer control \"%s\".", snd_mixer_selem_id_get_name(sid));
 
     return elem;
+}
+
+
+int pa_alsa_find_mixer_and_elem(
+        snd_pcm_t *pcm,
+        snd_mixer_t **_m,
+        snd_mixer_elem_t **_e) {
+
+    int err;
+    snd_mixer_t *m;
+    snd_mixer_elem_t *e;
+    pa_bool_t found = FALSE;
+    const char *dev;
+
+    pa_assert(pcm);
+    pa_assert(_m);
+    pa_assert(_e);
+
+    if ((err = snd_mixer_open(&m, 0)) < 0) {
+        pa_log("Error opening mixer: %s", snd_strerror(err));
+        return -1;
+    }
+
+    /* First, try by name */
+    if ((dev = snd_pcm_name(pcm)))
+        if (pa_alsa_prepare_mixer(m, dev) >= 0)
+            found = TRUE;
+
+    /* Then, try by card index */
+    if (!found) {
+        snd_pcm_info_t* info;
+        snd_pcm_info_alloca(&info);
+
+        if (snd_pcm_info(pcm, info) >= 0) {
+            char *md;
+            int card_idx;
+
+            if ((card_idx = snd_pcm_info_get_card(info)) >= 0) {
+
+                md = pa_sprintf_malloc("hw:%i", card_idx);
+
+                if (!dev || !pa_streq(dev, md))
+                    if (pa_alsa_prepare_mixer(m, md) >= 0)
+                        found = TRUE;
+
+                pa_xfree(md);
+            }
+        }
+    }
+
+    if (!found) {
+        snd_mixer_close(m);
+        return -1;
+    }
+
+    switch (snd_pcm_stream(pcm)) {
+
+        case SND_PCM_STREAM_PLAYBACK:
+            e = pa_alsa_find_elem(m, "Master", "PCM", TRUE);
+            break;
+
+        case SND_PCM_STREAM_CAPTURE:
+            e = pa_alsa_find_elem(m, "Capture", "Mic", FALSE);
+            break;
+
+        default:
+            pa_assert_not_reached();
+    }
+
+    if (!e) {
+        snd_mixer_close(m);
+        return -1;
+    }
+
+    pa_assert(e && m);
+
+    *_m = m;
+    *_e = e;
+
+    return 0;
 }
 
 static const snd_mixer_selem_channel_id_t alsa_channel_ids[PA_CHANNEL_POSITION_MAX] = {
@@ -1281,7 +1371,7 @@ void pa_alsa_init_proplist_card(pa_core *c, pa_proplist *p, int card) {
 #endif
 }
 
-void pa_alsa_init_proplist_pcm(pa_core *c, pa_proplist *p, snd_pcm_info_t *pcm_info) {
+void pa_alsa_init_proplist_pcm_info(pa_core *c, pa_proplist *p, snd_pcm_info_t *pcm_info) {
 
     static const char * const alsa_class_table[SND_PCM_CLASS_LAST+1] = {
         [SND_PCM_CLASS_GENERIC] = "generic",
@@ -1302,7 +1392,7 @@ void pa_alsa_init_proplist_pcm(pa_core *c, pa_proplist *p, snd_pcm_info_t *pcm_i
 
     snd_pcm_class_t class;
     snd_pcm_subclass_t subclass;
-    const char *n, *id, *sdn, *cn;
+    const char *n, *id, *sdn, *cn = NULL;
     int card;
 
     pa_assert(p);
@@ -1345,6 +1435,28 @@ void pa_alsa_init_proplist_pcm(pa_core *c, pa_proplist *p, snd_pcm_info_t *pcm_i
         pa_proplist_sets(p, PA_PROP_DEVICE_DESCRIPTION, cn);
     else if (n)
         pa_proplist_sets(p, PA_PROP_DEVICE_DESCRIPTION, n);
+}
+
+void pa_alsa_init_proplist_pcm(pa_core *c, pa_proplist *p, snd_pcm_t *pcm) {
+    snd_pcm_hw_params_t *hwparams;
+    snd_pcm_info_t *info;
+    int bits, err;
+
+    snd_pcm_hw_params_alloca(&hwparams);
+    snd_pcm_info_alloca(&info);
+
+    if ((err = snd_pcm_hw_params_current(pcm, hwparams)) < 0)
+        pa_log_warn("Error fetching hardware parameter info: %s", snd_strerror(err));
+    else {
+
+        if ((bits = snd_pcm_hw_params_get_sbits(hwparams)) >= 0)
+            pa_proplist_setf(p, "alsa.resolution_bits", "%i", bits);
+    }
+
+    if ((err = snd_pcm_info(pcm, info)) < 0)
+        pa_log_warn("Error fetching PCM info: %s", snd_strerror(err));
+    else
+        pa_alsa_init_proplist_pcm_info(c, p, info);
 }
 
 int pa_alsa_recover_from_poll(snd_pcm_t *pcm, int revents) {
@@ -1445,8 +1557,8 @@ snd_pcm_sframes_t pa_alsa_safe_avail_update(snd_pcm_t *pcm, size_t hwbuf_size, c
 
     if (k >= hwbuf_size * 3 ||
         k >= pa_bytes_per_second(ss)*10)
-        pa_log("snd_pcm_avail_update() returned a value that is exceptionally large: %lu bytes (%lu ms) "
-               "Most likely this is an ALSA driver bug. Please report this issue to the PulseAudio developers.",
+        pa_log("snd_pcm_avail_update() returned a value that is exceptionally large: %lu bytes (%lu ms). "
+               "Most likely this is an ALSA driver bug. Please report this issue to the ALSA developers.",
                (unsigned long) k, (unsigned long) (pa_bytes_to_usec(k, ss) / PA_USEC_PER_MSEC));
 
     return n;
@@ -1477,8 +1589,8 @@ int pa_alsa_safe_mmap_begin(snd_pcm_t *pcm, const snd_pcm_channel_area_t **areas
         k >= hwbuf_size * 3 ||
         k >= pa_bytes_per_second(ss)*10)
 
-        pa_log("snd_pcm_mmap_begin() returned a value that is exceptionally large: %lu bytes (%lu ms) "
-               "Most likely this is an ALSA driver bug. Please report this issue to the PulseAudio developers.",
+        pa_log("snd_pcm_mmap_begin() returned a value that is exceptionally large: %lu bytes (%lu ms). "
+               "Most likely this is an ALSA driver bug. Please report this issue to the ALSA developers.",
                (unsigned long) k, (unsigned long) (pa_bytes_to_usec(k, ss) / PA_USEC_PER_MSEC));
 
     return r;

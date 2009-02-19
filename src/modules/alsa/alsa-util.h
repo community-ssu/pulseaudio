@@ -54,6 +54,7 @@ int pa_alsa_set_sw_params(snd_pcm_t *pcm, snd_pcm_uframes_t avail_min);
 
 int pa_alsa_prepare_mixer(snd_mixer_t *mixer, const char *dev);
 snd_mixer_elem_t *pa_alsa_find_elem(snd_mixer_t *mixer, const char *name, const char *fallback, pa_bool_t playback);
+int pa_alsa_find_mixer_and_elem(snd_pcm_t *pcm, snd_mixer_t **_m, snd_mixer_elem_t **_e);
 
 typedef struct pa_alsa_profile_info {
     pa_channel_map map;
@@ -119,8 +120,9 @@ void pa_alsa_dump_status(snd_pcm_t *pcm);
 void pa_alsa_redirect_errors_inc(void);
 void pa_alsa_redirect_errors_dec(void);
 
-void pa_alsa_init_proplist_pcm(pa_core *c, pa_proplist *p, snd_pcm_info_t *pcm_info);
+void pa_alsa_init_proplist_pcm_info(pa_core *c, pa_proplist *p, snd_pcm_info_t *pcm_info);
 void pa_alsa_init_proplist_card(pa_core *c, pa_proplist *p, int card);
+void pa_alsa_init_proplist_pcm(pa_core *c, pa_proplist *p, snd_pcm_t *pcm);
 
 int pa_alsa_recover_from_poll(snd_pcm_t *pcm, int revents);
 

@@ -129,9 +129,6 @@ pa_context *pa_context_new_with_proplist(pa_mainloop_api *mainloop, const char *
 
     pa_init_i18n();
 
-    if (!name && !pa_proplist_contains(p, PA_PROP_APPLICATION_NAME))
-        return NULL;
-
     c = pa_xnew(pa_context, 1);
     PA_REFCNT_INIT(c);
 
@@ -338,8 +335,7 @@ static void pstream_memblock_callback(pa_pstream *p, uint32_t channel, int64_t o
 
     pa_assert(p);
     pa_assert(chunk);
-    pa_assert(chunk->memblock);
-    pa_assert(chunk->length);
+    pa_assert(chunk->length > 0);
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
@@ -347,11 +343,11 @@ static void pstream_memblock_callback(pa_pstream *p, uint32_t channel, int64_t o
 
     if ((s = pa_dynarray_get(c->record_streams, channel))) {
 
-        pa_assert(seek == PA_SEEK_RELATIVE);
-        pa_assert(offset == 0);
-
-        pa_memblockq_seek(s->record_memblockq, offset, seek);
-        pa_memblockq_push_align(s->record_memblockq, chunk);
+        if (chunk->memblock) {
+            pa_memblockq_seek(s->record_memblockq, offset, seek);
+            pa_memblockq_push_align(s->record_memblockq, chunk);
+        } else
+            pa_memblockq_seek(s->record_memblockq, offset+chunk->length, seek);
 
         if (s->read_callback) {
             size_t l;
@@ -558,6 +554,7 @@ static void setup_context(pa_context *c, pa_iochannel *io) {
     pa_context_unref(c);
 }
 
+#if ENABLE_LEGACY_RUNTIME_DIR
 static char *get_old_legacy_runtime_dir(void) {
     char *p, u[128];
     struct stat st;
@@ -601,10 +598,12 @@ static char *get_very_old_legacy_runtime_dir(void) {
 
     return p;
 }
-
+#endif
 
 static pa_strlist *prepend_per_user(pa_strlist *l) {
     char *ufn;
+
+#if ENABLE_LEGACY_RUNTIME_DIR
     static char *legacy_dir;
 
     /* The very old per-user instance path (< 0.9.11). This is supported only to ease upgrades */
@@ -622,6 +621,7 @@ static pa_strlist *prepend_per_user(pa_strlist *l) {
         pa_xfree(p);
         pa_xfree(legacy_dir);
     }
+#endif
 
     /* The per-user instance */
     if ((ufn = pa_runtime_path(PA_NATIVE_DEFAULT_UNIX_SOCKET))) {

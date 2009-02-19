@@ -2560,7 +2560,10 @@ static void command_create_upload_stream(pa_pdispatch *pd, uint32_t command, uin
         if (!(name = pa_proplist_gets(p, PA_PROP_EVENT_ID)))
             name = pa_proplist_gets(p, PA_PROP_MEDIA_NAME);
 
-    CHECK_VALIDITY(c->pstream, name && pa_namereg_is_valid_name(name), tag, PA_ERR_INVALID);
+    if (!name || !pa_namereg_is_valid_name(name)) {
+        pa_proplist_free(p);
+        CHECK_VALIDITY(c->pstream, FALSE, tag, PA_ERR_INVALID);
+    }
 
     s = upload_stream_new(c, &ss, &map, name, length, p);
     pa_proplist_free(p);
@@ -2749,6 +2752,7 @@ static void sink_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, pa_sin
             pa_log_error("Internal sink state is invalid.");
         pa_tagstruct_putu32(t, pa_sink_get_state(sink));
         pa_tagstruct_putu32(t, sink->n_volume_steps);
+        pa_tagstruct_putu32(t, sink->card ? sink->card->index : PA_INVALID_INDEX);
     }
 }
 
@@ -2788,6 +2792,7 @@ static void source_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, pa_s
             pa_log_error("Internal source state is invalid.");
         pa_tagstruct_putu32(t, pa_source_get_state(source));
         pa_tagstruct_putu32(t, source->n_volume_steps);
+        pa_tagstruct_putu32(t, source->card ? source->card->index : PA_INVALID_INDEX);
     }
 }
 
@@ -2822,6 +2827,8 @@ static void card_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, pa_car
         while ((p = pa_hashmap_iterate(card->profiles, &state, NULL))) {
             pa_tagstruct_puts(t, p->name);
             pa_tagstruct_puts(t, p->description);
+            pa_tagstruct_putu32(t, p->n_sinks);
+            pa_tagstruct_putu32(t, p->n_sources);
         }
     }
 
@@ -3007,7 +3014,7 @@ static void command_get_info(pa_pdispatch *pd, uint32_t command, uint32_t tag, p
         source_fill_tagstruct(c, reply, source);
     else if (client)
         client_fill_tagstruct(c, reply, client);
-    else if (client)
+    else if (card)
         card_fill_tagstruct(c, reply, card);
     else if (module)
         module_fill_tagstruct(c, reply, module);
@@ -3586,24 +3593,30 @@ static void command_update_proplist(pa_pdispatch *pd, uint32_t command, uint32_t
         }
     }
 
-    CHECK_VALIDITY(c->pstream, mode == PA_UPDATE_SET || mode == PA_UPDATE_MERGE || mode == PA_UPDATE_REPLACE, tag, PA_ERR_INVALID);
+    if (!(mode == PA_UPDATE_SET || mode == PA_UPDATE_MERGE || mode == PA_UPDATE_REPLACE)) {
+        pa_proplist_free(p);
+        CHECK_VALIDITY(c->pstream, FALSE, tag, PA_ERR_INVALID);
+    }
 
     if (command == PA_COMMAND_UPDATE_PLAYBACK_STREAM_PROPLIST) {
         playback_stream *s;
 
         s = pa_idxset_get_by_index(c->output_streams, idx);
-        CHECK_VALIDITY(c->pstream, s, tag, PA_ERR_NOENTITY);
-        CHECK_VALIDITY(c->pstream, playback_stream_isinstance(s), tag, PA_ERR_NOENTITY);
-
+        if (!s || !playback_stream_isinstance(s)) {
+            pa_proplist_free(p);
+            CHECK_VALIDITY(c->pstream, FALSE, tag, PA_ERR_NOENTITY);
+        }
         pa_sink_input_update_proplist(s->sink_input, mode, p);
 
     } else if (command == PA_COMMAND_UPDATE_RECORD_STREAM_PROPLIST) {
         record_stream *s;
 
-        s = pa_idxset_get_by_index(c->record_streams, idx);
-        CHECK_VALIDITY(c->pstream, s, tag, PA_ERR_NOENTITY);
-
+        if (!(s = pa_idxset_get_by_index(c->record_streams, idx))) {
+            pa_proplist_free(p);
+            CHECK_VALIDITY(c->pstream, FALSE, tag, PA_ERR_NOENTITY);
+        }
         pa_source_output_update_proplist(s->source_output, mode, p);
+
     } else {
         pa_assert(command == PA_COMMAND_UPDATE_CLIENT_PROPLIST);
 
@@ -3611,6 +3624,7 @@ static void command_update_proplist(pa_pdispatch *pd, uint32_t command, uint32_t
     }
 
     pa_pstream_send_simple_ack(c->pstream, tag);
+    pa_proplist_free(p);
 }
 
 static void command_remove_proplist(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
@@ -4066,7 +4080,7 @@ static void command_extension(pa_pdispatch *pd, uint32_t command, uint32_t tag, 
     CHECK_VALIDITY(c->pstream, m->load_once || idx != PA_INVALID_INDEX, tag, PA_ERR_INVALID);
 
     cb = (pa_native_protocol_ext_cb_t) (unsigned long) pa_hashmap_get(c->protocol->extensions, m);
-    CHECK_VALIDITY(c->pstream, m, tag, PA_ERR_NOEXTENSION);
+    CHECK_VALIDITY(c->pstream, cb, tag, PA_ERR_NOEXTENSION);
 
     if (cb(c->protocol, m, c, tag, t) < 0)
         protocol_error(c);
@@ -4144,17 +4158,20 @@ static void pstream_memblock_callback(pa_pstream *p, uint32_t channel, int64_t o
     if (playback_stream_isinstance(stream)) {
         playback_stream *ps = PLAYBACK_STREAM(stream);
 
-        if (seek != PA_SEEK_RELATIVE || offset != 0)
-            pa_asyncmsgq_post(ps->sink_input->sink->asyncmsgq, PA_MSGOBJECT(ps->sink_input), SINK_INPUT_MESSAGE_SEEK, PA_UINT_TO_PTR(seek), offset, NULL, NULL);
+        if (chunk->memblock) {
+            if (seek != PA_SEEK_RELATIVE || offset != 0)
+                pa_asyncmsgq_post(ps->sink_input->sink->asyncmsgq, PA_MSGOBJECT(ps->sink_input), SINK_INPUT_MESSAGE_SEEK, PA_UINT_TO_PTR(seek), offset, NULL, NULL);
 
-        pa_asyncmsgq_post(ps->sink_input->sink->asyncmsgq, PA_MSGOBJECT(ps->sink_input), SINK_INPUT_MESSAGE_POST_DATA, NULL, 0, chunk, NULL);
+            pa_asyncmsgq_post(ps->sink_input->sink->asyncmsgq, PA_MSGOBJECT(ps->sink_input), SINK_INPUT_MESSAGE_POST_DATA, NULL, 0, chunk, NULL);
+        } else
+            pa_asyncmsgq_post(ps->sink_input->sink->asyncmsgq, PA_MSGOBJECT(ps->sink_input), SINK_INPUT_MESSAGE_SEEK, PA_UINT_TO_PTR(seek), offset+chunk->length, NULL, NULL);
 
     } else {
         upload_stream *u = UPLOAD_STREAM(stream);
         size_t l;
 
         if (!u->memchunk.memblock) {
-            if (u->length == chunk->length) {
+            if (u->length == chunk->length && chunk->memblock) {
                 u->memchunk = *chunk;
                 pa_memblock_ref(u->memchunk.memblock);
                 u->length = 0;
@@ -4170,17 +4187,22 @@ static void pstream_memblock_callback(pa_pstream *p, uint32_t channel, int64_t o
         if (l > chunk->length)
             l = chunk->length;
 
-
         if (l > 0) {
-            void *src, *dst;
+            void *dst;
             dst = pa_memblock_acquire(u->memchunk.memblock);
-            src = pa_memblock_acquire(chunk->memblock);
 
-            memcpy((uint8_t*) dst + u->memchunk.index + u->memchunk.length,
-                   (uint8_t*) src+chunk->index, l);
+            if (chunk->memblock) {
+                void *src;
+                src = pa_memblock_acquire(chunk->memblock);
+
+                memcpy((uint8_t*) dst + u->memchunk.index + u->memchunk.length,
+                       (uint8_t*) src + chunk->index, l);
+
+                pa_memblock_release(chunk->memblock);
+            } else
+                pa_silence_memory((uint8_t*) dst + u->memchunk.index + u->memchunk.length, l, &u->sample_spec);
 
             pa_memblock_release(u->memchunk.memblock);
-            pa_memblock_release(chunk->memblock);
 
             u->memchunk.length += l;
             u->length -= l;

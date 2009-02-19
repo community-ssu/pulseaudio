@@ -1062,6 +1062,91 @@ static void set_source_name(pa_source_new_data *data, pa_modargs *ma, const char
     pa_xfree(t);
 }
 
+static int setup_mixer(struct userdata *u, pa_bool_t ignore_dB) {
+    pa_assert(u);
+
+    if (!u->mixer_handle)
+        return 0;
+
+    pa_assert(u->mixer_elem);
+
+    if (snd_mixer_selem_has_capture_volume(u->mixer_elem)) {
+        pa_bool_t suitable = FALSE;
+
+        if (snd_mixer_selem_get_capture_volume_range(u->mixer_elem, &u->hw_volume_min, &u->hw_volume_max) < 0)
+            pa_log_info("Failed to get volume range. Falling back to software volume control.");
+        else if (u->hw_volume_min >= u->hw_volume_max)
+            pa_log_warn("Your kernel driver is broken: it reports a volume range from %li to %li which makes no sense.", u->hw_volume_min, u->hw_volume_max);
+        else {
+            pa_log_info("Volume ranges from %li to %li.", u->hw_volume_min, u->hw_volume_max);
+            suitable = TRUE;
+        }
+
+        if (suitable) {
+            if (ignore_dB || snd_mixer_selem_get_capture_dB_range(u->mixer_elem, &u->hw_dB_min, &u->hw_dB_max) < 0)
+                pa_log_info("Mixer doesn't support dB information or data is ignored.");
+            else {
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+                VALGRIND_MAKE_MEM_DEFINED(&u->hw_dB_min, sizeof(u->hw_dB_min));
+                VALGRIND_MAKE_MEM_DEFINED(&u->hw_dB_max, sizeof(u->hw_dB_max));
+#endif
+
+                if (u->hw_dB_min >= u->hw_dB_max)
+                    pa_log_warn("Your kernel driver is broken: it reports a volume range from %0.2f dB to %0.2f dB which makes no sense.", (double) u->hw_dB_min/100.0, (double) u->hw_dB_max/100.0);
+                else {
+                    pa_log_info("Volume ranges from %0.2f dB to %0.2f dB.", (double) u->hw_dB_min/100.0, (double) u->hw_dB_max/100.0);
+                    u->hw_dB_supported = TRUE;
+
+                    if (u->hw_dB_max > 0) {
+                        u->source->base_volume = pa_sw_volume_from_dB(- (double) u->hw_dB_max/100.0);
+                        pa_log_info("Fixing base volume to %0.2f dB", pa_sw_volume_to_dB(u->source->base_volume));
+                    } else
+                        pa_log_info("No particular base volume set, fixing to 0 dB");
+                }
+            }
+
+            if (!u->hw_dB_supported &&
+                u->hw_volume_max - u->hw_volume_min < 3) {
+
+                pa_log_info("Device has less than 4 volume levels. Falling back to software volume control.");
+                suitable = FALSE;
+            }
+        }
+
+        if (suitable) {
+            u->mixer_seperate_channels = pa_alsa_calc_mixer_map(u->mixer_elem, &u->source->channel_map, u->mixer_map, FALSE) >= 0;
+
+            u->source->get_volume = source_get_volume_cb;
+            u->source->set_volume = source_set_volume_cb;
+            u->source->flags |= PA_SOURCE_HW_VOLUME_CTRL | (u->hw_dB_supported ? PA_SOURCE_DECIBEL_VOLUME : 0);
+            pa_log_info("Using hardware volume control. Hardware dB scale %s.", u->hw_dB_supported ? "supported" : "not supported");
+
+            if (!u->hw_dB_supported)
+                u->source->n_volume_steps = u->hw_volume_max - u->hw_volume_min + 1;
+        } else
+            pa_log_info("Using software volume control.");
+    }
+
+    if (snd_mixer_selem_has_capture_switch(u->mixer_elem)) {
+        u->source->get_mute = source_get_mute_cb;
+        u->source->set_mute = source_set_mute_cb;
+        u->source->flags |= PA_SOURCE_HW_MUTE_CTRL;
+    } else
+        pa_log_info("Using software mute control.");
+
+    u->mixer_fdl = pa_alsa_fdlist_new();
+
+    if (pa_alsa_fdlist_set_mixer(u->mixer_fdl, u->mixer_handle, u->core->mainloop) < 0) {
+        pa_log("Failed to initialize file descriptor monitoring");
+        return -1;
+    }
+
+    snd_mixer_elem_set_callback(u->mixer_elem, mixer_callback);
+    snd_mixer_elem_set_callback_private(u->mixer_elem, u);
+
+    return 0;
+}
+
 pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, pa_card *card, const pa_alsa_profile_info *profile) {
 
     struct userdata *u = NULL;
@@ -1071,14 +1156,11 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     uint32_t nfrags, hwbuf_size, frag_size, tsched_size, tsched_watermark;
     snd_pcm_uframes_t period_frames, tsched_frames;
     size_t frame_size;
-    snd_pcm_info_t *pcm_info = NULL;
-    int err;
     pa_bool_t use_mmap = TRUE, b, use_tsched = TRUE, d, ignore_dB = FALSE;
     pa_source_new_data data;
 
-    snd_pcm_info_alloca(&pcm_info);
-
     pa_assert(m);
+    pa_assert(ma);
 
     ss = m->core->default_sample_spec;
     if (pa_modargs_get_sample_spec_and_channel_map(ma, &ss, &map, PA_CHANNEL_MAP_ALSA) < 0) {
@@ -1193,7 +1275,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     }
 
     if (use_tsched && (!b || !d)) {
-        pa_log_info("Cannot enabled timer-based scheduling, falling back to sound IRQ scheduling.");
+        pa_log_info("Cannot enable timer-based scheduling, falling back to sound IRQ scheduling.");
         u->use_tsched = use_tsched = FALSE;
     }
 
@@ -1203,51 +1285,10 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     if (u->use_tsched)
         pa_log_info("Successfully enabled timer-based scheduling mode.");
 
-    if ((err = snd_pcm_info(u->pcm_handle, pcm_info)) < 0) {
-        pa_log("Error fetching PCM info: %s", snd_strerror(err));
-        goto fail;
-    }
-
     /* ALSA might tweak the sample spec, so recalculate the frame size */
     frame_size = pa_frame_size(&ss);
 
-    if ((err = snd_mixer_open(&u->mixer_handle, 0)) < 0)
-        pa_log("Error opening mixer: %s", snd_strerror(err));
-    else {
-        pa_bool_t found = FALSE;
-
-        if (pa_alsa_prepare_mixer(u->mixer_handle, u->device_name) >= 0)
-            found = TRUE;
-        else {
-            snd_pcm_info_t* info;
-
-            snd_pcm_info_alloca(&info);
-
-            if (snd_pcm_info(u->pcm_handle, info) >= 0) {
-                char *md;
-                int card_idx;
-
-                if ((card_idx = snd_pcm_info_get_card(info)) >= 0) {
-
-                    md = pa_sprintf_malloc("hw:%i", card_idx);
-
-                    if (strcmp(u->device_name, md))
-                        if (pa_alsa_prepare_mixer(u->mixer_handle, md) >= 0)
-                            found = TRUE;
-                    pa_xfree(md);
-                }
-            }
-        }
-
-        if (found)
-            if (!(u->mixer_elem = pa_alsa_find_elem(u->mixer_handle, "Capture", "Mic", FALSE)))
-                found = FALSE;
-
-        if (!found) {
-            snd_mixer_close(u->mixer_handle);
-            u->mixer_handle = NULL;
-        }
-    }
+    pa_alsa_find_mixer_and_elem(u->pcm_handle, &u->mixer_handle, &u->mixer_elem);
 
     pa_source_new_data_init(&data);
     data.driver = driver;
@@ -1257,7 +1298,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     pa_source_new_data_set_sample_spec(&data, &ss);
     pa_source_new_data_set_channel_map(&data, &map);
 
-    pa_alsa_init_proplist_pcm(m->core, data.proplist, pcm_info);
+    pa_alsa_init_proplist_pcm(m->core, data.proplist, u->pcm_handle);
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->device_name);
     pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE, "%lu", (unsigned long) (period_frames * frame_size * nfrags));
     pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE, "%lu", (unsigned long) (period_frames * frame_size));
@@ -1314,85 +1355,8 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     if (update_sw_params(u) < 0)
         goto fail;
 
-    if (u->mixer_handle) {
-        pa_assert(u->mixer_elem);
-
-        if (snd_mixer_selem_has_capture_volume(u->mixer_elem)) {
-            pa_bool_t suitable = FALSE;
-
-            if (snd_mixer_selem_get_capture_volume_range(u->mixer_elem, &u->hw_volume_min, &u->hw_volume_max) < 0)
-                pa_log_info("Failed to get volume range. Falling back to software volume control.");
-            else if (u->hw_volume_min >= u->hw_volume_max)
-                pa_log_warn("Your kernel driver is broken: it reports a volume range from %li to %li which makes no sense.", u->hw_volume_min, u->hw_volume_max);
-            else {
-                pa_log_info("Volume ranges from %li to %li.", u->hw_volume_min, u->hw_volume_max);
-                suitable = TRUE;
-            }
-
-            if (suitable) {
-                if (ignore_dB || snd_mixer_selem_get_capture_dB_range(u->mixer_elem, &u->hw_dB_min, &u->hw_dB_max) < 0)
-                    pa_log_info("Mixer doesn't support dB information or data is ignored.");
-                else {
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-                    VALGRIND_MAKE_MEM_DEFINED(&u->hw_dB_min, sizeof(u->hw_dB_min));
-                    VALGRIND_MAKE_MEM_DEFINED(&u->hw_dB_max, sizeof(u->hw_dB_max));
-#endif
-
-                    if (u->hw_dB_min >= u->hw_dB_max)
-                        pa_log_warn("Your kernel driver is broken: it reports a volume range from %0.2f dB to %0.2f dB which makes no sense.", (double) u->hw_dB_min/100.0, (double) u->hw_dB_max/100.0);
-                    else {
-                        pa_log_info("Volume ranges from %0.2f dB to %0.2f dB.", (double) u->hw_dB_min/100.0, (double) u->hw_dB_max/100.0);
-                        u->hw_dB_supported = TRUE;
-
-                        if (u->hw_dB_max > 0) {
-                            u->source->base_volume = pa_sw_volume_from_dB(- (double) u->hw_dB_max/100.0);
-                            pa_log_info("Fixing base volume to %0.2f dB", pa_sw_volume_to_dB(u->source->base_volume));
-                        } else
-                            pa_log_info("No particular base volume set, fixing to 0 dB");
-
-                    }
-                }
-
-                if (!u->hw_dB_supported &&
-                    u->hw_volume_max - u->hw_volume_min < 3) {
-
-                    pa_log_info("Device has less than 4 volume levels. Falling back to software volume control.");
-                    suitable = FALSE;
-                }
-            }
-
-            if (suitable) {
-                u->mixer_seperate_channels = pa_alsa_calc_mixer_map(u->mixer_elem, &map, u->mixer_map, FALSE) >= 0;
-
-                u->source->get_volume = source_get_volume_cb;
-                u->source->set_volume = source_set_volume_cb;
-                u->source->flags |= PA_SOURCE_HW_VOLUME_CTRL | (u->hw_dB_supported ? PA_SOURCE_DECIBEL_VOLUME : 0);
-                pa_log_info("Using hardware volume control. Hardware dB scale %s.", u->hw_dB_supported ? "supported" : "not supported");
-
-                if (!u->hw_dB_supported)
-                    u->source->n_volume_steps = u->hw_volume_max - u->hw_volume_min + 1;
-            } else
-                pa_log_info("Using software volume control.");
-        }
-
-        if (snd_mixer_selem_has_capture_switch(u->mixer_elem)) {
-            u->source->get_mute = source_get_mute_cb;
-            u->source->set_mute = source_set_mute_cb;
-            u->source->flags |= PA_SOURCE_HW_MUTE_CTRL;
-        } else
-            pa_log_info("Using software mute control.");
-
-        u->mixer_fdl = pa_alsa_fdlist_new();
-
-        if (pa_alsa_fdlist_set_mixer(u->mixer_fdl, u->mixer_handle, m->core->mainloop) < 0) {
-            pa_log("Failed to initialize file descriptor monitoring");
-            goto fail;
-        }
-
-        snd_mixer_elem_set_callback(u->mixer_elem, mixer_callback);
-        snd_mixer_elem_set_callback_private(u->mixer_elem, u);
-    } else
-        u->mixer_fdl = NULL;
+    if (setup_mixer(u, ignore_dB) < 0)
+        goto fail;
 
     pa_alsa_dump(u->pcm_handle);
 

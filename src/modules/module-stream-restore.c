@@ -93,7 +93,7 @@ struct userdata {
 
 #define ENTRY_VERSION 1
 
-struct entry PA_GCC_PACKED {
+struct entry {
     uint8_t version;
     pa_bool_t muted_valid:1, relative_volume_valid:1, absolute_volume_valid:1, device_valid:1;
     pa_bool_t muted:1;
@@ -101,7 +101,7 @@ struct entry PA_GCC_PACKED {
     pa_cvolume relative_volume;
     pa_cvolume absolute_volume;
     char device[PA_NAME_MAX];
-};
+} PA_GCC_PACKED;
 
 enum {
     SUBCOMMAND_TEST,
@@ -532,6 +532,7 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
             pa_xfree(n);
             continue;
         }
+	pa_xfree(n);
 
         if (u->restore_volume) {
             pa_cvolume v;
@@ -581,6 +582,7 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
             pa_xfree(n);
             continue;
         }
+	pa_xfree(n);
 
         if (u->restore_device &&
             e->device_valid &&

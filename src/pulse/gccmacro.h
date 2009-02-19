@@ -88,7 +88,7 @@
 #endif
 
 #ifndef PA_GCC_PACKED
-#ifdef __GNUCC__
+#ifdef __GNUC__
 #define PA_GCC_PACKED __attribute__ ((packed))
 #else
 /** Structure shall be packed in memory **/
@@ -109,11 +109,18 @@
 #endif
 
 #ifndef PA_GCC_MALLOC
-#ifdef __GNUCC__
+#ifdef __GNUC__
 #define PA_GCC_MALLOC __attribute__ ((malloc))
 #else
 /** Macro for usage of GCC's malloc attribute */
 #define PA_GCC_MALLOC
+#endif
+#endif
+
+#ifndef PA_GCC_WEAKREF
+#ifdef __GNUC__
+/** Macro for usgae of GCC's weakref attribute */
+#define PA_GCC_WEAKREF(x) __attribute__((weakref(#x)));
 #endif
 #endif
 

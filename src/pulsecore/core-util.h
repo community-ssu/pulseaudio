@@ -141,6 +141,8 @@ size_t pa_vsnprintf(char *str, size_t size, const char *format, va_list ap);
 
 char *pa_truncate_utf8(char *c, size_t l);
 
+int pa_match(const char *expr, const char *v);
+
 char *pa_getcwd(void);
 char *pa_make_path_absolute(const char *p);
 pa_bool_t pa_is_path_absolute(const char *p);
@@ -218,5 +220,7 @@ unsigned pa_ncpus(void);
 char *pa_replace(const char*s, const char*a, const char *b);
 
 char *pa_unescape(char *p);
+
+char *pa_realpath(const char *path);
 
 #endif

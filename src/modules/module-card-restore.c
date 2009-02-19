@@ -70,10 +70,10 @@ struct userdata {
 
 #define ENTRY_VERSION 1
 
-struct entry PA_GCC_PACKED {
+struct entry {
     uint8_t version;
     char profile[PA_NAME_MAX];
-};
+} PA_GCC_PACKED ;
 
 static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, const struct timeval *tv, void *userdata) {
     struct userdata *u = userdata;
@@ -191,7 +191,7 @@ static pa_hook_result_t card_new_hook_callback(pa_core *c, pa_card_new_data *new
 
     pa_assert(new_data);
 
-    if ((e = read_entry(u, new_data->name)) && e->profile) {
+    if ((e = read_entry(u, new_data->name)) && e->profile[0]) {
 
         if (!new_data->active_profile) {
             pa_card_new_data_set_profile(new_data, e->profile);
