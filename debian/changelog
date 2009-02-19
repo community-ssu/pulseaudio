@@ -1,4 +1,4 @@
-pulseaudio (0.9.15~git20090203-0maemo2) UNRELEASED; urgency=low
+pulseaudio (0.9.15~git20090219-0maemo1) UNRELEASED; urgency=low
 
   * debian/pulseaudio.upstart:
     + Still run on ACT_DEAD.
@@ -18,7 +18,7 @@ pulseaudio (0.9.15~git20090203-0maemo2) UNRELEASED; urgency=low
     + Revert back TMPDIR=/var/run, it causes too much issue yet.
   * Lower pool usage to 16MB (experimental try for 96692).
 
- -- Maemo Multimedia <multimedia@maemo.org>  Wed, 18 Feb 2009 16:23:50 +0200
+ -- Maemo Multimedia <multimedia@maemo.org>  Thu, 19 Feb 2009 15:39:52 +0200
 
 pulseaudio (0.9.15~git20090203-0maemo1) unstable; urgency=low
 
