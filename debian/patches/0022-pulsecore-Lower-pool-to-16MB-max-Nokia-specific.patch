@@ -1,14 +1,14 @@
-From 7de40db3234e29176ec47af7d2e7ce238a3230f0 Mon Sep 17 00:00:00 2001
+From 492210a66491873e226782d3fb2f35367d5c3ae7 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 18 Feb 2009 16:21:34 +0200
-Subject: [PATCH 26/28] Lower pool to 16MB max (Nokia specific)
+Subject: [PATCH 22/23] pulsecore: Lower pool to 16MB max (Nokia specific)
 
 ---
  src/pulsecore/memblock.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/pulsecore/memblock.c b/src/pulsecore/memblock.c
-index 1d7f455..e6b8495 100644
+index fbf0a47..5387c9e 100644
 --- a/src/pulsecore/memblock.c
 +++ b/src/pulsecore/memblock.c
 @@ -53,7 +53,7 @@

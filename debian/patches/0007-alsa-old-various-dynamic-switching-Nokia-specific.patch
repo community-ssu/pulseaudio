@@ -1,7 +1,7 @@
-From ca89b8aaaa2f999ef1375b6d40d7a01eb4774000 Mon Sep 17 00:00:00 2001
+From 8ccd8a34ca6f0faf4b5d25d3220a16bb6e75a3d8 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Mon, 17 Nov 2008 19:50:30 +0200
-Subject: [PATCH 09/28] alsa-old: various dynamic switching (Nokia specific)
+Subject: [PATCH 07/23] alsa-old: various dynamic switching (Nokia specific)
 
 Buffer switching with property list
 Cconfiguration parameter to select mixer
@@ -17,10 +17,10 @@ Runtime mixer switching using property lists
  create mode 100644 src/modules/alsa/module-alsa-source-old.h
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 28fa44d..a899351 100644
+index 1424162..070eedd 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -952,10 +952,13 @@ modlibexec_LTLIBRARIES += \
+@@ -965,10 +965,13 @@ modlibexec_LTLIBRARIES += \
  		libalsa-util.la \
  		module-alsa-sink.la \
  		module-alsa-source.la \

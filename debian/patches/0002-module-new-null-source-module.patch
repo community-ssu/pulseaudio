@@ -1,7 +1,7 @@
-From 19573f70db4e9be3f84a26dee1b7f5bf0b818127 Mon Sep 17 00:00:00 2001
+From 2e1a7138ca31197b36039f9cb9339e3ecb6d581f Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 4 Dec 2008 18:02:21 +0200
-Subject: [PATCH 02/28] module: new null-source module
+Subject: [PATCH 02/23] module: new null-source module
 
 ---
  src/Makefile.am                         |    6 +
@@ -12,10 +12,10 @@ Subject: [PATCH 02/28] module: new null-source module
  create mode 100644 src/modules/module-null-source.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 811b120..9c5c50e 100644
+index f385c0a..540ebe1 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -875,6 +875,7 @@ modlibexec_LTLIBRARIES += \
+@@ -888,6 +888,7 @@ modlibexec_LTLIBRARIES += \
  		module-simple-protocol-tcp.la \
  		module-null-sink.la \
  		module-sine-source.la \
@@ -23,7 +23,7 @@ index 811b120..9c5c50e 100644
  		module-detect.la \
  		module-volume-restore.la \
  		module-device-restore.la \
-@@ -1050,6 +1051,7 @@ SYMDEF_FILES = \
+@@ -1063,6 +1064,7 @@ SYMDEF_FILES = \
  		modules/module-tunnel-source-symdef.h \
  		modules/module-null-sink-symdef.h \
  		modules/module-sine-source-symdef.h \
@@ -31,7 +31,7 @@ index 811b120..9c5c50e 100644
  		modules/module-esound-sink-symdef.h \
  		modules/module-zeroconf-publish-symdef.h \
  		modules/module-zeroconf-discover-symdef.h \
-@@ -1204,6 +1206,10 @@ module_sine_source_la_SOURCES = modules/module-sine-source.c
+@@ -1217,6 +1219,10 @@ module_sine_source_la_SOURCES = modules/module-sine-source.c
  module_sine_source_la_LDFLAGS = -module -avoid-version
  module_sine_source_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
  

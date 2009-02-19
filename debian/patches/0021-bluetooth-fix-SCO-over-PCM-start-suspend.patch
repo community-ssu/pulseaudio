@@ -1,7 +1,7 @@
-From 1b3a9da133593231a09663dcb1ceeab6e7dc4467 Mon Sep 17 00:00:00 2001
+From 955a47b91d80ae3760965e5f79330948fa8a7623 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 17 Feb 2009 17:53:28 +0200
-Subject: [PATCH 25/28] bluetooth: fix SCO over PCM start/suspend
+Subject: [PATCH 21/23] bluetooth: fix SCO over PCM start/suspend
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |   21 ++++++++++++++-------

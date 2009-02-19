@@ -1,14 +1,14 @@
-From f382978457ac105312ebb2ab65c931ef1ed74694 Mon Sep 17 00:00:00 2001
+From f88121dc0bfe43d8f506b2b7a8cbbad046fd0112 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 20 Nov 2008 16:59:13 +0200
-Subject: [PATCH 03/28] stream-restore: post a module change in trigger_save
+Subject: [PATCH 03/23] stream-restore: post a module change in trigger_save
 
 ---
  src/modules/module-stream-restore.c |    2 ++
  1 files changed, 2 insertions(+), 0 deletions(-)
 
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index 2dd2045..08b6f28 100644
+index d935caf..9d92b0d 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
 @@ -229,6 +229,8 @@ static void trigger_save(struct userdata *u) {

@@ -1,14 +1,14 @@
-From a919d2d971ae423f22a6a94be1fba2ee819373fb Mon Sep 17 00:00:00 2001
+From 4db536d268fff5a6f129ed07884439a6b5170ab6 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 11 Dec 2008 22:05:31 +0200
-Subject: [PATCH 10/28] build: install pulse tests under $(libexecdir)/pulse-tests (Nokia specific)
+Subject: [PATCH 11/23] build: install pulse tests under $(libexecdir)/pulse-tests (Nokia specific)
 
 ---
- src/Makefile.am |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ src/Makefile.am |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 9c5c50e..bfceb56 100644
+index 540ebe1..6a9b0b4 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -29,6 +29,7 @@ pulsecoreincludedir=$(includedir)/pulsecore
@@ -37,13 +37,19 @@ index 9c5c50e..bfceb56 100644
  		cpulimit-test \
  		cpulimit-test2
  endif
-@@ -304,7 +305,7 @@ endif
+@@ -304,12 +305,12 @@ endif
  if HAVE_GLIB20
  TESTS += \
  		mainloop-test-glib
 -TESTS_BINARIES += \
 +pulsetest_PROGRAMS += \
  		mainloop-test-glib
+ endif
+ 
+ if HAVE_GTK20
+-TESTS_BINARIES += \
++pulsetest_PROGRAMS += \
+ 		gtk-test
  endif
  
 -- 

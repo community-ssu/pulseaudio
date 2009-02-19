@@ -1,7 +1,7 @@
-From 34f3626a5b6dd69324f33c30e755c7a37938ac97 Mon Sep 17 00:00:00 2001
+From f316cf2d70f674bafab0f5627c7f6c3c7cc358c4 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Mon, 25 Aug 2008 18:51:01 +0300
-Subject: [PATCH 04/28] alsa-sink: fix the busy loop on arm (Nokia specific)
+Subject: [PATCH 04/23] alsa-sink: fix the busy loop on arm (Nokia specific)
 
 ---
  src/modules/alsa/alsa-sink.c        |   12 ++++++++++--
@@ -9,7 +9,7 @@ Subject: [PATCH 04/28] alsa-sink: fix the busy loop on arm (Nokia specific)
  2 files changed, 12 insertions(+), 3 deletions(-)
 
 diff --git a/src/modules/alsa/alsa-sink.c b/src/modules/alsa/alsa-sink.c
-index c56614c..1171bc7 100644
+index eeac5e7..6fd86f5 100644
 --- a/src/modules/alsa/alsa-sink.c
 +++ b/src/modules/alsa/alsa-sink.c
 @@ -100,6 +100,7 @@ struct userdata {
@@ -38,15 +38,15 @@ index c56614c..1171bc7 100644
  
              if (polled && pa_log_ratelimit())
                  pa_log("ALSA woke us up to write new data to the device, but there was actually nothing to write! "
-@@ -1241,6 +1242,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
+@@ -1324,6 +1325,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
      pa_bool_t use_mmap = TRUE, b, use_tsched = TRUE, d, ignore_dB = FALSE;
      pa_usec_t usec;
      pa_sink_new_data data;
 +    int32_t hwbuf_min_frames_to_write = 0;
  
-     snd_pcm_info_alloca(&pcm_info);
- 
-@@ -1294,6 +1296,11 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
+     pa_assert(m);
+     pa_assert(ma);
+@@ -1375,6 +1377,11 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
          use_tsched = FALSE;
      }
  
@@ -58,7 +58,7 @@ index c56614c..1171bc7 100644
      u = pa_xnew0(struct userdata, 1);
      u->core = m->core;
      u->module = m;
-@@ -1462,6 +1469,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
+@@ -1502,6 +1509,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
      u->fragment_size = frag_size = (uint32_t) (period_frames * frame_size);
      u->nfragments = nfrags;
      u->hwbuf_size = u->fragment_size * nfrags;

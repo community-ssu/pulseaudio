@@ -1,7 +1,7 @@
-From 649a8758050d27b91adc52313aa4d3242b1a40e5 Mon Sep 17 00:00:00 2001
+From ec4d08cff65f968c2f10d2c7eecbe4ece41f1197 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 21 Jan 2009 19:11:44 +0200
-Subject: [PATCH 15/28] build: remove .gitignore (Nokia specific)
+Subject: [PATCH 16/23] build: remove .gitignore (Nokia specific)
 
 ---
  .gitignore             |   27 ---------------------
@@ -9,10 +9,10 @@ Subject: [PATCH 15/28] build: remove .gitignore (Nokia specific)
  m4/.gitignore          |   17 -------------
  man/.gitignore         |    4 ---
  po/.gitignore          |   14 -----------
- src/.gitignore         |   61 ------------------------------------------------
+ src/.gitignore         |   62 ------------------------------------------------
  src/modules/.gitignore |    1 -
  src/pulse/.gitignore   |    1 -
- 8 files changed, 0 insertions(+), 127 deletions(-)
+ 8 files changed, 0 insertions(+), 128 deletions(-)
  delete mode 100644 .gitignore
  delete mode 100644 doxygen/.gitignore
  delete mode 100644 m4/.gitignore
@@ -118,10 +118,11 @@ index 2691982..0000000
 -*.gmo
 diff --git a/src/.gitignore b/src/.gitignore
 deleted file mode 100644
-index 66738d0..0000000
+index 4da445b..0000000
 --- a/src/.gitignore
 +++ /dev/null
-@@ -1,61 +0,0 @@
+@@ -1,62 +0,0 @@
+-gtk-test
 -prioq-test
 -lock-autospawn-test
 -*.lo
