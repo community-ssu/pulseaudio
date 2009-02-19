@@ -17,6 +17,7 @@ pulseaudio (0.9.15~git20090219-0maemo1) UNRELEASED; urgency=low
   * debian/pulseaudio.upstart:
     + Revert back TMPDIR=/var/run, it causes too much issue yet.
   * Lower pool usage to 16MB (experimental try for 96692).
+  * Remove pulseaudio-esound-compat (dropped esound compatibility).
 
  -- Maemo Multimedia <multimedia@maemo.org>  Thu, 19 Feb 2009 15:39:52 +0200
 
