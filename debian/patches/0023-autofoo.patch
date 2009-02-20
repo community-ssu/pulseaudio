@@ -1,7 +1,7 @@
 From afbb8c37e2011691b45f60424921b095dcbf0ea7 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 19 Feb 2009 14:14:16 +0200
-Subject: [PATCH 23/23] autofoo
+Subject: [PATCH 23/24] autofoo
 
 ---
  ABOUT-NLS              | 1068 ++
@@ -68284,5 +68284,5 @@ index 0000000..e0aebfc
 +# Otherwise a system limit (for SysV at least) may be exceeded.
 +.NOEXPORT:
 -- 
-1.6.1.224.gb56c
+1.6.2.rc1.13.g25487f
 

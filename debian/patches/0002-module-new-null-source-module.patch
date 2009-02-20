@@ -1,7 +1,7 @@
 From 2e1a7138ca31197b36039f9cb9339e3ecb6d581f Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 4 Dec 2008 18:02:21 +0200
-Subject: [PATCH 02/23] module: new null-source module
+Subject: [PATCH 02/24] module: new null-source module
 
 ---
  src/Makefile.am                         |    6 +
@@ -372,5 +372,5 @@ index 0000000..47b386f
 +    pa_xfree(u);
 +}
 -- 
-1.6.1.224.gb56c
+1.6.2.rc1.13.g25487f
 

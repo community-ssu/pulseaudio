@@ -1,7 +1,7 @@
 From e2fbc34595eb3ad64c9ea51ec01fcea0b7f25db2 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 11 Dec 2008 17:09:11 +0200
-Subject: [PATCH 14/23] build: libtool fails to link module's library during build time (Nokia specific)
+Subject: [PATCH 14/24] build: libtool fails to link module's library during build time (Nokia specific)
 
 ---
  src/Makefile.am |    2 +-
@@ -21,5 +21,5 @@ index e49c68b..c2a2268 100644
  pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlopen force $(foreach f,$(PREOPEN_LIBS),-dlopen $(f))
  endif
 -- 
-1.6.1.224.gb56c
+1.6.2.rc1.13.g25487f
 

@@ -1,7 +1,7 @@
 From 8ccd8a34ca6f0faf4b5d25d3220a16bb6e75a3d8 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Mon, 17 Nov 2008 19:50:30 +0200
-Subject: [PATCH 07/23] alsa-old: various dynamic switching (Nokia specific)
+Subject: [PATCH 07/24] alsa-old: various dynamic switching (Nokia specific)
 
 Buffer switching with property list
 Cconfiguration parameter to select mixer
@@ -849,5 +849,5 @@ index 0000000..ef5481e
 +#endif
 +
 -- 
-1.6.1.224.gb56c
+1.6.2.rc1.13.g25487f
 

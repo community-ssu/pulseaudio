@@ -21,3 +21,4 @@
 0021-bluetooth-fix-SCO-over-PCM-start-suspend.patch
 0022-pulsecore-Lower-pool-to-16MB-max-Nokia-specific.patch
 0023-autofoo.patch
+0024-alsa-old-upstream-mixer-api-change-to-squash.patch

@@ -1,7 +1,7 @@
 From f316cf2d70f674bafab0f5627c7f6c3c7cc358c4 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Mon, 25 Aug 2008 18:51:01 +0300
-Subject: [PATCH 04/23] alsa-sink: fix the busy loop on arm (Nokia specific)
+Subject: [PATCH 04/24] alsa-sink: fix the busy loop on arm (Nokia specific)
 
 ---
  src/modules/alsa/alsa-sink.c        |   12 ++++++++++--
@@ -81,5 +81,5 @@ index 4f844e0..8db5edc 100644
  static const char* const valid_modargs[] = {
      "name",
 -- 
-1.6.1.224.gb56c
+1.6.2.rc1.13.g25487f
 
