@@ -1,6 +1,15 @@
 disable-shm = yes
+shm-size-bytes = 16777216
 exit-idle-time = -1
 
+high-priority = yes
+nice-level = -11
 realtime-scheduling = yes
 realtime-priority = 5
 resample-method = speex-fixed-2
+
+default-sample-format = s16le
+default-sample-rate = 48000
+default-sample-channels = 2
+default-fragments = 2
+default-fragment-size-msec = 20

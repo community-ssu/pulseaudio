@@ -21,7 +21,7 @@ post-start script
 end script
 
 #exec TMPDIR=/var/run /usr/bin/pulseaudio --system --high-priority --log-target=syslog
-exec /usr/bin/pulseaudio --system --high-priority --log-target=syslog
+exec /usr/bin/pulseaudio --system --high-priority
 
 respawn
 
