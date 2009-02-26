@@ -81,5 +81,5 @@ index 4f844e0..8db5edc 100644
  static const char* const valid_modargs[] = {
      "name",
 -- 
-1.6.2.rc1.13.g25487f
+1.6.2.rc1.13.gfd76c.dirty
 

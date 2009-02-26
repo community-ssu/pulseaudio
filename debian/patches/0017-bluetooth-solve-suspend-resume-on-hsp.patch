@@ -1,7 +1,7 @@
 From 11a9839161a8798759a694a9a2c31f311e74100a Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 17 Feb 2009 15:43:46 +0200
-Subject: [PATCH 18/24] bluetooth: solve suspend/resume on hsp
+Subject: [PATCH 17/24] bluetooth: solve suspend/resume on hsp
 
 Well, this is one way to do it, not sure if it's the best, but I sort
 of liked it. :)
@@ -70,5 +70,5 @@ index bd84413..ee0651d 100644
  
                  case PA_SOURCE_UNLINKED:
 -- 
-1.6.2.rc1.13.g25487f
+1.6.2.rc1.13.gfd76c.dirty
 

@@ -1,7 +1,7 @@
 From 63bae97cc0cc0fcd6a250f5b17bd0445b6fff472 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 17 Feb 2009 16:09:31 +0200
-Subject: [PATCH 19/24] bluetooth: ignore a SCO socket read() bug...
+Subject: [PATCH 18/24] bluetooth: ignore a SCO socket read() bug...
 
 This error happen frequently, it looks really suspicious. Could it be
 a kernel bug? we will need a simpler test case.
@@ -27,5 +27,5 @@ index ee0651d..6378933 100644
                  /* We just read something, so we are supposed to write something, too */
                  do_write = TRUE;
 -- 
-1.6.2.rc1.13.g25487f
+1.6.2.rc1.13.gfd76c.dirty
 

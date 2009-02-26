@@ -1,7 +1,7 @@
 From 955a47b91d80ae3760965e5f79330948fa8a7623 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 17 Feb 2009 17:53:28 +0200
-Subject: [PATCH 21/24] bluetooth: fix SCO over PCM start/suspend
+Subject: [PATCH 20/24] bluetooth: fix SCO over PCM start/suspend
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |   21 ++++++++++++++-------
@@ -86,5 +86,5 @@ index d632c3b..5d348fc 100644
          pa_log_error("Failed to create IO thread");
          stop_thread(u);
 -- 
-1.6.2.rc1.13.g25487f
+1.6.2.rc1.13.gfd76c.dirty
 

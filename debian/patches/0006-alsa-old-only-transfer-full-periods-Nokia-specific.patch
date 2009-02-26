@@ -135,5 +135,5 @@ index 3a67860..c18a27f 100644
      pa_log_info("Using %u fragments of size %lu bytes.", nfrags, (long unsigned) u->fragment_size);
  
 -- 
-1.6.2.rc1.13.g25487f
+1.6.2.rc1.13.gfd76c.dirty
 
