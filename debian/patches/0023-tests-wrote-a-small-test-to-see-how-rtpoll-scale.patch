@@ -1,0 +1,111 @@
+From 85ec6b33a8ff47b27c8db473f579b1275625c865 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Fri, 27 Feb 2009 21:56:29 +0200
+Subject: [PATCH 23/24] tests: wrote a small test to see how rtpoll scale
+
+---
+ src/Makefile.am           |    6 ++++
+ src/tests/rtpoll-n-test.c |   67 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 73 insertions(+), 0 deletions(-)
+ create mode 100644 src/tests/rtpoll-n-test.c
+
+diff --git a/src/Makefile.am b/src/Makefile.am
+index de7d72e..6a51c19 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -281,6 +281,7 @@ pulsetest_PROGRAMS = \
+ 		asyncmsgq-test \
+ 		queue-test \
+ 		rtpoll-test \
++		rtpoll-n-test \
+ 		sig2str-test \
+ 		resampler-test \
+ 		smoother-test \
+@@ -385,6 +386,11 @@ rtpoll_test_CFLAGS = $(AM_CFLAGS)
+ rtpoll_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la
+ rtpoll_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
+ 
++rtpoll_n_test_SOURCES = tests/rtpoll-n-test.c
++rtpoll_n_test_CFLAGS = $(AM_CFLAGS)
++rtpoll_n_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la
++rtpoll_n_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
++
+ mcalign_test_SOURCES = tests/mcalign-test.c
+ mcalign_test_CFLAGS = $(AM_CFLAGS)
+ mcalign_test_LDADD = $(AM_LDADD) $(WINSOCK_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la
+diff --git a/src/tests/rtpoll-n-test.c b/src/tests/rtpoll-n-test.c
+new file mode 100644
+index 0000000..ef8a066
+--- /dev/null
++++ b/src/tests/rtpoll-n-test.c
+@@ -0,0 +1,67 @@
++/***
++  This file is part of PulseAudio.
++
++  PulseAudio is free software; you can redistribute it and/or modify
++  it under the terms of the GNU Lesser General Public License as published
++  by the Free Software Foundation; either version 2 of the License,
++  or (at your option) any later version.
++
++  PulseAudio is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  General Public License for more details.
++
++  You should have received a copy of the GNU Lesser General Public License
++  along with PulseAudio; if not, write to the Free Software
++  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
++  USA.
++***/
++
++#ifdef HAVE_CONFIG_H
++#include <config.h>
++#endif
++
++#include <signal.h>
++#include <poll.h>
++
++#include <pulsecore/log.h>
++#include <pulsecore/rtpoll.h>
++#include <pulsecore/rtsig.h>
++
++int main(int argc, char *argv[]) {
++    pa_rtpoll *p;
++    pa_rtpoll_item *w;
++    struct pollfd *pollfd;
++    int i;
++
++#ifdef SIGRTMIN
++    pa_rtsig_configure(SIGRTMIN+10, SIGRTMAX);
++#endif
++
++    if (argc < 3)
++        return 1;
++    
++    pa_log("%dFds %dHz", atoi(argv[1]), atoi(argv[2]));
++
++    p = pa_rtpoll_new();
++
++    for (i = 0; i < atoi(argv[1]); ++i) {
++        w = pa_rtpoll_item_new(p, PA_RTPOLL_NORMAL, 1);
++
++        pollfd = pa_rtpoll_item_get_pollfd(w, NULL);
++        pollfd->fd = 0;
++        pollfd->events = 0;
++    }
++
++    pa_rtpoll_install(p);
++
++     while (1) {
++         pa_rtpoll_set_timer_relative(p, 1000000 / atoi(argv[2])); /* 10 s */
++         printf("."); fflush(stdout);
++         pa_rtpoll_run(p, 1);
++     }
++
++    pa_rtpoll_free(p);
++
++    return 0;
++}
+-- 
+1.6.2.rc1.13.gfd76c.dirty
+

@@ -20,5 +20,5 @@
 0020-bluetooth-fix-SCO-over-PCM-start-suspend.patch
 0021-pulsecore-Lower-pool-to-16MB-max-Nokia-specific.patch
 0022-alsa-old-support-dynamic-volume-mixer-and-dB-Nokia.patch
-0023-autofoo.patch
-0024-alsa-old-support-dynamic-volume-mixer-and-dB-Nokia.patch
+0023-tests-wrote-a-small-test-to-see-how-rtpoll-scale.patch
+0024-autofoo.patch
