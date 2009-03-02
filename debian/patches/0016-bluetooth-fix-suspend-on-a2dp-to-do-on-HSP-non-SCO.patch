@@ -1,7 +1,7 @@
 From 66a4c669a80db1833c6580cc4933f6ae65550bd0 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 17 Feb 2009 12:59:34 +0200
-Subject: [PATCH 16/24] bluetooth: fix suspend on a2dp (to do on HSP non SCO over PCM)
+Subject: [PATCH 16/26] bluetooth: fix suspend on a2dp (to do on HSP non SCO over PCM)
 
  - s/setup_stream_fd/start_stream_fd
 

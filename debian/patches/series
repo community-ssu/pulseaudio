@@ -19,6 +19,8 @@
 0019-bluetooth-do-not-call-stop_stream_fd-if-no-rtpoll_i.patch
 0020-bluetooth-fix-SCO-over-PCM-start-suspend.patch
 0021-pulsecore-Lower-pool-to-16MB-max-Nokia-specific.patch
-0022-alsa-old-support-dynamic-volume-mixer-and-dB-Nokia.patch
-0023-tests-wrote-a-small-test-to-see-how-rtpoll-scale.patch
-0024-autofoo.patch
+0022-tests-wrote-a-small-test-to-see-how-rtpoll-scale.patch
+0023-pulsecore-add-eventfd-wrapper.patch
+0024-pulsecore-hack-a-test-for-loop-usage.patch
+0025-alsa-old-support-dynamic-volume-mixer-and-dB-Nokia.patch
+0026-autofoo.patch
