@@ -19,10 +19,6 @@ load-module module-suspend-on-idle
 load-module module-augment-properties
 
 load-module module-null-sink sink_name=sink.null
-load-module module-null-sink sink_name=source.null rate=8000 channels=1
-
-### FIXME, why do we have this?
-load-module module-null-sink sink_name=source.music
 
 ###################################
 #       default sink/src          #
