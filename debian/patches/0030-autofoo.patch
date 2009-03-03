@@ -1,7 +1,7 @@
-From 5fcd315da6ccf677733d9e7cb99ccf0bc893cc89 Mon Sep 17 00:00:00 2001
+From 155caf81a4a3805cf32ea903f6a8ba2f27bab44c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
-Date: Tue, 3 Mar 2009 18:34:27 +0200
-Subject: [PATCH 27/27] autofoo
+Date: Wed, 4 Mar 2009 17:11:51 +0200
+Subject: [PATCH 30/30] autofoo
 
 ---
  ABOUT-NLS              | 1068 ++
@@ -35,7 +35,6 @@ Subject: [PATCH 27/27] autofoo
  m4/progtest.m4         |   92 +
  man/Makefile.in        |  653 +
  missing                |  367 +
- patches                |    1 +
  po/ChangeLog           |   11 +
  po/Makefile.in.in      |  217 +
  po/Makevars.template   |   41 +
@@ -47,7 +46,7 @@ Subject: [PATCH 27/27] autofoo
  po/quot.sed            |    6 +
  po/remove-potcdate.sin |   19 +
  src/Makefile.in        | 6936 +++++++++++
- 43 files changed, 67974 insertions(+), 0 deletions(-)
+ 42 files changed, 67973 insertions(+), 0 deletions(-)
  create mode 100644 ABOUT-NLS
  create mode 100644 ChangeLog
  create mode 100644 Makefile.in
@@ -82,7 +81,6 @@ Subject: [PATCH 27/27] autofoo
  create mode 100644 m4/progtest.m4
  create mode 100644 man/Makefile.in
  create mode 100755 missing
- create mode 120000 patches
  create mode 100644 po/ChangeLog
  create mode 100644 po/Makefile.in.in
  create mode 100644 po/Makevars.template
@@ -1171,11 +1169,11 @@ index 0000000..83bc72e
 +
 diff --git a/ChangeLog b/ChangeLog
 new file mode 100644
-index 0000000..93a04c0
+index 0000000..ae08534
 --- /dev/null
 +++ b/ChangeLog
 @@ -0,0 +1,5 @@
-+2009-03-03  gettextize  <bug-gnu-gettext@gnu.org>
++2009-03-04  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* Makefile.am (EXTRA_DIST): Add config.rpath, m4/ChangeLog.
 +	* configure.ac (AC_CONFIG_FILES): Add po/Makefile.in.
@@ -49459,11 +49457,11 @@ index 0000000..2e3661e
 +
 diff --git a/m4/ChangeLog b/m4/ChangeLog
 new file mode 100644
-index 0000000..6869bb8
+index 0000000..d0c8968
 --- /dev/null
 +++ b/m4/ChangeLog
 @@ -0,0 +1,11 @@
-+2009-03-03  gettextize  <bug-gnu-gettext@gnu.org>
++2009-03-04  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* gettext.m4: New file, from gettext-0.17.
 +	* iconv.m4: New file, from gettext-0.17.
@@ -60906,21 +60904,13 @@ index 0000000..1c8ff70
 +# time-stamp-format: "%:y-%02m-%02d.%02H"
 +# time-stamp-end: "$"
 +# End:
-diff --git a/patches b/patches
-new file mode 120000
-index 0000000..f91bcd3
---- /dev/null
-+++ b/patches
-@@ -0,0 +1 @@
-+/home/elmarco/git/pa-arm/debian/patches
-\ No newline at end of file
 diff --git a/po/ChangeLog b/po/ChangeLog
 new file mode 100644
-index 0000000..2c1bf5f
+index 0000000..fd09094
 --- /dev/null
 +++ b/po/ChangeLog
 @@ -0,0 +1,11 @@
-+2009-03-03  gettextize  <bug-gnu-gettext@gnu.org>
++2009-03-04  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* Makefile.in.in: New file, from gettext-0.17.
 +	* boldquot.sed: New file, from gettext-0.17.

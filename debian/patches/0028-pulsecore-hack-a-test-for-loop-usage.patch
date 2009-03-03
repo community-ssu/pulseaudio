@@ -1,7 +1,7 @@
 From a1c0725b737b9cf1433cd5ecfae6967ac71e9a6b Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 2 Mar 2009 18:52:36 +0200
-Subject: [PATCH 25/27] pulsecore: hack a test for loop usage
+Subject: [PATCH 28/30] pulsecore: hack a test for loop usage
 
 ---
  src/pulse/mainloop.c |   23 ++++++++++++++++++++++-

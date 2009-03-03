@@ -1,7 +1,7 @@
 From 3f69e6ed4510322bc9edf5728b1c9ca09a10f532 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 7 Nov 2008 16:39:42 +0200
-Subject: [PATCH 06/27] alsa-old: only transfer full periods (Nokia specific)
+Subject: [PATCH 06/30] alsa-old: only transfer full periods (Nokia specific)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit

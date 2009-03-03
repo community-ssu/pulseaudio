@@ -22,6 +22,9 @@
 0022-tests-wrote-a-small-test-to-see-how-rtpoll-scale.patch
 0023-pulsecore-add-eventfd-wrapper.patch
 0024-alsa-old-support-dynamic-volume-mixer-and-dB-Nokia.patch
-0025-pulsecore-hack-a-test-for-loop-usage.patch
-0026-pulse-use-a-simple-timeout-heuristic-for-poll-const.patch
-0027-autofoo.patch
+0025-alsa-sink-old-restructure-mixer-value-loading-and-s.patch
+0026-alsa-sink-old-work-in-progress.-more-fine-grained-c.patch
+0027-alsa-sink-old-remove-mixer_off_volume-parameter.-cl.patch
+0028-pulsecore-hack-a-test-for-loop-usage.patch
+0029-pulse-use-a-simple-timeout-heuristic-for-poll-const.patch
+0030-autofoo.patch

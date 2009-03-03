@@ -1,14 +1,14 @@
-From cfb6584c963ebf48c6a297c90f576f40d8348b53 Mon Sep 17 00:00:00 2001
+From 5afed1a8294b15a520eccc096727c4d75ec66346 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 3 Mar 2009 15:50:46 +0200
-Subject: [PATCH 26/27] pulse: use a simple timeout heuristic for poll construction
+Subject: [PATCH 29/30] pulse: use a simple timeout heuristic for poll construction
 
 ---
- src/pulse/mainloop.c |   84 ++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 81 insertions(+), 3 deletions(-)
+ src/pulse/mainloop.c |  102 ++++++++++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 86 insertions(+), 16 deletions(-)
 
 diff --git a/src/pulse/mainloop.c b/src/pulse/mainloop.c
-index 3403a6f..69b3067 100644
+index 3403a6f..7d691f4 100644
 --- a/src/pulse/mainloop.c
 +++ b/src/pulse/mainloop.c
 @@ -68,6 +68,8 @@ struct pa_io_event {
@@ -38,7 +38,22 @@ index 3403a6f..69b3067 100644
  #ifdef OS_IS_WIN32
      {
          fd_set xset;
-@@ -447,8 +453,25 @@ static const pa_mainloop_api vtable = {
+@@ -220,10 +226,10 @@ static void mainloop_io_enable(pa_io_event *e, pa_io_event_flags_t events) {
+ 
+     e->events = events;
+ 
+-    if (e->pollfd)
+-        e->pollfd->events = map_flags_to_libc(events);
+-    else
+-        e->mainloop->rebuild_pollfds = TRUE;
++    /* make sure we take this one next build */
++    pa_gettimeofday(&e->last_wakeup_time);
++
++    e->mainloop->rebuild_pollfds = TRUE;
+ 
+     pa_mainloop_wakeup(e->mainloop);
+ }
+@@ -447,8 +453,24 @@ static const pa_mainloop_api vtable = {
      .quit = mainloop_quit,
  };
  
@@ -50,11 +65,10 @@ index 3403a6f..69b3067 100644
 +
 +    pa_assert_se(m = userdata);
 +
-+    pa_log("** timeout **");
 +    /* make sure the full poll is rebuild */
 +    m->rebuild_full_pollfds = TRUE;
 +    m->rebuild_pollfds = TRUE;
-+    
++
 +    mainloop_time_restart(m->rebuild_full_pollfds_time, pa_timeval_add(pa_gettimeofday(&now), FULL_POLL_INTERVAL));
 +}
 +
@@ -64,7 +78,7 @@ index 3403a6f..69b3067 100644
  
      pa_init_i18n();
  
-@@ -493,6 +516,9 @@ pa_mainloop *pa_mainloop_new(void) {
+@@ -493,6 +515,9 @@ pa_mainloop *pa_mainloop_new(void) {
      m->poll_func_userdata = NULL;
      m->poll_func_ret = -1;
  
@@ -74,69 +88,86 @@ index 3403a6f..69b3067 100644
      return m;
  }
  
-@@ -651,6 +677,41 @@ static void rebuild_pollfds(pa_mainloop *m) {
+@@ -632,6 +657,7 @@ static void rebuild_pollfds(pa_mainloop *m) {
+     pa_io_event*e;
+     struct pollfd *p;
+     unsigned l;
++    struct timeval now;
+ 
+     l = m->n_io_events + 1;
+     if (m->max_pollfds < l) {
+@@ -651,30 +677,74 @@ static void rebuild_pollfds(pa_mainloop *m) {
          m->n_pollfds++;
      }
  
-+#if 1
-+    {
-+        struct timeval now;
+-    for (e = m->io_events; e; e = e->next) {
+-        if (e->dead) {
+-            e->pollfd = NULL;
+-            continue;
++    pa_gettimeofday(&now);
 +
-+        pa_gettimeofday(&now);
++    if (!m->rebuild_full_pollfds) {
 +
-+        /* we only check those who woke up under the 1/10th of second */
-+        if (!m->rebuild_full_pollfds) {
-+
-+            for (e = m->io_events; e; e = e->next) {
-+                if (e->dead) {
-+                    e->pollfd = NULL;
-+                    continue;
-+                }
-+
-+                if (pa_timeval_diff(&now, &e->last_wakeup_time) >= FULL_POLL_INTERVAL) {
-+                    e->pollfd = NULL;
-+                    continue;
-+                }
-+
-+                e->pollfd = p;
-+                p->fd = e->fd;
-+                p->events = map_flags_to_libc(e->events);
-+                p->revents = 0;
-+
-+                p++;
-+                m->n_pollfds++;
++        /* we only check those who woke up under the FULL_POLL_INTERVAL */
++        for (e = m->io_events; e; e = e->next) {
++            if (e->dead) {
++                e->pollfd = NULL;
++                continue;
 +            }
 +
-+            m->rebuild_pollfds = FALSE;
-+            goto end;
-+        }
-+    }
-+#endif
++            if (pa_timeval_diff(&now, &e->last_wakeup_time) >= FULL_POLL_INTERVAL) {
++                e->pollfd = NULL;
++                continue;
++            }
 +
-     for (e = m->io_events; e; e = e->next) {
-         if (e->dead) {
-             e->pollfd = NULL;
-@@ -664,17 +725,33 @@ static void rebuild_pollfds(pa_mainloop *m) {
++            e->pollfd = p;
++            p->fd = e->fd;
++            p->events = map_flags_to_libc(e->events);
++            p->revents = 0;
++
++            p++;
++            m->n_pollfds++;
+         }
  
-         p++;
-         m->n_pollfds++;
+-        e->pollfd = p;
+-        p->fd = e->fd;
+-        p->events = map_flags_to_libc(e->events);
+-        p->revents = 0;
++        m->rebuild_pollfds = FALSE;
+ 
+-        p++;
+-        m->n_pollfds++;
++    } else {
 +
-+        m->rebuild_full_pollfds = FALSE;
++        for (e = m->io_events; e; e = e->next) {
++            if (e->dead) {
++                e->pollfd = NULL;
++                continue;
++            }
++
++            e->pollfd = p;
++            p->fd = e->fd;
++            p->events = map_flags_to_libc(e->events);
++            p->revents = 0;
++
++            p++;
++            m->n_pollfds++;
++
++            m->rebuild_full_pollfds = FALSE;
++        }
++
++        /* next time we want to rebuild a smaller set again */
++        m->rebuild_pollfds = TRUE;
      }
  
 -    m->rebuild_pollfds = FALSE;
-+    pa_log("full poll build: %d", m->n_pollfds);
-+    m->rebuild_pollfds = TRUE;
-+
 +end:
-+    if (m->n_pollfds >= m->n_io_events) {
-+        pa_log("Disabling full rebuild timeout");
++
++    if (m->n_pollfds == (m->n_io_events + (m->wakeup_pipe[0] >= 0 ? 1 : 0)))
 +        mainloop_time_restart(m->rebuild_full_pollfds_time, NULL);
-+    } else if (!m->rebuild_full_pollfds_time->enabled) {
-+        struct timeval now;
++    else if (!m->rebuild_full_pollfds_time->enabled)
 +        mainloop_time_restart(m->rebuild_full_pollfds_time, pa_timeval_add(pa_gettimeofday(&now), FULL_POLL_INTERVAL));
-+    }
-+    return;
++
  }
  
  static int dispatch_pollfds(pa_mainloop *m) {
@@ -151,7 +182,7 @@ index 3403a6f..69b3067 100644
      for (e = m->io_events, k = m->poll_func_ret; e && !m->quit && k > 0; e = e->next) {
          if (e->dead || !e->pollfd || !e->pollfd->revents)
              continue;
-@@ -683,6 +760,7 @@ static int dispatch_pollfds(pa_mainloop *m) {
+@@ -683,6 +753,7 @@ static int dispatch_pollfds(pa_mainloop *m) {
          pa_assert(e->callback);
          e->callback(&m->api, e, e->fd, map_flags_from_libc(e->pollfd->revents), e->userdata);
          e->pollfd->revents = 0;
@@ -159,24 +190,14 @@ index 3403a6f..69b3067 100644
          r++;
  
          k--;
-@@ -852,7 +930,7 @@ int pa_mainloop_poll(pa_mainloop *m) {
+@@ -852,7 +923,6 @@ int pa_mainloop_poll(pa_mainloop *m) {
      if (m->n_enabled_defer_events )
          m->poll_func_ret = 0;
      else {
 -        pa_assert(!m->rebuild_pollfds);
-+        /* pa_assert(!m->rebuild_pollfds); */
  
  #if 1
  	{
-@@ -867,7 +945,7 @@ int pa_mainloop_poll(pa_mainloop *m) {
-             } PA_ONCE_END;
- 
-             if (pa_timeval_diff(pa_gettimeofday(&now), &start) >= PA_USEC_PER_SEC) {
--                pa_log_debug("Before poll(): %d nfds, %d Hz", m->n_pollfds, hz);
-+                pa_log_debug("Before poll(): %d/%d nfds, %d Hz", m->n_pollfds, m->n_io_events, hz);
-                 hz = 0;
-                 pa_gettimeofday(&start);
-             }
 -- 
 1.6.2.rc1.13.gfd76c.dirty
 
