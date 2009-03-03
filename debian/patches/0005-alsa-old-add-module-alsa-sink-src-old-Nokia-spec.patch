@@ -1,7 +1,7 @@
 From 0f921249fb429ca11f5757b35a6a38f78138c4c2 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Wed, 27 Aug 2008 19:54:48 +0300
-Subject: [PATCH 05/26] alsa-old: add module-alsa-{sink,src}-old (Nokia specific)
+Subject: [PATCH 05/27] alsa-old: add module-alsa-{sink,src}-old (Nokia specific)
 
 Backported from 0.9.10 with minor modifications.
 ---

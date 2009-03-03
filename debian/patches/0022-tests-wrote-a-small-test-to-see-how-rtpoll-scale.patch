@@ -1,7 +1,7 @@
 From 85ec6b33a8ff47b27c8db473f579b1275625c865 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Fri, 27 Feb 2009 21:56:29 +0200
-Subject: [PATCH 22/26] tests: wrote a small test to see how rtpoll scale
+Subject: [PATCH 22/27] tests: wrote a small test to see how rtpoll scale
 
 ---
  src/Makefile.am           |    6 ++++

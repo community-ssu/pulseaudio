@@ -21,6 +21,7 @@
 0021-pulsecore-Lower-pool-to-16MB-max-Nokia-specific.patch
 0022-tests-wrote-a-small-test-to-see-how-rtpoll-scale.patch
 0023-pulsecore-add-eventfd-wrapper.patch
-0024-pulsecore-hack-a-test-for-loop-usage.patch
-0025-alsa-old-support-dynamic-volume-mixer-and-dB-Nokia.patch
-0026-autofoo.patch
+0024-alsa-old-support-dynamic-volume-mixer-and-dB-Nokia.patch
+0025-pulsecore-hack-a-test-for-loop-usage.patch
+0026-pulse-use-a-simple-timeout-heuristic-for-poll-const.patch
+0027-autofoo.patch
