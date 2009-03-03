@@ -1,5 +1,6 @@
-pulseaudio (0.9.15~git20090219-0maemo1) UNRELEASED; urgency=low
+pulseaudio (0.9.15~git20090219-0maemo1) unstable; urgency=low
 
+  * Earphone is not working with this release.
   * debian/pulseaudio.upstart:
     + Still run on ACT_DEAD.
   * debian/pulseaudio.install, debian/default.pa.maemo:
@@ -19,7 +20,7 @@ pulseaudio (0.9.15~git20090219-0maemo1) UNRELEASED; urgency=low
   * Lower pool usage to 16MB (experimental try for 96692).
   * Remove pulseaudio-esound-compat (dropped esound compatibility).
 
- -- Maemo Multimedia <multimedia@maemo.org>  Thu, 19 Feb 2009 15:39:52 +0200
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 03 Mar 2009 14:45:20 +0200
 
 pulseaudio (0.9.15~git20090203-0maemo1) unstable; urgency=low
 
