@@ -59,6 +59,7 @@ update-patch-series:
 	git add $(CURDIR)/debian/patches/*
 
 DEB_CONFIGURE_EXTRA_FLAGS =			\
+	--enable-shave				\
 	--with-realtime-group=pulse-rt		\
 	--disable-legacy-runtime-dir		\
 	--disable-x11				\
