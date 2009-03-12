@@ -1,0 +1,878 @@
+From 4a2385fd6ad41d24234286a276341cb231dd6603 Mon Sep 17 00:00:00 2001
+From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
+Date: Thu, 5 Mar 2009 15:14:08 +0200
+Subject: [PATCH 11/49] alsa-sink-old: disable all mixer handling
+ alsa-sink-volume: disable all but mixer handling
+     - ugly hack atm
+
+---
+ src/modules/alsa/module-alsa-sink-old.c    |   25 +-
+ src/modules/alsa/module-alsa-sink-volume.c |  508 ++++------------------------
+ 2 files changed, 75 insertions(+), 458 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
+index c831a40..9540493 100644
+--- a/src/modules/alsa/module-alsa-sink-old.c
++++ b/src/modules/alsa/module-alsa-sink-old.c
+@@ -1640,6 +1640,7 @@ static pa_hook_result_t sink_proplist_changed_hook_callback(pa_core *c, pa_sink
+             switch_buffers(u, SINK_SWITCH_ALTERNATIVE);
+         }
+     }
++#if 0
+     v = pa_proplist_gets(s->proplist, PA_ALSA_SINK_PROP_MIXER_GAIN);
+     if (v) {
+         update_mixer_gain_steps(u, v);
+@@ -1649,6 +1650,7 @@ static pa_hook_result_t sink_proplist_changed_hook_callback(pa_core *c, pa_sink
+     if (v) {
+         update_mixer_setup(u, v);
+     }
++#endif
+ 
+ 
+     return PA_HOOK_OK;
+@@ -2007,6 +2009,7 @@ int pa__init(pa_module*m) {
+     frame_size = pa_frame_size(&ss);
+     alt_frame_size = pa_frame_size(&ss);
+ 
++#if 0
+     if ((err = snd_mixer_open(&u->mixer_handle, 0)) < 0) {
+         pa_log("Error opening mixer: %s", snd_strerror(err));
+     } else {
+@@ -2040,6 +2043,8 @@ int pa__init(pa_module*m) {
+             u->mixer_handle = NULL;
+         }
+     }
++#endif
++    u->mixer_handle = NULL;
+ 
+     if ((name = pa_modargs_get_value(ma, "sink_name", NULL)))
+         namereg_fail = 1;
+@@ -2117,13 +2122,13 @@ int pa__init(pa_module*m) {
+         goto fail;
+     }
+ 
+-    if (mixer_load)
+-        mixer_count = get_mixer_elements(u, mixer_load);
++//    if (mixer_load)
++//        mixer_count = get_mixer_elements(u, mixer_load);
+ 
+-    init_volume_cache(u);
++//    init_volume_cache(u);
+ 
+     pa_proplist_sets(u->sink->proplist, PA_ALSA_SINK_PROP_BUFFERS, PA_ALSA_SINK_PROP_BUFFERS_PRIMARY);
+-    pa_proplist_sets(u->sink->proplist, PA_ALSA_SINK_PROP_MIXER, "(none)");
++//    pa_proplist_sets(u->sink->proplist, PA_ALSA_SINK_PROP_MIXER, "(none)");
+ 
+     /* hook for buffer & mixer switching, only if either buffer switching or
+      * mixer gain step modification is possible. */
+@@ -2145,13 +2150,14 @@ int pa__init(pa_module*m) {
+         u->sink->set_mute(u->sink);
+ #endif
+ 
+-    if (mixer_count > 0) {
+-        if (load_mixer_volumes(u) == 0 && u->cache_volumes)
+-            load_default_mixer_volumes(u);
+-    }
++//    if (mixer_count > 0) {
++//        if (load_mixer_volumes(u) == 0 && u->cache_volumes)
++//            load_default_mixer_volumes(u);
++//    }
+ 
+-    set_mixer_elem_by_name(u, alsa_mixer);
++//    set_mixer_elem_by_name(u, alsa_mixer);
+ 
++#if 0
+     if (u->active_mixer) {
+         char *tmp = pa_sprintf_malloc("%s:%s", u->active_mixer->name, PA_ALSA_SINK_PROP_MIXER_CONTROL);
+         pa_proplist_sets(u->sink->proplist, PA_ALSA_SINK_PROP_MIXER, tmp);
+@@ -2160,6 +2166,7 @@ int pa__init(pa_module*m) {
+         pa_sink_set_volume(u->sink, &u->active_mixer->cache_volume, TRUE, TRUE);
+         pa_sink_set_mute(u->sink, u->active_mixer->cache_muted);
+     }
++#endif
+ 
+     if (alsa_mixer)
+         pa_xfree(alsa_mixer);
+diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
+index b909274..7fa13dd 100644
+--- a/src/modules/alsa/module-alsa-sink-volume.c
++++ b/src/modules/alsa/module-alsa-sink-volume.c
+@@ -51,6 +51,7 @@
+ #include <pulsecore/thread-mq.h>
+ #include <pulsecore/rtpoll.h>
+ #include <pulsecore/atomic.h>
++#include <pulsecore/namereg.h>
+ 
+ #include "alsa-util.h"
+ #include "module-alsa-sink-volume-symdef.h"
+@@ -127,22 +128,6 @@ struct userdata {
+     snd_pcm_t *pcm_handle;
+     snd_mixer_t *mixer_handle;
+ 
+-    size_t frame_size, fragment_size, hwbuf_size;
+-    snd_pcm_uframes_t period_size;
+-    unsigned nfragments;
+-    pa_memchunk memchunk;
+-
+-    size_t pri_frame_size, pri_fragment_size, pri_hwbuf_size;
+-    snd_pcm_uframes_t pri_period_size;
+-    unsigned pri_nfragments;
+-
+-    size_t alt_frame_size, alt_fragment_size, alt_hwbuf_size;
+-    snd_pcm_uframes_t alt_period_size;
+-    unsigned alt_nfragments;
+-
+-    pa_bool_t switching_enabled;
+-    int switch_mode;
+-
+     /* store for all loaded mixers */
+     PA_LLIST_HEAD(struct mixer_control_t, mixer_list);
+     struct mixer_control_t *active_mixer;
+@@ -152,18 +137,16 @@ struct userdata {
+ 
+     char *device_name;
+ 
+-    pa_bool_t use_mmap;
+-
+     pa_bool_t first;
+     pa_bool_t ignore_dB;
+ 
+-    pa_rtpoll_item *alsa_rtpoll_item;
+-
+     /* store mixer volumes */
+     GDBM_FILE gdbm_file;
+     pa_bool_t cache_volumes;
+ };
+ 
++static struct userdata *global_userdata;
++
+ #define ENTRY_VERSION 1
+ 
+ struct entry {
+@@ -176,17 +159,8 @@ static const char* const valid_modargs[] = {
+     "device",
+     "device_id",
+     "sink_name",
+-    "format",
+-    "channels",
+-    "rate",
+     "mixer",
+     "mixer_load",
+-    "fragments",
+-    "fragment_size",
+-    "alt_fragments",
+-    "alt_fragment_size",
+-    "channel_map",
+-    "mmap",
+     NULL
+ };
+ 
+@@ -199,380 +173,17 @@ static void replace_chars(char *str, const char c, const char new_c) {
+     }
+ }
+ 
+-static void switch_buffers(struct userdata *u, int switch_mode) {
+-    unsigned num_inputs = 0;
+-
+-    pa_assert(u->sink);
+-
+-    if (!u->switching_enabled) {
+-        pa_log_info("switch_buffers() switching disabled by config (no alt_ parameters)");
+-        return;
+-    }
+-    if (switch_mode == u->switch_mode) {
+-        pa_log_debug("switch_buffers() same mode as previously");
+-        return;
+-    }
+-    u->switch_mode = switch_mode;
+-    num_inputs = pa_idxset_size(u->sink->inputs);
+-
+-    pa_log_debug("switch_buffers() got %d inputs", num_inputs);
+-
+-    /* Suspend is dependent on the context where switch_buffers is run.
+-     * If using from thread_func, internal suspend() should be used. */
+-    pa_sink_suspend(u->sink, TRUE);
+-
+-    if (u->switch_mode == SINK_SWITCH_PRIMARY) {
+-        pa_log_info("switch to primary buffer");
+-        u->frame_size = u->pri_frame_size;
+-        u->fragment_size = u->pri_fragment_size;
+-        u->hwbuf_size = u->pri_hwbuf_size;
+-        u->nfragments = u->pri_nfragments;
+-        u->period_size = u->pri_period_size;
+-    } else {
+-        pa_log_info("switch to alternate buffer");
+-        u->frame_size = u->alt_frame_size;
+-        u->fragment_size = u->alt_fragment_size;
+-        u->hwbuf_size = u->alt_hwbuf_size;
+-        u->nfragments = u->alt_nfragments;
+-        u->period_size = u->alt_period_size;
+-    }
+-
+-    /* update buffer metrics */
+-    pa_proplist_setf(u->sink->proplist,
+-                     PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE,
+-                     "%lu", (unsigned long) (u->period_size * u->frame_size * u->nfragments));
+-    pa_proplist_setf(u->sink->proplist,
+-                     PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE,
+-                     "%lu", (unsigned long) (u->period_size * u->frame_size));
+-
+-    if (num_inputs > 0)
+-        pa_sink_suspend(u->sink, FALSE);
+-}
+-
+-static int mmap_write(struct userdata *u) {
+-    int work_done = 0;
+-
+-    pa_assert(u);
+-    pa_sink_assert_ref(u->sink);
+-
+-    for (;;) {
+-        pa_memchunk chunk;
+-        void *p;
+-        snd_pcm_sframes_t n;
+-        int err;
+-        const snd_pcm_channel_area_t *areas;
+-        snd_pcm_uframes_t offset, frames;
+-
+-        if ((n = snd_pcm_avail_update(u->pcm_handle)) < 0) {
+-
+-            if (n == -EPIPE) {
+-                pa_log_debug("snd_pcm_avail_update: Buffer underrun!");
+-                u->first = TRUE;
+-            }
+-
+-            if ((err = snd_pcm_recover(u->pcm_handle, n, 1)) == 0)
+-                continue;
+-
+-            if (err == -EAGAIN)
+-                return work_done;
+-
+-            pa_log("snd_pcm_avail_update: %s", snd_strerror(err));
+-            return -1;
+-        }
+-
+-        /*         pa_log("Got request for %i samples", (int) n); */
+-
+-        frames = n - (n % u->period_size);
+-
+-        if (frames <= 0)
+-            return work_done;
+-
+-        if ((err = snd_pcm_mmap_begin(u->pcm_handle, &areas, &offset, &frames)) < 0) {
+-
+-            if (err == -EPIPE) {
+-                pa_log_debug("snd_pcm_mmap_begin: Buffer underrun!");
+-                u->first = TRUE;
+-            }
+-
+-            if ((err = snd_pcm_recover(u->pcm_handle, err, 1)) == 0)
+-                continue;
+-
+-            if (err == -EAGAIN)
+-                return work_done;
+-
+-            pa_log("Failed to write data to DSP: %s", snd_strerror(err));
+-            return -1;
+-        }
+-
+-        /* Check these are multiples of 8 bit */
+-        pa_assert((areas[0].first & 7) == 0);
+-        pa_assert((areas[0].step & 7)== 0);
+-
+-        /* We assume a single interleaved memory buffer */
+-        pa_assert((areas[0].first >> 3) == 0);
+-        pa_assert((areas[0].step >> 3) == u->frame_size);
+-
+-        p = (uint8_t*) areas[0].addr + (offset * u->frame_size);
+-
+-        chunk.memblock = pa_memblock_new_fixed(u->core->mempool, p, frames * u->frame_size, 1);
+-        chunk.length = pa_memblock_get_length(chunk.memblock);
+-        chunk.index = 0;
+-
+-        pa_sink_render_into_full(u->sink, &chunk);
+-
+-        /* FIXME: Maybe we can do something to keep this memory block
+-         * a little bit longer around? */
+-        pa_memblock_unref_fixed(chunk.memblock);
+-
+-        if ((err = snd_pcm_mmap_commit(u->pcm_handle, offset, frames)) < 0) {
+-
+-            if (err == -EPIPE) {
+-                pa_log_debug("snd_pcm_mmap_commit: Buffer underrun!");
+-                u->first = TRUE;
+-            }
+-
+-            if ((err = snd_pcm_recover(u->pcm_handle, err, 1)) == 0)
+-                continue;
+-
+-            if (err == -EAGAIN)
+-                return work_done;
+-
+-            pa_log("Failed to write data to DSP: %s", snd_strerror(err));
+-            return -1;
+-        }
+-
+-        work_done = 1;
+-
+-        if (frames >= (snd_pcm_uframes_t) n)
+-            return work_done;
+-
+-        /*         pa_log("wrote %i samples", (int) frames); */
+-    }
+-}
+-
+-static int unix_write(struct userdata *u) {
+-    snd_pcm_status_t *status;
+-    int work_done = 0;
+-
+-    snd_pcm_status_alloca(&status);
+-
+-    pa_assert(u);
+-    pa_sink_assert_ref(u->sink);
+-
+-    for (;;) {
+-        void *p;
+-        snd_pcm_sframes_t t;
+-        ssize_t l;
+-        int err;
+-
+-        if ((err = snd_pcm_status(u->pcm_handle, status)) < 0) {
+-            pa_log("Failed to query DSP status data: %s", snd_strerror(err));
+-            return -1;
+-        }
+-
+-        if (snd_pcm_status_get_avail_max(status)*u->frame_size >= u->hwbuf_size)
+-            pa_log_debug("Buffer underrun!");
+-
+-        l = snd_pcm_status_get_avail(status) * u->frame_size;
+-
+-        /*         pa_log("%u bytes to write", l); */
+-
+-        l = l - (l % u->fragment_size);
+-
+-        if (l <= 0)
+-            return work_done;
+-
+-        if (u->memchunk.length <= 0)
+-            pa_sink_render(u->sink, l, &u->memchunk);
+-
+-        pa_assert(u->memchunk.length > 0);
+-
+-        p = pa_memblock_acquire(u->memchunk.memblock);
+-        t = snd_pcm_writei(u->pcm_handle, (const uint8_t*) p + u->memchunk.index, u->memchunk.length / u->frame_size);
+-        pa_memblock_release(u->memchunk.memblock);
+-
+-        /*         pa_log("wrote %i bytes of %u (%u)", t*u->frame_size, u->memchunk.length, l); */
+-
+-        pa_assert(t != 0);
+-
+-        if (t < 0) {
+-
+-            if ((t = snd_pcm_recover(u->pcm_handle, t, 1)) == 0)
+-                continue;
+-
+-            if (t == -EAGAIN) {
+-                pa_log_debug("EAGAIN");
+-                return work_done;
+-            } else {
+-                pa_log("Failed to write data to DSP: %s", snd_strerror(t));
+-                return -1;
+-            }
+-        }
+-
+-        u->memchunk.index += t * u->frame_size;
+-        u->memchunk.length -= t * u->frame_size;
+-
+-        if (u->memchunk.length <= 0) {
+-            pa_memblock_unref(u->memchunk.memblock);
+-            pa_memchunk_reset(&u->memchunk);
+-        }
+-
+-        work_done = 1;
+-
+-        if (t * u->frame_size >= (unsigned) l)
+-            return work_done;
+-    }
+-}
+-
+-static pa_usec_t sink_get_latency(struct userdata *u) {
+-    pa_usec_t r = 0;
+-    snd_pcm_status_t *status;
+-    snd_pcm_sframes_t frames = 0;
+-    int err;
+-
+-    snd_pcm_status_alloca(&status);
+-
+-    pa_assert(u);
+-    pa_assert(u->pcm_handle);
+-
+-    if ((err = snd_pcm_status(u->pcm_handle, status)) < 0)
+-        pa_log("Failed to get delay: %s", snd_strerror(err));
+-    else
+-        frames = snd_pcm_status_get_delay(status);
+-
+-    if (frames > 0)
+-        r = pa_bytes_to_usec(frames * u->frame_size, &u->sink->sample_spec);
+-
+-    if (u->memchunk.memblock)
+-        r += pa_bytes_to_usec(u->memchunk.length, &u->sink->sample_spec);
+-
+-    return r;
+-}
+-
+-static int build_pollfd(struct userdata *u) {
+-    int err;
+-    struct pollfd *pollfd;
+-    int n;
+-
+-    pa_assert(u);
+-    pa_assert(u->pcm_handle);
+-
+-    if ((n = snd_pcm_poll_descriptors_count(u->pcm_handle)) < 0) {
+-        pa_log("snd_pcm_poll_descriptors_count() failed: %s", snd_strerror(n));
+-        return -1;
+-    }
+-
+-    if (u->alsa_rtpoll_item)
+-        pa_rtpoll_item_free(u->alsa_rtpoll_item);
+-
+-    u->alsa_rtpoll_item = pa_rtpoll_item_new(u->rtpoll, PA_RTPOLL_NEVER, n);
+-    pollfd = pa_rtpoll_item_get_pollfd(u->alsa_rtpoll_item, NULL);
+-
+-    if ((err = snd_pcm_poll_descriptors(u->pcm_handle, pollfd, n)) < 0) {
+-        pa_log("snd_pcm_poll_descriptors() failed: %s", snd_strerror(err));
+-        return -1;
+-    }
+-
+-    return 0;
+-}
+-
+-static int suspend(struct userdata *u) {
+-    pa_assert(u);
+-    pa_assert(u->pcm_handle);
+-
+-    /* Let's suspend */
+-    snd_pcm_drain(u->pcm_handle);
+-    snd_pcm_close(u->pcm_handle);
+-    u->pcm_handle = NULL;
+-
+-    if (u->alsa_rtpoll_item) {
+-        pa_rtpoll_item_free(u->alsa_rtpoll_item);
+-        u->alsa_rtpoll_item = NULL;
+-    }
+-
+-    pa_log_info("Device suspended...");
+-
+-    return 0;
+-}
+-
+-static int unsuspend(struct userdata *u) {
+-    pa_sample_spec ss;
+-    int err;
+-    pa_bool_t b, d;
+-    unsigned nfrags;
+-
+-    pa_assert(u);
+-    pa_assert(!u->pcm_handle);
+-
+-    pa_log_info("Trying resume...");
+-
+-    snd_config_update_free_global();
+-    if ((err = snd_pcm_open(&u->pcm_handle, u->device_name, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK)) < 0) {
+-        pa_log("Error opening PCM device %s: %s", u->device_name, snd_strerror(err));
+-        goto fail;
+-    }
+-
+-    ss = u->sink->sample_spec;
+-    nfrags = u->nfragments;
+-    b = u->use_mmap;
+-    d = FALSE;
+-
+-    if ((err = pa_alsa_set_hw_params(u->pcm_handle, &ss, &nfrags, &u->period_size, u->hwbuf_size / u->frame_size, &b, &d, TRUE)) < 0) {
+-        pa_log("Failed to set hardware parameters: %s", snd_strerror(err));
+-        goto fail;
+-    }
+-
+-    if (b != u->use_mmap) {
+-        pa_log_warn("Resume failed, couldn't get original access mode.");
+-        goto fail;
+-    }
+-
+-    if (!pa_sample_spec_equal(&ss, &u->sink->sample_spec)) {
+-        pa_log_warn("Resume failed, couldn't restore original sample settings.");
+-        goto fail;
+-    }
+-
+-    if (nfrags != u->nfragments || u->period_size*u->frame_size != u->fragment_size) {
+-        pa_log_warn("Resume failed, couldn't restore original fragment settings.");
+-        goto fail;
+-    }
+-
+-    if ((err = pa_alsa_set_sw_params(u->pcm_handle, u->period_size)) < 0) {
+-        pa_log("Failed to set software parameters: %s", snd_strerror(err));
+-        goto fail;
+-    }
+-
+-    if (build_pollfd(u) < 0)
+-        goto fail;
+-
+-    /* FIXME: We need to reload the volume somehow */
+-
+-    u->first = TRUE;
+-
+-    pa_log_info("Resumed successfully...");
+-
+-    return 0;
+-
+- fail:
+-    if (u->pcm_handle) {
+-        snd_pcm_close(u->pcm_handle);
+-        u->pcm_handle = NULL;
+-    }
+-
+-    return -1;
+-}
+ 
+ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offset, pa_memchunk *chunk) {
+-    struct userdata *u = PA_SINK(o)->userdata;
++//    struct userdata *u = PA_SINK(o)->userdata;
++
++    struct userdata *u = global_userdata;
+ 
+     switch (code) {
+ 
+         case PA_SINK_MESSAGE_GET_LATENCY: {
+             pa_usec_t r = 0;
+ 
+-            if (u->pcm_handle)
+-                r = sink_get_latency(u);
+-
+             *((pa_usec_t*) data) = r;
+ 
+             return 0;
+@@ -583,16 +194,17 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+             switch ((pa_sink_state_t) PA_PTR_TO_UINT(data)) {
+ 
+                 case PA_SINK_SUSPENDED:
+-                    pa_assert(PA_SINK_IS_OPENED(u->sink->thread_info.state));
++//                    pa_assert(PA_SINK_IS_OPENED(u->sink->thread_info.state));
+ 
+-                    if (suspend(u) < 0)
+-                        return -1;
++//                    if (suspend(u) < 0)
++//                        return -1;
+ 
+                     break;
+ 
+                 case PA_SINK_IDLE:
+                 case PA_SINK_RUNNING:
+ 
++#if 0
+                     if (u->sink->thread_info.state == PA_SINK_INIT) {
+                         if (build_pollfd(u) < 0)
+                             return -1;
+@@ -602,7 +214,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+                         if (unsuspend(u) < 0)
+                             return -1;
+                     }
+-
++#endif
+                     break;
+ 
+                 case PA_SINK_UNLINKED:
+@@ -660,7 +272,8 @@ static long to_alsa_volume(struct userdata *u, pa_volume_t vol) {
+ }
+ 
+ static void sink_get_volume_cb(pa_sink *s) {
+-    struct userdata *u = s->userdata;
++    //struct userdata *u = s->userdata;
++    struct userdata *u = global_userdata;
+     int err;
+     unsigned i;
+     pa_cvolume r;
+@@ -789,25 +402,6 @@ static long update_alsa_volume(struct mixer_control_t *m, long alsa_vol) {
+ 
+     return vol;
+ 
+-    
+-#if 0
+-    long vol;
+-    int step = 0;
+-    pa_assert(m);
+-    pa_assert(m->gain_step);
+-
+-    step = (m->hw_volume_max - m->hw_volume_min)/m->gain_step_count;
+-    step = alsa_vol/step;
+-    if (step < 0)
+-        vol = m->gain_step[0];
+-    else if (step >= m->gain_step_count)
+-        vol = m->gain_step[m->gain_step_count-1];
+-    else
+-        vol = m->gain_step[step];
+-
+-    pa_log_debug("update alsa volume from %ld to %ld", alsa_vol, vol);
+-    return vol;
+-#endif
+     return 0;
+ }
+ 
+@@ -936,7 +530,8 @@ static int set_alsa_mixer_volumes(struct userdata *u, struct mixer_control_t *m,
+ }
+ 
+ static void sink_set_volume_cb(pa_sink *s) {
+-    struct userdata *u = s->userdata;
++    //struct userdata *u = s->userdata;
++    struct userdata *u = global_userdata;
+ 
+     if (!u->active_mixer) {
+         pa_log_warn("%s: no active mixer (sink_set_volume_cb)", u->device_name);
+@@ -960,7 +555,8 @@ static void sink_set_volume_cb(pa_sink *s) {
+ }
+ 
+ static void sink_get_mute_cb(pa_sink *s) {
+-    struct userdata *u = s->userdata;
++    //struct userdata *u = s->userdata;
++    struct userdata *u = global_userdata;
+     int err, sw;
+ 
+     pa_assert(u);
+@@ -975,7 +571,8 @@ static void sink_get_mute_cb(pa_sink *s) {
+ }
+ 
+ static void sink_set_mute_cb(pa_sink *s) {
+-    struct userdata *u = s->userdata;
++    //struct userdata *u = s->userdata;
++    struct userdata *u = global_userdata;
+     int err;
+ 
+     pa_assert(u);
+@@ -986,7 +583,7 @@ static void sink_set_mute_cb(pa_sink *s) {
+         return;
+     }
+ }
+-
++#if 0
+ static void thread_func(void *userdata) {
+     struct userdata *u = userdata;
+ 
+@@ -1097,6 +694,7 @@ static void thread_func(void *userdata) {
+  finish:
+     pa_log_debug("Thread shutting down");
+ }
++#endif
+ 
+ static struct mixer_control_t* get_mixer_elem_by_name(struct userdata *u, const char *mixer) {
+     struct mixer_control_t *m = NULL;
+@@ -1631,15 +1229,6 @@ static pa_hook_result_t sink_proplist_changed_hook_callback(pa_core *c, pa_sink
+     pa_assert(u);
+     pa_assert(s);
+ 
+-    v = pa_proplist_gets(s->proplist, PA_ALSA_SINK_PROP_BUFFERS);
+-    if (v) {
+-        if (pa_startswith(v, PA_ALSA_SINK_PROP_BUFFERS_PRIMARY)) {
+-            switch_buffers(u, SINK_SWITCH_PRIMARY);
+-        }
+-        else if (pa_startswith(v, PA_ALSA_SINK_PROP_BUFFERS_ALTERNATIVE)) {
+-            switch_buffers(u, SINK_SWITCH_ALTERNATIVE);
+-        }
+-    }
+     v = pa_proplist_gets(s->proplist, PA_ALSA_SINK_PROP_MIXER_GAIN);
+     if (v) {
+         update_mixer_gain_steps(u, v);
+@@ -1781,7 +1370,9 @@ static int load_mixer_volumes(struct userdata *u) {
+             values_read++;
+         } else {
+             /* just try to get something to start with */
++            pa_log("get sometging to start with ..");
+             if (!set_mixer_elem_by_name(u, m->name)) {
++                pa_log("skip get volume");
+                 m->cache_volume = *pa_sink_get_volume(u->sink, TRUE);
+                 m->cache_muted = pa_sink_get_mute(u->sink, TRUE);
+                 pa_log_info("%s: get initial volume for mixer %s: %d",
+@@ -1844,6 +1435,7 @@ static void store_mixer_volumes(struct userdata *u) {
+ 
+ int pa__init(pa_module*m) {
+ 
++    pa_sink *hw_sink = NULL;
+     pa_modargs *ma = NULL;
+     struct userdata *u = NULL;
+     const char *dev_id;
+@@ -1860,7 +1452,7 @@ int pa__init(pa_module*m) {
+     snd_pcm_info_t *pcm_info = NULL;
+     int err;
+     char *t;
+-    const char *name;
++    const char *sink_name;
+     char *name_buf = NULL;
+     int namereg_fail;
+     pa_bool_t use_mmap = TRUE, b, d;
+@@ -1878,12 +1470,13 @@ int pa__init(pa_module*m) {
+         goto fail;
+     }
+ 
++#if 0
+     ss = m->core->default_sample_spec;
+     if (pa_modargs_get_sample_spec_and_channel_map(ma, &ss, &map, PA_CHANNEL_MAP_ALSA) < 0) {
+         pa_log("Failed to parse sample specification and channel map");
+         goto fail;
+     }
+-
++#endif
+     if (pa_modargs_get_value_boolean(ma, "ignore_dB", &ignore_dB) < 0) {
+         pa_log("Failed to parse ignore_dB argument.");
+         goto fail;
+@@ -1900,7 +1493,7 @@ int pa__init(pa_module*m) {
+         /* Default to loading alsa_mixer, if mixer_load is not defined. */
+         mixer_load = pa_xstrdup(alsa_mixer);
+     }
+-
++#if 0
+     frame_size = pa_frame_size(&ss);
+ 
+     nfrags = m->core->default_n_fragments;
+@@ -1934,19 +1527,22 @@ int pa__init(pa_module*m) {
+         pa_log("Failed to parse mmap argument.");
+         goto fail;
+     }
++#endif
++    sink_name = pa_modargs_get_value(ma, "sink_name", NULL);
++    hw_sink = pa_namereg_get(m->core, sink_name, PA_NAMEREG_SINK);
++
+ 
+     u = pa_xnew0(struct userdata, 1);
+     u->ignore_dB = ignore_dB;
+-    u->switch_mode = SINK_SWITCH_PRIMARY;
+-    if (alt_nfrags != 0)
+-        u->switching_enabled = TRUE;
+-    else
+-        u->switching_enabled = FALSE;
+     u->core = m->core;
+     u->module = m;
+     m->userdata = u;
+-    u->use_mmap = use_mmap;
+-    u->first = TRUE;
++
++    global_userdata = u;
++
++    u->sink = hw_sink;
++    u->channel_map = u->sink->channel_map;
++#if 0
+     u->rtpoll = pa_rtpoll_new();
+     pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
+     u->alsa_rtpoll_item = NULL;
+@@ -1981,10 +1577,13 @@ int pa__init(pa_module*m) {
+             goto fail;
+ 
+     }
++#endif
++    u->device_name = pa_sprintf_malloc("hw:0");
+ 
+     pa_assert(u->device_name);
+     pa_log_info("Successfully opened device %s.", u->device_name);
+ 
++#if 0
+     if (use_mmap && !b) {
+         pa_log_info("Device doesn't support mmap(), falling back to UNIX read/write mode.");
+         u->use_mmap = use_mmap = b;
+@@ -2006,6 +1605,7 @@ int pa__init(pa_module*m) {
+     /* ALSA might tweak the sample spec, so recalculate the frame size */
+     frame_size = pa_frame_size(&ss);
+     alt_frame_size = pa_frame_size(&ss);
++#endif
+ 
+     if ((err = snd_mixer_open(&u->mixer_handle, 0)) < 0) {
+         pa_log("Error opening mixer: %s", snd_strerror(err));
+@@ -2015,6 +1615,7 @@ int pa__init(pa_module*m) {
+         if (pa_alsa_prepare_mixer(u->mixer_handle, u->device_name) >= 0)
+             found = TRUE;
+         else {
++#if 0
+             snd_pcm_info_t *info;
+ 
+             snd_pcm_info_alloca(&info);
+@@ -2033,6 +1634,8 @@ int pa__init(pa_module*m) {
+                     pa_xfree(md);
+                 }
+             }
++#endif
++            pa_log("couldn't prepare mixer with %s", u->device_name);
+         }
+ 
+         if (!found) {
+@@ -2041,6 +1644,7 @@ int pa__init(pa_module*m) {
+         }
+     }
+ 
++#if 0
+     if ((name = pa_modargs_get_value(ma, "sink_name", NULL)))
+         namereg_fail = 1;
+     else {
+@@ -2116,23 +1720,25 @@ int pa__init(pa_module*m) {
+         pa_log("Failed to create thread.");
+         goto fail;
+     }
++#endif
+ 
+     if (mixer_load)
+         mixer_count = get_mixer_elements(u, mixer_load);
++    pa_log("we are here 0");
+ 
+     init_volume_cache(u);
+ 
+-    pa_proplist_sets(u->sink->proplist, PA_ALSA_SINK_PROP_BUFFERS, PA_ALSA_SINK_PROP_BUFFERS_PRIMARY);
++///    pa_proplist_sets(u->sink->proplist, PA_ALSA_SINK_PROP_BUFFERS, PA_ALSA_SINK_PROP_BUFFERS_PRIMARY);
+     pa_proplist_sets(u->sink->proplist, PA_ALSA_SINK_PROP_MIXER, "(none)");
+ 
+     /* hook for buffer & mixer switching, only if either buffer switching or
+      * mixer gain step modification is possible. */
+-    if (u->switching_enabled || mixer_load)
++    if (mixer_load)
+         u->sink_proplist_changed_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_PROPLIST_CHANGED],
+                                                         PA_HOOK_LATE,
+                                                         (pa_hook_cb_t)sink_proplist_changed_hook_callback, u);
+ 
+-    pa_sink_put(u->sink);
++///    pa_sink_put(u->sink);
+ 
+     /* pa_sink_put modifies sink flags */
+     u->default_flags = u->sink->flags; 
+@@ -2149,8 +1755,10 @@ int pa__init(pa_module*m) {
+         if (load_mixer_volumes(u) == 0 && u->cache_volumes)
+             load_default_mixer_volumes(u);
+     }
++    pa_log("we are here 1");
+ 
+     set_mixer_elem_by_name(u, alsa_mixer);
++    pa_log("we are here 2");
+ 
+     if (u->active_mixer) {
+         char *tmp = pa_sprintf_malloc("%s:%s", u->active_mixer->name, PA_ALSA_SINK_PROP_MIXER_CONTROL);
+@@ -2220,11 +1828,11 @@ void pa__done(pa_module*m) {
+     if (u->sink)
+         pa_sink_unref(u->sink);
+ 
+-    if (u->memchunk.memblock)
+-        pa_memblock_unref(u->memchunk.memblock);
++//    if (u->memchunk.memblock)
++//        pa_memblock_unref(u->memchunk.memblock);
+ 
+-    if (u->alsa_rtpoll_item)
+-        pa_rtpoll_item_free(u->alsa_rtpoll_item);
++//    if (u->alsa_rtpoll_item)
++//        pa_rtpoll_item_free(u->alsa_rtpoll_item);
+ 
+     if (u->rtpoll)
+         pa_rtpoll_free(u->rtpoll);
+@@ -2237,6 +1845,8 @@ void pa__done(pa_module*m) {
+         snd_pcm_close(u->pcm_handle);
+     }
+ 
++    global_userdata = NULL;
++
+     pa_xfree(u->device_name);
+     pa_xfree(u);
+ 
+-- 
+1.6.2.rc1.13.gfd76c.dirty
+

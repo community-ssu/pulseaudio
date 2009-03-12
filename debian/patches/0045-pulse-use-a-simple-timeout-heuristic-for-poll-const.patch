@@ -1,0 +1,204 @@
+From 7cb1439dbb887e9e16de131d4d631af09b8eb808 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Tue, 3 Mar 2009 15:50:46 +0200
+Subject: [PATCH 45/49] pulse: use a simple timeout heuristic for poll construction
+
+---
+ src/pulse/mainloop.c |  103 ++++++++++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 87 insertions(+), 16 deletions(-)
+
+diff --git a/src/pulse/mainloop.c b/src/pulse/mainloop.c
+index 225fd09..abcf915 100644
+--- a/src/pulse/mainloop.c
++++ b/src/pulse/mainloop.c
+@@ -67,6 +67,8 @@ struct pa_io_event {
+     void *userdata;
+     pa_io_event_destroy_cb_t destroy_callback;
+ 
++    struct timeval last_wakeup_time;
++
+     PA_LLIST_FIELDS(pa_io_event);
+ };
+ 
+@@ -108,6 +110,8 @@ struct pa_mainloop {
+     pa_bool_t rebuild_pollfds:1;
+     struct pollfd *pollfds;
+     unsigned max_pollfds, n_pollfds;
++    pa_time_event *rebuild_full_pollfds_time;
++    pa_bool_t rebuild_full_pollfds;
+ 
+     int prepared_timeout;
+     pa_time_event *cached_next_time_event;
+@@ -181,6 +185,8 @@ static pa_io_event* mainloop_io_new(
+     e->userdata = userdata;
+     e->destroy_callback = NULL;
+ 
++    pa_gettimeofday(&e->last_wakeup_time);
++
+ #ifdef OS_IS_WIN32
+     {
+         fd_set xset;
+@@ -219,10 +225,10 @@ static void mainloop_io_enable(pa_io_event *e, pa_io_event_flags_t events) {
+ 
+     e->events = events;
+ 
+-    if (e->pollfd)
+-        e->pollfd->events = map_flags_to_libc(events);
+-    else
+-        e->mainloop->rebuild_pollfds = TRUE;
++    /* make sure we take this one next build */
++    pa_gettimeofday(&e->last_wakeup_time);
++
++    e->mainloop->rebuild_pollfds = TRUE;
+ 
+     pa_mainloop_wakeup(e->mainloop);
+ }
+@@ -446,8 +452,25 @@ static const pa_mainloop_api vtable = {
+     .quit = mainloop_quit,
+ };
+ 
++#define FULL_POLL_INTERVAL (100 * PA_USEC_PER_MSEC)
++#define POLL_TIMEOUT (1 * PA_USEC_PER_SEC)
++
++static void rebuild_full_pollfds_cb(pa_mainloop_api *a, pa_time_event *e, const struct timeval *tv, void *userdata) {
++    pa_mainloop *m;
++    struct timeval now;
++
++    pa_assert_se(m = userdata);
++
++    /* make sure the full poll is rebuild */
++    m->rebuild_full_pollfds = TRUE;
++    m->rebuild_pollfds = TRUE;
++
++    mainloop_time_restart(m->rebuild_full_pollfds_time, pa_timeval_add(pa_gettimeofday(&now), FULL_POLL_INTERVAL));
++}
++
+ pa_mainloop *pa_mainloop_new(void) {
+     pa_mainloop *m;
++    struct timeval now;
+ 
+     pa_init_i18n();
+ 
+@@ -492,6 +515,9 @@ pa_mainloop *pa_mainloop_new(void) {
+     m->poll_func_userdata = NULL;
+     m->poll_func_ret = -1;
+ 
++    m->rebuild_full_pollfds_time = mainloop_time_new(&m->api, pa_timeval_add(pa_gettimeofday(&now), FULL_POLL_INTERVAL), rebuild_full_pollfds_cb, m);
++    m->rebuild_full_pollfds = TRUE;
++
+     return m;
+ }
+ 
+@@ -631,6 +657,7 @@ static void rebuild_pollfds(pa_mainloop *m) {
+     pa_io_event*e;
+     struct pollfd *p;
+     unsigned l;
++    struct timeval now;
+ 
+     l = m->n_io_events + 1;
+     if (m->max_pollfds < l) {
+@@ -650,30 +677,74 @@ static void rebuild_pollfds(pa_mainloop *m) {
+         m->n_pollfds++;
+     }
+ 
+-    for (e = m->io_events; e; e = e->next) {
+-        if (e->dead) {
+-            e->pollfd = NULL;
+-            continue;
++    pa_gettimeofday(&now);
++
++    if (!m->rebuild_full_pollfds) {
++
++        /* we only check those who woke up under the FULL_POLL_INTERVAL */
++        for (e = m->io_events; e; e = e->next) {
++            if (e->dead) {
++                e->pollfd = NULL;
++                continue;
++            }
++
++            if (pa_timeval_diff(&now, &e->last_wakeup_time) >= POLL_TIMEOUT) {
++                e->pollfd = NULL;
++                continue;
++            }
++
++            e->pollfd = p;
++            p->fd = e->fd;
++            p->events = map_flags_to_libc(e->events);
++            p->revents = 0;
++
++            p++;
++            m->n_pollfds++;
+         }
+ 
+-        e->pollfd = p;
+-        p->fd = e->fd;
+-        p->events = map_flags_to_libc(e->events);
+-        p->revents = 0;
++        m->rebuild_pollfds = FALSE;
+ 
+-        p++;
+-        m->n_pollfds++;
++    } else {
++
++        for (e = m->io_events; e; e = e->next) {
++            if (e->dead) {
++                e->pollfd = NULL;
++                continue;
++            }
++
++            e->pollfd = p;
++            p->fd = e->fd;
++            p->events = map_flags_to_libc(e->events);
++            p->revents = 0;
++
++            p++;
++            m->n_pollfds++;
++
++            m->rebuild_full_pollfds = FALSE;
++        }
++
++        /* next time we want to rebuild a smaller set again */
++        m->rebuild_pollfds = TRUE;
+     }
+ 
+-    m->rebuild_pollfds = FALSE;
++end:
++
++    if (m->n_pollfds == (m->n_io_events + (m->wakeup_pipe[0] >= 0 ? 1 : 0)))
++        mainloop_time_restart(m->rebuild_full_pollfds_time, NULL);
++    else if (!m->rebuild_full_pollfds_time->enabled)
++        mainloop_time_restart(m->rebuild_full_pollfds_time, pa_timeval_add(pa_gettimeofday(&now), FULL_POLL_INTERVAL));
++
+ }
+ 
+ static int dispatch_pollfds(pa_mainloop *m) {
+     pa_io_event *e;
+     int r = 0, k;
++    struct timeval now;
+ 
+     pa_assert(m->poll_func_ret > 0);
+ 
++    pa_gettimeofday(&now);
++
+     for (e = m->io_events, k = m->poll_func_ret; e && !m->quit && k > 0; e = e->next) {
+         if (e->dead || !e->pollfd || !e->pollfd->revents)
+             continue;
+@@ -682,6 +753,7 @@ static int dispatch_pollfds(pa_mainloop *m) {
+         pa_assert(e->callback);
+         e->callback(&m->api, e, e->fd, map_flags_from_libc(e->pollfd->revents), e->userdata);
+         e->pollfd->revents = 0;
++        e->last_wakeup_time = now;
+         r++;
+ 
+         k--;
+@@ -851,7 +923,6 @@ int pa_mainloop_poll(pa_mainloop *m) {
+     if (m->n_enabled_defer_events )
+         m->poll_func_ret = 0;
+     else {
+-        pa_assert(!m->rebuild_pollfds);
+ 
+         if (m->poll_func)
+             m->poll_func_ret = m->poll_func(m->pollfds, m->n_pollfds, m->prepared_timeout, m->poll_func_userdata);
+-- 
+1.6.2.rc1.13.gfd76c.dirty
+

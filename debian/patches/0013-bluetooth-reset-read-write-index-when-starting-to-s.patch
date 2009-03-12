@@ -1,0 +1,26 @@
+From 12ea5707b561117709053ea4580d97f03b772560 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Thu, 5 Mar 2009 15:47:13 +0200
+Subject: [PATCH 13/49] bluetooth: reset read/write index when starting to stream
+
+---
+ src/modules/bluetooth/module-bluetooth-device.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index 495bc82..7d601e7 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -700,6 +700,9 @@ static int start_stream_fd(struct userdata *u) {
+     pollfd->fd = u->stream_fd;
+     pollfd->events = pollfd->revents = 0;
+ 
++    u->read_index = 0;
++    u->write_index = 0;
++
+     return 0;
+ }
+ 
+-- 
+1.6.2.rc1.13.gfd76c.dirty
+

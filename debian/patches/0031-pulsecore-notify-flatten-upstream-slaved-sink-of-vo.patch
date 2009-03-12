@@ -1,0 +1,56 @@
+From 5f66a68435260b4b72de3b7c1030dcbb4cda5987 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Tue, 10 Mar 2009 20:08:59 +0200
+Subject: [PATCH 31/49] pulsecore: notify flatten upstream slaved sink of volume change
+
+---
+ src/pulsecore/sink.c |   26 +++++++++++++++++++++++++-
+ 1 files changed, 25 insertions(+), 1 deletions(-)
+
+diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
+index 4ebc9f3..45e147e 100644
+--- a/src/pulsecore/sink.c
++++ b/src/pulsecore/sink.c
+@@ -1116,6 +1116,30 @@ void pa_sink_propagate_flat_volume(pa_sink *s, const pa_cvolume *old_volume) {
+     propagate_flat_volume(s, &s->virtual_volume, old_volume, &s->channel_map);
+ }
+ 
++static void post_virtual_volume_changed(pa_sink *s) {
++    pa_cvolume new_virtual_volume;
++    pa_sink_input *i;
++    uint32_t idx;
++
++    pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
++
++    if (!(s->flags & PA_SINK_FLAT_VOLUME))
++        return;
++
++    for (i = PA_SINK_INPUT(pa_idxset_first(s->inputs, &idx)); i; i = PA_SINK_INPUT(pa_idxset_next(s->inputs, &idx))) {
++        if (!i->origin_sink)
++            continue;
++
++        new_virtual_volume = s->virtual_volume;
++        pa_cvolume_remap(&new_virtual_volume, &s->channel_map, &i->origin_sink->channel_map);
++
++        if (!pa_cvolume_equal(&new_virtual_volume, &i->origin_sink->virtual_volume)) {
++            i->origin_sink->virtual_volume = new_virtual_volume;
++            post_virtual_volume_changed(i->origin_sink);
++        }
++    }
++}
++
+ /* Called from main thread */
+ void pa_sink_set_volume(pa_sink *s, const pa_cvolume *volume, pa_bool_t propagate, pa_bool_t sendmsg) {
+     pa_cvolume old_virtual_volume;
+@@ -1170,7 +1194,7 @@ void pa_sink_set_volume(pa_sink *s, const pa_cvolume *volume, pa_bool_t propagat
+         pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SET_VOLUME, NULL, 0, NULL) == 0);
+ 
+     if (virtual_volume_changed)
+-        pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
++        post_virtual_volume_changed(s);
+ }
+ 
+ /* Called from main thread. Only to be called by sink implementor */
+-- 
+1.6.2.rc1.13.gfd76c.dirty
+

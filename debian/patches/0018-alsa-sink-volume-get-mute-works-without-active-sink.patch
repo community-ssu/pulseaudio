@@ -1,0 +1,103 @@
+From 5d489ad0b2708f6935a1ef9e6d114268287058cb Mon Sep 17 00:00:00 2001
+From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
+Date: Thu, 5 Mar 2009 17:11:09 +0200
+Subject: [PATCH 18/49] alsa-sink-volume: get mute works without active sink
+
+---
+ src/modules/alsa/module-alsa-sink-volume.c |   42 +++++++++++++++++----------
+ 1 files changed, 26 insertions(+), 16 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
+index 101f9dd..184f10e 100644
+--- a/src/modules/alsa/module-alsa-sink-volume.c
++++ b/src/modules/alsa/module-alsa-sink-volume.c
+@@ -105,25 +105,26 @@ struct mixer_control_t {
+ struct userdata {
+     pa_core *core;
+     pa_module *module;
++
++    /* controlled sink and properties */
+     pa_sink *sink;
+     pa_sink_flags_t default_flags;
++    pa_channel_map channel_map;
++
++    char *device_name;
++    pa_bool_t ignore_dB;
+ 
+     snd_mixer_t *mixer_handle;
+ 
+     /* store for all loaded mixers */
+     PA_LLIST_HEAD(struct mixer_control_t, mixer_list);
+     struct mixer_control_t *active_mixer;
+-    pa_channel_map channel_map;
+-
+-    pa_hook_slot *sink_proplist_changed_slot;
+-
+-    char *device_name;
+-
+-    pa_bool_t ignore_dB;
+ 
+     /* store mixer volumes */
+     GDBM_FILE gdbm_file;
+     pa_bool_t cache_volumes;
++
++    pa_hook_slot *sink_proplist_changed_slot;
+ };
+ 
+ static struct userdata *global_userdata;
+@@ -469,20 +470,26 @@ static void sink_set_volume_cb(pa_sink *s) {
+     }
+ }
+ 
++static int get_mute(struct mixer_control_t *m, int *sw) {
++    int err;
++
++    if ((err = snd_mixer_selem_get_playback_switch(m->mixer_elem, 0, sw)) < 0) {
++        pa_log_error("Unable to get switch: %s", snd_strerror(err));
++        return 1;
++    }
++
++    return 0;
++}
++
+ static void sink_get_mute_cb(pa_sink *s) {
+-    //struct userdata *u = s->userdata;
++    int sw;
+     struct userdata *u = global_userdata;
+-    int err, sw;
+ 
+     pa_assert(u);
+-    pa_assert(u->active_mixer->mixer_elem);
+-
+-    if ((err = snd_mixer_selem_get_playback_switch(u->active_mixer->mixer_elem, 0, &sw)) < 0) {
+-        pa_log_error("Unable to get switch: %s", snd_strerror(err));
+-        return;
+-    }
++    pa_assert(u->active_mixer);
+ 
+-    s->muted = !sw;
++    if (!get_mute(u->active_mixer, &sw))
++        s->muted = !sw;
+ }
+ 
+ static void sink_set_mute_cb(pa_sink *s) {
+@@ -1213,6 +1220,7 @@ static void load_default_mixer_volumes(struct userdata *u) {
+ 
+ static void store_mixer_volumes(struct userdata *u) {
+     struct mixer_control_t *m = NULL;
++    int mute_sw;
+     pa_assert(u);
+ 
+     for (m = u->mixer_list; m; m = m->next) {
+@@ -1221,6 +1229,8 @@ static void store_mixer_volumes(struct userdata *u) {
+             /* update current volume from active mixer */
+             if (m == u->active_mixer) {
+                 m->cache_volume = m->hardware_volume;
++                if (!get_mute(m, &mute_sw))
++                    m->cache_muted = !mute_sw;
+ //                m->cache_muted = pa_sink_get_mute(u->sink, FALSE);
+             }
+             store_mixer_volume(u, m);
+-- 
+1.6.2.rc1.13.gfd76c.dirty
+

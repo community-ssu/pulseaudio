@@ -1,0 +1,84 @@
+From afc38972fea80610c484cd37edd541a03c4c8ac0 Mon Sep 17 00:00:00 2001
+From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
+Date: Thu, 5 Mar 2009 12:08:00 +0200
+Subject: [PATCH 09/49] alsa-sink-old: fix preserve sink flags. fix set pointer to NULL.
+
+---
+ src/modules/alsa/module-alsa-sink-old.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
+index bfcd3cf..c831a40 100644
+--- a/src/modules/alsa/module-alsa-sink-old.c
++++ b/src/modules/alsa/module-alsa-sink-old.c
+@@ -80,7 +80,6 @@ PA_MODULE_USAGE(
+ 
+ #define SINK_SWITCH_PRIMARY (0)
+ #define SINK_SWITCH_ALTERNATIVE (1)
+-#define SINK_DEFAULT_FLAGS PA_SINK_HARDWARE|PA_SINK_LATENCY
+ 
+ struct gain_step_t {
+     int step;
+@@ -119,6 +118,7 @@ struct userdata {
+     pa_core *core;
+     pa_module *module;
+     pa_sink *sink;
++    pa_sink_flags_t default_flags;
+ 
+     pa_thread *thread;
+     pa_thread_mq thread_mq;
+@@ -1126,7 +1126,7 @@ static int set_mixer_elem_by_name(struct userdata *u, const char *mixer) {
+ 
+     pa_log_info("%s: setting active mixer to %s", u->device_name, m->name);
+ 
+-    u->sink->flags = SINK_DEFAULT_FLAGS;
++    u->sink->flags = u->default_flags;
+ 
+     if (m->hw_volume_control) {
+         if (m->hw_dB_supported) {
+@@ -1546,8 +1546,10 @@ static int update_slave_list(struct userdata *u) {
+     }
+ 
+     for (m = u->mixer_list; m; m = m->next) {
+-        if (m->slaves)
++        if (m->slaves) {
+             pa_xfree(m->slaves);
++            m->slaves = NULL;
++        }
+         if (m->slave)
+             count++;
+     }
+@@ -1559,8 +1561,10 @@ static int update_slave_list(struct userdata *u) {
+         for (m = u->mixer_list; m; m = m->next) {
+             if (i == count)
+                 break;
+-            if (m->slave)
++            if (m->slave) {
+                 u->active_mixer->slaves[i++] = m;
++                pa_log("add slave %s to slavelist in %s", m->name, u->active_mixer->name);
++            }
+         }
+ 
+         u->active_mixer->slaves[i] = NULL;
+@@ -2080,8 +2084,6 @@ int pa__init(pa_module*m) {
+                                     use_mmap ? " via DMA" : ""));
+     pa_xfree(t);
+ 
+-    u->sink->flags = SINK_DEFAULT_FLAGS;
+-
+     u->frame_size = frame_size;
+     u->fragment_size = frag_size = period_size * frame_size;
+     u->nfragments = nfrags;
+@@ -2132,6 +2134,9 @@ int pa__init(pa_module*m) {
+ 
+     pa_sink_put(u->sink);
+ 
++    /* pa_sink_put modifies sink flags */
++    u->default_flags = u->sink->flags; 
++
+ #if 0
+     /* allow stream restore to apply old volumes */
+     if (u->sink->set_volume)
+-- 
+1.6.2.rc1.13.gfd76c.dirty
+

@@ -1,0 +1,76 @@
+From ed41afcbfb58c39b7bce312f9fa21c18cf90441e Mon Sep 17 00:00:00 2001
+From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
+Date: Thu, 5 Mar 2009 15:26:44 +0200
+Subject: [PATCH 12/49] alsa-sink-volume: make module unloading behave better
+
+---
+ src/modules/alsa/module-alsa-sink-volume.c |   32 ++++++++++++++--------------
+ 1 files changed, 16 insertions(+), 16 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
+index 7fa13dd..63e6ffe 100644
+--- a/src/modules/alsa/module-alsa-sink-volume.c
++++ b/src/modules/alsa/module-alsa-sink-volume.c
+@@ -1418,7 +1418,7 @@ static void store_mixer_volumes(struct userdata *u) {
+             /* update current volume from active mixer */
+             if (m == u->active_mixer) {
+                 m->cache_volume = m->hardware_volume;
+-                m->cache_muted = pa_sink_get_mute(u->sink, FALSE);
++//                m->cache_muted = pa_sink_get_mute(u->sink, FALSE);
+             }
+             store_mixer_volume(u, m);
+         } else {
+@@ -1815,18 +1815,18 @@ void pa__done(pa_module*m) {
+     if (u->gdbm_file)
+         gdbm_close(u->gdbm_file);
+ 
+-    if (u->sink)
+-        pa_sink_unlink(u->sink);
++//    if (u->sink)
++//        pa_sink_unlink(u->sink);
+ 
+-    if (u->thread) {
+-        pa_asyncmsgq_send(u->thread_mq.inq, NULL, PA_MESSAGE_SHUTDOWN, NULL, 0, NULL);
+-        pa_thread_free(u->thread);
+-    }
++//    if (u->thread) {
++//        pa_asyncmsgq_send(u->thread_mq.inq, NULL, PA_MESSAGE_SHUTDOWN, NULL, 0, NULL);
++//        pa_thread_free(u->thread);
++//    }
+ 
+-    pa_thread_mq_done(&u->thread_mq);
++//    pa_thread_mq_done(&u->thread_mq);
+ 
+-    if (u->sink)
+-        pa_sink_unref(u->sink);
++//    if (u->sink)
++//        pa_sink_unref(u->sink);
+ 
+ //    if (u->memchunk.memblock)
+ //        pa_memblock_unref(u->memchunk.memblock);
+@@ -1834,16 +1834,16 @@ void pa__done(pa_module*m) {
+ //    if (u->alsa_rtpoll_item)
+ //        pa_rtpoll_item_free(u->alsa_rtpoll_item);
+ 
+-    if (u->rtpoll)
+-        pa_rtpoll_free(u->rtpoll);
++//    if (u->rtpoll)
++//        pa_rtpoll_free(u->rtpoll);
+ 
+     if (u->mixer_handle)
+         snd_mixer_close(u->mixer_handle);
+ 
+-    if (u->pcm_handle) {
+-        snd_pcm_drop(u->pcm_handle);
+-        snd_pcm_close(u->pcm_handle);
+-    }
++//    if (u->pcm_handle) {
++//        snd_pcm_drop(u->pcm_handle);
++//        snd_pcm_close(u->pcm_handle);
++//    }
+ 
+     global_userdata = NULL;
+ 
+-- 
+1.6.2.rc1.13.gfd76c.dirty
+
