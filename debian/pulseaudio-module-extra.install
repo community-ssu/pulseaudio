@@ -4,6 +4,7 @@ usr/lib/pulse-*/modules/librtp.so
 usr/lib/pulse-*/modules/module-bluetooth-proximity.so
 usr/lib/pulse-*/modules/module-cli-protocol-tcp.so
 usr/lib/pulse-*/modules/module-cli-protocol-unix.so
+usr/lib/pulse-*/modules/module-cli.so
 usr/lib/pulse-*/modules/module-console-kit.so
 usr/lib/pulse-*/modules/module-cork-music-on-phone.so
 usr/lib/pulse-*/modules/module-default-device-restore.so
@@ -22,8 +23,8 @@ usr/lib/pulse-*/modules/module-pipe-source.so
 usr/lib/pulse-*/modules/module-rtp-recv.so
 usr/lib/pulse-*/modules/module-rtp-send.so
 usr/lib/pulse-*/modules/module-simple-protocol-tcp.so
-usr/lib/pulse-*/modules/module-sine.so
 usr/lib/pulse-*/modules/module-sine-source.so
+usr/lib/pulse-*/modules/module-sine.so
 usr/lib/pulse-*/modules/module-tunnel-sink.so
 usr/lib/pulse-*/modules/module-tunnel-source.so
 usr/lib/pulse-*/modules/module-volume-restore.so

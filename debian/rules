@@ -86,6 +86,7 @@ DEB_CONFIGURE_EXTRA_FLAGS =			\
 	simple-protocol-unix			\
 	stream-restore				\
 	suspend-on-idle"
+
 DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-0.9/modules
 DEB_DH_INSTALL_ARGS = --sourcedir=$(CURDIR)/debian/tmp
-DEB_UPDATE_RCD_PARAMS = defaults 25 15
+DEB_UPDATE_RCD_PARAMS = start 25 2 3 4 5 . stop 15 1 .

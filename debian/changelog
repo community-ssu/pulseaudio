@@ -1,8 +1,82 @@
 pulseaudio (0.9.15~test5-0maemo1) UNRELEASED; urgency=low
 
   * Rebase on -test5.
+  * Merge with debian/master.
 
  -- Maemo Multimedia <multimedia@maemo.org>  Fri, 06 Mar 2009 13:43:59 +0200
+
+pulseaudio (0.9.15~test5-1) UNRELEASED; urgency=low
+
+  * New Upstream Version
+  * debian/copyright: Updated
+  * debian/control: Build-Depends on libltdl7-dev
+  * debian/control: Build-Depends on libasound2-dev (>= 1.0.19)
+  * debian/rules: Use git format-patch instead of git-format-patch
+  * debian/patches/0001-load-module-gconf-earlier.patch:
+    - Removed. Merged upstream
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 05 Mar 2009 18:09:32 +0000
+
+pulseaudio (0.9.14-2) unstable; urgency=low
+
+  [ Sjoerd Simons ]
+  * Build against libcap2-dev (Closes: #489060)
+  * Bump shlibs of libpulse0 (Closes: #514645)
+  * Bump soname of libpulsecore to 9
+  * Wait up to 5 seconds for pulseaudio to stop. Fix suggested by Aron Griffis
+    (Closes: #488754, #498457)
+  * Don't put stop links in rc0 and rc6. Pulse doens't really need it. Patch
+    supplied by James Westby (Closes: #494959)
+  * Make the start option of the init script report the right status. Fix
+    suggested by Aron Griffis (Closes: #488752)
+  * Use per user esound sockets instead of a single one for all users
+
+  [ Baptiste Mille-Mathias ]
+  * debian/control:
+    - create a separate package for bluetooth module (Closes: #513832)
+  * debian/pulseaudio-module-bluetooth.install
+    - put files for the separate bluetooth module package
+  * debian/pulseaudio.install
+    - remove files of the separate bluetooth module package
+
+  [ Sjoerd Simons ]
+  * debian/control: Don't build the bluetooth module on non-linux systems
+    (Closes: #502837)
+  * debian/control: Make the bluetooth module conflict with older pulseaudio
+    versions
+  * Update standards version, no changes needed
+  * debian/copyright: Big update
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 01 Mar 2009 15:53:27 +0000
+
+pulseaudio (0.9.14-1) experimental; urgency=low
+
+  * New Upstream Version
+  * 0002-load-module-gconf-earlier.patch renamed to
+    0001-load-module-gconf-earlier.patch and updated
+  * 0001-Fix-library-search-path-to-include-lib-and-usr-lib.patch
+    - Removed, no longer applicable
+  * 0003-make-sure-to-use-64bit-rounding-even-on-32bit-machin.patch
+    - Removed, fixed upstream
+  * 0004-properly-remove-dbus-matches-an-filters-when-unloadi.patch
+    - Removed, fixed upstream
+  * debian/patches/series
+    - Updated
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 01 Feb 2009 12:47:55 +0000
+
+pulseaudio (0.9.13-2) experimental; urgency=low
+
+  * Rename libpulsecore5 to libpulsecore8 to correctly reflect the soname
+    (Closes: #503612)
+  * 0003-make-sure-to-use-64bit-rounding-even-on-32bit-machin.patch
+    - Fix rounding errors on 32 bit machines. From upstream git
+  * 0004-properly-remove-dbus-matches-an-filters-when-unloadi.patch
+    - Properly remove dbus filters when unloading the bluetooth module
+  * 0005-Fix-two-typos-that-broke-tunnels.patch
+    - Fix tunnels. From upstream git
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 16 Nov 2008 18:13:05 +0000
 
 pulseaudio (0.9.15~git20090219-0maemo2) unstable; urgency=low
 

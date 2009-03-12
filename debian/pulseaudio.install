@@ -4,11 +4,7 @@ etc/pulse/system.pa
 usr/bin/pulseaudio
 usr/bin/start-pulseaudio-x11
 usr/lib/libpulsecommon-*.so
-usr/lib/libpulsecore-*.so
 usr/lib/pulse-*/modules/libalsa-util.so
-usr/lib/pulse-*/modules/libbluetooth-ipc.so
-usr/lib/pulse-*/modules/libbluetooth-sbc.so
-usr/lib/pulse-*/modules/libbluetooth-util.so
 usr/lib/pulse-*/modules/libcli.so
 usr/lib/pulse-*/modules/libdbus-util.so
 usr/lib/pulse-*/modules/libprotocol-cli.so
@@ -21,10 +17,7 @@ usr/lib/pulse-*/modules/module-alsa-source-old.so
 usr/lib/pulse-*/modules/module-alsa-source.so
 usr/lib/pulse-*/modules/module-always-sink.so
 usr/lib/pulse-*/modules/module-augment-properties.so
-usr/lib/pulse-*/modules/module-bluetooth-device.so
-usr/lib/pulse-*/modules/module-bluetooth-discover.so
 usr/lib/pulse-*/modules/module-card-restore.so
-usr/lib/pulse-*/modules/module-cli.so
 usr/lib/pulse-*/modules/module-combine.so
 usr/lib/pulse-*/modules/module-device-restore.so
 usr/lib/pulse-*/modules/module-native-protocol-unix.so
