@@ -1,6 +1,6 @@
-pulseaudio (0.9.15~test5-0maemo1) unstable; urgency=low
+pulseaudio (0.9.15~test5-0maemo1) UNRELEASED; urgency=low
 
-  * Testing.
+  * Rebase on -test5.
 
  -- Maemo Multimedia <multimedia@maemo.org>  Fri, 06 Mar 2009 13:43:59 +0200
 
