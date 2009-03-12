@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -32,17 +32,23 @@
 #include <pulse/xmalloc.h>
 #include <pulse/timeval.h>
 #include <pulse/util.h>
+#include <pulse/i18n.h>
 
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/atomic.h>
 #include <pulsecore/core-error.h>
+#include <pulsecore/once.h>
 
 #include "alsa-util.h"
 
 #ifdef HAVE_HAL
 #include "hal-util.h"
+#endif
+
+#ifdef HAVE_UDEV
+#include "udev-util.h"
 #endif
 
 struct pa_alsa_fdlist {
@@ -468,6 +474,7 @@ finish:
 
 int pa_alsa_set_sw_params(snd_pcm_t *pcm, snd_pcm_uframes_t avail_min) {
     snd_pcm_sw_params_t *swparams;
+    snd_pcm_uframes_t boundary;
     int err;
 
     pa_assert(pcm);
@@ -479,7 +486,22 @@ int pa_alsa_set_sw_params(snd_pcm_t *pcm, snd_pcm_uframes_t avail_min) {
         return err;
     }
 
-    if ((err = snd_pcm_sw_params_set_stop_threshold(pcm, swparams, (snd_pcm_uframes_t) -1)) < 0) {
+    if ((err = snd_pcm_sw_params_set_period_event(pcm, swparams, 0)) < 0) {
+        pa_log_warn("Unable to disable period event: %s\n", snd_strerror(err));
+        return err;
+    }
+
+    if ((err = snd_pcm_sw_params_set_tstamp_mode(pcm, swparams, SND_PCM_TSTAMP_ENABLE)) < 0) {
+        pa_log_warn("Unable to enable time stamping: %s\n", snd_strerror(err));
+        return err;
+    }
+
+    if ((err = snd_pcm_sw_params_get_boundary(swparams, &boundary)) < 0) {
+        pa_log_warn("Unable to get boundary: %s\n", snd_strerror(err));
+        return err;
+    }
+
+    if ((err = snd_pcm_sw_params_set_stop_threshold(pcm, swparams, boundary)) < 0) {
         pa_log_warn("Unable to set stop threshold: %s\n", snd_strerror(err));
         return err;
     }
@@ -505,39 +527,39 @@ int pa_alsa_set_sw_params(snd_pcm_t *pcm, snd_pcm_uframes_t avail_min) {
 static const struct pa_alsa_profile_info device_table[] = {
     {{ 1, { PA_CHANNEL_POSITION_MONO }},
      "hw",
-     "Analog Mono",
+     N_("Analog Mono"),
      "analog-mono",
      1 },
 
     {{ 2, { PA_CHANNEL_POSITION_LEFT, PA_CHANNEL_POSITION_RIGHT }},
      "front",
-     "Analog Stereo",
+     N_("Analog Stereo"),
      "analog-stereo",
      10 },
 
     {{ 2, { PA_CHANNEL_POSITION_LEFT, PA_CHANNEL_POSITION_RIGHT }},
      "iec958",
-     "IEC958 Digital Stereo",
+     N_("Digital Stereo (IEC958)"),
      "iec958-stereo",
      5 },
 
     {{ 2, { PA_CHANNEL_POSITION_LEFT, PA_CHANNEL_POSITION_RIGHT }},
      "hdmi",
-     "HDMI Digital Stereo",
+     N_("Digital Stereo (HDMI)"),
      "hdmi-stereo",
      4 },
 
     {{ 4, { PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
             PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT }},
      "surround40",
-     "Analog Surround 4.0",
+     N_("Analog Surround 4.0"),
      "analog-surround-40",
      7 },
 
     {{ 4, { PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
             PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT }},
      "a52",
-     "IEC958/AC3 Digital Surround 4.0",
+     N_("Digital Surround 4.0 (IEC958/AC3)"),
      "iec958-ac3-surround-40",
      2 },
 
@@ -545,7 +567,7 @@ static const struct pa_alsa_profile_info device_table[] = {
             PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
             PA_CHANNEL_POSITION_LFE }},
      "surround41",
-     "Analog Surround 4.1",
+     N_("Analog Surround 4.1"),
      "analog-surround-41",
      7 },
 
@@ -553,7 +575,7 @@ static const struct pa_alsa_profile_info device_table[] = {
             PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
             PA_CHANNEL_POSITION_CENTER }},
      "surround50",
-     "Analog Surround 5.0",
+     N_("Analog Surround 5.0"),
      "analog-surround-50",
      7 },
 
@@ -561,7 +583,7 @@ static const struct pa_alsa_profile_info device_table[] = {
             PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
             PA_CHANNEL_POSITION_CENTER, PA_CHANNEL_POSITION_LFE }},
      "surround51",
-     "Analog Surround 5.1",
+     N_("Analog Surround 5.1"),
      "analog-surround-51",
      8 },
 
@@ -569,7 +591,7 @@ static const struct pa_alsa_profile_info device_table[] = {
             PA_CHANNEL_POSITION_FRONT_RIGHT, PA_CHANNEL_POSITION_REAR_LEFT,
             PA_CHANNEL_POSITION_REAR_RIGHT, PA_CHANNEL_POSITION_LFE}},
      "a52",
-     "IEC958/AC3 Digital Surround 5.1",
+     N_("Digital Surround 5.1 (IEC958/AC3)"),
      "iec958-ac3-surround-51",
      3 },
 
@@ -578,7 +600,7 @@ static const struct pa_alsa_profile_info device_table[] = {
             PA_CHANNEL_POSITION_CENTER, PA_CHANNEL_POSITION_LFE,
             PA_CHANNEL_POSITION_SIDE_LEFT, PA_CHANNEL_POSITION_SIDE_RIGHT }},
      "surround71",
-     "Analog Surround 7.1",
+     N_("Analog Surround 7.1"),
      "analog-surround-71",
      7 },
 
@@ -1009,6 +1031,7 @@ snd_mixer_elem_t *pa_alsa_find_elem(snd_mixer_t *mixer, const char *name, const 
     pa_assert(name);
 
     snd_mixer_selem_id_set_name(sid, name);
+    snd_mixer_selem_id_set_index(sid, 0);
 
     if ((elem = snd_mixer_find_selem(mixer, sid))) {
 
@@ -1025,6 +1048,7 @@ snd_mixer_elem_t *pa_alsa_find_elem(snd_mixer_t *mixer, const char *name, const 
 
     if (fallback) {
         snd_mixer_selem_id_set_name(sid, fallback);
+        snd_mixer_selem_id_set_index(sid, 0);
 
         if ((fallback_elem = snd_mixer_find_selem(mixer, sid))) {
 
@@ -1066,7 +1090,6 @@ success:
 
     return elem;
 }
-
 
 int pa_alsa_find_mixer_and_elem(
         snd_pcm_t *pcm,
@@ -1343,6 +1366,26 @@ void pa_alsa_redirect_errors_dec(void) {
         snd_lib_error_set_handler(NULL);
 }
 
+pa_bool_t pa_alsa_init_description(pa_proplist *p) {
+    const char *s;
+    pa_assert(p);
+
+    if (pa_device_init_description(p))
+        return TRUE;
+
+    if ((s = pa_proplist_gets(p, "alsa.card_name"))) {
+        pa_proplist_sets(p, PA_PROP_DEVICE_DESCRIPTION, s);
+        return TRUE;
+    }
+
+    if ((s = pa_proplist_gets(p, "alsa.name"))) {
+        pa_proplist_sets(p, PA_PROP_DEVICE_DESCRIPTION, s);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 void pa_alsa_init_proplist_card(pa_core *c, pa_proplist *p, int card) {
     char *cn, *lcn, *dn;
 
@@ -1365,6 +1408,10 @@ void pa_alsa_init_proplist_card(pa_core *c, pa_proplist *p, int card) {
         pa_proplist_sets(p, "alsa.driver_name", dn);
         pa_xfree(dn);
     }
+
+#ifdef HAVE_UDEV
+    pa_udev_get_info(c, p, card);
+#endif
 
 #ifdef HAVE_HAL
     pa_hal_get_info(c, p, card);
@@ -1392,7 +1439,7 @@ void pa_alsa_init_proplist_pcm_info(pa_core *c, pa_proplist *p, snd_pcm_info_t *
 
     snd_pcm_class_t class;
     snd_pcm_subclass_t subclass;
-    const char *n, *id, *sdn, *cn = NULL;
+    const char *n, *id, *sdn;
     int card;
 
     pa_assert(p);
@@ -1407,6 +1454,7 @@ void pa_alsa_init_proplist_pcm_info(pa_core *c, pa_proplist *p, snd_pcm_info_t *
         if (alsa_class_table[class])
             pa_proplist_sets(p, "alsa.class", alsa_class_table[class]);
     }
+
     subclass = snd_pcm_info_get_subclass(pcm_info);
     if (subclass <= SND_PCM_SUBCLASS_LAST)
         if (alsa_subclass_table[subclass])
@@ -1424,17 +1472,8 @@ void pa_alsa_init_proplist_pcm_info(pa_core *c, pa_proplist *p, snd_pcm_info_t *
 
     pa_proplist_setf(p, "alsa.device", "%u", snd_pcm_info_get_device(pcm_info));
 
-    if ((card = snd_pcm_info_get_card(pcm_info)) >= 0) {
+    if ((card = snd_pcm_info_get_card(pcm_info)) >= 0)
         pa_alsa_init_proplist_card(c, p, card);
-        cn = pa_proplist_gets(p, "alsa.card_name");
-    }
-
-    if (cn && n)
-        pa_proplist_setf(p, PA_PROP_DEVICE_DESCRIPTION, "%s - %s", cn, n);
-    else if (cn)
-        pa_proplist_sets(p, PA_PROP_DEVICE_DESCRIPTION, cn);
-    else if (n)
-        pa_proplist_sets(p, PA_PROP_DEVICE_DESCRIPTION, n);
 }
 
 void pa_alsa_init_proplist_pcm(pa_core *c, pa_proplist *p, snd_pcm_t *pcm) {
@@ -1537,7 +1576,7 @@ pa_rtpoll_item* pa_alsa_build_pollfd(snd_pcm_t *pcm, pa_rtpoll *rtpoll) {
     return item;
 }
 
-snd_pcm_sframes_t pa_alsa_safe_avail_update(snd_pcm_t *pcm, size_t hwbuf_size, const pa_sample_spec *ss) {
+snd_pcm_sframes_t pa_alsa_safe_avail(snd_pcm_t *pcm, size_t hwbuf_size, const pa_sample_spec *ss) {
     snd_pcm_sframes_t n;
     size_t k;
 
@@ -1548,20 +1587,75 @@ snd_pcm_sframes_t pa_alsa_safe_avail_update(snd_pcm_t *pcm, size_t hwbuf_size, c
     /* Some ALSA driver expose weird bugs, let's inform the user about
      * what is going on */
 
-    n = snd_pcm_avail_update(pcm);
+    n = snd_pcm_avail(pcm);
 
     if (n <= 0)
         return n;
 
     k = (size_t) n * pa_frame_size(ss);
 
-    if (k >= hwbuf_size * 3 ||
-        k >= pa_bytes_per_second(ss)*10)
-        pa_log("snd_pcm_avail_update() returned a value that is exceptionally large: %lu bytes (%lu ms). "
-               "Most likely this is an ALSA driver bug. Please report this issue to the ALSA developers.",
-               (unsigned long) k, (unsigned long) (pa_bytes_to_usec(k, ss) / PA_USEC_PER_MSEC));
+    if (k >= hwbuf_size * 5 ||
+        k >= pa_bytes_per_second(ss)*10) {
+
+        PA_ONCE_BEGIN {
+            char *dn = pa_alsa_get_driver_name_by_pcm(pcm);
+            pa_log(_("snd_pcm_avail() returned a value that is exceptionally large: %lu bytes (%lu ms).\n"
+                     "Most likely this is a bug in the ALSA driver '%s'. Please report this issue to the ALSA developers."),
+                   (unsigned long) k,
+                   (unsigned long) (pa_bytes_to_usec(k, ss) / PA_USEC_PER_MSEC),
+                   pa_strnull(dn));
+            pa_xfree(dn);
+        } PA_ONCE_END;
+
+        /* Mhmm, let's try not to fail completely */
+        n = (snd_pcm_sframes_t) (hwbuf_size / pa_frame_size(ss));
+    }
 
     return n;
+}
+
+int pa_alsa_safe_delay(snd_pcm_t *pcm, snd_pcm_sframes_t *delay, size_t hwbuf_size, const pa_sample_spec *ss) {
+    ssize_t k;
+    size_t abs_k;
+    int r;
+
+    pa_assert(pcm);
+    pa_assert(delay);
+    pa_assert(hwbuf_size > 0);
+    pa_assert(ss);
+
+    /* Some ALSA driver expose weird bugs, let's inform the user about
+     * what is going on */
+
+    if ((r = snd_pcm_delay(pcm, delay)) < 0)
+        return r;
+
+    k = (ssize_t) *delay * (ssize_t) pa_frame_size(ss);
+
+    abs_k = k >= 0 ? (size_t) k : (size_t) -k;
+
+    if (abs_k >= hwbuf_size * 5 ||
+        abs_k >= pa_bytes_per_second(ss)*10) {
+
+        PA_ONCE_BEGIN {
+            char *dn = pa_alsa_get_driver_name_by_pcm(pcm);
+            pa_log(_("snd_pcm_delay() returned a value that is exceptionally large: %li bytes (%s%lu ms).\n"
+                     "Most likely this is a bug in the ALSA driver '%s'. Please report this issue to the ALSA developers."),
+                   (signed long) k,
+                   k < 0 ? "-" : "",
+                   (unsigned long) (pa_bytes_to_usec(abs_k, ss) / PA_USEC_PER_MSEC),
+                   pa_strnull(dn));
+            pa_xfree(dn);
+        } PA_ONCE_END;
+
+        /* Mhmm, let's try not to fail completely */
+        if (k < 0)
+            *delay = -(snd_pcm_sframes_t) (hwbuf_size / pa_frame_size(ss));
+        else
+            *delay = (snd_pcm_sframes_t) (hwbuf_size / pa_frame_size(ss));
+    }
+
+    return 0;
 }
 
 int pa_alsa_safe_mmap_begin(snd_pcm_t *pcm, const snd_pcm_channel_area_t **areas, snd_pcm_uframes_t *offset, snd_pcm_uframes_t *frames, size_t hwbuf_size, const pa_sample_spec *ss) {
@@ -1589,9 +1683,15 @@ int pa_alsa_safe_mmap_begin(snd_pcm_t *pcm, const snd_pcm_channel_area_t **areas
         k >= hwbuf_size * 3 ||
         k >= pa_bytes_per_second(ss)*10)
 
-        pa_log("snd_pcm_mmap_begin() returned a value that is exceptionally large: %lu bytes (%lu ms). "
-               "Most likely this is an ALSA driver bug. Please report this issue to the ALSA developers.",
-               (unsigned long) k, (unsigned long) (pa_bytes_to_usec(k, ss) / PA_USEC_PER_MSEC));
+        PA_ONCE_BEGIN {
+            char *dn = pa_alsa_get_driver_name_by_pcm(pcm);
+            pa_log(_("snd_pcm_mmap_begin() returned a value that is exceptionally large: %lu bytes (%lu ms).\n"
+                     "Most likely this is a bug in the ALSA driver '%s'. Please report this issue to the ALSA developers."),
+                   (unsigned long) k,
+                   (unsigned long) (pa_bytes_to_usec(k, ss) / PA_USEC_PER_MSEC),
+                   pa_strnull(dn));
+            pa_xfree(dn);
+        } PA_ONCE_END;
 
     return r;
 }
@@ -1612,4 +1712,40 @@ char *pa_alsa_get_driver_name(int card) {
     pa_xfree(m);
 
     return n;
+}
+
+char *pa_alsa_get_driver_name_by_pcm(snd_pcm_t *pcm) {
+    int card;
+
+    snd_pcm_info_t* info;
+    snd_pcm_info_alloca(&info);
+
+    if (snd_pcm_info(pcm, info) < 0)
+        return NULL;
+
+    if ((card = snd_pcm_info_get_card(info)) < 0)
+        return NULL;
+
+    return pa_alsa_get_driver_name(card);
+}
+
+char *pa_alsa_get_reserve_name(const char *device) {
+    const char *t;
+    int i;
+
+    pa_assert(device);
+
+    if ((t = strchr(device, ':')))
+        device = t+1;
+
+    if ((i = snd_card_get_index(device)) < 0) {
+        int32_t k;
+
+        if (pa_atoi(device, &k) < 0)
+            return NULL;
+
+        i = (int) k;
+    }
+
+    return pa_sprintf_malloc("Audio%i", i);
 }

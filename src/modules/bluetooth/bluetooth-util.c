@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
-  published by the Free Software Foundation; either version 2 of the
+  published by the Free Software Foundation; either version 2.1 of the
   License, or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -811,8 +811,8 @@ const char*pa_bluetooth_get_form_factor(uint32_t class) {
         [1] = "headset",
         [2] = "hands-free",
         [4] = "microphone",
-        [5] = "external-speakers",
-        [6] = "headphones",
+        [5] = "speaker",
+        [6] = "headphone",
         [7] = "portable",
         [8] = "car",
         [10] = "hifi"

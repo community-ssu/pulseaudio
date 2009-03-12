@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -33,6 +33,7 @@
 #include <pulse/xmalloc.h>
 #include <pulse/timeval.h>
 #include <pulse/util.h>
+#include <pulse/i18n.h>
 
 #include <pulsecore/sink-input.h>
 #include <pulsecore/namereg.h>
@@ -171,6 +172,9 @@ pa_sink* pa_sink_new(
 
     if (data->card)
         pa_proplist_update(data->proplist, PA_UPDATE_MERGE, data->card->proplist);
+
+    pa_device_init_description(data->proplist);
+    pa_device_init_icon(data->proplist, TRUE);
 
     if (pa_hook_fire(&core->hooks[PA_CORE_HOOK_SINK_FIXATE], data) < 0) {
         pa_xfree(s);
@@ -322,6 +326,9 @@ static int sink_set_state(pa_sink *s, pa_sink_state_t state) {
                 pa_sink_input_kill(i);
             else if (i->suspend)
                 i->suspend(i, state == PA_SINK_SUSPENDED);
+
+        if (s->monitor_source)
+            pa_source_sync_suspend(s->monitor_source);
     }
 
     return 0;
@@ -1525,8 +1532,10 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
 
             s->thread_info.state = PA_PTR_TO_UINT(userdata);
 
-            if (s->thread_info.state == PA_SINK_SUSPENDED)
+            if (s->thread_info.state == PA_SINK_SUSPENDED) {
+                s->thread_info.rewind_nbytes = 0;
                 s->thread_info.rewind_requested = FALSE;
+            }
 
             return 0;
 
@@ -1596,8 +1605,12 @@ int pa_sink_suspend_all(pa_core *c, pa_bool_t suspend) {
 
     pa_core_assert_ref(c);
 
-    for (sink = PA_SINK(pa_idxset_first(c->sinks, &idx)); sink; sink = PA_SINK(pa_idxset_next(c->sinks, &idx)))
-        ret -= pa_sink_suspend(sink, suspend) < 0;
+    for (sink = PA_SINK(pa_idxset_first(c->sinks, &idx)); sink; sink = PA_SINK(pa_idxset_next(c->sinks, &idx))) {
+        int r;
+
+        if ((r = pa_sink_suspend(sink, suspend)) < 0)
+            ret = r;
+    }
 
     return ret;
 }
@@ -1726,7 +1739,7 @@ pa_usec_t pa_sink_get_requested_latency(pa_sink *s) {
     return usec;
 }
 
-/* Called from IO thread */
+/* Called from IO as well as the main thread -- the latter only before the IO thread started up */
 void pa_sink_set_max_rewind(pa_sink *s, size_t max_rewind) {
     pa_sink_input *i;
     void *state = NULL;
@@ -1747,7 +1760,7 @@ void pa_sink_set_max_rewind(pa_sink *s, size_t max_rewind) {
         pa_source_set_max_rewind(s->monitor_source, s->thread_info.max_rewind);
 }
 
-/* Called from IO thread */
+/* Called from IO as well as the main thread -- the latter only before the IO thread started up */
 void pa_sink_set_max_request(pa_sink *s, size_t max_request) {
     void *state = NULL;
 
@@ -1885,4 +1898,82 @@ size_t pa_sink_get_max_request(pa_sink *s) {
     pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_GET_MAX_REQUEST, &r, 0, NULL) == 0);
 
     return r;
+}
+
+/* Called from main context */
+pa_bool_t pa_device_init_icon(pa_proplist *p, pa_bool_t is_sink) {
+    const char *ff, *c, *t = NULL, *s = "", *profile, *bus;
+
+    pa_assert(p);
+
+    if (pa_proplist_contains(p, PA_PROP_DEVICE_ICON_NAME))
+        return TRUE;
+
+    if ((ff = pa_proplist_gets(p, PA_PROP_DEVICE_FORM_FACTOR))) {
+
+        if (pa_streq(ff, "microphone"))
+            t = "audio-input-microphone";
+        else if (pa_streq(ff, "webcam"))
+            t = "camera-web";
+        else if (pa_streq(ff, "computer"))
+            t = "computer";
+        else if (pa_streq(ff, "handset"))
+            t = "phone";
+        else if (pa_streq(ff, "portable"))
+            t = "multimedia-player";
+    }
+
+    if (!t)
+        if ((c = pa_proplist_gets(p, PA_PROP_DEVICE_CLASS)))
+            if (pa_streq(c, "modem"))
+                t = "modem";
+
+    if (!t) {
+        if (is_sink)
+            t = "audio-card";
+        else
+            t = "audio-input-microphone";
+    }
+
+    if ((profile = pa_proplist_gets(p, PA_PROP_DEVICE_PROFILE_NAME))) {
+        if (strstr(profile, "analog"))
+            s = "-analog";
+        else if (strstr(profile, "iec958"))
+            s = "-iec958";
+        else if (strstr(profile, "hdmi"))
+            s = "-hdmi";
+    }
+
+    bus = pa_proplist_gets(p, PA_PROP_DEVICE_BUS);
+
+    pa_proplist_setf(p, PA_PROP_DEVICE_ICON_NAME, "%s%s%s%s", t, pa_strempty(s), bus ? "-" : "", pa_strempty(bus));
+
+    return TRUE;
+}
+
+pa_bool_t pa_device_init_description(pa_proplist *p) {
+    const char *s;
+    pa_assert(p);
+
+    if (pa_proplist_contains(p, PA_PROP_DEVICE_DESCRIPTION))
+        return TRUE;
+
+    if ((s = pa_proplist_gets(p, PA_PROP_DEVICE_FORM_FACTOR)))
+        if (pa_streq(s, "internal")) {
+            pa_proplist_sets(p, PA_PROP_DEVICE_DESCRIPTION, _("Internal Audio"));
+            return TRUE;
+        }
+
+    if ((s = pa_proplist_gets(p, PA_PROP_DEVICE_CLASS)))
+        if (pa_streq(s, "modem")) {
+            pa_proplist_sets(p, PA_PROP_DEVICE_DESCRIPTION, _("Modem"));
+            return TRUE;
+        }
+
+    if ((s = pa_proplist_gets(p, PA_PROP_DEVICE_PRODUCT_NAME))) {
+        pa_proplist_sets(p, PA_PROP_DEVICE_DESCRIPTION, s);
+        return TRUE;
+    }
+
+    return FALSE;
 }

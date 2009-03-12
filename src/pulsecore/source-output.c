@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -127,7 +127,6 @@ int pa_source_output_new(
     pa_return_val_if_fail(data->source, -PA_ERR_NOENTITY);
     pa_return_val_if_fail(PA_SOURCE_IS_LINKED(pa_source_get_state(data->source)), -PA_ERR_BADSTATE);
     pa_return_val_if_fail(!data->direct_on_input || data->direct_on_input->sink == data->source->monitor_of, -PA_ERR_INVALID);
-    pa_return_val_if_fail(!(flags & PA_SOURCE_OUTPUT_FAIL_ON_SUSPEND) || pa_source_get_state(data->source) != PA_SOURCE_SUSPENDED, -PA_ERR_BADSTATE);
 
     if (!data->sample_spec_is_set)
         data->sample_spec = data->source->sample_spec;
@@ -165,6 +164,12 @@ int pa_source_output_new(
 
     if ((r = pa_hook_fire(&core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_FIXATE], data)) < 0)
         return r;
+
+    if ((flags & PA_SOURCE_OUTPUT_FAIL_ON_SUSPEND) &&
+        pa_source_get_state(data->source) == PA_SOURCE_SUSPENDED) {
+        pa_log("Failed to create source output: source is suspended.");
+        return -PA_ERR_BADSTATE;
+    }
 
     if (pa_idxset_size(data->source->outputs) >= PA_MAX_OUTPUTS_PER_SOURCE) {
         pa_log("Failed to create source output: too many outputs per source.");
@@ -329,6 +334,8 @@ void pa_source_output_unlink(pa_source_output*o) {
         pa_source_update_status(o->source);
         o->source = NULL;
     }
+
+    pa_core_maybe_vacuum(o->core);
 
     pa_source_output_unref(o);
 }
@@ -618,9 +625,9 @@ void pa_source_output_set_name(pa_source_output *o, const char *name) {
 /* Called from main thread */
 void pa_source_output_update_proplist(pa_source_output *o, pa_update_mode_t mode, pa_proplist *p) {
     pa_source_output_assert_ref(o);
-    pa_assert(p);
 
-    pa_proplist_update(o->proplist, mode, p);
+    if (p)
+        pa_proplist_update(o->proplist, mode, p);
 
     if (PA_SINK_IS_LINKED(o->state)) {
         pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_PROPLIST_CHANGED], o);

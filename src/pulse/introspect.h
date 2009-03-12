@@ -9,7 +9,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -317,6 +317,7 @@ typedef struct pa_server_info {
     const char *default_sink_name;      /**< Name of default sink. */
     const char *default_source_name;    /**< Name of default sink. */
     uint32_t cookie;                    /**< A random cookie for identifying this instance of PulseAudio. */
+    pa_channel_map channel_map;         /**< Default channel map. \since 0.9.15 */
 } pa_server_info;
 
 /** Callback prototype for pa_context_get_server_info() */
@@ -400,6 +401,7 @@ typedef struct pa_card_profile_info {
     const char *description;            /**< Description of this profile */
     uint32_t n_sinks;                   /**< Number of sinks this profile would create */
     uint32_t n_sources;                 /**< Number of sources this profile would create */
+    uint32_t priority;                  /**< The higher this value is the more useful this profile is as a default */
 } pa_card_profile_info;
 
 /** Stores information about cards. Please note that this structure

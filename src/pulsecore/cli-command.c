@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -32,6 +32,7 @@
 #include <ltdl.h>
 
 #include <pulse/xmalloc.h>
+#include <pulse/error.h>
 
 #include <pulsecore/module.h>
 #include <pulsecore/sink.h>
@@ -321,6 +322,8 @@ static int pa_cli_command_source_outputs(pa_core *c, pa_tokenizer *t, pa_strbuf 
 }
 
 static int pa_cli_command_stat(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail) {
+    char ss[PA_SAMPLE_SPEC_SNPRINT_MAX];
+    char cm[PA_CHANNEL_MAP_SNPRINT_MAX];
     char s[256];
     const pa_mempool_stat *stat;
     unsigned k;
@@ -363,7 +366,10 @@ static int pa_cli_command_stat(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_b
                      pa_bytes_snprint(s, sizeof(s), (unsigned) pa_scache_total_size(c)));
 
     pa_strbuf_printf(buf, "Default sample spec: %s\n",
-                     pa_sample_spec_snprint(s, sizeof(s), &c->default_sample_spec));
+                     pa_sample_spec_snprint(ss, sizeof(ss), &c->default_sample_spec));
+
+    pa_strbuf_printf(buf, "Default channel map: %s\n",
+                     pa_channel_map_snprint(cm, sizeof(cm), &c->default_channel_map));
 
     def_sink = pa_namereg_get_default_sink(c);
     def_source = pa_namereg_get_default_source(c);
@@ -1231,7 +1237,7 @@ static int pa_cli_command_move_source_output(pa_core *c, pa_tokenizer *t, pa_str
 static int pa_cli_command_suspend_sink(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail) {
     const char *n, *m;
     pa_sink *sink;
-    int suspend;
+    int suspend, r;
 
     pa_core_assert_ref(c);
     pa_assert(t);
@@ -1258,14 +1264,16 @@ static int pa_cli_command_suspend_sink(pa_core *c, pa_tokenizer *t, pa_strbuf *b
         return -1;
     }
 
-    pa_sink_suspend(sink, suspend);
+    if ((r = pa_sink_suspend(sink, suspend)) < 0)
+        pa_strbuf_printf(buf, "Failed to resume/suspend sink: %s\n", pa_strerror(r));
+
     return 0;
 }
 
 static int pa_cli_command_suspend_source(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail) {
     const char *n, *m;
     pa_source *source;
-    int suspend;
+    int suspend, r;
 
     pa_core_assert_ref(c);
     pa_assert(t);
@@ -1292,14 +1300,15 @@ static int pa_cli_command_suspend_source(pa_core *c, pa_tokenizer *t, pa_strbuf 
         return -1;
     }
 
-    pa_source_suspend(source, suspend);
+    if ((r = pa_source_suspend(source, suspend)) < 0)
+        pa_strbuf_printf(buf, "Failed to resume/suspend source: %s\n", pa_strerror(r));
+
     return 0;
 }
 
 static int pa_cli_command_suspend(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail) {
     const char *m;
-    int suspend;
-    int ret;
+    int suspend, r;
 
     pa_core_assert_ref(c);
     pa_assert(t);
@@ -1316,12 +1325,11 @@ static int pa_cli_command_suspend(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, p
         return -1;
     }
 
-    ret = - (pa_sink_suspend_all(c, suspend) < 0);
-    if (pa_source_suspend_all(c, suspend) < 0)
-        ret = -1;
+    if ((r = pa_sink_suspend_all(c, suspend)) < 0)
+        pa_strbuf_printf(buf, "Failed to resume/suspend all sinks: %s\n", pa_strerror(r));
 
-    if (ret < 0)
-        pa_strbuf_puts(buf, "Failed to resume/suspend all sinks/sources.\n");
+    if ((r = pa_source_suspend_all(c, suspend)) < 0)
+        pa_strbuf_printf(buf, "Failed to resume/suspend all sources: %s\n", pa_strerror(r));
 
     return 0;
 }
@@ -1345,7 +1353,7 @@ static int pa_cli_command_log_level(pa_core *c, pa_tokenizer *t, pa_strbuf *buf,
         return -1;
     }
 
-    pa_log_set_maximal_level(level);
+    pa_log_set_level(level);
 
     return 0;
 }
@@ -1369,7 +1377,7 @@ static int pa_cli_command_log_meta(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, 
         return -1;
     }
 
-    pa_log_set_show_meta(b);
+    pa_log_set_flags(PA_LOG_PRINT_META, b ? PA_LOG_SET : PA_LOG_UNSET);
 
     return 0;
 }
@@ -1393,7 +1401,7 @@ static int pa_cli_command_log_time(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, 
         return -1;
     }
 
-    pa_log_set_show_time(b);
+    pa_log_set_flags(PA_LOG_PRINT_TIME, b ? PA_LOG_SET : PA_LOG_UNSET);
 
     return 0;
 }

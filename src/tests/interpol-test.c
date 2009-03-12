@@ -3,7 +3,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -107,6 +107,7 @@ int main(int argc, char *argv[]) {
     int k, r;
     struct timeval start, last_info = { 0, 0 };
     pa_usec_t old_t = 0, old_rtc = 0;
+    pa_bool_t corked = FALSE;
 
     playback = argc <= 1 || !pa_streq(argv[1], "-r");
 
@@ -129,7 +130,7 @@ int main(int argc, char *argv[]) {
     r = pa_threaded_mainloop_start(m);
     assert(r >= 0);
 
-    for (k = 0; k < 5000; k++) {
+    for (k = 0; k < 20000; k++) {
         pa_bool_t success = FALSE, changed = FALSE;
         pa_usec_t t, rtc;
         struct timeval now, tv;
@@ -158,6 +159,8 @@ int main(int argc, char *argv[]) {
         pa_gettimeofday(&now);
 
         if (success) {
+            pa_bool_t cork_now;
+
             rtc = pa_timeval_diff(&now, &start);
             printf("%i\t%llu\t%llu\t%llu\t%llu\t%u\t%u\n", k,
                    (unsigned long long) rtc,
@@ -170,6 +173,18 @@ int main(int argc, char *argv[]) {
             fflush(stdout);
             old_t = t;
             old_rtc = rtc;
+
+            cork_now = (rtc / (2*PA_USEC_PER_SEC)) % 2 == 1;
+
+            if (corked != cork_now) {
+                pa_threaded_mainloop_lock(m);
+                pa_operation_unref(pa_stream_cork(stream, cork_now, NULL, NULL));
+                pa_threaded_mainloop_unlock(m);
+
+                pa_log(cork_now ? "Corking" : "Uncorking");
+
+                corked = cork_now;
+            }
         }
 
         /* Spin loop, ugly but normal usleep() is just too badly grained */

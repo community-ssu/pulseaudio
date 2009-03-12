@@ -1,8 +1,8 @@
 [Desktop Entry]
 Version=1.0
 Encoding=UTF-8
-Name=PulseAudio Sound System
-Comment=Start the PulseAudio Sound System
+_Name=PulseAudio Sound System
+_Comment=Start the PulseAudio Sound System
 Exec=start-pulseaudio-x11
 Terminal=false
 Type=Application

@@ -9,7 +9,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -23,10 +23,12 @@
   USA.
 ***/
 
+#include <pulse/sample.h>
+#include <pulse/channelmap.h>
+
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/core-util.h>
-#include <pulse/sample.h>
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -85,8 +87,10 @@ typedef struct pa_daemon_conf {
     char *config_file;
 
 #ifdef HAVE_SYS_RESOURCE_H
-    pa_rlimit rlimit_fsize, rlimit_data, rlimit_stack, rlimit_core, rlimit_rss;
-
+    pa_rlimit rlimit_fsize, rlimit_data, rlimit_stack, rlimit_core;
+#ifdef RLIMIT_RSS
+    pa_rlimit rlimit_rss;
+#endif
 #ifdef RLIMIT_NOFILE
     pa_rlimit rlimit_nofile;
 #endif
@@ -121,6 +125,7 @@ typedef struct pa_daemon_conf {
 
     unsigned default_n_fragments, default_fragment_size_msec;
     pa_sample_spec default_sample_spec;
+    pa_channel_map default_channel_map;
     size_t shm_size;
 } pa_daemon_conf;
 

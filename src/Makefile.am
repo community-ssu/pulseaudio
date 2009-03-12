@@ -86,6 +86,7 @@ AM_LDFLAGS+=-Wl,--export-all-symbols
 WINSOCK_LIBS=-lwsock32 -lws2_32 -lwininet
 endif
 
+FOREIGN_CFLAGS = -w
 MODULE_LDFLAGS = -module -disable-static -avoid-version
 
 ###################################
@@ -104,9 +105,9 @@ EXTRA_DIST = \
 		daemon/start-pulseaudio-x11.in \
 		utils/padsp \
 		modules/module-defs.h.m4 \
-		daemon/pulseaudio.desktop \
+		daemon/pulseaudio.desktop.in \
 		map-file \
-		daemon/org.pulseaudio.policy
+		daemon/org.pulseaudio.policy.in
 
 pulseconf_DATA = \
 		default.pa \
@@ -115,9 +116,12 @@ pulseconf_DATA = \
 		client.conf
 
 if HAVE_X11
-xdgautostart_DATA = \
-		daemon/pulseaudio.desktop
+xdgautostart_in_files = \
+		daemon/pulseaudio.desktop.in
 endif
+xdgautostart_DATA = $(xdgautostart_in_files:.desktop.in=.desktop)
+@INTLTOOL_DESKTOP_RULE@
+
 
 BUILT_SOURCES = \
 		pulse/version.h
@@ -155,7 +159,9 @@ pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlopen force $(foreach f,$(PRE
 endif
 
 if HAVE_POLKIT
-policy_DATA = daemon/org.pulseaudio.policy
+policy_in_files = daemon/org.pulseaudio.policy.in
+policy_DATA = $(policy_in_files:.policy.in=.policy)
+@INTLTOOL_POLICY_RULE@
 
 pulseaudio_SOURCES += daemon/polkit.c daemon/polkit.h
 pulseaudio_CFLAGS += $(POLKIT_CFLAGS)
@@ -311,6 +317,11 @@ endif
 if HAVE_GTK20
 TESTS_BINARIES += \
 		gtk-test
+endif
+
+if HAVE_ALSA
+TESTS_BINARIES += \
+		alsa-time-test
 endif
 
 if BUILD_TESTS_DEFAULT
@@ -514,6 +525,11 @@ gtk_test_LDADD = $(AM_LDADD) libpulse.la libpulse-mainloop-glib.la
 gtk_test_CFLAGS = $(AM_CFLAGS) $(GTK20_CFLAGS)
 gtk_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(GTK20_LIBS)
 
+alsa_time_test_SOURCES = tests/alsa-time-test.c
+alsa_time_test_LDADD = $(AM_LDADD)
+alsa_time_test_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
+alsa_time_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(ASOUNDLIB_LIBS)
+
 ###################################
 #         Common library          #
 ###################################
@@ -524,6 +540,7 @@ lib_LTLIBRARIES = \
 libpulsecommon_@PA_MAJORMINORMICRO@_la_SOURCES = \
 		pulse/client-conf.c pulse/client-conf.h \
 		pulse/i18n.c pulse/i18n.h \
+		pulse/fork-detect.c pulse/fork-detect.h \
 		pulsecore/atomic.h \
 		pulsecore/authkey.c pulsecore/authkey.h \
 		pulsecore/conf-parser.c pulsecore/conf-parser.h \
@@ -697,8 +714,8 @@ libpulse_la_SOURCES = \
 		pulse/xmalloc.c pulse/xmalloc.h
 
 libpulse_la_CFLAGS = $(AM_CFLAGS)
-libpulse_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBPULSE_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
 libpulse_la_LIBADD = $(AM_LIBADD) $(WINSOCK_LIBS) $(LTLIBICONV) libpulsecommon-@PA_MAJORMINORMICRO@.la
+libpulse_la_LDFLAGS = $(AM_LDFLAGS) $(VERSIONING_LDFLAGS) -version-info $(LIBPULSE_VERSION_INFO)
 
 if HAVE_X11
 libpulse_la_SOURCES += pulse/client-conf-x11.c pulse/client-conf-x11.h
@@ -709,17 +726,17 @@ endif
 libpulse_simple_la_SOURCES = pulse/simple.c pulse/simple.h
 libpulse_simple_la_CFLAGS = $(AM_CFLAGS)
 libpulse_simple_la_LIBADD = $(AM_LIBADD) libpulse.la libpulsecommon-@PA_MAJORMINORMICRO@.la
-libpulse_simple_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBPULSE_SIMPLE_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
+libpulse_simple_la_LDFLAGS = $(AM_LDFLAGS) $(VERSIONING_LDFLAGS) -version-info $(LIBPULSE_SIMPLE_VERSION_INFO)
 
 libpulse_browse_la_SOURCES = pulse/browser.c pulse/browser.h pulsecore/avahi-wrap.c pulsecore/avahi-wrap.h
 libpulse_browse_la_CFLAGS = $(AM_CFLAGS) $(AVAHI_CFLAGS)
 libpulse_browse_la_LIBADD = $(AM_LIBADD) libpulse.la libpulsecommon-@PA_MAJORMINORMICRO@.la $(AVAHI_LIBS)
-libpulse_browse_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBPULSE_BROWSE_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
+libpulse_browse_la_LDFLAGS = $(AM_LDFLAGS) $(VERSIONING_LDFLAGS) -version-info $(LIBPULSE_BROWSE_VERSION_INFO)
 
 libpulse_mainloop_glib_la_SOURCES = pulse/glib-mainloop.h pulse/glib-mainloop.c
 libpulse_mainloop_glib_la_CFLAGS = $(AM_CFLAGS) $(GLIB20_CFLAGS)
 libpulse_mainloop_glib_la_LIBADD = $(AM_LIBADD) libpulse.la libpulsecommon-@PA_MAJORMINORMICRO@.la $(GLIB20_LIBS)
-libpulse_mainloop_glib_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
+libpulse_mainloop_glib_la_LDFLAGS = $(AM_LDFLAGS) $(VERSIONING_LDFLAGS) -version-info $(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO)
 
 ###################################
 #         OSS emulation           #
@@ -755,7 +772,6 @@ libpulsecore_@PA_MAJORMINORMICRO@_la_SOURCES = \
 		pulsecore/core.c pulsecore/core.h \
 		pulsecore/envelope.c pulsecore/envelope.h \
 		pulsecore/fdsem.c pulsecore/fdsem.h \
-		pulsecore/ffmpeg/resample2.c pulsecore/ffmpeg/avcodec.h pulsecore/ffmpeg/dsputil.h \
 		pulsecore/g711.c pulsecore/g711.h \
 		pulsecore/hook-list.c pulsecore/hook-list.h \
 		pulsecore/ltdl-helper.c pulsecore/ltdl-helper.h \
@@ -789,13 +805,21 @@ libpulsecore_@PA_MAJORMINORMICRO@_la_SOURCES = \
 
 libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
 libpulsecore_@PA_MAJORMINORMICRO@_la_LDFLAGS = -avoid-version
-libpulsecore_@PA_MAJORMINORMICRO@_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(LIBSPEEX_LIBS) $(WINSOCK_LIBS) $(LIBOIL_LIBS) $(LTLIBICONV) libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+libpulsecore_@PA_MAJORMINORMICRO@_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(LIBSPEEX_LIBS) $(WINSOCK_LIBS) $(LIBOIL_LIBS) $(LTLIBICONV) libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la libpulsecore-foreign.la
 
 if HAVE_X11
 libpulsecore_@PA_MAJORMINORMICRO@_la_SOURCES += pulsecore/x11wrap.c pulsecore/x11wrap.h
 libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS += $(X11_CFLAGS)
 libpulsecore_@PA_MAJORMINORMICRO@_la_LDFLAGS += $(X11_LIBS)
 endif
+
+# We split the foreign code off to not be annoyed by warnings we don't care about
+noinst_LTLIBRARIES = libpulsecore-foreign.la
+
+libpulsecore_foreign_la_SOURCES = \
+		pulsecore/ffmpeg/resample2.c pulsecore/ffmpeg/avcodec.h pulsecore/ffmpeg/dsputil.h
+
+libpulsecore_foreign_la_CFLAGS = $(AM_CFLAGS) $(FOREIGN_CFLAGS)
 
 ###################################
 #   Plug-in support libraries     #
@@ -960,6 +984,8 @@ modlibexec_LTLIBRARIES += \
 		module-oss.la
 endif
 
+pulselibexec_PROGRAMS =
+
 if HAVE_ALSA
 modlibexec_LTLIBRARIES += \
 		libalsa-util.la \
@@ -994,8 +1020,6 @@ modlibexec_LTLIBRARIES += \
 		module-jack-sink.la \
 		module-jack-source.la
 endif
-
-pulselibexec_PROGRAMS =
 
 if HAVE_GCONF
 modlibexec_LTLIBRARIES += \
@@ -1286,8 +1310,20 @@ libalsa_util_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
 
 if HAVE_HAL
 libalsa_util_la_SOURCES += modules/hal-util.h modules/hal-util.c
-libalsa_util_la_LIBADD += $(HAL_LIBS) libdbus-util.la
+libalsa_util_la_LIBADD += $(HAL_LIBS)
 libalsa_util_la_CFLAGS += $(HAL_CFLAGS)
+endif
+
+if HAVE_UDEV
+libalsa_util_la_SOURCES += modules/udev-util.h modules/udev-util.c
+libalsa_util_la_LIBADD += $(UDEV_LIBS)
+libalsa_util_la_CFLAGS += $(UDEV_CFLAGS)
+endif
+
+if HAVE_DBUS
+libalsa_util_la_SOURCES += modules/reserve.h modules/reserve.c modules/reserve-wrap.c modules/reserve-wrap.h
+libalsa_util_la_LIBADD += $(DBUS_LIBS) libdbus-util.la
+libalsa_util_la_CFLAGS += $(DBUS_CFLAGS)
 endif
 
 module_alsa_sink_la_SOURCES = modules/alsa/module-alsa-sink.c
@@ -1503,7 +1539,7 @@ libbluetooth_util_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
 
 module_bluetooth_device_la_SOURCES = modules/bluetooth/module-bluetooth-device.c modules/bluetooth/rtp.h
 module_bluetooth_device_la_LDFLAGS = $(MODULE_LDFLAGS)
-module_bluetooth_device_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libdbus-util.la libbluetooth-ipc.la libbluetooth-sbc.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+module_bluetooth_device_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libdbus-util.la libbluetooth-util.la libbluetooth-ipc.la libbluetooth-sbc.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_bluetooth_device_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
 
 # Apple Airtunes/RAOP
@@ -1525,7 +1561,7 @@ suid: pulseaudio .libs/lt-pulseaudio
 	chown root $^
 	chmod u+s $^
 
-CLEANFILES = esdcompat client.conf default.pa system.pa daemon.conf start-pulseaudio-x11
+CLEANFILES = esdcompat client.conf default.pa system.pa daemon.conf start-pulseaudio-x11 daemon/pulseaudio.desktop daemon/org.pulseaudio.policy
 
 esdcompat: daemon/esdcompat.in Makefile
 	sed -e 's,@PACKAGE_VERSION\@,$(PACKAGE_VERSION),g' \
@@ -1589,6 +1625,11 @@ update-sbc:
 	for i in $(BLUETOOTH_IPC_FILES); do \
 		wget -O /dev/null http://git.kernel.org/\?p=bluetooth/bluez.git\;a=blob_plain\;f=audio/$$i ; \
 		wget -O modules/bluetooth/$$i http://git.kernel.org/\?p=bluetooth/bluez.git\;a=blob_plain\;f=audio/$$i ; \
+	done
+
+update-reserve:
+	for i in reserve.c reserve.h ; do \
+		wget -O modules/$$i http://git.0pointer.de/\?p=reserve.git\;a=blob_plain\;f=$$i\;hb=master ; \
 	done
 
 # Automatically generate linker version script. We use the same one for all public .sos

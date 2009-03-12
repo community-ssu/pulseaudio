@@ -26,7 +26,7 @@ m4_define(pa_major, [0])
 m4_define(pa_minor, [9])
 m4_define(pa_micro, [15])
 
-AC_INIT([pulseaudio],[pa_major.pa_minor.pa_micro-test2],[mzchyfrnhqvb (at) 0pointer (dot) net])
+AC_INIT([pulseaudio],[pa_major.pa_minor.pa_micro-test5],[mzchyfrnhqvb (at) 0pointer (dot) net])
 AC_CONFIG_SRCDIR([src/daemon/main.c])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
@@ -70,8 +70,7 @@ fi
 
 case $host in
    *-*-solaris* )
-      AC_DEFINE(_XOPEN_SOURCE_EXTENDED, 1, Needed to get declarations for msg_control and msg_controllen on Solaris)
-      AC_DEFINE(_XOPEN_SOURCE,          2, Needed to get declarations for msg_control and msg_controllen on Solaris)
+      AC_DEFINE(_XOPEN_SOURCE,        600, Needed to get declarations for msg_control and msg_controllen on Solaris)
       AC_DEFINE(__EXTENSIONS__,         1, Needed to get declarations for msg_control and msg_controllen on Solaris)
       ;;
 esac
@@ -92,7 +91,7 @@ AC_USE_SYSTEM_EXTENSIONS
 
 # M4
 
-AC_PATH_PROG([M4], [m4 gm4], [no])
+AC_CHECK_PROGS([M4], gm4 m4, no)
 if test "x$M4" = xno ; then
    AC_MSG_ERROR([m4 missing])
 fi
@@ -103,6 +102,17 @@ DESIRED_FLAGS="-Wall -W -Wextra -pipe -Wno-long-long -Winline -Wvla -Wno-overlen
 for flag in $DESIRED_FLAGS ; do
   CC_CHECK_CFLAGS([$flag], [CFLAGS="$CFLAGS $flag"])
 done
+
+dnl Linker flags.
+dnl Check whether the linker supports the -version-script option.
+
+dnl This variable is used to make sure ${srcdir} is expanded and not
+dnl passed to the CC_CHECK_LDFLAGS macro as a name.
+tmp_ldflag="-Wl,-version-script=${srcdir}/src/map-file"
+
+CC_CHECK_LDFLAGS([${tmp_ldflag}],
+    [VERSIONING_LDFLAGS='-Wl,-version-script=$(srcdir)/map-file'])
+AC_SUBST([VERSIONING_LDFLAGS])
 
 dnl Check whether to build tests by default (as compile-test) or not
 AC_ARG_ENABLE([default-build-tests],
@@ -977,6 +987,41 @@ AC_SUBST(HAL_LIBS)
 AC_SUBST(HAVE_HAL)
 AM_CONDITIONAL([HAVE_HAL], [test "x$HAVE_HAL" = x1])
 
+#### UDEV support (optional) ####
+
+AC_ARG_ENABLE([udev],
+    AS_HELP_STRING([--disable-udev],[Disable optional UDEV support]),
+        [
+            case "${enableval}" in
+                yes) udev=yes ;;
+                no) udev=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-udev) ;;
+            esac
+        ],
+        [udev=auto])
+if test "x${udev}" != xno -a \( "x$HAVE_OSS" = "x1" -o "x$HAVE_ALSA" = "x1" \) ; then
+    PKG_CHECK_MODULES(UDEV, [ libudev >= 137 ],
+        [
+            HAVE_UDEV=1
+            AC_DEFINE([HAVE_UDEV], 1, [Have UDEV.])
+        ],
+        [
+            HAVE_UDEV=0
+            if test "x$udev" = xyes ; then
+                AC_MSG_ERROR([*** UDEV support not found])
+            fi
+        ])
+else
+    HAVE_UDEV=0
+fi
+
+AC_SUBST(UDEV_CFLAGS)
+AC_SUBST(UDEV_LIBS)
+AC_SUBST(HAVE_UDEV)
+AM_CONDITIONAL([HAVE_UDEV], [test "x$HAVE_UDEV" = x1])
+
+AC_DEFINE([LIBUDEV_I_KNOW_THE_API_IS_SUBJECT_TO_CHANGE], 1, [I know the API is subject to change.])
+
 #### BlueZ support (optional) ####
 
 AC_ARG_ENABLE([bluez],
@@ -1024,7 +1069,7 @@ if test "x$HAVE_HAL" = x1 ; then
    dbus=yes
 fi
 
-if test "x${dbus}" != xno || test "x${bluez}" != xno || "x${hal}" != xno ; then
+if test "x${dbus}" != xno || test "x${bluez}" != xno || test "x${hal}" != xno ; then
 
     PKG_CHECK_MODULES(DBUS, [ dbus-1 >= 1.0.0 ],
         [
@@ -1261,6 +1306,8 @@ AM_CONDITIONAL([FORCE_PREOPEN], [test "x$FORCE_PREOPEN" = "xyes"])
 
 AC_CONFIG_FILES([
 Makefile
+shave
+shave-libtool
 src/Makefile
 man/Makefile
 libpulse.pc
@@ -1272,7 +1319,10 @@ doxygen/doxygen.conf
 src/pulse/version.h
 po/Makefile.in
 ])
+
+SHAVE_INIT
 AC_OUTPUT
+SHAVE_OUTPUT
 
 # ==========================================================================
 ENABLE_X11=no
@@ -1335,6 +1385,11 @@ if test "x$HAVE_HAL" = "x1" ; then
    ENABLE_HAL=yes
 fi
 
+ENABLE_UDEV=no
+if test "x$HAVE_UDEV" = "x1" ; then
+   ENABLE_UDEV=yes
+fi
+
 ENABLE_TCPWRAP=no
 if test "x${LIBWRAP_LIBS}" != x ; then
    ENABLE_TCPWRAP=yes
@@ -1394,6 +1449,7 @@ echo "
     Enable Async DNS:              ${ENABLE_LIBASYNCNS}
     Enable LIRC:                   ${ENABLE_LIRC}
     Enable HAL:                    ${ENABLE_HAL}
+    Enable udev:                   ${ENABLE_UDEV}
     Enable BlueZ:                  ${ENABLE_BLUEZ}
     Enable TCP Wrappers:           ${ENABLE_TCPWRAP}
     Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}

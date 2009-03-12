@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -35,6 +35,7 @@
 #include <pulsecore/pstream-util.h>
 
 #include "internal.h"
+#include "fork-detect.h"
 
 #include "introspect.h"
 
@@ -110,11 +111,16 @@ static void context_get_server_info_callback(pa_pdispatch *pd, uint32_t command,
                pa_tagstruct_gets(t, &i.default_sink_name) < 0 ||
                pa_tagstruct_gets(t, &i.default_source_name) < 0 ||
                pa_tagstruct_getu32(t, &i.cookie) < 0 ||
+               (o->context->version >= 15 &&
+                pa_tagstruct_get_channel_map(t, &i.channel_map) < 0) ||
                !pa_tagstruct_eof(t)) {
 
         pa_context_fail(o->context, PA_ERR_PROTOCOL);
         goto finish;
     }
+
+    if (p && o->context->version < 15)
+        pa_channel_map_init_extend(&i.channel_map, i.sample_spec.channels, PA_CHANNEL_MAP_DEFAULT);
 
     if (o->callback) {
         pa_server_info_cb_t cb = (pa_server_info_cb_t) o->callback;
@@ -227,6 +233,7 @@ pa_operation* pa_context_get_sink_info_by_index(pa_context *c, uint32_t idx, pa_
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
 
     o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
@@ -249,6 +256,7 @@ pa_operation* pa_context_get_sink_info_by_name(pa_context *c, const char *name, 
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
 
@@ -360,6 +368,7 @@ pa_operation* pa_context_get_source_info_by_index(pa_context *c, uint32_t idx, p
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
 
     o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
@@ -382,6 +391,7 @@ pa_operation* pa_context_get_source_info_by_name(pa_context *c, const char *name
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
 
@@ -461,6 +471,7 @@ pa_operation* pa_context_get_client_info(pa_context *c, uint32_t idx, pa_client_
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
 
@@ -523,7 +534,8 @@ static void context_get_card_info_callback(pa_pdispatch *pd, uint32_t command, u
                     if (pa_tagstruct_gets(t, &i.profiles[j].name) < 0 ||
                         pa_tagstruct_gets(t, &i.profiles[j].description) < 0 ||
                         pa_tagstruct_getu32(t, &i.profiles[j].n_sinks) < 0 ||
-                        pa_tagstruct_getu32(t, &i.profiles[j].n_sources)< 0) {
+                        pa_tagstruct_getu32(t, &i.profiles[j].n_sources) < 0 ||
+                        pa_tagstruct_getu32(t, &i.profiles[j].priority) < 0) {
 
                         pa_context_fail(o->context, PA_ERR_PROTOCOL);
                         pa_xfree(i.profiles);
@@ -584,6 +596,7 @@ pa_operation* pa_context_get_card_info_by_index(pa_context *c, uint32_t idx, pa_
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 15, PA_ERR_NOTSUPPORTED);
@@ -608,6 +621,7 @@ pa_operation* pa_context_get_card_info_by_name(pa_context *c, const char*name, p
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 15, PA_ERR_NOTSUPPORTED);
@@ -635,6 +649,7 @@ pa_operation* pa_context_set_card_profile_by_index(pa_context *c, uint32_t idx, 
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 15, PA_ERR_NOTSUPPORTED);
@@ -659,6 +674,7 @@ pa_operation* pa_context_set_card_profile_by_name(pa_context *c, const char *nam
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 15, PA_ERR_NOTSUPPORTED);
@@ -742,6 +758,7 @@ pa_operation* pa_context_get_module_info(pa_context *c, uint32_t idx, pa_module_
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
 
@@ -836,6 +853,7 @@ pa_operation* pa_context_get_sink_input_info(pa_context *c, uint32_t idx, pa_sin
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
 
@@ -925,6 +943,7 @@ pa_operation* pa_context_get_source_output_info(pa_context *c, uint32_t idx, pa_
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
 
@@ -953,6 +972,7 @@ pa_operation* pa_context_set_sink_volume_by_index(pa_context *c, uint32_t idx, c
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(volume);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, pa_cvolume_valid(volume), PA_ERR_INVALID);
 
@@ -978,6 +998,7 @@ pa_operation* pa_context_set_sink_volume_by_name(pa_context *c, const char *name
     pa_assert(name);
     pa_assert(volume);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, pa_cvolume_valid(volume), PA_ERR_INVALID);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
@@ -1002,6 +1023,7 @@ pa_operation* pa_context_set_sink_mute_by_index(pa_context *c, uint32_t idx, int
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
 
     o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
@@ -1025,6 +1047,7 @@ pa_operation* pa_context_set_sink_mute_by_name(pa_context *c, const char *name, 
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(name);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
 
@@ -1049,6 +1072,7 @@ pa_operation* pa_context_set_sink_input_volume(pa_context *c, uint32_t idx, cons
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(volume);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
     PA_CHECK_VALIDITY_RETURN_NULL(c, pa_cvolume_valid(volume), PA_ERR_INVALID);
@@ -1072,6 +1096,7 @@ pa_operation* pa_context_set_sink_input_mute(pa_context *c, uint32_t idx, int mu
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 11, PA_ERR_NOTSUPPORTED);
@@ -1096,6 +1121,7 @@ pa_operation* pa_context_set_source_volume_by_index(pa_context *c, uint32_t idx,
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(volume);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, pa_cvolume_valid(volume), PA_ERR_INVALID);
 
@@ -1121,6 +1147,7 @@ pa_operation* pa_context_set_source_volume_by_name(pa_context *c, const char *na
     pa_assert(name);
     pa_assert(volume);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, pa_cvolume_valid(volume), PA_ERR_INVALID);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
@@ -1145,6 +1172,7 @@ pa_operation* pa_context_set_source_mute_by_index(pa_context *c, uint32_t idx, i
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
 
     o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
@@ -1168,6 +1196,7 @@ pa_operation* pa_context_set_source_mute_by_name(pa_context *c, const char *name
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(name);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
 
@@ -1255,6 +1284,7 @@ pa_operation* pa_context_get_sample_info_by_name(pa_context *c, const char *name
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, name && *name, PA_ERR_INVALID);
 
@@ -1278,6 +1308,7 @@ pa_operation* pa_context_get_sample_info_by_index(pa_context *c, uint32_t idx, p
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
 
@@ -1304,6 +1335,7 @@ static pa_operation* command_kill(pa_context *c, uint32_t command, uint32_t idx,
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
 
@@ -1370,6 +1402,7 @@ pa_operation* pa_context_load_module(pa_context *c, const char*name, const char 
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, name && *name, PA_ERR_INVALID);
 
@@ -1453,6 +1486,7 @@ pa_operation* pa_context_move_sink_input_by_name(pa_context *c, uint32_t idx, co
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 10, PA_ERR_NOTSUPPORTED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
@@ -1478,6 +1512,7 @@ pa_operation* pa_context_move_sink_input_by_index(pa_context *c, uint32_t idx, u
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 10, PA_ERR_NOTSUPPORTED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
@@ -1503,6 +1538,7 @@ pa_operation* pa_context_move_source_output_by_name(pa_context *c, uint32_t idx,
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 10, PA_ERR_NOTSUPPORTED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
@@ -1528,6 +1564,7 @@ pa_operation* pa_context_move_source_output_by_index(pa_context *c, uint32_t idx
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 10, PA_ERR_NOTSUPPORTED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
@@ -1553,6 +1590,7 @@ pa_operation* pa_context_suspend_sink_by_name(pa_context *c, const char *sink_na
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 11, PA_ERR_NOTSUPPORTED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !sink_name || *sink_name, PA_ERR_INVALID);
@@ -1577,6 +1615,7 @@ pa_operation* pa_context_suspend_sink_by_index(pa_context *c, uint32_t idx, int 
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 11, PA_ERR_NOTSUPPORTED);
 
@@ -1600,6 +1639,7 @@ pa_operation* pa_context_suspend_source_by_name(pa_context *c, const char *sourc
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 11, PA_ERR_NOTSUPPORTED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !source_name || *source_name, PA_ERR_INVALID);
@@ -1624,6 +1664,7 @@ pa_operation* pa_context_suspend_source_by_index(pa_context *c, uint32_t idx, in
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 11, PA_ERR_NOTSUPPORTED);
 

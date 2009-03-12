@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -299,7 +299,7 @@ int pa_cmdline_parse(pa_daemon_conf *conf, int argc, char *const argv [], int *d
 
             case ARG_DISALLOW_EXIT:
                 if ((conf->disallow_exit = optarg ? pa_parse_boolean(optarg) : TRUE) < 0) {
-                    pa_log(_("--disallow-exit boolean argument"));
+                    pa_log(_("--disallow-exit expects boolean argument"));
                     goto fail;
                 }
                 break;
@@ -330,14 +330,14 @@ int pa_cmdline_parse(pa_daemon_conf *conf, int argc, char *const argv [], int *d
 
             case ARG_LOG_TIME:
                 if ((conf->log_time = optarg ? pa_parse_boolean(optarg) : TRUE) < 0) {
-                    pa_log(_("--log-time boolean argument"));
+                    pa_log(_("--log-time expects boolean argument"));
                     goto fail;
                 }
                 break;
 
             case ARG_LOG_META:
                 if ((conf->log_meta = optarg ? pa_parse_boolean(optarg) : TRUE) < 0) {
-                    pa_log(_("--log-meta boolean argument"));
+                    pa_log(_("--log-meta expects boolean argument"));
                     goto fail;
                 }
                 break;

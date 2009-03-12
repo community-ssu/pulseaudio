@@ -45,13 +45,15 @@ PA_C_DECL_BEGIN
 /** For streams: source filename if applicable, in URI format or local path. e.g. "/home/lennart/music/foobar.ogg" */
 #define PA_PROP_MEDIA_FILENAME                 "media.filename"
 
+/** \cond fulldocs */
 /** For streams: icon for the media. A binary blob containing PNG image data */
 #define PA_PROP_MEDIA_ICON                     "media.icon"
+/** \endcond */
 
 /** For streams: an XDG icon name for the media. e.g. "audio-x-mp3" */
 #define PA_PROP_MEDIA_ICON_NAME                "media.icon_name"
 
-/** For streams: logic role of this media. One of the strings "video", "music", "game", "event", "phone", "animation", "production" */
+/** For streams: logic role of this media. One of the strings "video", "music", "game", "event", "phone", "animation", "production", "a11y" */
 #define PA_PROP_MEDIA_ROLE                     "media.role"
 
 /** For event sound streams: XDG event sound name. e.g. "message-new-email" (Event sound streams are those with media.role set to "event") */
@@ -81,8 +83,10 @@ PA_C_DECL_BEGIN
 /** For streams that belong to a window on the screen: a textual id for identifying a window logically. e.g. "org.gnome.Totem.MainWindow" */
 #define PA_PROP_WINDOW_ID                      "window.id"
 
+/** \cond fulldocs */
 /** For streams that belong to a window on the screen: window icon. A binary blob containing PNG image data */
 #define PA_PROP_WINDOW_ICON                    "window.icon"
+/** \endcond */
 
 /** For streams that belong to a window on the screen: an XDG icon name for the window. e.g. "totem" */
 #define PA_PROP_WINDOW_ICON_NAME               "window.icon_name"
@@ -108,8 +112,10 @@ PA_C_DECL_BEGIN
 /** For clients/streams: a version string e.g. "0.6.88" */
 #define PA_PROP_APPLICATION_VERSION            "application.version"
 
+/** \cond fulldocs */
 /** For clients/streams: application icon. A binary blob containing PNG image data */
 #define PA_PROP_APPLICATION_ICON               "application.icon"
+/** \endcond */
 
 /** For clients/streams: an XDG icon name for the application. e.g. "totem" */
 #define PA_PROP_APPLICATION_ICON_NAME          "application.icon_name"
@@ -132,6 +138,9 @@ PA_C_DECL_BEGIN
 /** For clients/streams: the D-Bus host id the application runs on. e.g. "543679e7b01393ed3e3e650047d78f6e" */
 #define PA_PROP_APPLICATION_PROCESS_MACHINE_ID "application.process.machine_id"
 
+/** For clients/streams: an id for the login session the application runs in. On Unix the value of $XDG_SESSION_COOKIE. e.g. "543679e7b01393ed3e3e650047d78f6e-1235159798.76193-190367717" */
+#define PA_PROP_APPLICATION_PROCESS_SESSION_ID "application.process.session_id"
+
 /** For devices: device string in the underlying audio layer's format. e.g. "surround51:0" */
 #define PA_PROP_DEVICE_STRING                  "device.string"
 
@@ -147,17 +156,34 @@ PA_C_DECL_BEGIN
 /** For devices: serial number if applicable. e.g. "4711-0815-1234" */
 #define PA_PROP_DEVICE_SERIAL                  "device.serial"
 
-/** For devices: vendor/product ID if applicable. e.g. 1274:1371 */
-#define PA_PROP_DEVICE_VENDOR_PRODUCT_ID       "device.vendor_product_id"
+/** For devices: vendor ID if applicable. e.g. 1274 */
+#define PA_PROP_DEVICE_VENDOR_ID               "device.vendor.id"
+
+/** For devices: vendor name if applicable. e.g. "Foocorp Heavy Industries" */
+#define PA_PROP_DEVICE_VENDOR_NAME             "device.vendor.name"
+
+/** For devices: product ID if applicable. e.g. 4565 */
+#define PA_PROP_DEVICE_PRODUCT_ID              "device.product.id"
+
+/** For devices: product name if applicable. e.g. "SuperSpeakers 2000 Pro" */
+#define PA_PROP_DEVICE_PRODUCT_NAME            "device.product.name"
 
 /** For devices: device class. One of "sound", "modem", "monitor", "filter" */
 #define PA_PROP_DEVICE_CLASS                   "device.class"
 
-/** For devices: form factor if applicable. One of "laptop-speakers", "external-speakers", "telephone", "tv-capture", "webcam-capture", "microphone-capture", "headset", "headphones", "hands-free", "car", "hifi", "computer", "portable" */
+/** For devices: form factor if applicable. One of "internal", "speaker", "handset", "tv", "webcam", "microphone", "headset", "headphone", "hands-free", "car", "hifi", "computer", "portable" */
 #define PA_PROP_DEVICE_FORM_FACTOR             "device.form_factor"
 
-/** For devices: connector of the device if applicable. One of "isa", "pci", "usb", "firewire", "bluetooth" */
-#define PA_PROP_DEVICE_CONNECTOR               "device.connector"
+/** For devices: bus of the device if applicable. One of "isa", "pci", "usb", "firewire", "bluetooth" */
+#define PA_PROP_DEVICE_BUS                     "device.bus"
+
+/** \cond fulldocs */
+/** For devices: icon for the device. A binary blob containing PNG image data */
+#define PA_PROP_DEVICE_ICON                    "device.icon"
+/** \endcond */
+
+/** For devices: an XDG icon name for the device. e.g. "sound-card-speakers-usb" */
+#define PA_PROP_DEVICE_ICON_NAME               "device.icon_name"
 
 /** For devices: access mode of the device if applicable. One of "mmap", "mmap_rewrite", "serial" */
 #define PA_PROP_DEVICE_ACCESS_MODE             "device.access_mode"

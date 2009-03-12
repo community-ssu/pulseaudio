@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -24,9 +24,13 @@
 #endif
 
 #include <pulse/xmalloc.h>
+#include <pulse/i18n.h>
+
 #include <pulsecore/core-util.h>
 #include <pulsecore/modargs.h>
 #include <pulsecore/queue.h>
+
+#include <modules/reserve-wrap.h>
 
 #include "alsa-util.h"
 #include "alsa-sink.h"
@@ -86,6 +90,8 @@ struct userdata {
     pa_source *source;
 
     pa_modargs *modargs;
+
+    pa_hashmap *profiles;
 };
 
 struct profile_data {
@@ -97,21 +103,36 @@ static void enumerate_cb(
         const pa_alsa_profile_info *source,
         void *userdata) {
 
-    pa_hashmap *profiles = (pa_hashmap *) userdata;
+    struct userdata *u = userdata;
     char *t, *n;
     pa_card_profile *p;
     struct profile_data *d;
+    unsigned bonus = 0;
 
     if (sink && source) {
         n = pa_sprintf_malloc("output-%s+input-%s", sink->name, source->name);
-        t = pa_sprintf_malloc("Output %s + Input %s", sink->description, source->description);
+        t = pa_sprintf_malloc(_("Output %s + Input %s"), sink->description, _(source->description));
     } else if (sink) {
         n = pa_sprintf_malloc("output-%s", sink->name);
-        t = pa_sprintf_malloc("Output %s", sink->description);
+        t = pa_sprintf_malloc(_("Output %s"), _(sink->description));
     } else {
         pa_assert(source);
         n = pa_sprintf_malloc("input-%s", source->name);
-        t = pa_sprintf_malloc("Input %s", source->description);
+        t = pa_sprintf_malloc(_("Input %s"), _(source->description));
+    }
+
+    if (sink) {
+        if (pa_channel_map_equal(&sink->map, &u->core->default_channel_map))
+            bonus += 50000;
+        else if (sink->map.channels == u->core->default_channel_map.channels)
+            bonus += 40000;
+    }
+
+    if (source) {
+        if (pa_channel_map_equal(&source->map, &u->core->default_channel_map))
+            bonus += 30000;
+        else if (source->map.channels == u->core->default_channel_map.channels)
+            bonus += 20000;
     }
 
     pa_log_info("Found output profile '%s'", t);
@@ -121,7 +142,11 @@ static void enumerate_cb(
     pa_xfree(t);
     pa_xfree(n);
 
-    p->priority = (sink ? sink->priority : 0)*100 + (source ? source->priority : 0);
+    p->priority =
+        (sink ? sink->priority : 0) * 100 +
+        (source ? source->priority : 0) +
+        bonus;
+
     p->n_sinks = !!sink;
     p->n_sources = !!source;
 
@@ -135,14 +160,14 @@ static void enumerate_cb(
     d->sink_profile = sink;
     d->source_profile = source;
 
-    pa_hashmap_put(profiles, p->name, p);
+    pa_hashmap_put(u->profiles, p->name, p);
 }
 
 static void add_disabled_profile(pa_hashmap *profiles) {
     pa_card_profile *p;
     struct profile_data *d;
 
-    p = pa_card_profile_new("off", "Off", sizeof(struct profile_data));
+    p = pa_card_profile_new("off", _("Off"), sizeof(struct profile_data));
 
     d = PA_CARD_PROFILE_DATA(p);
     d->sink_profile = d->source_profile = NULL;
@@ -250,11 +275,14 @@ static void set_card_name(pa_card_new_data *data, pa_modargs *ma, const char *de
     pa_xfree(t);
 }
 
-int pa__init(pa_module*m) {
+int pa__init(pa_module *m) {
     pa_card_new_data data;
     pa_modargs *ma;
     int alsa_card_index;
     struct userdata *u;
+    char rname[32];
+    pa_reserve_wrapper *reserve = NULL;
+    const char *description;
 
     pa_alsa_redirect_errors_inc();
     snd_config_update_free_global();
@@ -280,15 +308,26 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
+    pa_snprintf(rname, sizeof(rname), "Audio%i", alsa_card_index);
+
+    if (!pa_in_system_mode())
+        if (!(reserve = pa_reserve_wrapper_get(m->core, rname)))
+            goto fail;
+
     pa_card_new_data_init(&data);
     data.driver = __FILE__;
     data.module = m;
     pa_alsa_init_proplist_card(m->core, data.proplist, alsa_card_index);
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->device_id);
+    pa_alsa_init_description(data.proplist);
     set_card_name(&data, ma, u->device_id);
 
-    data.profiles = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
-    if (pa_alsa_probe_profiles(u->device_id, &m->core->default_sample_spec, enumerate_cb, data.profiles) < 0) {
+    if (reserve)
+        if ((description = pa_proplist_gets(data.proplist, PA_PROP_DEVICE_DESCRIPTION)))
+            pa_reserve_wrapper_set_application_device_name(reserve, description);
+
+    u->profiles = data.profiles = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
+    if (pa_alsa_probe_profiles(u->device_id, &m->core->default_sample_spec, enumerate_cb, u) < 0) {
         pa_card_new_data_done(&data);
         goto fail;
     }
@@ -312,11 +351,16 @@ int pa__init(pa_module*m) {
 
     init_profile(u);
 
+    pa_reserve_wrapper_unref(reserve);
+
     return 0;
 
 fail:
+    if (reserve)
+        pa_reserve_wrapper_unref(reserve);
 
     pa__done(m);
+
     return -1;
 }
 

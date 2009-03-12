@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -294,7 +294,9 @@ static void set_all_rlimits(const pa_daemon_conf *conf) {
     set_one_rlimit(&conf->rlimit_data, RLIMIT_DATA, "RLIMIT_DATA");
     set_one_rlimit(&conf->rlimit_stack, RLIMIT_STACK, "RLIMIT_STACK");
     set_one_rlimit(&conf->rlimit_core, RLIMIT_CORE, "RLIMIT_CORE");
+#ifdef RLIMIT_RSS
     set_one_rlimit(&conf->rlimit_rss, RLIMIT_RSS, "RLIMIT_RSS");
+#endif
 #ifdef RLIMIT_NPROC
     set_one_rlimit(&conf->rlimit_nproc, RLIMIT_NPROC, "RLIMIT_NPROC");
 #endif
@@ -351,8 +353,9 @@ int main(int argc, char *argv[]) {
     int autospawn_fd = -1;
     pa_bool_t autospawn_locked = FALSE;
 
-    pa_log_set_maximal_level(PA_LOG_INFO);
     pa_log_set_ident("pulseaudio");
+    pa_log_set_level(PA_LOG_INFO);
+    pa_log_set_flags(PA_LOG_COLORS|PA_LOG_PRINT_FILE|PA_LOG_PRINT_LEVEL, PA_LOG_RESET);
 
 #if defined(__linux__) && defined(__OPTIMIZE__)
     /*
@@ -432,11 +435,13 @@ int main(int argc, char *argv[]) {
         goto finish;
     }
 
-    pa_log_set_maximal_level(conf->log_level);
-    pa_log_set_target(conf->auto_log_target ? PA_LOG_STDERR : conf->log_target, NULL);
-    pa_log_set_show_meta(conf->log_meta);
+    pa_log_set_level(conf->log_level);
+    pa_log_set_target(conf->auto_log_target ? PA_LOG_STDERR : conf->log_target);
+    if (conf->log_meta)
+        pa_log_set_flags(PA_LOG_PRINT_META, PA_LOG_SET);
+    if (conf->log_time)
+        pa_log_set_flags(PA_LOG_PRINT_TIME, PA_LOG_SET);
     pa_log_set_show_backtrace(conf->log_backtrace);
-    pa_log_set_show_time(conf->log_time);
 
     pa_log_debug("Started as real root: %s, suid root: %s", pa_yes_no(real_root), pa_yes_no(suid_root));
 
@@ -506,8 +511,9 @@ int main(int argc, char *argv[]) {
         if ((conf->high_priority && !allow_high_priority) ||
             (conf->realtime_scheduling && !allow_realtime))
             pa_log_notice(_("Called SUID root and real-time and/or high-priority scheduling was requested in the configuration. However, we lack the necessary privileges:\n"
-                            "We are not in group '"PA_REALTIME_GROUP"', PolicyKit refuse to grant us the requested privileges and we have no increase RLIMIT_NICE/RLIMIT_RTPRIO resource limits.\n"
-                            "For enabling real-time/high-priority scheduling please acquire the appropriate PolicyKit privileges, or become a member of '"PA_REALTIME_GROUP"', or increase the RLIMIT_NICE/RLIMIT_RTPRIO resource limits for this user."));
+                            "We are not in group '%s', PolicyKit refuse to grant us the requested privileges and we have no increase RLIMIT_NICE/RLIMIT_RTPRIO resource limits.\n"
+                            "For enabling real-time/high-priority scheduling please acquire the appropriate PolicyKit privileges, or become a member of '%s', or increase the RLIMIT_NICE/RLIMIT_RTPRIO resource limits for this user."),
+                          PA_REALTIME_GROUP, PA_REALTIME_GROUP);
 
 
         if (!allow_realtime)
@@ -770,7 +776,7 @@ int main(int argc, char *argv[]) {
 #endif
 
         if (conf->auto_log_target)
-            pa_log_set_target(PA_LOG_SYSLOG, NULL);
+            pa_log_set_target(PA_LOG_SYSLOG);
 
 #ifdef HAVE_SETSID
         setsid();
@@ -908,6 +914,7 @@ int main(int argc, char *argv[]) {
     }
 
     c->default_sample_spec = conf->default_sample_spec;
+    c->default_channel_map = conf->default_channel_map;
     c->default_n_fragments = conf->default_n_fragments;
     c->default_fragment_size_msec = conf->default_fragment_size_msec;
     c->exit_idle_time = conf->exit_idle_time;

@@ -48,6 +48,7 @@ static G_CONST_RETURN gchar* _g_get_application_name(void) PA_GCC_WEAKREF(g_get_
 #endif
 
 #if defined(HAVE_GTK) && defined(PA_GCC_WEAKREF)
+#pragma GCC diagnostic ignored "-Wstrict-prototypes"
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
 static G_CONST_RETURN gchar* _gtk_window_get_default_icon_name(void) PA_GCC_WEAKREF(gtk_window_get_default_icon_name);
@@ -134,8 +135,9 @@ void pa_init_proplist(pa_proplist *p) {
 
                 k = pa_xstrndup(*e+skip, kl);
 
-                if (override || !pa_proplist_contains(p, k))
-                    pa_proplist_sets(p, k, *e+skip+kl+1);
+                if (!pa_streq(k, "OVERRIDE"))
+                    if (override || !pa_proplist_contains(p, k))
+                        pa_proplist_sets(p, k, *e+skip+kl+1);
                 pa_xfree(k);
             }
         }
@@ -225,6 +227,16 @@ void pa_init_proplist(pa_proplist *p) {
         if ((m = pa_machine_id())) {
             pa_proplist_sets(p, PA_PROP_APPLICATION_PROCESS_MACHINE_ID, m);
             pa_xfree(m);
+        }
+    }
+
+    if (!pa_proplist_contains(p, PA_PROP_APPLICATION_PROCESS_SESSION_ID)) {
+        const char *t;
+
+        if ((t = getenv("XDG_SESSION_COOKIE"))) {
+            char *c = pa_utf8_filter(t);
+            pa_proplist_sets(p, PA_PROP_APPLICATION_PROCESS_SESSION_ID, c);
+            pa_xfree(c);
         }
     }
 }

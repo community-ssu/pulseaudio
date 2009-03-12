@@ -28,8 +28,8 @@ USA.
   <icon_name>audio-card</icon_name>
 
   <action id="org.pulseaudio.acquire-real-time">
-    <description>Real-time scheduling for the PulseAudio daemon</description>
-    <message>System policy prevents PulseAudio from acquiring real-time scheduling.</message>
+    <_description>Real-time scheduling for the PulseAudio daemon</_description>
+    <_message>System policy prevents PulseAudio from acquiring real-time scheduling.</_message>
     <defaults>
       <allow_any>no</allow_any>
       <allow_inactive>no</allow_inactive>
@@ -38,8 +38,8 @@ USA.
   </action>
 
   <action id="org.pulseaudio.acquire-high-priority">
-    <description>High-priority scheduling (negative Unix nice level) for the PulseAudio daemon</description>
-    <message>System policy prevents PulseAudio from acquiring high-priority scheduling.</message>
+    <_description>High-priority scheduling (negative Unix nice level) for the PulseAudio daemon</_description>
+    <_message>System policy prevents PulseAudio from acquiring high-priority scheduling.</_message>
     <defaults>
       <allow_any>no</allow_any>
       <allow_inactive>no</allow_inactive>

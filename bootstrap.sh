@@ -49,6 +49,10 @@ if ! pkg-config --version &>/dev/null; then
     exit 1
 fi
 
+if type -p colorgcc > /dev/null ; then
+   export CC=colorgcc
+fi
+
 if [ "x$1" = "xam" ] ; then
     run_versioned automake "$VERSION" -a -c --foreign
     ./config.status
@@ -58,7 +62,7 @@ else
 
     rm -f Makefile.am~ configure.ac~
     # Evil, evil, evil, evil hack
-    sed 's/read dummy/\#/' `which gettextize` | sh -s -- --copy --force
+    sed 's/read dummy/\#/' `which gettextize` | bash -s -- --copy --force
     test -f Makefile.am~ && mv Makefile.am~ Makefile.am
     test -f configure.ac~ && mv configure.ac~ configure.ac
 
@@ -73,7 +77,7 @@ else
     run_versioned automake "$VERSION" --copy --foreign --add-missing
 
     if test "x$NOCONFIGURE" = "x"; then
-        CFLAGS="-g -O0" ./configure --sysconfdir=/etc --localstatedir=/var --enable-force-preopen "$@"
+        CFLAGS="-g -O0" ./configure --sysconfdir=/etc --localstatedir=/var --enable-force-preopen --enable-shave "$@"
         make clean
     fi
 fi

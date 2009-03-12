@@ -8,7 +8,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -122,6 +122,7 @@ struct pa_core {
     pa_source *default_source;
     pa_sink *default_sink;
 
+    pa_channel_map default_channel_map;
     pa_sample_spec default_sample_spec;
     unsigned default_n_fragments, default_fragment_size_msec;
 
@@ -169,5 +170,7 @@ pa_core* pa_core_new(pa_mainloop_api *m, pa_bool_t shared, size_t shm_size);
 void pa_core_check_idle(pa_core *c);
 
 int pa_core_exit(pa_core *c, pa_bool_t force, int retval);
+
+void pa_core_maybe_vacuum(pa_core *c);
 
 #endif

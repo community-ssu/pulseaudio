@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -158,7 +158,6 @@ int pa_sink_input_new(
     pa_return_val_if_fail(data->sink, -PA_ERR_NOENTITY);
     pa_return_val_if_fail(PA_SINK_IS_LINKED(pa_sink_get_state(data->sink)), -PA_ERR_BADSTATE);
     pa_return_val_if_fail(!data->sync_base || (data->sync_base->sink == data->sink && pa_sink_input_get_state(data->sync_base) == PA_SINK_INPUT_CORKED), -PA_ERR_INVALID);
-    pa_return_val_if_fail(!(flags & PA_SINK_INPUT_FAIL_ON_SUSPEND) || pa_sink_get_state(data->sink) != PA_SINK_SUSPENDED, -PA_ERR_BADSTATE);
 
     if (!data->sample_spec_is_set)
         data->sample_spec = data->sink->sample_spec;
@@ -227,6 +226,12 @@ int pa_sink_input_new(
 
     if ((r = pa_hook_fire(&core->hooks[PA_CORE_HOOK_SINK_INPUT_FIXATE], data)) < 0)
         return r;
+
+    if ((flags & PA_SINK_INPUT_FAIL_ON_SUSPEND) &&
+        pa_sink_get_state(data->sink) == PA_SINK_SUSPENDED) {
+        pa_log_warn("Failed to create sink input: sink is suspended.");
+        return -PA_ERR_BADSTATE;
+    }
 
     if (pa_idxset_size(data->sink->inputs) >= PA_MAX_INPUTS_PER_SINK) {
         pa_log_warn("Failed to create sink input: too many inputs per sink.");
@@ -462,6 +467,8 @@ void pa_sink_input_unlink(pa_sink_input *i) {
         pa_sink_update_status(i->sink);
         i->sink = NULL;
     }
+
+    pa_core_maybe_vacuum(i->core);
 
     pa_sink_input_unref(i);
 }
@@ -943,9 +950,9 @@ pa_bool_t pa_sink_input_get_mute(pa_sink_input *i) {
 /* Called from main thread */
 void pa_sink_input_update_proplist(pa_sink_input *i, pa_update_mode_t mode, pa_proplist *p) {
     pa_sink_input_assert_ref(i);
-    pa_assert(p);
 
-    pa_proplist_update(i->proplist, mode, p);
+    if (p)
+        pa_proplist_update(i->proplist, mode, p);
 
     if (PA_SINK_IS_LINKED(i->state)) {
         pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_PROPLIST_CHANGED], i);

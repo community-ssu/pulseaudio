@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
-  published by the Free Software Foundation; either version 2 of the
+  published by the Free Software Foundation; either version 2.1 of the
   License, or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -33,6 +33,8 @@
 #include <pulse/xmalloc.h>
 #include <pulse/timeval.h>
 #include <pulse/sample.h>
+#include <pulse/i18n.h>
+
 #include <pulsecore/module.h>
 #include <pulsecore/modargs.h>
 #include <pulsecore/core-util.h>
@@ -651,7 +653,8 @@ static int set_conf(struct userdata *u) {
     return 0;
 }
 
-static int setup_stream_fd(struct userdata *u) {
+/* from IO thread */
+static int start_stream_fd(struct userdata *u) {
     union {
         bt_audio_msg_header_t rsp;
         struct bt_start_stream_req start_req;
@@ -660,8 +663,11 @@ static int setup_stream_fd(struct userdata *u) {
         bt_audio_error_t error;
         uint8_t buf[BT_SUGGESTED_BUFFER_SIZE];
     } msg;
+    struct pollfd *pollfd;
 
     pa_assert(u);
+    pa_assert(u->rtpoll);
+    pa_assert(!u->rtpoll_item);
     pa_assert(u->stream_fd < 0);
 
     memset(msg.buf, 0, BT_SUGGESTED_BUFFER_SIZE);
@@ -689,11 +695,53 @@ static int setup_stream_fd(struct userdata *u) {
     pa_make_fd_nonblock(u->stream_fd);
     pa_make_socket_low_delay(u->stream_fd);
 
+    u->rtpoll_item = pa_rtpoll_item_new(u->rtpoll, PA_RTPOLL_NEVER, 1);
+    pollfd = pa_rtpoll_item_get_pollfd(u->rtpoll_item, NULL);
+    pollfd->fd = u->stream_fd;
+    pollfd->events = pollfd->revents = 0;
+
     return 0;
+}
+
+/* from IO thread */
+static int stop_stream_fd(struct userdata *u) {
+    union {
+        bt_audio_msg_header_t rsp;
+        struct bt_stop_stream_req start_req;
+        struct bt_stop_stream_rsp start_rsp;
+        bt_audio_error_t error;
+        uint8_t buf[BT_SUGGESTED_BUFFER_SIZE];
+    } msg;
+    int r = 0;
+
+    pa_assert(u);
+    pa_assert(u->rtpoll);
+    pa_assert(u->rtpoll_item);
+    pa_assert(u->stream_fd >= 0);
+
+    pa_rtpoll_item_free(u->rtpoll_item);
+    u->rtpoll_item = NULL;
+
+    memset(msg.buf, 0, BT_SUGGESTED_BUFFER_SIZE);
+    msg.start_req.h.type = BT_REQUEST;
+    msg.start_req.h.name = BT_STOP_STREAM;
+    msg.start_req.h.length = sizeof(msg.start_req);
+
+    if (service_send(u, &msg.start_req.h) < 0 ||
+        service_expect(u, &msg.rsp, sizeof(msg), BT_STOP_STREAM, sizeof(msg.start_rsp)) < 0)
+        r = -1;
+
+    pa_close(u->stream_fd);
+    u->stream_fd = -1;
+
+    return r;
 }
 
 static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offset, pa_memchunk *chunk) {
     struct userdata *u = PA_SINK(o)->userdata;
+    pa_bool_t failed = FALSE;
+    int r;
+
     pa_assert(u->sink == PA_SINK(o));
 
     pa_log_debug("got message: %d", code);
@@ -705,13 +753,27 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
 
                 case PA_SINK_SUSPENDED:
                     pa_assert(PA_SINK_IS_OPENED(u->sink->thread_info.state));
+
+                    /* Stop the device if the source is suspended as well */
+                    if (!u->source || u->source->state == PA_SOURCE_SUSPENDED)
+                        /* We deliberately ignore whether stopping
+                         * actually worked. Since the stream_fd is
+                         * closed it doesn't really matter */
+                        stop_stream_fd(u);
+
                     break;
 
                 case PA_SINK_IDLE:
                 case PA_SINK_RUNNING:
-                    if (!PA_SINK_IS_OPENED(u->sink->thread_info.state))
-                        u->started_at = pa_rtclock_usec();
+                    if (u->sink->thread_info.state != PA_SINK_SUSPENDED)
+                        break;
 
+                    /* Resume the device if the source was suspended as well */
+                    if (!u->source || u->source->state == PA_SOURCE_SUSPENDED)
+                        if (start_stream_fd(u) < 0)
+                            failed = TRUE;
+
+                    u->started_at = pa_rtclock_usec();
                     break;
 
                 case PA_SINK_UNLINKED:
@@ -725,14 +787,17 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
             *((pa_usec_t*) data) = 0;
             return 0;
         }
-
     }
 
-    return pa_sink_process_msg(o, code, data, offset, chunk);
+    r = pa_sink_process_msg(o, code, data, offset, chunk);
+
+    return (r < 0 || !failed) ? r : -1;
 }
 
 static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t offset, pa_memchunk *chunk) {
     struct userdata *u = PA_SOURCE(o)->userdata;
+    pa_bool_t failed = FALSE;
+    int r;
 
     pa_assert(u->source == PA_SOURCE(o));
 
@@ -744,13 +809,26 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
             switch ((pa_source_state_t) PA_PTR_TO_UINT(data)) {
 
                 case PA_SOURCE_SUSPENDED:
+                    pa_assert(PA_SOURCE_IS_OPENED(u->source->thread_info.state));
+
+                    /* Stop the device if the sink is suspended as well */
+                    if (!u->sink || u->sink->state == PA_SINK_SUSPENDED)
+                        stop_stream_fd(u);
+
                     pa_smoother_pause(u->read_smoother, pa_rtclock_usec());
                     break;
 
                 case PA_SOURCE_IDLE:
                 case PA_SOURCE_RUNNING:
-                    if (u->source->thread_info.state == PA_SOURCE_SUSPENDED)
-                        pa_smoother_resume(u->read_smoother, pa_rtclock_usec());
+                    if (u->source->thread_info.state != PA_SOURCE_SUSPENDED)
+                        break;
+
+                    /* Resume the device if the sink was suspended as well */
+                    if (!u->sink || u->sink->thread_info.state == PA_SINK_SUSPENDED)
+                        if (start_stream_fd(u) < 0)
+                            failed = TRUE;
+
+                    pa_smoother_resume(u->read_smoother, pa_rtclock_usec());
                     break;
 
                 case PA_SOURCE_UNLINKED:
@@ -767,7 +845,9 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
 
     }
 
-    return pa_source_process_msg(o, code, data, offset, chunk);
+    r = pa_source_process_msg(o, code, data, offset, chunk);
+
+    return (r < 0 || !failed) ? r : -1;
 }
 
 static int hsp_process_render(struct userdata *u) {
@@ -841,7 +921,7 @@ static int hsp_process_push(struct userdata *u) {
             if (l < 0 && errno == EINTR)
                 continue;
             else {
-                pa_log_error("Failed to read data from SCO socket: %s", ret < 0 ? pa_cstrerror(errno) : "EOF");
+                pa_log_error("Failed to read data from SCO socket: %s", l < 0 ? pa_cstrerror(errno) : "EOF");
                 ret = -1;
                 break;
             }
@@ -992,6 +1072,9 @@ static void thread_func(void *userdata) {
     if (u->core->realtime_scheduling)
         pa_make_realtime(u->core->realtime_priority);
 
+    if (start_stream_fd(u) < 0)
+        goto fail;
+
     pa_thread_mq_install(&u->thread_mq);
     pa_rtpoll_install(u->rtpoll);
 
@@ -1000,12 +1083,13 @@ static void thread_func(void *userdata) {
     for (;;) {
         struct pollfd *pollfd;
         int ret;
+        pa_bool_t disable_timer = TRUE;
 
-        pollfd = pa_rtpoll_item_get_pollfd(u->rtpoll_item, NULL);
+        pollfd = u->rtpoll_item ? pa_rtpoll_item_get_pollfd(u->rtpoll_item, NULL) : NULL;
 
         if (u->source && PA_SOURCE_IS_LINKED(u->source->thread_info.state)) {
 
-            if (pollfd->revents & POLLIN) {
+            if (pollfd && (pollfd->revents & POLLIN)) {
 
                 if (hsp_process_push(u) < 0)
                     goto fail;
@@ -1020,57 +1104,63 @@ static void thread_func(void *userdata) {
             if (u->sink->thread_info.rewind_requested)
                 pa_sink_process_rewind(u->sink, 0);
 
-            if (pollfd->revents & POLLOUT)
-                writable = TRUE;
+            if (pollfd) {
+                if (pollfd->revents & POLLOUT)
+                    writable = TRUE;
 
-            if ((!u->source || !PA_SOURCE_IS_LINKED(u->source->thread_info.state)) && !do_write && writable) {
-                pa_usec_t time_passed;
-                uint64_t should_have_written;
+                if ((!u->source || !PA_SOURCE_IS_LINKED(u->source->thread_info.state)) && !do_write && writable) {
+                    pa_usec_t time_passed;
+                    uint64_t should_have_written;
 
-                /* Hmm, there is no input stream we could synchronize
-                 * to. So let's do things by time */
+                    /* Hmm, there is no input stream we could synchronize
+                     * to. So let's do things by time */
 
-                time_passed = pa_rtclock_usec() - u->started_at;
-                should_have_written = pa_usec_to_bytes(time_passed, &u->sink->sample_spec);
+                    time_passed = pa_rtclock_usec() - u->started_at;
+                    should_have_written = pa_usec_to_bytes(time_passed, &u->sink->sample_spec);
 
-                do_write = u->write_index <= should_have_written ;
+                    do_write = u->write_index <= should_have_written ;
 /*                 pa_log_debug("Time has come: %s", pa_yes_no(do_write)); */
-            }
-
-            if (writable && do_write) {
-
-                if (u->profile == PROFILE_A2DP) {
-                    if (a2dp_process_render(u) < 0)
-                        goto fail;
-                } else {
-                    if (hsp_process_render(u) < 0)
-                        goto fail;
                 }
 
-                do_write = FALSE;
-                writable = FALSE;
-            }
+                if (writable && do_write) {
 
-            if ((!u->source || !PA_SOURCE_IS_LINKED(u->source->thread_info.state)) && !do_write) {
-                pa_usec_t time_passed, next_write_at, sleep_for;
+                    if (u->profile == PROFILE_A2DP) {
+                        if (a2dp_process_render(u) < 0)
+                            goto fail;
+                    } else {
+                        if (hsp_process_render(u) < 0)
+                            goto fail;
+                    }
 
-                /* Hmm, there is no input stream we could synchronize
-                 * to. So let's estimate when we need to wake up the latest */
+                    do_write = FALSE;
+                    writable = FALSE;
+                }
 
-                time_passed = pa_rtclock_usec() - u->started_at;
-                next_write_at = pa_bytes_to_usec(u->write_index, &u->sink->sample_spec);
-                sleep_for = time_passed < next_write_at ? next_write_at - time_passed : 0;
+                if ((!u->source || !PA_SOURCE_IS_LINKED(u->source->thread_info.state)) && !do_write) {
+                    pa_usec_t time_passed, next_write_at, sleep_for;
+
+                    /* Hmm, there is no input stream we could synchronize
+                     * to. So let's estimate when we need to wake up the latest */
+
+                    time_passed = pa_rtclock_usec() - u->started_at;
+                    next_write_at = pa_bytes_to_usec(u->write_index, &u->sink->sample_spec);
+                    sleep_for = time_passed < next_write_at ? next_write_at - time_passed : 0;
 
 /*                 pa_log("Sleeping for %lu; time passed %lu, next write at %lu", (unsigned long) sleep_for, (unsigned long) time_passed, (unsigned long)next_write_at); */
 
-                pa_rtpoll_set_timer_relative(u->rtpoll, sleep_for);
+                    pa_rtpoll_set_timer_relative(u->rtpoll, sleep_for);
+                    disable_timer = FALSE;
+                }
             }
-        } else
+        }
+
+        if (disable_timer)
             pa_rtpoll_set_timer_disabled(u->rtpoll);
 
         /* Hmm, nothing to do. Let's sleep */
-        pollfd->events = (short) (((u->sink && PA_SINK_IS_OPENED(u->sink->thread_info.state) && !writable) ? POLLOUT : 0) |
-                                  (u->source && PA_SOURCE_IS_OPENED(u->source->thread_info.state) ? POLLIN : 0));
+        if (pollfd)
+            pollfd->events = (short) (((u->sink && PA_SINK_IS_OPENED(u->sink->thread_info.state) && !writable) ? POLLOUT : 0) |
+                                      (u->source && PA_SOURCE_IS_OPENED(u->source->thread_info.state) ? POLLIN : 0));
 
         if ((ret = pa_rtpoll_run(u->rtpoll, TRUE)) < 0)
             goto fail;
@@ -1078,9 +1168,9 @@ static void thread_func(void *userdata) {
         if (ret == 0)
             goto finish;
 
-        pollfd = pa_rtpoll_item_get_pollfd(u->rtpoll_item, NULL);
+        pollfd = u->rtpoll_item ? pa_rtpoll_item_get_pollfd(u->rtpoll_item, NULL) : NULL;
 
-        if (pollfd->revents & ~(POLLOUT|POLLIN)) {
+        if (pollfd && (pollfd->revents & ~(POLLOUT|POLLIN))) {
             pa_log_error("FD error.");
             goto fail;
         }
@@ -1273,7 +1363,7 @@ static void sco_over_pcm_state_update(struct userdata *u) {
     if (PA_SINK_IS_OPENED(pa_sink_get_state(u->hsp.sco_sink)) ||
         PA_SOURCE_IS_OPENED(pa_source_get_state(u->hsp.sco_source))) {
 
-        if (u->service_fd > 0)
+        if (u->service_fd >= 0)
             return;
 
         pa_log_debug("Resuming SCO over PCM");
@@ -1282,7 +1372,7 @@ static void sco_over_pcm_state_update(struct userdata *u) {
 
     } else {
 
-        if (u->service_fd <= 0)
+        if (u->service_fd < 0)
             return;
 
         pa_log_debug("Closing SCO over PCM");
@@ -1461,9 +1551,6 @@ static int setup_bt(struct userdata *u) {
         return 0;
     }
 
-    if (setup_stream_fd(u) < 0)
-        return -1;
-
     pa_log_debug("Got the stream socket");
 
     return 0;
@@ -1472,6 +1559,7 @@ static int setup_bt(struct userdata *u) {
 static int init_profile(struct userdata *u) {
     int r = 0;
     pa_assert(u);
+    pa_assert(u->profile != PROFILE_OFF);
 
     if (setup_bt(u) < 0)
         return -1;
@@ -1531,8 +1619,6 @@ static void stop_thread(struct userdata *u) {
 }
 
 static int start_thread(struct userdata *u) {
-    struct pollfd *pollfd;
-
     pa_assert(u);
     pa_assert(!u->thread);
     pa_assert(!u->rtpoll);
@@ -1546,11 +1632,6 @@ static int start_thread(struct userdata *u) {
 
     u->rtpoll = pa_rtpoll_new();
     pa_thread_mq_init(&u->thread_mq, u->core->mainloop, u->rtpoll);
-
-    u->rtpoll_item = pa_rtpoll_item_new(u->rtpoll, PA_RTPOLL_NEVER, 1);
-    pollfd = pa_rtpoll_item_get_pollfd(u->rtpoll_item, NULL);
-    pollfd->fd = u->stream_fd;
-    pollfd->events = pollfd->revents = 0;
 
     if (!(u->thread = pa_thread_new(thread_func, u))) {
         pa_log_error("Failed to create IO thread");
@@ -1608,7 +1689,9 @@ static int card_set_profile(pa_card *c, pa_card_profile *new_profile) {
     u->sample_spec = u->requested_sample_spec;
 
     init_bt(u);
-    init_profile(u);
+
+    if (u->profile != PROFILE_OFF)
+        init_profile(u);
 
     if (u->sink || u->source)
         start_thread(u);
@@ -1648,7 +1731,7 @@ static int add_card(struct userdata *u, const char * default_profile) {
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->device->address);
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_API, "bluez");
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_CLASS, "sound");
-    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_CONNECTOR, "bluetooth");
+    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_BUS, "bluetooth");
     if ((ff = pa_bluetooth_get_form_factor(u->device->class)))
         pa_proplist_sets(data.proplist, PA_PROP_DEVICE_FORM_FACTOR, ff);
     pa_proplist_sets(data.proplist, "bluez.path", u->device->path);
@@ -1660,7 +1743,7 @@ static int add_card(struct userdata *u, const char * default_profile) {
     data.profiles = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
 
     if (u->device->audio_sink_info_valid > 0) {
-        p = pa_card_profile_new("a2dp", "A2DP Advanced Audio Distribution Profile", sizeof(enum profile));
+        p = pa_card_profile_new("a2dp", _("High Fidelity Playback (A2DP)"), sizeof(enum profile));
         p->priority = 10;
         p->n_sinks = 1;
         p->n_sources = 0;
@@ -1674,7 +1757,7 @@ static int add_card(struct userdata *u, const char * default_profile) {
     }
 
     if (u->device->headset_info_valid > 0) {
-        p = pa_card_profile_new("hsp", "HSP/HFP Headset/Hands-Free Profile", sizeof(enum profile));
+        p = pa_card_profile_new("hsp", _("Telephony Duplex (HSP/HFP)"), sizeof(enum profile));
         p->priority = 20;
         p->n_sinks = 1;
         p->n_sources = 1;
@@ -1689,7 +1772,7 @@ static int add_card(struct userdata *u, const char * default_profile) {
 
     pa_assert(!pa_hashmap_isempty(data.profiles));
 
-    p = pa_card_profile_new("off", "Off", sizeof(enum profile));
+    p = pa_card_profile_new("off", _("Off"), sizeof(enum profile));
     d = PA_CARD_PROFILE_DATA(p);
     *d = PROFILE_OFF;
     pa_hashmap_put(data.profiles, p->name, p);
@@ -1829,8 +1912,9 @@ int pa__init(pa_module* m) {
     if (init_bt(u) < 0)
         goto fail;
 
-    if (init_profile(u) < 0)
-        goto fail;
+    if (u->profile != PROFILE_OFF)
+        if (init_profile(u) < 0)
+            goto fail;
 
 /*     if (u->path) { */
 /*         DBusError err; */
@@ -1868,8 +1952,9 @@ int pa__init(pa_module* m) {
 /*         } */
 /*     } */
 
-    if (start_thread(u) < 0)
-        goto fail;
+    if (u->sink || u->source)
+        if (start_thread(u) < 0)
+            goto fail;
 
     return 0;
 
