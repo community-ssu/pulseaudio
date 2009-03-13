@@ -1,4 +1,6 @@
 ../../src/pulsecore/*.h usr/include/pulsecore
-../../src/modules/*-util.h usr/include/pulsecore/modules
+../../src/modules/*.h usr/include/pulsecore/modules
+../../src/modules/alsa/*.h usr/include/pulsecore/modules/alsa
+../../src/modules/bluetooth/*.h usr/include/pulsecore/modules/bluetooth
 usr/include/pulsecore/pulsecore-config.h
 usr/lib/pkgconfig/pulsecore.pc
