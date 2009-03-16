@@ -1,7 +1,6 @@
 usr/lib/pulse-*/modules/liboss-util.so
 usr/lib/pulse-*/modules/libprotocol-http.so
 usr/lib/pulse-*/modules/librtp.so
-usr/lib/pulse-*/modules/module-bluetooth-proximity.so
 usr/lib/pulse-*/modules/module-cli-protocol-tcp.so
 usr/lib/pulse-*/modules/module-cli-protocol-unix.so
 usr/lib/pulse-*/modules/module-cli.so
@@ -28,4 +27,3 @@ usr/lib/pulse-*/modules/module-sine.so
 usr/lib/pulse-*/modules/module-tunnel-sink.so
 usr/lib/pulse-*/modules/module-tunnel-source.so
 usr/lib/pulse-*/modules/module-volume-restore.so
-usr/lib/pulseaudio/pulse/proximity-helper
