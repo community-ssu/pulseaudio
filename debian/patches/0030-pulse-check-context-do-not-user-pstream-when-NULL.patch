@@ -1,0 +1,24 @@
+From 5a7be9f68bfe25f50da318c9d339865ae0f1acc7 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Mon, 16 Mar 2009 16:39:28 +0200
+Subject: [PATCH 30/34] pulse: check context (do not user pstream when NULL)
+
+---
+ src/pulse/stream.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/src/pulse/stream.c b/src/pulse/stream.c
+index 9a0ea0f..a7fccc8 100644
+--- a/src/pulse/stream.c
++++ b/src/pulse/stream.c
+@@ -948,6 +948,7 @@ static int create_stream(
+ 
+     PA_CHECK_VALIDITY(s->context, s->context->version >= 12 || !(flags & PA_STREAM_VARIABLE_RATE), PA_ERR_NOTSUPPORTED);
+     PA_CHECK_VALIDITY(s->context, s->context->version >= 13 || !(flags & PA_STREAM_PEAK_DETECT), PA_ERR_NOTSUPPORTED);
++    PA_CHECK_VALIDITY(s->context, s->context->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
+     /* Althought some of the other flags are not supported on older
+      * version, we don't check for them here, because it doesn't hurt
+      * when they are passed but actually not supported. This makes
+-- 
+1.6.2.rc1.13.gfd76c.dirty
+

@@ -1,0 +1,27 @@
+From 9e93b9ce0b4eb825d3ce434401e2ccb9ac54e779 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Thu, 5 Mar 2009 18:18:07 +0200
+Subject: [PATCH 05/34] bluetooth: stream also when source is suspended
+
+---
+ src/modules/bluetooth/module-bluetooth-device.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index 3e09611..2d9ede5 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -1164,8 +1164,8 @@ static void thread_func(void *userdata) {
+ 
+         /* Hmm, nothing to do. Let's sleep */
+         if (pollfd)
+-            pollfd->events = (short) (((u->sink && PA_SINK_IS_OPENED(u->sink->thread_info.state) && !writable) ? POLLOUT : 0) |
+-                                      (u->source && PA_SOURCE_IS_OPENED(u->source->thread_info.state) ? POLLIN : 0));
++            pollfd->events = (short) (((u->sink && PA_SINK_IS_LINKED(u->sink->thread_info.state) && !writable) ? POLLOUT : 0) |
++                                      (u->source && PA_SOURCE_IS_LINKED(u->source->thread_info.state) ? POLLIN : 0));
+ 
+         if ((ret = pa_rtpoll_run(u->rtpoll, TRUE)) < 0)
+             goto fail;
+-- 
+1.6.2.rc1.13.gfd76c.dirty
+
