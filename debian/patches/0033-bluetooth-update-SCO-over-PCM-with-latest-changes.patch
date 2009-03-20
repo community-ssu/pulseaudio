@@ -1,7 +1,7 @@
-From 1ab217709f16c06591df2d74b4bf4b54eaf9f01e Mon Sep 17 00:00:00 2001
+From af9f92bfaa3a4fa78a31d8845a88cace85912d6c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Fri, 6 Mar 2009 14:45:06 +0200
-Subject: [PATCH 19/34] bluetooth: SCO undefined
+Subject: [PATCH 33/37] bluetooth: update SCO over PCM with latest changes
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |   19 +++++++++++++------

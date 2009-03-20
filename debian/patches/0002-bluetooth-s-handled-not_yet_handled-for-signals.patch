@@ -1,7 +1,7 @@
 From 2d903bae9a2e57f997a3d3f335379c3880f95c77 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 5 Mar 2009 16:16:29 +0200
-Subject: [PATCH 02/34] bluetooth: s/handled/not_yet_handled for signals
+Subject: [PATCH 02/37] bluetooth: s/handled/not_yet_handled for signals
 
 ---
  src/modules/bluetooth/bluetooth-util.c             |    8 ++++----

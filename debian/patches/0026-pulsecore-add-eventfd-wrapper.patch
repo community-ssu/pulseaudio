@@ -1,7 +1,7 @@
 From 304f9323629a276260f306489b3c53faaf4a23d8 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 2 Mar 2009 15:58:53 +0200
-Subject: [PATCH 27/34] pulsecore: add eventfd wrapper
+Subject: [PATCH 26/37] pulsecore: add eventfd wrapper
 
 ---
  src/Makefile.am         |    1 +

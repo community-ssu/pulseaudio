@@ -1,7 +1,7 @@
 From 9e93b9ce0b4eb825d3ce434401e2ccb9ac54e779 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 5 Mar 2009 18:18:07 +0200
-Subject: [PATCH 05/34] bluetooth: stream also when source is suspended
+Subject: [PATCH 05/37] bluetooth: stream also when source is suspended
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |    4 ++--

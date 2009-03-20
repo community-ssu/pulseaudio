@@ -1,7 +1,7 @@
-From b0417344b963d8abd883e87e1c8578b4bf32f95e Mon Sep 17 00:00:00 2001
+From 0e13ff496cd37a3cf0e3a0f74c59cb8f287f3e8c Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Tue, 17 Mar 2009 19:20:46 +0200
-Subject: [PATCH 33/34] alsa: sink-volume, a complex mixer module
+Subject: [PATCH 36/37] alsa: sink-volume, a complex mixer module
 
 ---
  src/Makefile.am                                   |    7 +
@@ -78,7 +78,7 @@ index 0000000..30c44c1
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
 new file mode 100644
-index 0000000..87b8f41
+index 0000000..4e931fb
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-volume.c
 @@ -0,0 +1,1437 @@
@@ -201,7 +201,7 @@ index 0000000..87b8f41
 +    pa_bool_t tuning_table_filled;
 +    long *tuning_table;
 +    int tuning_table_allocated_length;
-+    int tuning_table_length;
++    int tuning_table_max;
 +    long tuned_volume_max, tuned_volume_min;
 +
 +    struct slave_mixer_t **slaves;
@@ -317,13 +317,13 @@ index 0000000..87b8f41
 +    pa_assert(m);
 +    pa_assert(m->tuning_table_filled);
 +
-+    if (mB <= m->tuning_table[m->tuned_volume_min])
++    if (mB <= m->tuning_table[0])
 +        return m->tuned_volume_min;
 +
-+    if (mB >= m->tuning_table[m->tuned_volume_max])
++    if (mB >= m->tuning_table[m->tuning_table_max])
 +        return m->tuned_volume_max;
 +
-+    element = mB_to_hw_mixer_find(m, mB, 0, m->tuning_table_length);
++    element = mB_to_hw_mixer_find(m, mB, 0, m->tuning_table_max);
 +
 +    if ((mB - m->tuning_table[element]) < (m->tuning_table[element+1] - mB))
 +        ret = element + m->tuned_volume_min;
@@ -360,9 +360,9 @@ index 0000000..87b8f41
 +    pa_assert(m);
 +    pa_assert(m->tuning_table);
 +    pa_log_debug("Tuning table for mixer %s: %d elements from %ld to %ld",
-+                 m->name, m->tuning_table_length, m->tuned_volume_min, m->tuned_volume_max);
++                 m->name, m->tuning_table_max+1, m->tuned_volume_min, m->tuned_volume_max);
 +
-+    for(i=0; i<= m->tuning_table_length; i++)
++    for(i=0; i<= m->tuning_table_max; i++)
 +        pa_log_debug("%ld:%ld", i+m->tuned_volume_min, m->tuning_table[i]);
 +}
 +
@@ -371,8 +371,8 @@ index 0000000..87b8f41
 +    pa_assert(m->tuning_table);
 +    m->tuned_volume_min = m->hw_volume_min;
 +    m->tuned_volume_max = m->hw_volume_max;
-+    m->tuning_table_length = m->tuning_table_allocated_length;
-+    fill_tuning_table_range(m, 0, m->tuning_table_length, m->hw_dB_min - m->hw_dB_max, 0);
++    m->tuning_table_max = m->tuning_table_allocated_length-1;
++    fill_tuning_table_range(m, 0, m->tuning_table_max, m->hw_dB_min - m->hw_dB_max, 0);
 +    m->tuning_table_filled = TRUE;
 +
 +    print_tuning_table(m);
@@ -660,10 +660,10 @@ index 0000000..87b8f41
 +        else {
 +            pa_log_warn("No tuning table or ALSA dB info for %s, this is bad (assuming 0 - -60dB range)",
 +                        m->name);
-+            m->tuning_table_length = m->tuning_table_allocated_length;
-+            fill_tuning_table_range(m, 0, m->tuning_table_length, -6000, 0);
++            m->tuning_table_max = m->tuning_table_allocated_length-1;
++            fill_tuning_table_range(m, 0, m->tuning_table_max, -6000, 0);
 +            m->tuning_table_filled = TRUE;
-+            u->sink->n_volume_steps = m->tuning_table_length;
++            u->sink->n_volume_steps = m->tuning_table_max+1;
 +        }
 +    }
 +
@@ -766,13 +766,13 @@ index 0000000..87b8f41
 +    }
 +
 +    m->tuning_table_filled = FALSE;
-+    m->tuning_table_allocated_length = m->hw_volume_max - m->hw_volume_min;
++    m->tuning_table_allocated_length = m->hw_volume_max - m->hw_volume_min + 1;
 +    if (m->tuning_table_allocated_length > MAX_VALUE_STEPS) {
 +        pa_log_error("Too many mixer steps: %ld - %ld", m->hw_volume_max, m->hw_volume_min);
 +        goto fail;
 +    }
 +
-+    m->tuning_table_length = 0;
++    m->tuning_table_max = 0;
 +    m->tuning_table = pa_xmalloc0(m->tuning_table_allocated_length * sizeof(long));
 +    pa_assert(m->tuning_table);
 +
@@ -972,7 +972,7 @@ index 0000000..87b8f41
 +    }
 +
 +    m->tuned_volume_max = hw_vol;
-+    m->tuning_table_length = m->tuned_volume_max - m->tuned_volume_min;
++    m->tuning_table_max = m->tuned_volume_max - m->tuned_volume_min;
 +    m->tuning_table_filled = TRUE;
 +    pa_log_debug("Tuning parameter parsed");
 +    print_tuning_table(m);

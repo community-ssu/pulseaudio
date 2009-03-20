@@ -1,7 +1,7 @@
 From 5f66a68435260b4b72de3b7c1030dcbb4cda5987 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 20:08:59 +0200
-Subject: [PATCH 14/34] pulsecore: notify flatten upstream slaved sink of volume change
+Subject: [PATCH 14/37] pulsecore: notify flatten upstream slaved sink of volume change
 
 ---
  src/pulsecore/sink.c |   26 +++++++++++++++++++++++++-

@@ -1,7 +1,7 @@
 From 7e7bdf7e487ecac552495c6f3785282c10f9b9b1 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 18:01:44 +0200
-Subject: [PATCH 12/34] pulsecore: forward flat_volume functions to flat_volume_sink
+Subject: [PATCH 12/37] pulsecore: forward flat_volume functions to flat_volume_sink
 
 btw, pa_sink_propagate_flat_volume() could be static... in that case,
 we could make sure it's not called with a slaved sink.

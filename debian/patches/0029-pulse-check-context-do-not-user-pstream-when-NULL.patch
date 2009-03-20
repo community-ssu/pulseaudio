@@ -1,7 +1,7 @@
 From 5a7be9f68bfe25f50da318c9d339865ae0f1acc7 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 16 Mar 2009 16:39:28 +0200
-Subject: [PATCH 30/34] pulse: check context (do not user pstream when NULL)
+Subject: [PATCH 29/37] pulse: check context (do not user pstream when NULL)
 
 ---
  src/pulse/stream.c |    1 +

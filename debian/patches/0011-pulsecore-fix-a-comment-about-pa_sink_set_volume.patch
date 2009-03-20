@@ -1,7 +1,7 @@
 From 1dede0ebe7e0debc6760a33e5dfa19af1b70b46c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 17:55:37 +0200
-Subject: [PATCH 11/34] pulsecore: fix a comment about pa_sink_set_volume
+Subject: [PATCH 11/37] pulsecore: fix a comment about pa_sink_set_volume
 
 ---
  src/pulsecore/sink.c |    4 ++--

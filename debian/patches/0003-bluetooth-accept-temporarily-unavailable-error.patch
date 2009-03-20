@@ -1,7 +1,7 @@
 From 362d196093309c47ab7c53bb9343adf1792c9921 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 5 Mar 2009 17:04:39 +0200
-Subject: [PATCH 03/34] bluetooth: accept temporarily unavailable error
+Subject: [PATCH 03/37] bluetooth: accept temporarily unavailable error
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |    6 +++---
