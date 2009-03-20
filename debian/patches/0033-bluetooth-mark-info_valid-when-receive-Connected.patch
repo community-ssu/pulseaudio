@@ -1,7 +1,7 @@
 From f1daa282f030e4e2381341e0f65faca47c4b891b Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 19 Mar 2009 16:55:14 +0200
-Subject: [PATCH 34/37] bluetooth: mark info_valid when receive Connected
+Subject: [PATCH 33/37] bluetooth: mark info_valid when receive Connected
 
 Sometime, we receive the connected signal before GetProperties reply.
 ---

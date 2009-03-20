@@ -1,6 +1,6 @@
-From f22e23ff6d42cc49c61494d750c7669fe3ab0087 Mon Sep 17 00:00:00 2001
+From 6a460e010afc678382e6db6e9a2472733121c98c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
-Date: Fri, 20 Mar 2009 12:30:50 +0200
+Date: Fri, 20 Mar 2009 15:14:10 +0200
 Subject: [PATCH 37/37] autofoo
 
 ---

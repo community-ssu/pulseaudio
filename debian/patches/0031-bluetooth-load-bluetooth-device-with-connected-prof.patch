@@ -1,7 +1,7 @@
 From df3f4eef2d9c2b0f1a4ea0fba45ec7fc652ded97 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 19 Mar 2009 14:15:38 +0200
-Subject: [PATCH 32/37] bluetooth: load bluetooth device with connected profile
+Subject: [PATCH 31/37] bluetooth: load bluetooth device with connected profile
 
 ---
  src/modules/bluetooth/module-bluetooth-discover.c |    2 +-

@@ -1,7 +1,7 @@
 From e83621724d7939b97b4f01f0d7e965d61ef8e55e Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 19 Mar 2009 16:48:31 +0200
-Subject: [PATCH 35/37] bluetooth: rework the info_valid logic to be more tolerant
+Subject: [PATCH 34/37] bluetooth: rework the info_valid logic to be more tolerant
 
 ---
  src/modules/bluetooth/bluetooth-util.c |    5 ++---
