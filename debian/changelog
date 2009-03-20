@@ -1,8 +1,8 @@
-pulseaudio (0.9.15~test5-0maemo2) UNRELEASED; urgency=low
+pulseaudio (0.9.15~test5-0maemo2) unstable; urgency=low
 
-  * UNRELEASED bump version.
+  * Volume and bluetooth fixes.
 
- -- Maemo Multimedia <multimedia@maemo.org>  Wed, 18 Mar 2009 16:47:27 +0200
+ -- Maemo Multimedia <multimedia@maemo.org>  Fri, 20 Mar 2009 12:32:34 +0200
 
 pulseaudio (0.9.15~test5-0maemo1) unstable; urgency=low
 
