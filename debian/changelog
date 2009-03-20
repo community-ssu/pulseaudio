@@ -1,6 +1,7 @@
 pulseaudio (0.9.15~test5-0maemo2) unstable; urgency=low
 
   * Volume and bluetooth fixes.
+  * Use 10ms * 4 buffers.
 
  -- Maemo Multimedia <multimedia@maemo.org>  Fri, 20 Mar 2009 12:32:34 +0200
 
