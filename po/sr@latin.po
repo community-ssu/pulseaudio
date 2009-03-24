@@ -1,35 +1,37 @@
-# pulseaudio translation to Finnish (fi).
-# Copyright (C) 2008 Timo Jyrinki
+# Serbian(Latin) translations for pulseaudio
+# Copyright (C) 2006 Lennart Poettering
 # This file is distributed under the same license as the pulseaudio package.
-# Timo Jyrinki <timo.jyrinki@iki.fi>.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: git trunk\n"
+"Project-Id-Version: pulseaudio\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-03-19 17:58+0100\n"
-"PO-Revision-Date: 2009-02-13 08:57+0200\n"
-"Last-Translator: Timo Jyrinki <timo.jyrinki@iki.fi>\n"
-"Language-Team: Finnish <laatu@lokalisointi.org>\n"
+"POT-Creation-Date: 2009-03-21 08:20+0000\n"
+"PO-Revision-Date: 2009-03-21 13:40+0000\n"
+"Last-Translator: Miloš Komarčević <kmilos@gmail.com>\n"
+"Language-Team: Serbian (sr) <fedora-trans-sr@redhat.com>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%"
+"10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
 
 #: ../src/modules/alsa/alsa-util.c:530
 msgid "Analog Mono"
-msgstr ""
+msgstr "Analogni mono"
 
 #: ../src/modules/alsa/alsa-util.c:536
 msgid "Analog Stereo"
-msgstr ""
+msgstr "Analogni stereo"
 
 #: ../src/modules/alsa/alsa-util.c:542
 msgid "Digital Stereo (IEC958)"
-msgstr ""
+msgstr "Digitalni stereo (IEC958)"
 
 #: ../src/modules/alsa/alsa-util.c:548
 msgid "Digital Stereo (HDMI)"
-msgstr ""
+msgstr "Digitalni stereo (HDMI)"
 
 #: ../src/modules/alsa/alsa-util.c:555
 msgid "Analog Surround 4.0"
@@ -87,9 +89,8 @@ msgid ""
 msgstr ""
 
 #: ../src/pulsecore/sink.c:1965
-#, fuzzy
 msgid "Internal Audio"
-msgstr "Sisäinen virhe"
+msgstr ""
 
 #: ../src/pulsecore/sink.c:1971
 msgid "Modem"
@@ -97,7 +98,7 @@ msgstr ""
 
 #: ../src/daemon/ltdl-bind-now.c:124
 msgid "Failed to find original lt_dlopen loader."
-msgstr "Alkuperäisen ld_dlopen-lataimen löytäminen epäonnistui."
+msgstr ""
 
 #: ../src/daemon/ltdl-bind-now.c:129
 msgid "Failed to allocate new dl loader."
@@ -168,7 +169,7 @@ msgstr ""
 
 #: ../src/daemon/main.c:161
 msgid "Exiting."
-msgstr "Poistutaan."
+msgstr ""
 
 #: ../src/daemon/main.c:179
 #, c-format
@@ -293,34 +294,30 @@ msgstr ""
 msgid ""
 "Real-time scheduling enabled in configuration but not allowed by policy."
 msgstr ""
-"Tosiaikainen ajoitus otettu käyttöön asetuksissa, mutta käytännöt eivät "
-"salli sitä."
 
 #: ../src/daemon/main.c:645
 msgid "Daemon not running"
-msgstr "Taustaprosessi ei ole käynnissä"
+msgstr ""
 
 #: ../src/daemon/main.c:647
 #, c-format
 msgid "Daemon running as PID %u"
-msgstr "Taustaprosessi käynnissä prosessitunnisteella %u"
+msgstr ""
 
 #: ../src/daemon/main.c:657
 #, c-format
 msgid "Failed to kill daemon: %s"
-msgstr "Taustaprosessin lopettaminen epäonnistui: %s"
+msgstr ""
 
 #: ../src/daemon/main.c:675
 msgid ""
 "This program is not intended to be run as root (unless --system is "
 "specified)."
 msgstr ""
-"Tätä ohjelmaa ei ole tarkoitettu suoritettavaksi pääkäyttäjänä (ellei --"
-"system ole määritelty)."
 
 #: ../src/daemon/main.c:677
 msgid "Root privileges required."
-msgstr "Pääkäyttäjän (root) oikeudet vaaditaan."
+msgstr ""
 
 #: ../src/daemon/main.c:682
 msgid "--start not supported for system instances."
@@ -337,13 +334,10 @@ msgstr ""
 #: ../src/daemon/main.c:693
 msgid "Running in system mode, forcibly disabling SHM mode!"
 msgstr ""
-"Suoritetaan järjestelmätilassa, otetaan SHM-tila pakotetusti pois käytöstä."
 
 #: ../src/daemon/main.c:698
 msgid "Running in system mode, forcibly disabling exit idle time!"
 msgstr ""
-"Suoritetaan järjestelmätilassa, otetaan poistumisen joutenoloaika "
-"pakotetusti pois käytöstä."
 
 #: ../src/daemon/main.c:725
 msgid "Failed to acquire stdio."
@@ -366,86 +360,86 @@ msgstr ""
 
 #: ../src/daemon/main.c:756
 msgid "Daemon startup failed."
-msgstr "Taustaprosessin käynnistys epäonnistui."
+msgstr ""
 
 #: ../src/daemon/main.c:758
 msgid "Daemon startup successful."
-msgstr "Taustaprosessin käynnistys onnistui."
+msgstr ""
 
 #: ../src/daemon/main.c:828
 #, c-format
 msgid "This is PulseAudio %s"
-msgstr "Tämä on PulseAudio %s"
+msgstr ""
 
 #: ../src/daemon/main.c:829
 #, c-format
 msgid "Compilation host: %s"
-msgstr "Käännöksen isäntäkone: %s"
+msgstr ""
 
 #: ../src/daemon/main.c:830
 #, c-format
 msgid "Compilation CFLAGS: %s"
-msgstr "Käännösaikaiset C-liput (CFLAGS): %s"
+msgstr ""
 
 #: ../src/daemon/main.c:833
 #, c-format
 msgid "Running on host: %s"
-msgstr "Käynnissä isäntäkoneella: %s"
+msgstr ""
 
 #: ../src/daemon/main.c:836
 #, c-format
 msgid "Found %u CPUs."
-msgstr "Löydettiin %u CPU:ta."
+msgstr ""
 
 #: ../src/daemon/main.c:838
 #, c-format
 msgid "Page size is %lu bytes"
-msgstr "Sivun koko on %lu tavua"
+msgstr ""
 
 #: ../src/daemon/main.c:841
 msgid "Compiled with Valgrind support: yes"
-msgstr "Käännetty Valgrind-tuella: kyllä"
+msgstr ""
 
 #: ../src/daemon/main.c:843
 msgid "Compiled with Valgrind support: no"
-msgstr "Käännetty Valgrind-tuella: ei"
+msgstr ""
 
 #: ../src/daemon/main.c:846
 #, c-format
 msgid "Running in valgrind mode: %s"
-msgstr "Käynnissä valgrind-tilassa: %s"
+msgstr ""
 
 #: ../src/daemon/main.c:849
 msgid "Optimized build: yes"
-msgstr "Optimoitu rakentaminen: kyllä"
+msgstr ""
 
 #: ../src/daemon/main.c:851
 msgid "Optimized build: no"
-msgstr "Optimoitu rakentaminen: ei"
+msgstr ""
 
 #: ../src/daemon/main.c:855
 msgid "Failed to get machine ID"
-msgstr "Konetunnisteen nouto epäonnistui"
+msgstr ""
 
 #: ../src/daemon/main.c:858
 #, c-format
 msgid "Machine ID is %s."
-msgstr "Konetunniste on %s."
+msgstr ""
 
 #: ../src/daemon/main.c:863
 #, c-format
 msgid "Using runtime directory %s."
-msgstr "Käytetään ajonaikaista hakemistoa %s."
+msgstr ""
 
 #: ../src/daemon/main.c:868
 #, c-format
 msgid "Using state directory %s."
-msgstr "Käytetään tilahakemistoa %s."
+msgstr ""
 
 #: ../src/daemon/main.c:871
 #, c-format
 msgid "Running in system mode: %s"
-msgstr "Suoritetaan järjestelmätilassa: %s"
+msgstr ""
 
 #: ../src/daemon/main.c:886
 msgid "pa_pid_file_create() failed."
@@ -453,15 +447,13 @@ msgstr ""
 
 #: ../src/daemon/main.c:898
 msgid "Fresh high-resolution timers available! Bon appetit!"
-msgstr "Korkean tarkkuuden ajastimet käytettävissä."
+msgstr ""
 
 #: ../src/daemon/main.c:900
 msgid ""
 "Dude, your kernel stinks! The chef's recommendation today is Linux with high-"
 "resolution timers enabled!"
 msgstr ""
-"Hei, ytimesi on kehno! Linux korkean tarkkuuden ajastimien tuella on hyvin "
-"suositeltava!"
 
 #: ../src/daemon/main.c:912
 msgid "pa_core_new() failed."
@@ -469,25 +461,23 @@ msgstr ""
 
 #: ../src/daemon/main.c:974
 msgid "Failed to initialize daemon."
-msgstr "Taustaprosessin alustus epäonnistui."
+msgstr ""
 
 #: ../src/daemon/main.c:979
 msgid "Daemon startup without any loaded modules, refusing to work."
 msgstr ""
-"Taustaprosessin käynnistys ilman ladattavia moduuleita, kieltäydytään "
-"toiminnasta."
 
 #: ../src/daemon/main.c:992
 msgid "Daemon startup complete."
-msgstr "Taustaprosessin käynnistys valmis."
+msgstr ""
 
 #: ../src/daemon/main.c:998
 msgid "Daemon shutdown initiated."
-msgstr "Taustaprosessin sulkeminen käynnistetty."
+msgstr ""
 
 #: ../src/daemon/main.c:1016
 msgid "Daemon terminated."
-msgstr "Taustaprosessi lopetettu."
+msgstr ""
 
 #: ../src/daemon/cmdline.c:121
 #, c-format
@@ -612,7 +602,7 @@ msgstr ""
 #: ../src/daemon/cmdline.c:359
 #, c-format
 msgid "Invalid resample method '%s'."
-msgstr "Virheellinen uudelleennäytteistyksen tapa \"%s\"."
+msgstr ""
 
 #: ../src/daemon/cmdline.c:366
 msgid "--system expects boolean argument"
@@ -629,42 +619,42 @@ msgstr ""
 #: ../src/daemon/dumpmodules.c:60
 #, c-format
 msgid "Name: %s\n"
-msgstr "Nimi: %s\n"
+msgstr ""
 
 #: ../src/daemon/dumpmodules.c:63
 #, c-format
 msgid "No module information available\n"
-msgstr "Moduulitietoja ei saatavilla\n"
+msgstr ""
 
 #: ../src/daemon/dumpmodules.c:66
 #, c-format
 msgid "Version: %s\n"
-msgstr "Versio: %s\n"
+msgstr ""
 
 #: ../src/daemon/dumpmodules.c:68
 #, c-format
 msgid "Description: %s\n"
-msgstr "Kuvaus: %s\n"
+msgstr ""
 
 #: ../src/daemon/dumpmodules.c:70
 #, c-format
 msgid "Author: %s\n"
-msgstr "Tekijä: %s\n"
+msgstr ""
 
 #: ../src/daemon/dumpmodules.c:72
 #, c-format
 msgid "Usage: %s\n"
-msgstr "Käyttö: %s\n"
+msgstr ""
 
 #: ../src/daemon/dumpmodules.c:73
 #, c-format
 msgid "Load Once: %s\n"
-msgstr "Lataa kerran: %s\n"
+msgstr ""
 
 #: ../src/daemon/dumpmodules.c:77
 #, c-format
 msgid "Path: %s\n"
-msgstr "Polku: %s\n"
+msgstr ""
 
 #: ../src/daemon/daemon-conf.c:215
 #, c-format
@@ -707,9 +697,9 @@ msgid "[%s:%u] Invalid sample channels '%s'."
 msgstr ""
 
 #: ../src/daemon/daemon-conf.c:353
-#, fuzzy, c-format
+#, c-format
 msgid "[%s:%u] Invalid channel map '%s'."
-msgstr "Epäkelpo kanavakartta\n"
+msgstr ""
 
 #: ../src/daemon/daemon-conf.c:371
 #, c-format
@@ -729,7 +719,7 @@ msgstr ""
 #: ../src/daemon/daemon-conf.c:522
 #, c-format
 msgid "Failed to open configuration file: %s"
-msgstr "Asetustiedoston avaaminen epäonnistui: %s"
+msgstr ""
 
 #: ../src/daemon/daemon-conf.c:538
 msgid ""
@@ -740,11 +730,11 @@ msgstr ""
 #: ../src/daemon/daemon-conf.c:616
 #, c-format
 msgid "### Read from configuration file: %s ###\n"
-msgstr "### Luettu asetustiedostosta: %s ###\n"
+msgstr ""
 
 #: ../src/daemon/caps.c:63
 msgid "Dropping root privileges."
-msgstr "Pudotetaan pääkäyttäjän oikeudet."
+msgstr ""
 
 #: ../src/daemon/caps.c:103
 msgid "Limited capabilities successfully to CAP_SYS_NICE."
@@ -764,9 +754,8 @@ msgid ""
 msgstr ""
 
 #: ../src/daemon/org.pulseaudio.policy.in.h:2
-#, fuzzy
 msgid "Real-time scheduling for the PulseAudio daemon"
-msgstr "PulseAudio-taustaprosessin lopettaminen epäonnistui."
+msgstr ""
 
 #: ../src/daemon/org.pulseaudio.policy.in.h:3
 msgid ""
@@ -779,213 +768,213 @@ msgstr ""
 
 #: ../src/pulse/channelmap.c:103 ../src/pulse/channelmap.c:804
 msgid "Mono"
-msgstr "Mono"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:105
 msgid "Front Center"
-msgstr "Keski"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:106
 msgid "Front Left"
-msgstr "Vasen etu"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:107
 msgid "Front Right"
-msgstr "Oikea etu"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:109
 msgid "Rear Center"
-msgstr "Takakeski"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:110
 msgid "Rear Left"
-msgstr "Vasen taka"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:111
 msgid "Rear Right"
-msgstr "Oikea taka"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:113
 msgid "Low Frequency Emmiter"
-msgstr "Alataajuus"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:115
 msgid "Front Left-of-center"
-msgstr "Vasemmalle keskeltä etu"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:116
 msgid "Front Right-of-center"
-msgstr "Oikealle keskeltä etu"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:118
 msgid "Side Left"
-msgstr "Vasen sivu"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:119
 msgid "Side Right"
-msgstr "Oikea sivu"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:121
 msgid "Auxiliary 0"
-msgstr "Avustava 0"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:122
 msgid "Auxiliary 1"
-msgstr "Avustava 1"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:123
 msgid "Auxiliary 2"
-msgstr "Avustava 2"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:124
 msgid "Auxiliary 3"
-msgstr "Avustava 3"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:125
 msgid "Auxiliary 4"
-msgstr "Avustava 4"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:126
 msgid "Auxiliary 5"
-msgstr "Avustava 5"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:127
 msgid "Auxiliary 6"
-msgstr "Avustava 6"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:128
 msgid "Auxiliary 7"
-msgstr "Avustava 7"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:129
 msgid "Auxiliary 8"
-msgstr "Avustava 8"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:130
 msgid "Auxiliary 9"
-msgstr "Avustava 9"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:131
 msgid "Auxiliary 10"
-msgstr "Avustava 10"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:132
 msgid "Auxiliary 11"
-msgstr "Avustava 11"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:133
 msgid "Auxiliary 12"
-msgstr "Avustava 12"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:134
 msgid "Auxiliary 13"
-msgstr "Avustava 13"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:135
 msgid "Auxiliary 14"
-msgstr "Avustava 14"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:136
 msgid "Auxiliary 15"
-msgstr "Avustava 15"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:137
 msgid "Auxiliary 16"
-msgstr "Avustava 16"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:138
 msgid "Auxiliary 17"
-msgstr "Avustava 17"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:139
 msgid "Auxiliary 18"
-msgstr "Avustava 18"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:140
 msgid "Auxiliary 19"
-msgstr "Avustava 19"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:141
 msgid "Auxiliary 20"
-msgstr "Avustava 20"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:142
 msgid "Auxiliary 21"
-msgstr "Avustava 21"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:143
 msgid "Auxiliary 22"
-msgstr "Avustava 22"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:144
 msgid "Auxiliary 23"
-msgstr "Avustava 23"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:145
 msgid "Auxiliary 24"
-msgstr "Avustava 24"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:146
 msgid "Auxiliary 25"
-msgstr "Avustava 25"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:147
 msgid "Auxiliary 26"
-msgstr "Avustava 26"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:148
 msgid "Auxiliary 27"
-msgstr "Avustava 27"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:149
 msgid "Auxiliary 28"
-msgstr "Avustava 28"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:150
 msgid "Auxiliary 29"
-msgstr "Avustava 29"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:151
 msgid "Auxiliary 30"
-msgstr "Avustava 30"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:152
 msgid "Auxiliary 31"
-msgstr "Avustava 31"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:154
 msgid "Top Center"
-msgstr "Keski ylä"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:156
 msgid "Top Front Center"
-msgstr "Keski ylä etu"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:157
 msgid "Top Front Left"
-msgstr "Vasen ylä etu"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:158
 msgid "Top Front Right"
-msgstr "Oikea ylä etu"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:160
 msgid "Top Rear Center"
-msgstr "Keski ylä taka"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:161
 msgid "Top Rear Left"
-msgstr "Vasen ylä taka"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:162
 msgid "Top Rear Right"
-msgstr "Oikea ylä taka"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:476 ../src/pulse/sample.c:167
 #: ../src/pulse/volume.c:170 ../src/pulse/volume.c:196
 #: ../src/pulse/volume.c:216 ../src/pulse/volume.c:246
 msgid "(invalid)"
-msgstr "(virheellinen)"
+msgstr ""
 
 #: ../src/pulse/channelmap.c:808
 msgid "Stereo"
@@ -1013,91 +1002,91 @@ msgstr ""
 
 #: ../src/pulse/error.c:43
 msgid "OK"
-msgstr "OK"
+msgstr ""
 
 #: ../src/pulse/error.c:44
 msgid "Access denied"
-msgstr "Pääsy evätty"
+msgstr ""
 
 #: ../src/pulse/error.c:45
 msgid "Unknown command"
-msgstr "Tuntematon komento"
+msgstr ""
 
 #: ../src/pulse/error.c:46
 msgid "Invalid argument"
-msgstr "Virheellinen argumentti"
+msgstr ""
 
 #: ../src/pulse/error.c:47
 msgid "Entity exists"
-msgstr "Entiteetti on jo olemassa"
+msgstr ""
 
 #: ../src/pulse/error.c:48
 msgid "No such entity"
-msgstr "Ei kyseisenlaista entiteettiä"
+msgstr ""
 
 #: ../src/pulse/error.c:49
 msgid "Connection refused"
-msgstr "Yhteys hylätty"
+msgstr ""
 
 #: ../src/pulse/error.c:50
 msgid "Protocol error"
-msgstr "Yhteyskäytäntövirhe"
+msgstr ""
 
 #: ../src/pulse/error.c:51
 msgid "Timeout"
-msgstr "Aikakatkaisu"
+msgstr ""
 
 #: ../src/pulse/error.c:52
 msgid "No authorization key"
-msgstr "Ei todentamisavainta"
+msgstr ""
 
 #: ../src/pulse/error.c:53
 msgid "Internal error"
-msgstr "Sisäinen virhe"
+msgstr ""
 
 #: ../src/pulse/error.c:54
 msgid "Connection terminated"
-msgstr "Yhteys katkennut"
+msgstr ""
 
 #: ../src/pulse/error.c:55
 msgid "Entity killed"
-msgstr "Entiteetti lopetettu"
+msgstr ""
 
 #: ../src/pulse/error.c:56
 msgid "Invalid server"
-msgstr "Virheellinen palvelin"
+msgstr ""
 
 #: ../src/pulse/error.c:57
 msgid "Module initalization failed"
-msgstr "Moduulin alustus epäonnistui"
+msgstr ""
 
 #: ../src/pulse/error.c:58
 msgid "Bad state"
-msgstr "Virheellinen tila"
+msgstr ""
 
 #: ../src/pulse/error.c:59
 msgid "No data"
-msgstr "Ei dataa"
+msgstr ""
 
 #: ../src/pulse/error.c:60
 msgid "Incompatible protocol version"
-msgstr "Epäyhteensopiva yhteyskäytännön versio"
+msgstr ""
 
 #: ../src/pulse/error.c:61
 msgid "Too large"
-msgstr "Liian suuri"
+msgstr ""
 
 #: ../src/pulse/error.c:62
 msgid "Not supported"
-msgstr "Ei tuettu"
+msgstr ""
 
 #: ../src/pulse/error.c:63
 msgid "Unknown error code"
-msgstr "Tuntematon virhekoodi"
+msgstr ""
 
 #: ../src/pulse/error.c:64
 msgid "No such extension"
-msgstr "Ei kyseisenlaista laajennusta"
+msgstr ""
 
 #: ../src/pulse/error.c:65
 msgid "Obsolete functionality"
@@ -1138,11 +1127,11 @@ msgstr ""
 
 #: ../src/pulse/client-conf-x11.c:55 ../src/utils/pax11publish.c:100
 msgid "XOpenDisplay() failed"
-msgstr "XOpenDisplay() epäonnistui"
+msgstr ""
 
 #: ../src/pulse/client-conf-x11.c:78
 msgid "Failed to parse cookie data"
-msgstr "Evästetietojen jäsennys epäonnistui"
+msgstr ""
 
 #: ../src/pulse/client-conf.c:120
 #, c-format
@@ -1151,7 +1140,7 @@ msgstr ""
 
 #: ../src/pulse/context.c:523
 msgid "No cookie loaded. Attempting to connect without."
-msgstr "Ei ladattua evästettä. Yritetään yhdistämistä ilman."
+msgstr ""
 
 #: ../src/pulse/context.c:653
 #, c-format
@@ -1181,7 +1170,7 @@ msgstr ""
 #: ../src/utils/pacat.c:169
 #, c-format
 msgid "Stream successfully created.\n"
-msgstr "Virran luonti onnistui.\n"
+msgstr ""
 
 #: ../src/utils/pacat.c:172
 #, c-format
@@ -1201,27 +1190,27 @@ msgstr ""
 #: ../src/utils/pacat.c:183
 #, c-format
 msgid "Using sample spec '%s', channel map '%s'.\n"
-msgstr "Käytetään näytemäärittelyä \"%s\", kanavakarttaa \"%s\".\n"
+msgstr ""
 
 #: ../src/utils/pacat.c:187
 #, c-format
 msgid "Connected to device %s (%u, %ssuspended).\n"
-msgstr "Yhdistetty laitteeseen %s (%u, %ssuspended).\n"
+msgstr ""
 
 #: ../src/utils/pacat.c:197
 #, c-format
 msgid "Stream error: %s\n"
-msgstr "Virtavirhe: %s\n"
+msgstr ""
 
 #: ../src/utils/pacat.c:207
 #, c-format
 msgid "Stream device suspended.%s \n"
-msgstr "Virtalaite keskeytetty.%s \n"
+msgstr ""
 
 #: ../src/utils/pacat.c:209
 #, c-format
 msgid "Stream device resumed.%s \n"
-msgstr "Virtalaite palautettu.%s \n"
+msgstr ""
 
 #: ../src/utils/pacat.c:217
 #, c-format
@@ -1236,21 +1225,21 @@ msgstr ""
 #: ../src/utils/pacat.c:231
 #, c-format
 msgid "Stream started.%s \n"
-msgstr "Virta käynnistetty.%s \n"
+msgstr ""
 
 #: ../src/utils/pacat.c:238
 #, c-format
 msgid "Stream moved to device %s (%u, %ssuspended).%s \n"
-msgstr "Virta siirretty laitteelle %s (%u, %ssuspended).%s \n"
+msgstr ""
 
 #: ../src/utils/pacat.c:238
 msgid "not "
-msgstr "ei "
+msgstr ""
 
 #: ../src/utils/pacat.c:271
 #, c-format
 msgid "Connection established.%s \n"
-msgstr "Yhteys muodostettu.%s \n"
+msgstr ""
 
 #: ../src/utils/pacat.c:274
 #, c-format
@@ -1271,7 +1260,7 @@ msgstr ""
 #: ../src/utils/pactl.c:762 ../src/utils/paplay.c:183
 #, c-format
 msgid "Connection failure: %s\n"
-msgstr "Yhteysvirhe: %s\n"
+msgstr ""
 
 #: ../src/utils/pacat.c:341 ../src/utils/paplay.c:75
 #, c-format
@@ -1316,12 +1305,12 @@ msgstr ""
 #: ../src/utils/pacat.c:465
 #, c-format
 msgid "Failed to get latency: %s\n"
-msgstr "Latenssin selvittäminen epäonnistui: %s\n"
+msgstr ""
 
 #: ../src/utils/pacat.c:470
 #, c-format
 msgid "Time: %0.3f sec; Latency: %0.0f usec.  \r"
-msgstr "Aika: %0.3f s; latenssi: %0.0f μs.  \r"
+msgstr ""
 
 #: ../src/utils/pacat.c:490
 #, c-format
@@ -1421,11 +1410,11 @@ msgstr ""
 
 #: ../src/utils/pacat.c:720
 msgid "recording"
-msgstr "nauhoitus"
+msgstr ""
 
 #: ../src/utils/pacat.c:720
 msgid "playback"
-msgstr "toisto"
+msgstr ""
 
 #: ../src/utils/pacat.c:728
 #, c-format
@@ -1440,7 +1429,7 @@ msgstr ""
 #: ../src/utils/pacat.c:743
 #, c-format
 msgid "Too many arguments.\n"
-msgstr "Liian monta argumenttia.\n"
+msgstr ""
 
 #: ../src/utils/pacat.c:756 ../src/utils/pasuspender.c:280
 #: ../src/utils/pactl.c:1017 ../src/utils/paplay.c:381
@@ -1558,7 +1547,7 @@ msgid "Failed to get server information: %s\n"
 msgstr ""
 
 #: ../src/utils/pactl.c:137
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "User name: %s\n"
 "Host Name: %s\n"
@@ -1570,19 +1559,11 @@ msgid ""
 "Default Source: %s\n"
 "Cookie: %08x\n"
 msgstr ""
-"Käyttäjänimi: %s\n"
-"Isäntänimi: %s\n"
-"Palvelimen nimi: %s\n"
-"Palvelimen versio: %s\n"
-"Oletusnäytemäärittely: %s\n"
-"Oletusnielu: %s\n"
-"Oletuslähde: %s\n"
-"Eväste: %08x\n"
 
 #: ../src/utils/pactl.c:178
 #, c-format
 msgid "Failed to get sink information: %s\n"
-msgstr "Nielun tietojen nouto epäonnistui: %s\n"
+msgstr ""
 
 #: ../src/utils/pactl.c:194
 #, c-format
@@ -1605,28 +1586,11 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Nielu #%u\n"
-"\tTila: %s\n"
-"\tNimi: %s\n"
-"\tKuvaus: %s\n"
-"\tAjuri: %s\n"
-"\tNäytemäärittely: %s\n"
-"\tKanavakartta: %s\n"
-"\tOmistava moduuli: %u\n"
-"\tVaimennus: %s\n"
-"\tÄänenvoimakkuus: %s%s%s\n"
-"\t                 balanssi %0.2f\n"
-"\tPerusäänenvoimakkuus: %s%s%s\n"
-"\tTarkkailulähde: %s\n"
-"\tLatenssi: %0.0f μs, asetettu %0.0f μs\n"
-"\tLiput: %s%s%s%s%s%s\n"
-"\tOminaisuudet:\n"
-"\t\t%s\n"
 
 #: ../src/utils/pactl.c:258
 #, c-format
 msgid "Failed to get source information: %s\n"
-msgstr "Lähteen tietojen nouto epäonnistui: %s\n"
+msgstr ""
 
 #: ../src/utils/pactl.c:274
 #, c-format
@@ -1649,23 +1613,6 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Lähde #%u\n"
-"\tTila: %s\n"
-"\tNimi: %s\n"
-"\tKuvaus: %s\n"
-"\tAjuri: %s\n"
-"\tNäytemäärittely: %s\n"
-"\tKanavakartta: %s\n"
-"\tOmistava moduuli: %u\n"
-"\tVaimennus: %s\n"
-"\tÄänenvoimakkuus: %s%s%s\n"
-"\t                 balanssi %0.2f\n"
-"\tPerusäänenvoimakkuus: %s%s%s\n"
-"\tTarkkailtava nielu: %s\n"
-"\tLatenssi: %0.0f μs, asetettu %0.0f μs\n"
-"\tLiput: %s%s%s%s%s%s\n"
-"\tOminaisuudet:\n"
-"\t\t%s\n"
 
 #: ../src/utils/pactl.c:306 ../src/utils/pactl.c:350 ../src/utils/pactl.c:385
 #: ../src/utils/pactl.c:422 ../src/utils/pactl.c:481 ../src/utils/pactl.c:482
@@ -1673,12 +1620,12 @@ msgstr ""
 #: ../src/utils/pactl.c:543 ../src/utils/pactl.c:586 ../src/utils/pactl.c:587
 #: ../src/utils/pactl.c:594
 msgid "n/a"
-msgstr "-"
+msgstr ""
 
 #: ../src/utils/pactl.c:324
 #, c-format
 msgid "Failed to get module information: %s\n"
-msgstr "Moduulin tietojen nouto epäonnistui: %s\n"
+msgstr ""
 
 #: ../src/utils/pactl.c:342
 #, c-format
@@ -1690,17 +1637,11 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Moduuli #%u\n"
-"\tNimi: %s\n"
-"\tArgumentti: %s\n"
-"\tKäyttölaskuri: %s\n"
-"\tOminaisuudet:\n"
-"\t\t%s\n"
 
 #: ../src/utils/pactl.c:361
 #, c-format
 msgid "Failed to get client information: %s\n"
-msgstr "Asiakkaan tietojen nouto epäonnistui: %s\n"
+msgstr ""
 
 #: ../src/utils/pactl.c:379
 #, c-format
@@ -1711,16 +1652,11 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Asiakas #%u\n"
-"\tAjuri: %s\n"
-"\tOmistava moduuli: %s\n"
-"\tOminaisuudet:\n"
-"\t\t%s\n"
 
 #: ../src/utils/pactl.c:396
 #, c-format
 msgid "Failed to get card information: %s\n"
-msgstr "Kortin tietojen nouto epäonnistui: %s\n"
+msgstr ""
 
 #: ../src/utils/pactl.c:414
 #, c-format
@@ -1732,27 +1668,21 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Kortti #%u\n"
-"\tNimi: %s\n"
-"\tAjuri: %s\n"
-"\tOmistava moduuli: %s\n"
-"\tOminaisuudet:\n"
-"\t\t%s\n"
 
 #: ../src/utils/pactl.c:428
 #, c-format
 msgid "\tProfiles:\n"
-msgstr "\tProfiilit:\n"
+msgstr ""
 
 #: ../src/utils/pactl.c:434
 #, c-format
 msgid "\tActive Profile: %s\n"
-msgstr "\tAktiivinen profiili: %s\n"
+msgstr ""
 
 #: ../src/utils/pactl.c:445
 #, c-format
 msgid "Failed to get sink input information: %s\n"
-msgstr "Nielun sisääntulon tietojen nouto epäonnistui: %s\n"
+msgstr ""
 
 #: ../src/utils/pactl.c:464
 #, c-format
@@ -1774,27 +1704,11 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Nielun sisääntulo #%u\n"
-"\tAjuri: %s\n"
-"\tOmistava moduuli: %s\n"
-"\tAsiakas: %s\n"
-"\tNielu: %u\n"
-"\tNäytemäärittely: %s\n"
-"\tKanavakartta: %s\n"
-"\tVaimennus: %s\n"
-"\tÄänenvoimakkuus: %s\n"
-"\t                 %s\n"
-"\t                 balanssi %0.2f\n"
-"\tPuskurin latenssi: %0.0f μs\n"
-"\tNielun latenssi: %0.0f μs\n"
-"\tUudelleennäytteistyksen tapa: %s\n"
-"\tOminaisuudet:\n"
-"\t\t%s\n"
 
 #: ../src/utils/pactl.c:503
 #, c-format
 msgid "Failed to get source output information: %s\n"
-msgstr "Lähteen ulostulon tietojen nouto epäonnistui: %s\n"
+msgstr ""
 
 #: ../src/utils/pactl.c:523
 #, c-format
@@ -1812,23 +1726,11 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Lähteen ulostulo #%u\n"
-"\tAjuri: %s\n"
-"\tOmistava moduuli: %s\n"
-"\tAsiakas: %s\n"
-"\tLähde: %u\n"
-"\tNäytemäärittely: %s\n"
-"\tKanavakartta: %s\n"
-"\tPuskurin latenssi: %0.0f μs\n"
-"\tLähteen latenssi: %0.0f μs\n"
-"\tUudelleennäytteistyksen tapa: %s\n"
-"\tOminaisuudet:\n"
-"\t\t%s\n"
 
 #: ../src/utils/pactl.c:554
 #, c-format
 msgid "Failed to get sample information: %s\n"
-msgstr "Näytetietojen nouto epäonnistui: %s\n"
+msgstr ""
 
 #: ../src/utils/pactl.c:572
 #, c-format
@@ -1847,24 +1749,11 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Näyte #%u\n"
-"\tNimi: %s\n"
-"\tNäytemäärittely: %s\n"
-"\tKanavakartta: %s\n"
-"\tÄänenvoimakkuus: %s\n"
-"\t                 %s\n"
-"\t                 balanssi %0.2f\n"
-"\tKesto: %0.1fs\n"
-"\tKoko: %s\n"
-"\tLaiska: %s\n"
-"\tTiedostonimi: %s\n"
-"\tOminaisuudet:\n"
-"\t\t%s\n"
 
 #: ../src/utils/pactl.c:602 ../src/utils/pactl.c:612
 #, c-format
 msgid "Failure: %s\n"
-msgstr "Epäonnistuminen: %s\n"
+msgstr ""
 
 #: ../src/utils/pactl.c:636
 #, c-format
@@ -1874,7 +1763,7 @@ msgstr ""
 #: ../src/utils/pactl.c:653
 #, c-format
 msgid "Premature end of file\n"
-msgstr "Ennenaikainen tiedoston päättyminen\n"
+msgstr ""
 
 #: ../src/utils/pactl.c:774
 #, c-format
@@ -1989,27 +1878,27 @@ msgstr ""
 #: ../src/utils/pax11publish.c:94
 #, c-format
 msgid "Failed to parse command line.\n"
-msgstr "Komentorivin jäsentäminen epäonnistui.\n"
+msgstr ""
 
 #: ../src/utils/pax11publish.c:108
 #, c-format
 msgid "Server: %s\n"
-msgstr "Palvelin: %s\n"
+msgstr ""
 
 #: ../src/utils/pax11publish.c:110
 #, c-format
 msgid "Source: %s\n"
-msgstr "Lähde: %s\n"
+msgstr ""
 
 #: ../src/utils/pax11publish.c:112
 #, c-format
 msgid "Sink: %s\n"
-msgstr "Nielu: %s\n"
+msgstr ""
 
 #: ../src/utils/pax11publish.c:114
 #, c-format
 msgid "Cookie: %s\n"
-msgstr "Eväste: %s\n"
+msgstr ""
 
 #: ../src/utils/pax11publish.c:132
 #, c-format
@@ -2058,11 +1947,11 @@ msgstr ""
 
 #: ../src/utils/pacmd.c:89
 msgid "Failed to kill PulseAudio daemon."
-msgstr "PulseAudio-taustaprosessin lopettaminen epäonnistui."
+msgstr ""
 
 #: ../src/utils/pacmd.c:97
 msgid "Daemon not responding."
-msgstr "Taustaprosessi ei vastaa."
+msgstr ""
 
 #: ../src/utils/pacmd.c:144
 #, c-format
@@ -2082,17 +1971,17 @@ msgstr ""
 #: ../src/utils/paplay.c:139
 #, c-format
 msgid "Stream successfully created\n"
-msgstr "Virran luonti onnistui\n"
+msgstr ""
 
 #: ../src/utils/paplay.c:144
 #, c-format
 msgid "Stream errror: %s\n"
-msgstr "Virtavirhe: %s\n"
+msgstr ""
 
 #: ../src/utils/paplay.c:165
 #, c-format
 msgid "Connection established.\n"
-msgstr "Yhteys muodostetettu.\n"
+msgstr ""
 
 #: ../src/utils/paplay.c:198
 #, c-format
@@ -2123,52 +2012,27 @@ msgid ""
 "Compiled with libpulse %s\n"
 "Linked with libpulse %s\n"
 msgstr ""
-"paplay %s\n"
-"Käännetty libpulsen versiolle %s\n"
-"Linkitetty libpulsen versiolle %s\n"
 
 #: ../src/utils/paplay.c:292
 #, c-format
 msgid "Invalid channel map\n"
-msgstr "Epäkelpo kanavakartta\n"
+msgstr ""
 
 #: ../src/utils/paplay.c:314
 #, c-format
 msgid "Failed to open file '%s'\n"
-msgstr "Tiedoston \"%s\" avaaminen epäonnistui\n"
+msgstr "Neuspelo otvaranje datoteke „%s“\n"
 
 #: ../src/utils/paplay.c:350
 #, c-format
 msgid "Channel map doesn't match file.\n"
-msgstr "Kanavakartta ei täsmää tiedostoon.\n"
+msgstr ""
 
 #: ../src/utils/paplay.c:376
 #, c-format
 msgid "Using sample spec '%s'\n"
-msgstr "Käytetään näytemäärittelyä \"%s\"\n"
+msgstr ""
 
 #: ../src/pulsecore/lock-autospawn.c:126 ../src/pulsecore/lock-autospawn.c:207
 msgid "Cannot access autospawn lock."
 msgstr ""
-
-#~ msgid "muted"
-#~ msgstr "vaimennettu"
-
-#~ msgid ""
-#~ "*** Autoload Entry #%u ***\n"
-#~ "Name: %s\n"
-#~ "Type: %s\n"
-#~ "Module: %s\n"
-#~ "Argument: %s\n"
-#~ msgstr ""
-#~ "*** Automaattilataustietue #%u ***\n"
-#~ "Nimi: %s\n"
-#~ "Tyyppi: %s\n"
-#~ "Moduuli: %s\n"
-#~ "Argumentto: %s\n"
-
-#~ msgid "sink"
-#~ msgstr "nielu"
-
-#~ msgid "source"
-#~ msgstr "lähde"
