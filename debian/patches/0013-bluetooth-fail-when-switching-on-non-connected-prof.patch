@@ -1,0 +1,58 @@
+From c3afe5602a016022336a11b431d5b5d2afcf4025 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Tue, 24 Mar 2009 14:38:52 +0200
+Subject: [PATCH 13/32] bluetooth: fail when switching on non-connected profile
+
+---
+ src/modules/bluetooth/module-bluetooth-device.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index dbc7ab1..4fd40e4 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -133,6 +133,7 @@ struct userdata {
+ 
+     char *address;
+     char *path;
++    const pa_bluetooth_device* device;
+ 
+     pa_dbus_connection *connection;
+ 
+@@ -1714,6 +1715,11 @@ static int card_set_profile(pa_card *c, pa_card_profile *new_profile) {
+ 
+     d = PA_CARD_PROFILE_DATA(new_profile);
+ 
++    if (u->device->headset_connected <= 0 && *d == PROFILE_HSP)
++        return -1;
++    else if (u->device->audio_sink_connected <= 0 && *d == PROFILE_A2DP)
++        return -1;
++
+     if (u->sink) {
+         inputs = pa_sink_move_all_start(u->sink);
+ #ifdef NOKIA
+@@ -1907,7 +1913,6 @@ int pa__init(pa_module* m) {
+     uint32_t channels;
+     struct userdata *u;
+     const char *address, *path;
+-    const pa_bluetooth_device *d;
+     pa_bluetooth_discovery *y = NULL;
+     DBusError err;
+     char *mike, *speaker;
+@@ -1968,11 +1973,11 @@ int pa__init(pa_module* m) {
+     if (!(y = pa_bluetooth_discovery_get(m->core)))
+         goto fail;
+ 
+-    if (!(d = find_device(u, y, address, path)))
++    if (!(u->device = find_device(u, y, address, path))) /* should discovery ref be kept? */
+         goto fail;
+ 
+     /* Add the card structure. This will also initialize the default profile */
+-    if (add_card(u, pa_modargs_get_value(ma, "profile", NULL), d) < 0)
++    if (add_card(u, pa_modargs_get_value(ma, "profile", NULL), u->device) < 0)
+         goto fail;
+ 
+     pa_bluetooth_discovery_unref(y);
+-- 
+1.6.2.rc1.13.gfd76c.dirty
+
