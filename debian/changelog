@@ -1,3 +1,12 @@
+pulseaudio (0.9.15~test5-0maemo3) unstable; urgency=low
+
+  * Rebased on top of bcbfd5b9835ca2e7d00cd3f2ca090bcfea182451.
+  * Various bluetooth fixes (new A2DP loop, check connected state before
+    switching profile, volume support back on HSP, delayed
+    initialization, new #NOKIA define for SCO over PCM).
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 24 Mar 2009 17:37:20 +0200
+
 pulseaudio (0.9.15~test5-0maemo2) unstable; urgency=low
 
   * Volume and bluetooth fixes.
