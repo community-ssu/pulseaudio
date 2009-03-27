@@ -2,6 +2,9 @@ disable-shm = yes
 shm-size-bytes = 16777216
 exit-idle-time = -1
 
+; This is an ugly combination and can lead into trouble, but needed for DVFS
+no-cpu-limit = 1
+
 high-priority = yes
 nice-level = -11
 realtime-scheduling = yes
