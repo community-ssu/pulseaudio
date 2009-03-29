@@ -238,7 +238,7 @@ static void adjust_after_overrun(struct userdata *u) {
         pa_log_notice("Increasing minimal latency to %0.2f ms",
                       (double) new_min_latency / PA_USEC_PER_MSEC);
 
-        pa_source_update_latency_range(u->source, new_min_latency, u->source->thread_info.max_latency);
+        pa_source_set_latency_range_within_thread(u->source, new_min_latency, u->source->thread_info.max_latency);
         return;
     }
 
@@ -1514,7 +1514,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
 
     pa_alsa_init_description(data.proplist);
 
-    u->source = pa_source_new(m->core, &data, PA_SOURCE_HARDWARE|PA_SOURCE_LATENCY);
+    u->source = pa_source_new(m->core, &data, PA_SOURCE_HARDWARE|PA_SOURCE_LATENCY|(u->use_tsched ? PA_SOURCE_DYNAMIC_LATENCY : 0));
     pa_source_new_data_done(&data);
 
     if (!u->source) {
@@ -1537,24 +1537,23 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     u->tsched_watermark = pa_usec_to_bytes_round_up(pa_bytes_to_usec_round_up(tsched_watermark, &requested_ss), &u->source->sample_spec);
     pa_cvolume_mute(&u->hardware_volume, u->source->sample_spec.channels);
 
-    if (use_tsched) {
-        fix_min_sleep_wakeup(u);
-        fix_tsched_watermark(u);
-
-        u->watermark_step = pa_usec_to_bytes(TSCHED_WATERMARK_STEP_USEC, &u->source->sample_spec);
-    }
-
-    pa_source_set_latency_range(u->source,
-                                use_tsched ? (pa_usec_t) -1 : pa_bytes_to_usec(u->hwbuf_size, &ss),
-                                pa_bytes_to_usec(u->hwbuf_size, &ss));
-
     pa_log_info("Using %u fragments of size %lu bytes, buffer time is %0.2fms",
                 nfrags, (long unsigned) u->fragment_size,
                 (double) pa_bytes_to_usec(u->hwbuf_size, &ss) / PA_USEC_PER_MSEC);
 
-    if (use_tsched)
+    if (u->use_tsched) {
+        fix_min_sleep_wakeup(u);
+        fix_tsched_watermark(u);
+
+        u->watermark_step = pa_usec_to_bytes(TSCHED_WATERMARK_STEP_USEC, &u->source->sample_spec);
+
+        pa_source_set_latency_range(u->source,
+                                    0,
+                                    pa_bytes_to_usec(u->hwbuf_size, &ss));
+
         pa_log_info("Time scheduling watermark is %0.2fms",
                     (double) pa_bytes_to_usec(u->tsched_watermark, &ss) / PA_USEC_PER_MSEC);
+    }
 
     reserve_update(u);
 

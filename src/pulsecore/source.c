@@ -41,7 +41,8 @@
 
 #include "source.h"
 
-#define DEFAULT_MIN_LATENCY (4*PA_USEC_PER_MSEC)
+#define ABSOLUTE_MIN_LATENCY (500)
+#define ABSOLUTE_MAX_LATENCY (10*PA_USEC_PER_SEC)
 
 static PA_DEFINE_CHECK_TYPE(pa_source, pa_msgobject);
 
@@ -218,8 +219,8 @@ pa_source* pa_source_new(
     s->thread_info.max_rewind = 0;
     s->thread_info.requested_latency_valid = FALSE;
     s->thread_info.requested_latency = 0;
-    s->thread_info.min_latency = DEFAULT_MIN_LATENCY;
-    s->thread_info.max_latency = 0;
+    s->thread_info.min_latency = ABSOLUTE_MIN_LATENCY;
+    s->thread_info.max_latency = ABSOLUTE_MAX_LATENCY;
 
     pa_assert_se(pa_idxset_put(core->sources, s, &s->index) >= 0);
 
@@ -742,9 +743,9 @@ void pa_source_mute_changed(pa_source *s, pa_bool_t new_muted) {
 /* Called from main thread */
 pa_bool_t pa_source_update_proplist(pa_source *s, pa_update_mode_t mode, pa_proplist *p) {
     pa_source_assert_ref(s);
-    pa_assert(p);
 
-    pa_proplist_update(s->proplist, mode, p);
+    if (p)
+        pa_proplist_update(s->proplist, mode, p);
 
     if (PA_SOURCE_IS_LINKED(s->state)) {
         pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SOURCE_PROPLIST_CHANGED], s);
@@ -936,7 +937,7 @@ int pa_source_process_msg(pa_msgobject *object, int code, void *userdata, int64_
         case PA_SOURCE_MESSAGE_SET_LATENCY_RANGE: {
             pa_usec_t *r = userdata;
 
-            pa_source_update_latency_range(s, r[0], r[1]);
+            pa_source_set_latency_range_within_thread(s, r[0], r[1]);
 
             return 0;
         }
@@ -953,6 +954,11 @@ int pa_source_process_msg(pa_msgobject *object, int code, void *userdata, int64_
         case PA_SOURCE_MESSAGE_GET_MAX_REWIND:
 
             *((size_t*) userdata) = s->thread_info.max_rewind;
+            return 0;
+
+        case PA_SOURCE_MESSAGE_SET_MAX_REWIND:
+
+            pa_source_set_max_rewind_within_thread(s, (size_t) offset);
             return 0;
 
         case PA_SOURCE_MESSAGE_GET_LATENCY:
@@ -1082,7 +1088,7 @@ pa_usec_t pa_source_get_requested_latency(pa_source *s) {
 }
 
 /* Called from IO thread */
-void pa_source_set_max_rewind(pa_source *s, size_t max_rewind) {
+void pa_source_set_max_rewind_within_thread(pa_source *s, size_t max_rewind) {
     pa_source_output *o;
     void *state = NULL;
 
@@ -1099,6 +1105,17 @@ void pa_source_set_max_rewind(pa_source *s, size_t max_rewind) {
     }
 }
 
+/* Called from main thread */
+void pa_source_set_max_rewind(pa_source *s, size_t max_rewind) {
+    pa_source_assert_ref(s);
+
+    if (PA_SOURCE_IS_LINKED(s->state))
+        pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_SET_MAX_REWIND, NULL, max_rewind, NULL) == 0);
+    else
+        pa_source_set_max_rewind_within_thread(s, max_rewind);
+}
+
+/* Called from IO thread */
 void pa_source_invalidate_requested_latency(pa_source *s) {
     pa_source_output *o;
     void *state = NULL;
@@ -1107,34 +1124,42 @@ void pa_source_invalidate_requested_latency(pa_source *s) {
 
     s->thread_info.requested_latency_valid = FALSE;
 
-    if (s->update_requested_latency)
-        s->update_requested_latency(s);
+    if (PA_SOURCE_IS_LINKED(s->thread_info.state)) {
 
-    while ((o = pa_hashmap_iterate(s->thread_info.outputs, &state, NULL)))
-        if (o->update_source_requested_latency)
-            o->update_source_requested_latency(o);
+        if (s->update_requested_latency)
+            s->update_requested_latency(s);
+
+        while ((o = pa_hashmap_iterate(s->thread_info.outputs, &state, NULL)))
+            if (o->update_source_requested_latency)
+                o->update_source_requested_latency(o);
+    }
 
     if (s->monitor_of)
         pa_sink_invalidate_requested_latency(s->monitor_of);
 }
 
+/* Called from main thread */
 void pa_source_set_latency_range(pa_source *s, pa_usec_t min_latency, pa_usec_t max_latency) {
     pa_source_assert_ref(s);
 
     /* min_latency == 0:           no limit
-     * min_latency == (size_t) -1: default limit
      * min_latency anything else:  specified limit
      *
      * Similar for max_latency */
 
-    if (min_latency == (pa_usec_t) -1)
-        min_latency = DEFAULT_MIN_LATENCY;
+    if (min_latency < ABSOLUTE_MIN_LATENCY)
+        min_latency = ABSOLUTE_MIN_LATENCY;
 
-    if (max_latency == (pa_usec_t) -1)
-        max_latency = min_latency;
+    if (max_latency <= 0 ||
+        max_latency > ABSOLUTE_MAX_LATENCY)
+        max_latency = ABSOLUTE_MAX_LATENCY;
 
-    pa_assert(!min_latency || !max_latency ||
-              min_latency <= max_latency);
+    pa_assert(min_latency <= max_latency);
+
+    /* Hmm, let's see if someone forgot to set PA_SOURCE_DYNAMIC_LATENCY here... */
+    pa_assert((min_latency == ABSOLUTE_MIN_LATENCY &&
+               max_latency == ABSOLUTE_MAX_LATENCY) ||
+              (s->flags & PA_SOURCE_DYNAMIC_LATENCY));
 
     if (PA_SOURCE_IS_LINKED(s->state)) {
         pa_usec_t r[2];
@@ -1143,14 +1168,11 @@ void pa_source_set_latency_range(pa_source *s, pa_usec_t min_latency, pa_usec_t 
         r[1] = max_latency;
 
         pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_SET_LATENCY_RANGE, r, 0, NULL) == 0);
-    } else {
-        s->thread_info.min_latency = min_latency;
-        s->thread_info.max_latency = max_latency;
-
-        s->thread_info.requested_latency_valid = FALSE;
-    }
+    } else
+        pa_source_set_latency_range_within_thread(s, min_latency, max_latency);
 }
 
+/* Called from main thread */
 void pa_source_get_latency_range(pa_source *s, pa_usec_t *min_latency, pa_usec_t *max_latency) {
    pa_source_assert_ref(s);
    pa_assert(min_latency);
@@ -1169,26 +1191,37 @@ void pa_source_get_latency_range(pa_source *s, pa_usec_t *min_latency, pa_usec_t
    }
 }
 
-/* Called from IO thread */
-void pa_source_update_latency_range(pa_source *s, pa_usec_t min_latency, pa_usec_t max_latency) {
-    pa_source_output *o;
+/* Called from IO thread, and from main thread before pa_sink_put() is called */
+void pa_source_set_latency_range_within_thread(pa_source *s, pa_usec_t min_latency, pa_usec_t max_latency) {
     void *state = NULL;
 
     pa_source_assert_ref(s);
 
-    pa_assert(!min_latency || !max_latency ||
-              min_latency <= max_latency);
+    pa_assert(min_latency >= ABSOLUTE_MIN_LATENCY);
+    pa_assert(max_latency <= ABSOLUTE_MAX_LATENCY);
+    pa_assert(min_latency <= max_latency);
+
+    /* Hmm, let's see if someone forgot to set PA_SOURCE_DYNAMIC_LATENCY here... */
+    pa_assert((min_latency == ABSOLUTE_MIN_LATENCY &&
+               max_latency == ABSOLUTE_MAX_LATENCY) ||
+              (s->flags & PA_SOURCE_DYNAMIC_LATENCY) ||
+              s->monitor_of);
 
     s->thread_info.min_latency = min_latency;
     s->thread_info.max_latency = max_latency;
 
-    while ((o = pa_hashmap_iterate(s->thread_info.outputs, &state, NULL)))
-        if (o->update_source_latency_range)
-            o->update_source_latency_range(o);
+    if (PA_SOURCE_IS_LINKED(s->thread_info.state)) {
+        pa_source_output *o;
+
+        while ((o = pa_hashmap_iterate(s->thread_info.outputs, &state, NULL)))
+            if (o->update_source_latency_range)
+                o->update_source_latency_range(o);
+    }
 
     pa_source_invalidate_requested_latency(s);
 }
 
+/* Called from main thread */
 size_t pa_source_get_max_rewind(pa_source *s) {
     size_t r;
     pa_source_assert_ref(s);
