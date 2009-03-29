@@ -1,17 +1,17 @@
-From 1bc446fcba8191f30b5bb7a62154dda06cd0beca Mon Sep 17 00:00:00 2001
+From 0db5fdcbbf1225f2948e18fdf0240027e124cc2c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 9 Jan 2009 16:59:05 +0200
-Subject: [PATCH 23/32] build: add pulsecore install-hook (Nokia specific)
+Subject: [PATCH 07/17] build: add pulsecore install-hook (Nokia specific)
 
 ---
  src/Makefile.am |    7 +++++++
  1 files changed, 7 insertions(+), 0 deletions(-)
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 0743dec..a9868ae 100644
+index c990855..b9a422b 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -1611,11 +1611,18 @@ install-exec-hook:
+@@ -1617,11 +1617,18 @@ install-exec-hook:
  	ln -sf pacat $(DESTDIR)$(bindir)/parec
  	rm -f $(DESTDIR)$(libdir)/libpulsedsp.la
  	rm -f $(DESTDIR)$(modlibexecdir)/*.la

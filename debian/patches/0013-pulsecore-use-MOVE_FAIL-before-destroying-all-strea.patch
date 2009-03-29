@@ -1,7 +1,7 @@
-From 35fa46baf07ef255831d238a6353d07177a0c249 Mon Sep 17 00:00:00 2001
+From ab1da681fcad3fe8929d008abf11f8ecdbc7930c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 16 Mar 2009 20:03:33 +0200
-Subject: [PATCH 29/32] pulsecore: use MOVE_FAIL before destroying all streams
+Subject: [PATCH 13/17] pulsecore: use MOVE_FAIL before destroying all streams
 
 ---
  src/pulsecore/sink.c   |    4 ++++
@@ -9,10 +9,10 @@ Subject: [PATCH 29/32] pulsecore: use MOVE_FAIL before destroying all streams
  2 files changed, 8 insertions(+), 0 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index 147926a..3072a1c 100644
+index 73ad247..31a5e75 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
-@@ -372,6 +372,7 @@ void pa_sink_put(pa_sink* s) {
+@@ -378,6 +378,7 @@ void pa_sink_put(pa_sink* s) {
  void pa_sink_unlink(pa_sink* s) {
      pa_bool_t linked;
      pa_sink_input *i, *j = NULL;
@@ -20,7 +20,7 @@ index 147926a..3072a1c 100644
  
      pa_assert(s);
  
-@@ -395,6 +396,9 @@ void pa_sink_unlink(pa_sink* s) {
+@@ -401,6 +402,9 @@ void pa_sink_unlink(pa_sink* s) {
      if (s->card)
          pa_idxset_remove_by_data(s->card->sinks, s, NULL);
  
@@ -31,10 +31,10 @@ index 147926a..3072a1c 100644
          pa_assert(i != j);
          pa_sink_input_kill(i);
 diff --git a/src/pulsecore/source.c b/src/pulsecore/source.c
-index ac1ef1e..26aad75 100644
+index 1c3377b..5702167 100644
 --- a/src/pulsecore/source.c
 +++ b/src/pulsecore/source.c
-@@ -325,6 +325,7 @@ void pa_source_put(pa_source *s) {
+@@ -326,6 +326,7 @@ void pa_source_put(pa_source *s) {
  void pa_source_unlink(pa_source *s) {
      pa_bool_t linked;
      pa_source_output *o, *j = NULL;
@@ -42,7 +42,7 @@ index ac1ef1e..26aad75 100644
  
      pa_assert(s);
  
-@@ -343,6 +344,9 @@ void pa_source_unlink(pa_source *s) {
+@@ -344,6 +345,9 @@ void pa_source_unlink(pa_source *s) {
      if (s->card)
          pa_idxset_remove_by_data(s->card->sources, s, NULL);
  

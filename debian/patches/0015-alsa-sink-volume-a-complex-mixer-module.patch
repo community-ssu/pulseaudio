@@ -1,7 +1,7 @@
-From 8f0a8ca1f15d1b9a54648e3c8737ff9bb7f2234c Mon Sep 17 00:00:00 2001
+From 35b1bb74e375d56bd2f1dfbc62f7b5d2bb4d46e9 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Tue, 17 Mar 2009 19:20:46 +0200
-Subject: [PATCH 31/32] alsa: sink-volume, a complex mixer module
+Subject: [PATCH 15/17] alsa: sink-volume, a complex mixer module
 
 ---
  src/Makefile.am                                   |    7 +
@@ -12,10 +12,10 @@ Subject: [PATCH 31/32] alsa: sink-volume, a complex mixer module
  create mode 100644 src/modules/alsa/module-alsa-sink-volume.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 5ba0d6c..c58edc5 100644
+index 1489fd8..016c9fd 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -993,6 +993,7 @@ modlibexec_LTLIBRARIES += \
+@@ -1005,6 +1005,7 @@ modlibexec_LTLIBRARIES += \
  		module-alsa-source.la \
  		module-alsa-card.la \
  		module-alsa-sink-old.la \
@@ -23,7 +23,7 @@ index 5ba0d6c..c58edc5 100644
  		module-alsa-source-old.la
  endif
  
-@@ -1105,6 +1106,7 @@ SYMDEF_FILES = \
+@@ -1117,6 +1118,7 @@ SYMDEF_FILES = \
  		modules/alsa/module-alsa-source-symdef.h \
  		modules/alsa/module-alsa-card-symdef.h \
  		modules/alsa/module-alsa-sink-old-symdef.h \
@@ -31,7 +31,7 @@ index 5ba0d6c..c58edc5 100644
  		modules/alsa/module-alsa-source-old-symdef.h \
  		modules/module-solaris-symdef.h \
  		modules/module-waveout-symdef.h \
-@@ -1350,6 +1352,11 @@ module_alsa_sink_old_la_LDFLAGS = $(MODULE_LDFLAGS)
+@@ -1362,6 +1364,11 @@ module_alsa_sink_old_la_LDFLAGS = $(MODULE_LDFLAGS)
  module_alsa_sink_old_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
  module_alsa_sink_old_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
