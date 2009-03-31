@@ -1,7 +1,7 @@
 From 254c08f14b91345c288a1276dc8b91c257b464ee Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 5 Nov 2008 00:24:37 +0200
-Subject: [PATCH 02/16] tests: improve resampler test
+Subject: [PATCH 13/27] tests: improve resampler test
 
 ---
  src/tests/resampler-test.c |  202 +++++++++++++++++++++++++++++++++++++++++--

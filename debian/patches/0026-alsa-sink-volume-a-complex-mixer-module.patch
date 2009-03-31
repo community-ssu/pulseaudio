@@ -1,7 +1,7 @@
 From d6e7f84ad22df36ac54f1cd29cd06a4e6b4c8526 Mon Sep 17 00:00:00 2001
 From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
 Date: Tue, 31 Mar 2009 14:26:08 +0300
-Subject: [PATCH 15/16] alsa: sink-volume, a complex mixer module
+Subject: [PATCH 26/27] alsa: sink-volume, a complex mixer module
 
 ---
  src/Makefile.am                                   |    7 +

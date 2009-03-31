@@ -1,7 +1,7 @@
 From 8bd83b68cbc2815b0cc762d9134b4394b22b10e7 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Tue, 4 Nov 2008 16:47:09 +0200
-Subject: [PATCH 01/16] interpol-test: remove unused include getopt.h
+Subject: [PATCH 12/27] interpol-test: remove unused include getopt.h
 
 ---
  src/tests/interpol-test.c |    1 -
