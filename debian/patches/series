@@ -13,5 +13,4 @@
 0013-pulsecore-use-MOVE_FAIL-before-destroying-all-strea.patch
 0014-alsa-port-the-old-alsa-modules.patch
 0015-alsa-sink-volume-a-complex-mixer-module.patch
-0016-volume-tosquash-remove-some-debug.patch
-0017-autofoo.patch
+0016-autofoo.patch

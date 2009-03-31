@@ -1,13 +1,13 @@
-From 35b1bb74e375d56bd2f1dfbc62f7b5d2bb4d46e9 Mon Sep 17 00:00:00 2001
-From: Maemo Multimedia <multimedia@maemo.org>
-Date: Tue, 17 Mar 2009 19:20:46 +0200
-Subject: [PATCH 15/17] alsa: sink-volume, a complex mixer module
+From d6e7f84ad22df36ac54f1cd29cd06a4e6b4c8526 Mon Sep 17 00:00:00 2001
+From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
+Date: Tue, 31 Mar 2009 14:26:08 +0300
+Subject: [PATCH 15/16] alsa: sink-volume, a complex mixer module
 
 ---
  src/Makefile.am                                   |    7 +
  src/modules/alsa/module-alsa-sink-volume-symdef.h |   27 +
- src/modules/alsa/module-alsa-sink-volume.c        | 1437 +++++++++++++++++++++
- 3 files changed, 1471 insertions(+), 0 deletions(-)
+ src/modules/alsa/module-alsa-sink-volume.c        | 1412 +++++++++++++++++++++
+ 3 files changed, 1446 insertions(+), 0 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-volume-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-volume.c
 
@@ -78,10 +78,10 @@ index 0000000..30c44c1
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
 new file mode 100644
-index 0000000..4e931fb
+index 0000000..fac5804
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-volume.c
-@@ -0,0 +1,1437 @@
+@@ -0,0 +1,1412 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -281,7 +281,6 @@ index 0000000..4e931fb
 +    pa_assert(u);
 +    pa_assert(u->mixer_handle);
 +
-+    pa_log_debug("some alsa mixer value changed");
 +
 +
 +    if (mask == SND_CTL_EVENT_MASK_REMOVE)
@@ -289,7 +288,6 @@ index 0000000..4e931fb
 +
 +    if (mask & SND_CTL_EVENT_MASK_VALUE) {
 +        if (!u->sink) {
-+            pa_log_debug("The associated sink does not exist any more");
 +            return 0;
 +        }
 +
@@ -330,8 +328,6 @@ index 0000000..4e931fb
 +    else
 +        ret = element + 1 + m->tuned_volume_min;
 +
-+    pa_log_debug("Mixer %s: %ld mB equals %ld hw val", m->name, mB, ret);
-+
 +    return ret;
 +}
 +
@@ -349,7 +345,6 @@ index 0000000..4e931fb
 +    pa_assert(m);
 +    pa_assert(end > start);
 +    mB_step  = (double)(mBend-mBstart)/(double)(end-start);
-+    pa_log_debug("Filling tuning table from %d:%ld to %d:%ld, %f steps", start, mBstart, end, mBend, mB_step);
 +
 +    for (i = 0; i <= (int)(end - start); i++)
 +        m->tuning_table[start + i] = lrint((double)mBstart + mB_step*i);
@@ -359,8 +354,6 @@ index 0000000..4e931fb
 +    int i;
 +    pa_assert(m);
 +    pa_assert(m->tuning_table);
-+    pa_log_debug("Tuning table for mixer %s: %d elements from %ld to %ld",
-+                 m->name, m->tuning_table_max+1, m->tuned_volume_min, m->tuned_volume_max);
 +
 +    for(i=0; i<= m->tuning_table_max; i++)
 +        pa_log_debug("%ld:%ld", i+m->tuned_volume_min, m->tuning_table[i]);
@@ -374,8 +367,6 @@ index 0000000..4e931fb
 +    m->tuning_table_max = m->tuning_table_allocated_length-1;
 +    fill_tuning_table_range(m, 0, m->tuning_table_max, m->hw_dB_min - m->hw_dB_max, 0);
 +    m->tuning_table_filled = TRUE;
-+
-+    print_tuning_table(m);
 +}
 +
 +static void sink_get_volume_cb(pa_sink *s) {
@@ -932,7 +923,7 @@ index 0000000..4e931fb
 +            field++;
 +        }
 +        if (error) {
-+            pa_log_error("Can parse \"%s\" in field %d of element %d in: %s",
++            pa_log_error("Can't parse \"%s\" in field %d of element %d in: %s",
 +                         error, field, element_count, tuning);
 +            pa_xfree((void *)error);
 +            pa_xfree((void *)element);
@@ -951,8 +942,6 @@ index 0000000..4e931fb
 +        if (element_count == 1) {
 +            m->tuned_volume_min = hw_vol;
 +        } else {
-+            pa_log_debug("Generating tuning for range %ld:%ld - %ld:%ld",
-+                         prev_hw_vol, prev_mB_vol, hw_vol, mB_vol);
 +            if (prev_hw_vol > hw_vol || prev_mB_vol > mB_vol) {
 +                pa_log_error("The tuning values should be in increasing order, problem with element %d of %s",
 +                             element_count, tuning);
@@ -974,8 +963,6 @@ index 0000000..4e931fb
 +    m->tuned_volume_max = hw_vol;
 +    m->tuning_table_max = m->tuned_volume_max - m->tuned_volume_min;
 +    m->tuning_table_filled = TRUE;
-+    pa_log_debug("Tuning parameter parsed");
-+    print_tuning_table(m);
 +    return 0;
 +}
 +
@@ -992,7 +979,6 @@ index 0000000..4e931fb
 +    if (mixer && mode && (m = get_mixer_elem_by_name(u, mixer))) {
 +
 +        if (strcmp(mode, PROP_MIXER_CONTROL) == 0) {
-+            pa_log_info("%s: set mixer %s active", u->device_name, mixer);
 +            if (set_control_mixer_elem(u, m)) {
 +                pa_log_error("%s: Setting control mixer %s failed", u->device_name, mixer);
 +                ret = -1;
@@ -1029,14 +1015,12 @@ index 0000000..4e931fb
 +            }
 +
 +            if (snd_mixer_selem_has_playback_switch(m->mixer_elem))  {
-+                pa_log_debug("Set mixer %s mute control to %s", m->name, mute_state ? "muted" : "unmuted");
 +                if ((err = snd_mixer_selem_set_playback_switch_all(m->mixer_elem, !mute_state)) < 0) {
 +                    pa_log_error("%s: Setting mute state of %s to %d failed: %s",
 +                                 u->device_name, mixer, mute_state, snd_strerror(err));
 +                }
 +            }
 +
-+            pa_log_debug("Set hw mixer %s volume to %d", m->name, hw_volume);
 +            if ((err = snd_mixer_selem_set_playback_volume_all(m->mixer_elem, (long)hw_volume)) < 0) {
 +                pa_log_error("%s: Setting volume of %s to %d failed: %s",
 +                             u->device_name, mixer, hw_volume, snd_strerror(err));
@@ -1068,8 +1052,6 @@ index 0000000..4e931fb
 +    pa_assert(u);
 +    pa_assert(u->sink);
 +
-+    pa_log_info("%s: update mixer setup", u->device_name);
-+
 +    /* store volumes from currently active mixer */
 +    store_active_mixer_volume(u);
 +
@@ -1091,7 +1073,6 @@ index 0000000..4e931fb
 +
 +    /* update previously stored volumes to sink */
 +    if (u->active_mixer) {
-+        pa_log_info("%s: update stored volumes to sink", u->device_name);
 +        if (u->active_mixer->cache_volume.channels > 0) {
 +            pa_sink_set_volume(u->sink, &u->active_mixer->cache_volume, TRUE, TRUE);
 +            pa_sink_set_mute(u->sink, u->active_mixer->cache_muted);
@@ -1102,7 +1083,6 @@ index 0000000..4e931fb
 +               idea. Let's use default values.
 +            */
 +            pa_cvolume cvol;
-+            pa_log_info("No cached volume and mute state found, using defaults");
 +            pa_cvolume_set(&cvol, u->sink->sample_spec.channels,
 +                           pa_sw_volume_from_dB(DEFAULT_MIXER_DB_VALUE_ON_FIRST_BOOT));
 +            pa_sink_set_volume(u->sink, &cvol, TRUE, TRUE);
@@ -1122,8 +1102,6 @@ index 0000000..4e931fb
 +    if (s != u->sink) {
 +        return PA_HOOK_OK;
 +    }
-+
-+    pa_log_debug("%s: sink_proplist_changed_hook_callback", u->device_name);
 +
 +    pa_assert(u);
 +    pa_assert(s);
@@ -1233,8 +1211,6 @@ index 0000000..4e931fb
 +    data.dptr = (void*) &entry;
 +    data.dsize = sizeof(entry);
 +
-+    pa_log_info("%s: storing volume/mute for mixer %s. vol %d", u->device_name, name, m->cache_volume.values[0]);
-+
 +    gdbm_store(u->gdbm_file, key, data, GDBM_REPLACE);
 +
 +    pa_xfree(name);
@@ -1288,8 +1264,6 @@ index 0000000..4e931fb
 +        return;
 +    }
 +
-+    pa_log_debug("Store current control mixer - %s - value to cache", m->name);
-+
 +    if (!u->sink) {
 +        pa_log_debug("The sink was already unloaded, storing cached values");
 +    }
@@ -1313,7 +1287,6 @@ index 0000000..4e931fb
 +        return PA_HOOK_OK;
 +    }
 +
-+    pa_log_info("The sink we were connected to was unkinked");
 +    u->sink = NULL;
 +
 +    return PA_HOOK_OK;
@@ -1488,6 +1461,8 @@ index 0000000..4e931fb
 +
 +    if (u->sink_proplist_changed_slot)
 +        pa_hook_slot_free(u->sink_proplist_changed_slot);
++    if (u->sink_unlink_slot)
++        pa_hook_slot_free(u->sink_unlink_slot);
 +
 +    if (u->cache_volumes)
 +        store_active_mixer_volume(u);

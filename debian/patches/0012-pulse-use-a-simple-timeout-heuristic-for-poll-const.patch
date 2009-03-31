@@ -1,7 +1,7 @@
 From d717d4848f4185db77188da92668efd1c4e733f3 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 3 Mar 2009 15:50:46 +0200
-Subject: [PATCH 12/17] pulse: use a simple timeout heuristic for poll construction
+Subject: [PATCH 12/16] pulse: use a simple timeout heuristic for poll construction
 
 ---
  src/pulse/mainloop.c |  103 ++++++++++++++++++++++++++++++++++++++++++--------
