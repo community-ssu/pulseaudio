@@ -1,4 +1,4 @@
-pulseaudio (0.9.15~test5-0maemo4) unstable; urgency=low
+pulseaudio (0.9.15~test5-0maemo4) UNSTABLE; urgency=low
 
   * Rebased on top of 5e1197207637bd459b09af8d7e374a44174d1403
   * Various bluetooth fixes (new A2DP loop, check connected state before
