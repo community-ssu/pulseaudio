@@ -3,4 +3,4 @@
 ../../src/modules/alsa/*.h usr/include/pulsecore/modules/alsa
 ../../src/modules/bluetooth/*.h usr/include/pulsecore/modules/bluetooth
 usr/include/pulsecore/pulsecore-config.h
-usr/lib/pkgconfig/pulsecore.pc
+usr/lib/pkgconfig/pulsecore*.pc

@@ -1,4 +1,4 @@
-pulseaudio (0.9.15~test5-0maemo4) UNSTABLE; urgency=low
+pulseaudio (0.9.15~test5-0maemo4) UNRELEASED; urgency=low
 
   * Rebased on top of 5e1197207637bd459b09af8d7e374a44174d1403
   * Various bluetooth fixes (new A2DP loop, check connected state before
@@ -30,7 +30,7 @@ pulseaudio (0.9.15~test5-0maemo1) unstable; urgency=low
 
  -- Maemo Multimedia <multimedia@maemo.org>  Wed, 18 Mar 2009 15:46:41 +0200
 
-pulseaudio (0.9.15~test5-1) UNRELEASED; urgency=low
+pulseaudio (0.9.15~test5-1) experimental; urgency=low
 
   * New Upstream Version
   * debian/copyright: Updated
@@ -39,8 +39,18 @@ pulseaudio (0.9.15~test5-1) UNRELEASED; urgency=low
   * debian/rules: Use git format-patch instead of git-format-patch
   * debian/patches/0001-load-module-gconf-earlier.patch:
     - Removed. Merged upstream
+  * debian/pulseaudio.install: Update for new modules
+  * debian/pulseaudio-module-x11.install: Update for new modules
+  * Move libpulscore into the pulseaudio package
+  * debian/pulseaudio-module-bluetooth.install: Add the bluetooth-util module
+    library
+  * debian/pulseaudio.install: Add new modules
+  * debian/control: Add bulid-depends on libgtk2.0-dev and libxtst-dev
+  * debian/pulseaudio.shlibs, debian/libpulse0.shlibs: Update shlib files
+  * debian/pulseaudio.install: Add liboss-util.so oss module helper library
+  * debian/control, debian/pulseaudio-module-raop.install: Add RAOP module
 
- -- Sjoerd Simons <sjoerd@debian.org>  Thu, 05 Mar 2009 18:09:32 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 22 Mar 2009 23:06:50 +0000
 
 pulseaudio (0.9.14-2) unstable; urgency=low
 

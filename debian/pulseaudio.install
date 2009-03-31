@@ -2,13 +2,13 @@ etc/pulse/daemon.conf
 etc/pulse/default.pa
 etc/pulse/system.pa
 usr/bin/pulseaudio
-usr/bin/start-pulseaudio-x11
-usr/lib/libpulsecommon-*.so
+usr/lib/libpulsecore-*.so
 usr/lib/pulse-*/modules/libalsa-util.so
 usr/lib/pulse-*/modules/libcli.so
 usr/lib/pulse-*/modules/libprotocol-cli.so
 usr/lib/pulse-*/modules/libprotocol-native.so
 usr/lib/pulse-*/modules/libprotocol-simple.so
+usr/lib/pulse-*/modules/module-alsa-card.so
 usr/lib/pulse-*/modules/module-alsa-sink-old.so
 usr/lib/pulse-*/modules/module-alsa-sink-volume.so
 usr/lib/pulse-*/modules/module-alsa-sink.so
@@ -29,4 +29,3 @@ usr/lib/pulse-*/modules/module-simple-protocol-unix.so
 usr/lib/pulse-*/modules/module-stream-restore.so
 usr/lib/pulse-*/modules/module-suspend-on-idle.so
 usr/share/lintian/overrides/pulseaudio
-usr/share/man/man5/default.pa.5
