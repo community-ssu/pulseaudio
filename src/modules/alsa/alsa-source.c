@@ -1482,6 +1482,11 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
         u->use_tsched = use_tsched = FALSE;
     }
 
+    if (use_tsched && !pa_alsa_pcm_is_hw(u->pcm_handle)) {
+        pa_log_info("Device is not a hardware device, disabling timer-based scheduling.");
+        u->use_tsched = use_tsched = FALSE;
+    }
+
     if (u->use_mmap)
         pa_log_info("Successfully enabled mmap() mode.");
 
@@ -1491,7 +1496,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     /* ALSA might tweak the sample spec, so recalculate the frame size */
     frame_size = pa_frame_size(&ss);
 
-    pa_alsa_find_mixer_and_elem(u->pcm_handle, &u->mixer_handle, &u->mixer_elem);
+    pa_alsa_find_mixer_and_elem(u->pcm_handle, &u->mixer_handle, &u->mixer_elem, pa_modargs_get_value(ma, "control", NULL));
 
     pa_source_new_data_init(&data);
     data.driver = driver;

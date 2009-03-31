@@ -1094,7 +1094,8 @@ success:
 int pa_alsa_find_mixer_and_elem(
         snd_pcm_t *pcm,
         snd_mixer_t **_m,
-        snd_mixer_elem_t **_e) {
+        snd_mixer_elem_t **_e,
+        const char *control_name) {
 
     int err;
     snd_mixer_t *m;
@@ -1146,11 +1147,17 @@ int pa_alsa_find_mixer_and_elem(
     switch (snd_pcm_stream(pcm)) {
 
         case SND_PCM_STREAM_PLAYBACK:
-            e = pa_alsa_find_elem(m, "Master", "PCM", TRUE);
+            if (control_name)
+                e = pa_alsa_find_elem(m, control_name, NULL, TRUE);
+            else
+                e = pa_alsa_find_elem(m, "Master", "PCM", TRUE);
             break;
 
         case SND_PCM_STREAM_CAPTURE:
-            e = pa_alsa_find_elem(m, "Capture", "Mic", FALSE);
+            if (control_name)
+                e = pa_alsa_find_elem(m, control_name, NULL, FALSE);
+            else
+                e = pa_alsa_find_elem(m, "Capture", "Mic", FALSE);
             break;
 
         default:
@@ -1716,9 +1723,10 @@ char *pa_alsa_get_driver_name(int card) {
 
 char *pa_alsa_get_driver_name_by_pcm(snd_pcm_t *pcm) {
     int card;
-
     snd_pcm_info_t* info;
     snd_pcm_info_alloca(&info);
+
+    pa_assert(pcm);
 
     if (snd_pcm_info(pcm, info) < 0)
         return NULL;
@@ -1748,4 +1756,16 @@ char *pa_alsa_get_reserve_name(const char *device) {
     }
 
     return pa_sprintf_malloc("Audio%i", i);
+}
+
+pa_bool_t pa_alsa_pcm_is_hw(snd_pcm_t *pcm) {
+    snd_pcm_info_t* info;
+    snd_pcm_info_alloca(&info);
+
+    pa_assert(pcm);
+
+    if (snd_pcm_info(pcm, info) < 0)
+        return FALSE;
+
+    return snd_pcm_info_get_card(info) >= 0;
 }
