@@ -6,7 +6,6 @@ usr/bin/start-pulseaudio-x11
 usr/lib/libpulsecommon-*.so
 usr/lib/pulse-*/modules/libalsa-util.so
 usr/lib/pulse-*/modules/libcli.so
-usr/lib/pulse-*/modules/libdbus-util.so
 usr/lib/pulse-*/modules/libprotocol-cli.so
 usr/lib/pulse-*/modules/libprotocol-native.so
 usr/lib/pulse-*/modules/libprotocol-simple.so
