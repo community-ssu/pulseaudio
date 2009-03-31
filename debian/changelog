@@ -1,4 +1,4 @@
-pulseaudio (0.9.15~test5-0maemo3) unstable; urgency=low
+pulseaudio (0.9.15~test5-0maemo4) unstable; urgency=low
 
   * Rebased on top of 5e1197207637bd459b09af8d7e374a44174d1403
   * Various bluetooth fixes (new A2DP loop, check connected state before
@@ -6,6 +6,15 @@ pulseaudio (0.9.15~test5-0maemo3) unstable; urgency=low
     initialization, new #NOKIA define for SCO over PCM).
 
  -- Maemo Multimedia <multimedia@maemo.org>  Tue, 31 Mar 2009 13:23:25 +0300
+
+pulseaudio (0.9.15~test5-0maemo3) unstable; urgency=low
+
+  * Turn CPU watchdog off
+    - This is a dangerous change, but DVFS dont work without it
+  * Change alternate number of fragments for alsa source old to 4 from 2
+    - Having more fragments for capture does not add latency
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Fri, 27 Mar 2009 16:06:34 +0200
 
 pulseaudio (0.9.15~test5-0maemo2) unstable; urgency=low
 
