@@ -213,7 +213,7 @@ enum {
 static int sink_input_pop_cb(pa_sink_input *i, size_t length, pa_memchunk *chunk);
 static void sink_input_kill_cb(pa_sink_input *i);
 static void sink_input_suspend_cb(pa_sink_input *i, pa_bool_t suspend);
-static void sink_input_moving_cb(pa_sink_input *i);
+static void sink_input_moving_cb(pa_sink_input *i, pa_sink *dest);
 static void sink_input_process_rewind_cb(pa_sink_input *i, size_t nbytes);
 static void sink_input_update_max_rewind_cb(pa_sink_input *i, size_t nbytes);
 static void sink_input_update_max_request_cb(pa_sink_input *i, size_t nbytes);
@@ -225,7 +225,7 @@ static void playback_stream_request_bytes(struct playback_stream*s);
 static void source_output_kill_cb(pa_source_output *o);
 static void source_output_push_cb(pa_source_output *o, const pa_memchunk *chunk);
 static void source_output_suspend_cb(pa_source_output *o, pa_bool_t suspend);
-static void source_output_moving_cb(pa_source_output *o);
+static void source_output_moving_cb(pa_source_output *o, pa_source *dest);
 static pa_usec_t source_output_get_latency_cb(pa_source_output *o);
 static void source_output_send_event_cb(pa_source_output *o, const char *event, pa_proplist *pl);
 
@@ -1437,7 +1437,7 @@ static int sink_input_pop_cb(pa_sink_input *i, size_t nbytes, pa_memchunk *chunk
     if (pa_memblockq_is_readable(s->memblockq))
         s->is_underrun = FALSE;
     else {
-/*         pa_log("%s, UNDERRUN: %lu", pa_proplist_gets(i->proplist, PA_PROP_MEDIA_NAME), (unsigned long) pa_memblockq_get_length(s->memblockq)); */
+        pa_log_debug("Underrun on '%s', %lu bytes in queue.", pa_strnull(pa_proplist_gets(i->proplist, PA_PROP_MEDIA_NAME)), (unsigned long) pa_memblockq_get_length(s->memblockq));
 
         if (s->drain_request && pa_sink_input_safe_to_remove(i)) {
             s->drain_request = FALSE;
@@ -1495,17 +1495,26 @@ static void sink_input_update_max_rewind_cb(pa_sink_input *i, size_t nbytes) {
 /* Called from thread context */
 static void sink_input_update_max_request_cb(pa_sink_input *i, size_t nbytes) {
     playback_stream *s;
-    size_t tlength;
+    size_t new_tlength, old_tlength;
 
     pa_sink_input_assert_ref(i);
     s = PLAYBACK_STREAM(i->userdata);
     playback_stream_assert_ref(s);
 
-    tlength = nbytes+2*pa_memblockq_get_minreq(s->memblockq);
+    old_tlength = pa_memblockq_get_tlength(s->memblockq);
+    new_tlength = nbytes+2*pa_memblockq_get_minreq(s->memblockq);
 
-    if (pa_memblockq_get_tlength(s->memblockq) < tlength) {
-        pa_memblockq_set_tlength(s->memblockq, tlength);
-        pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(s), PLAYBACK_STREAM_MESSAGE_UPDATE_TLENGTH, NULL, pa_memblockq_get_tlength(s->memblockq), NULL, NULL);
+    if (old_tlength < new_tlength) {
+        pa_log_debug("max_request changed, trying to update from %zu to %zu.", old_tlength, new_tlength);
+        pa_memblockq_set_tlength(s->memblockq, new_tlength);
+        new_tlength = pa_memblockq_get_tlength(s->memblockq);
+
+        if (new_tlength == old_tlength)
+            pa_log_debug("Failed to increase tlength");
+        else {
+            pa_log_debug("Notifying client about increased tlength");
+            pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(s), PLAYBACK_STREAM_MESSAGE_UPDATE_TLENGTH, NULL, pa_memblockq_get_tlength(s->memblockq), NULL, NULL);
+        }
     }
 }
 
@@ -1563,7 +1572,7 @@ static void sink_input_suspend_cb(pa_sink_input *i, pa_bool_t suspend) {
 }
 
 /* Called from main context */
-static void sink_input_moving_cb(pa_sink_input *i) {
+static void sink_input_moving_cb(pa_sink_input *i, pa_sink *dest) {
     playback_stream *s;
     pa_tagstruct *t;
 
@@ -1582,9 +1591,9 @@ static void sink_input_moving_cb(pa_sink_input *i) {
     pa_tagstruct_putu32(t, PA_COMMAND_PLAYBACK_STREAM_MOVED);
     pa_tagstruct_putu32(t, (uint32_t) -1); /* tag */
     pa_tagstruct_putu32(t, s->index);
-    pa_tagstruct_putu32(t, i->sink->index);
-    pa_tagstruct_puts(t, i->sink->name);
-    pa_tagstruct_put_boolean(t, pa_sink_get_state(i->sink) == PA_SINK_SUSPENDED);
+    pa_tagstruct_putu32(t, dest->index);
+    pa_tagstruct_puts(t, dest->name);
+    pa_tagstruct_put_boolean(t, pa_sink_get_state(dest) == PA_SINK_SUSPENDED);
 
     if (s->connection->version >= 13) {
         pa_tagstruct_putu32(t, s->buffer_attr.maxlength);
@@ -1676,7 +1685,7 @@ static void source_output_suspend_cb(pa_source_output *o, pa_bool_t suspend) {
 }
 
 /* Called from main context */
-static void source_output_moving_cb(pa_source_output *o) {
+static void source_output_moving_cb(pa_source_output *o, pa_source *dest) {
     record_stream *s;
     pa_tagstruct *t;
 
@@ -1696,9 +1705,9 @@ static void source_output_moving_cb(pa_source_output *o) {
     pa_tagstruct_putu32(t, PA_COMMAND_RECORD_STREAM_MOVED);
     pa_tagstruct_putu32(t, (uint32_t) -1); /* tag */
     pa_tagstruct_putu32(t, s->index);
-    pa_tagstruct_putu32(t, o->source->index);
-    pa_tagstruct_puts(t, o->source->name);
-    pa_tagstruct_put_boolean(t, pa_source_get_state(o->source) == PA_SOURCE_SUSPENDED);
+    pa_tagstruct_putu32(t, dest->index);
+    pa_tagstruct_puts(t, dest->name);
+    pa_tagstruct_put_boolean(t, pa_source_get_state(dest) == PA_SOURCE_SUSPENDED);
 
     if (s->connection->version >= 13) {
         pa_tagstruct_putu32(t, s->buffer_attr.maxlength);
