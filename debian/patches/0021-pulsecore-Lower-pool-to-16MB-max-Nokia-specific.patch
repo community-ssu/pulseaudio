@@ -1,4 +1,4 @@
-From aff5ca46a5d18d282846712d3e82ab064adfa525 Mon Sep 17 00:00:00 2001
+From ab1eeabfe996201d70b769077bb505af64ced2f9 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 18 Feb 2009 16:21:34 +0200
 Subject: [PATCH 21/27] pulsecore: Lower pool to 16MB max (Nokia specific)
