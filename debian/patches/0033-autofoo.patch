@@ -1,7 +1,7 @@
-From 7a1e50849d9890014f642c57ac988e0e4e0de2c9 Mon Sep 17 00:00:00 2001
+From c7c9d55339e7e8bc8ffc0af42f92433b51209388 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
-Date: Wed, 1 Apr 2009 13:30:14 +0300
-Subject: [PATCH 27/27] autofoo
+Date: Sat, 4 Apr 2009 19:13:19 +0300
+Subject: [PATCH 33/33] autofoo
 
 ---
  ABOUT-NLS              | 1068 ++
@@ -17,7 +17,7 @@ Subject: [PATCH 27/27] autofoo
  depcomp                |  589 +
  doxygen/Makefile.in    |  486 +
  install-sh             |  519 +
- ltmain.sh              | 8412 +++++++++++++
+ ltmain.sh              | 8413 +++++++++++++
  m4/ChangeLog           |   11 +
  m4/gettext.m4          |  381 +
  m4/iconv.m4            |  180 +
@@ -46,7 +46,7 @@ Subject: [PATCH 27/27] autofoo
  po/quot.sed            |    6 +
  po/remove-potcdate.sin |   19 +
  src/Makefile.in        | 7048 +++++++++++
- 42 files changed, 68496 insertions(+), 0 deletions(-)
+ 42 files changed, 68497 insertions(+), 0 deletions(-)
  create mode 100644 ABOUT-NLS
  create mode 100644 ChangeLog
  create mode 100644 Makefile.in
@@ -1169,11 +1169,11 @@ index 0000000..83bc72e
 +
 diff --git a/ChangeLog b/ChangeLog
 new file mode 100644
-index 0000000..3cdf7b1
+index 0000000..0b0a53a
 --- /dev/null
 +++ b/ChangeLog
 @@ -0,0 +1,5 @@
-+2009-04-01  gettextize  <bug-gnu-gettext@gnu.org>
++2009-04-04  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* Makefile.am (EXTRA_DIST): Add config.rpath, m4/ChangeLog.
 +	* configure.ac (AC_CONFIG_FILES): Add po/Makefile.in.
@@ -41440,10 +41440,10 @@ new file mode 100644
 index 0000000..e69de29
 diff --git a/ltmain.sh b/ltmain.sh
 new file mode 100755
-index 0000000..2e3661e
+index 0000000..d412318
 --- /dev/null
 +++ b/ltmain.sh
-@@ -0,0 +1,8412 @@
+@@ -0,0 +1,8413 @@
 +# Generated from ltmain.m4sh.
 +
 +# ltmain.sh (GNU libtool) 2.2.6
@@ -41511,7 +41511,7 @@ index 0000000..2e3661e
 +#       compiler:		$LTCC
 +#       compiler flags:		$LTCFLAGS
 +#       linker:		$LD (gnu? $with_gnu_ld)
-+#       $progname:		(GNU libtool) 2.2.6 Debian-2.2.6a-1
++#       $progname:		(GNU libtool) 2.2.6 Debian-2.2.6a-2
 +#       automake:		$automake_version
 +#       autoconf:		$autoconf_version
 +#
@@ -41519,7 +41519,7 @@ index 0000000..2e3661e
 +
 +PROGRAM=ltmain.sh
 +PACKAGE=libtool
-+VERSION="2.2.6 Debian-2.2.6a-1"
++VERSION="2.2.6 Debian-2.2.6a-2"
 +TIMESTAMP=""
 +package_revision=1.3012
 +
@@ -47342,6 +47342,7 @@ index 0000000..2e3661e
 +	  if test "$link_all_deplibs" != no; then
 +	    # Add the search paths of all dependency libraries
 +	    for deplib in $dependency_libs; do
++	      path=
 +	      case $deplib in
 +	      -L*) path="$deplib" ;;
 +	      *.la)
@@ -49858,11 +49859,11 @@ index 0000000..2e3661e
 +
 diff --git a/m4/ChangeLog b/m4/ChangeLog
 new file mode 100644
-index 0000000..4629368
+index 0000000..4dbddce
 --- /dev/null
 +++ b/m4/ChangeLog
 @@ -0,0 +1,11 @@
-+2009-04-01  gettextize  <bug-gnu-gettext@gnu.org>
++2009-04-04  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* gettext.m4: New file, from gettext-0.17.
 +	* iconv.m4: New file, from gettext-0.17.
@@ -61317,11 +61318,11 @@ index 0000000..1c8ff70
 +# End:
 diff --git a/po/ChangeLog b/po/ChangeLog
 new file mode 100644
-index 0000000..bed138c
+index 0000000..d3feb6b
 --- /dev/null
 +++ b/po/ChangeLog
 @@ -0,0 +1,11 @@
-+2009-04-01  gettextize  <bug-gnu-gettext@gnu.org>
++2009-04-04  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* Makefile.in.in: New file, from gettext-0.17.
 +	* boldquot.sed: New file, from gettext-0.17.

@@ -1,7 +1,7 @@
-From 0e03c6a93032554eb3b7ff1fe2d9b7165155ca3c Mon Sep 17 00:00:00 2001
+From 7a535306a7b0f0bc37d2fb0adab98b3a7aea6773 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 11 Mar 2009 20:14:49 +0200
-Subject: [PATCH 11/27] remap: flat remap sink volume
+Subject: [PATCH 32/33] remap: flat remap sink volume
 
 ---
  src/modules/module-remap-sink.c |    3 +++

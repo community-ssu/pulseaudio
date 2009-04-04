@@ -1,15 +1,15 @@
-From 8fae57b2b277ca5ee69cc1fc2775d57f2b5833fd Mon Sep 17 00:00:00 2001
+From 690829fcdca4730ce0992b542308bdd5c07c823e Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 17:07:35 +0200
-Subject: [PATCH 02/27] pulsecore: add flat_volume_sink and forward set_volume to it
+Subject: [PATCH 23/33] pulsecore: add flat_volume_sink and forward set_volume to it
 
 ---
  src/pulsecore/sink.c |   47 ++++++++++++++++++++++++++++++++---------------
- src/pulsecore/sink.h |    4 +++-
- 2 files changed, 35 insertions(+), 16 deletions(-)
+ src/pulsecore/sink.h |    2 ++
+ 2 files changed, 34 insertions(+), 15 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index 667ae76..d51822d 100644
+index 5feb14a..526f44c 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
 @@ -1,7 +1,7 @@
@@ -29,7 +29,7 @@ index 667ae76..d51822d 100644
  
      s->sample_spec = data->sample_spec;
      s->channel_map = data->channel_map;
-@@ -1068,26 +1069,42 @@ void pa_sink_set_volume(pa_sink *s, const pa_cvolume *volume, pa_bool_t propagat
+@@ -1071,26 +1072,42 @@ void pa_sink_set_volume(pa_sink *s, const pa_cvolume *volume, pa_bool_t propagat
      pa_assert(pa_cvolume_compatible(volume, &s->sample_spec));
  
      old_virtual_volume = s->virtual_volume;
@@ -87,19 +87,10 @@ index 667ae76..d51822d 100644
      /* This tells the sink that soft and/or virtual volume changed */
      if (sendmsg)
 diff --git a/src/pulsecore/sink.h b/src/pulsecore/sink.h
-index 0d33679..a98135b 100644
+index 56f3a56..85005be 100644
 --- a/src/pulsecore/sink.h
 +++ b/src/pulsecore/sink.h
-@@ -4,7 +4,7 @@
- /***
-   This file is part of PulseAudio.
- 
--  Copyright 2004-2006 Lennart Poettering
-+  Copyright 2004-2006, 2009 Lennart Poettering
-   Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
- 
-   PulseAudio is free software; you can redistribute it and/or modify
-@@ -74,6 +74,7 @@ struct pa_sink {
+@@ -75,6 +75,7 @@ struct pa_sink {
      pa_volume_t base_volume; /* shall be constant */
      unsigned n_volume_steps; /* shall be constant */
  
@@ -107,7 +98,7 @@ index 0d33679..a98135b 100644
      pa_cvolume virtual_volume, soft_volume;
      pa_bool_t muted:1;
  
-@@ -183,6 +184,7 @@ typedef struct pa_sink_new_data {
+@@ -184,6 +185,7 @@ typedef struct pa_sink_new_data {
      pa_module *module;
      pa_card *card;
  

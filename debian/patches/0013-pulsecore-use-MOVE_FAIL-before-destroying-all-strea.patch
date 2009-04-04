@@ -1,7 +1,7 @@
 From 439677a24aeb1b1573a83fc5e70c8e6f8dc2a487 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 16 Mar 2009 20:03:33 +0200
-Subject: [PATCH 24/27] pulsecore: use MOVE_FAIL before destroying all streams
+Subject: [PATCH 13/33] pulsecore: use MOVE_FAIL before destroying all streams
 
 ---
  src/pulsecore/sink.c   |    4 ++++

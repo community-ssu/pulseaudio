@@ -1,17 +1,17 @@
-From e6add1d9c2b9dc84b4c057f12abbb1e32598a4ca Mon Sep 17 00:00:00 2001
+From c6678f9513482879ba591429482cb99036c5bd8c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 22:44:34 +0200
-Subject: [PATCH 10/27] pulsecore: do not consider intermediate s-i in flat-vol
+Subject: [PATCH 31/33] pulsecore: do not consider intermediate s-i in flat-vol
 
 ---
  src/pulsecore/sink.c |   34 ++++++++++++++++++++++++++--------
  1 files changed, 26 insertions(+), 8 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index 45e147e..7f635ee 100644
+index 751666f..6a80739 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
-@@ -1015,6 +1015,25 @@ static void update_input_soft_volume(pa_sink *s, const pa_cvolume *new_volume, c
+@@ -1020,6 +1020,25 @@ static void update_input_soft_volume(pa_sink *s, const pa_cvolume *new_volume, c
  }
  
  /* Called from main thread */
@@ -34,10 +34,10 @@ index 45e147e..7f635ee 100644
 +}
 +
 +/* Called from main thread */
- void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume) {
+ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_input *new_input) {
  
      pa_sink_assert_ref(s);
-@@ -1035,18 +1054,17 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume) {
+@@ -1040,18 +1059,17 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_inpu
          return;
      }
  

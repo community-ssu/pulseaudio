@@ -1,0 +1,54 @@
+From 0854a9b88d0ce292a338ef46126d8d31dcba3539 Mon Sep 17 00:00:00 2001
+From: Jyri Sarha <jyri.sarha@nokia.com>
+Date: Sat, 4 Apr 2009 13:02:17 +0300
+Subject: [PATCH 16/33] Hack pa_gettimeofday() to call pa_rtclock_get()
+
+---
+ src/pulse/timeval.c |   13 ++++++++++++-
+ 1 files changed, 12 insertions(+), 1 deletions(-)
+
+diff --git a/src/pulse/timeval.c b/src/pulse/timeval.c
+index 376cf13..89761e9 100644
+--- a/src/pulse/timeval.c
++++ b/src/pulse/timeval.c
+@@ -25,6 +25,7 @@
+ #endif
+ 
+ #include <stddef.h>
++#include <time.h>
+ #include <sys/time.h>
+ 
+ #ifdef HAVE_WINDOWS_H
+@@ -33,11 +34,20 @@
+ 
+ #include <pulsecore/winsock.h>
+ #include <pulsecore/macro.h>
++#include <pulsecore/rtclock.h>
+ 
+ #include "timeval.h"
+ 
+ struct timeval *pa_gettimeofday(struct timeval *tv) {
+-#ifdef HAVE_GETTIMEOFDAY
++#ifdef CLOCK_MONOTONIC
++    pa_assert(tv);
++
++    return pa_rtclock_get(tv);
++#else
++    
++#error "We are screwd"
++
++#ifdef(HAVE_GETTIMEOFDAY)
+     pa_assert(tv);
+ 
+     pa_assert_se(gettimeofday(tv, NULL) == 0);
+@@ -73,6 +83,7 @@ struct timeval *pa_gettimeofday(struct timeval *tv) {
+ #else
+ #error "Platform lacks gettimeofday() or equivalent function."
+ #endif
++#endif
+ }
+ 
+ pa_usec_t pa_timeval_diff(const struct timeval *a, const struct timeval *b) {
+-- 
+1.6.2.rc1.13.gfd76c.dirty
+

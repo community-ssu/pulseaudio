@@ -1,17 +1,17 @@
-From 1dede0ebe7e0debc6760a33e5dfa19af1b70b46c Mon Sep 17 00:00:00 2001
+From c37feab0555ef743f8d9944b41159747c08b84c9 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 17:55:37 +0200
-Subject: [PATCH 06/27] pulsecore: fix a comment about pa_sink_set_volume
+Subject: [PATCH 27/33] pulsecore: fix a comment about pa_sink_set_volume
 
 ---
  src/pulsecore/sink.c |    4 ++--
  1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index bccd991..0812829 100644
+index 87e3374..1544f7a 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
-@@ -1010,7 +1010,7 @@ static void update_input_soft_volume(pa_sink *s, const pa_cvolume *new_volume, c
+@@ -1015,7 +1015,7 @@ static void update_input_soft_volume(pa_sink *s, const pa_cvolume *new_volume, c
          /* We don't issue PA_SINK_INPUT_MESSAGE_SET_VOLUME because
           * we want the update to have atomically with the sink
           * volume update, hence we do it within the
@@ -20,7 +20,7 @@ index bccd991..0812829 100644
      }
  }
  
-@@ -1026,7 +1026,7 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume) {
+@@ -1031,7 +1031,7 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_inpu
       * might need to fix up the sink volume accordingly. Please note
       * that we don't actually update the sinks volume here, we only
       * return how it needs to be updated. The caller should then call
