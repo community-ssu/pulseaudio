@@ -25,7 +25,9 @@ Package: pulseaudio
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, lsb-base (>= 3),
  pulseaudio-module-hal
-Conflicts: libltdl3 (<< 1.5.24-1)
+Conflicts: libltdl3 (<< 1.5.24-1), libpulsecore9
+Replaces: libpulsecore9
+Provides: libpulsecore9
 Recommends: pulseaudio-module-x11,
     libasound2-plugins, gstreamer0.10-plugins-good,
     paprefs, padevchooser
