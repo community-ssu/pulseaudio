@@ -1,0 +1,125 @@
+From 61d218e00a3af9d549148f5c93a056e1784be96a Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Fri, 3 Apr 2009 18:04:33 +0300
+Subject: [PATCH 14/32] pulsecore: make new sink-input 100% soft-vol when sink is 0%
+
+---
+ src/pulsecore/sink-input.c |   10 +++++-----
+ src/pulsecore/sink.c       |   13 ++++++++-----
+ src/pulsecore/sink.h       |    5 +++--
+ 3 files changed, 16 insertions(+), 12 deletions(-)
+
+diff --git a/src/pulsecore/sink-input.c b/src/pulsecore/sink-input.c
+index 53e727b..7f36fa1 100644
+--- a/src/pulsecore/sink-input.c
++++ b/src/pulsecore/sink-input.c
+@@ -448,7 +448,7 @@ void pa_sink_input_unlink(pa_sink_input *i) {
+         /* We might need to update the sink's volume if we are in flat volume mode. */
+         if (i->sink->flags & PA_SINK_FLAT_VOLUME) {
+             pa_cvolume new_volume;
+-            pa_sink_update_flat_volume(i->sink, &new_volume);
++            pa_sink_update_flat_volume(i->sink, &new_volume, NULL);
+             pa_sink_set_volume(i->sink, &new_volume, FALSE, FALSE);
+         }
+ 
+@@ -526,7 +526,7 @@ void pa_sink_input_put(pa_sink_input *i) {
+     /* We might need to update the sink's volume if we are in flat volume mode. */
+     if (i->sink->flags & PA_SINK_FLAT_VOLUME) {
+         pa_cvolume new_volume;
+-        pa_sink_update_flat_volume(i->sink, &new_volume);
++        pa_sink_update_flat_volume(i->sink, &new_volume, i);
+         pa_sink_set_volume(i->sink, &new_volume, FALSE, FALSE);
+     } else
+         pa_sw_cvolume_multiply(&i->soft_volume, &i->virtual_volume, &i->volume_factor);
+@@ -896,7 +896,7 @@ void pa_sink_input_set_volume(pa_sink_input *i, const pa_cvolume *volume, pa_boo
+         /* We are in flat volume mode, so let's update all sink input
+          * volumes and update the flat volume of the sink */
+ 
+-        pa_sink_update_flat_volume(i->sink, &new_volume);
++        pa_sink_update_flat_volume(i->sink, &new_volume, NULL);
+         pa_sink_set_volume(i->sink, &new_volume, FALSE, TRUE);
+ 
+     } else {
+@@ -1096,7 +1096,7 @@ int pa_sink_input_start_move(pa_sink_input *i) {
+ 
+         /* We might need to update the sink's volume if we are in flat
+          * volume mode. */
+-        pa_sink_update_flat_volume(i->sink, &new_volume);
++        pa_sink_update_flat_volume(i->sink, &new_volume, NULL);
+         pa_sink_set_volume(i->sink, &new_volume, FALSE, FALSE);
+     }
+ 
+@@ -1185,7 +1185,7 @@ int pa_sink_input_finish_move(pa_sink_input *i, pa_sink *dest, pa_bool_t save) {
+         pa_sw_cvolume_multiply(&i->virtual_volume, &i->virtual_volume, &t);
+ 
+         /* We might need to update the sink's volume if we are in flat volume mode. */
+-        pa_sink_update_flat_volume(i->sink, &new_volume);
++        pa_sink_update_flat_volume(i->sink, &new_volume, NULL);
+         pa_sink_set_volume(i->sink, &new_volume, FALSE, FALSE);
+     }
+ 
+diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
+index 667ae76..5feb14a 100644
+--- a/src/pulsecore/sink.c
++++ b/src/pulsecore/sink.c
+@@ -953,7 +953,7 @@ pa_usec_t pa_sink_get_latency(pa_sink *s) {
+ }
+ 
+ /* Called from main thread */
+-void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume) {
++void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_input *new_input) {
+     pa_sink_input *i;
+     uint32_t idx;
+ 
+@@ -996,11 +996,14 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume) {
+     for (i = PA_SINK_INPUT(pa_idxset_first(s->inputs, &idx)); i; i = PA_SINK_INPUT(pa_idxset_next(s->inputs, &idx))) {
+         pa_cvolume remapped_new_volume;
+ 
+-        remapped_new_volume = *new_volume;
+-        pa_cvolume_remap(&remapped_new_volume, &s->channel_map, &i->channel_map);
+-        pa_sw_cvolume_divide(&i->soft_volume, &i->virtual_volume, &remapped_new_volume);
++        if (new_input == i && pa_cvolume_is_muted(new_volume))
++            pa_cvolume_reset(&i->soft_volume, i->channel_map.channels);
++        else {
++            remapped_new_volume = *new_volume;
++            pa_cvolume_remap(&remapped_new_volume, &s->channel_map, &i->channel_map);
++            pa_sw_cvolume_divide(&i->soft_volume, &i->virtual_volume, &remapped_new_volume);
++        }
+         pa_sw_cvolume_multiply(&i->soft_volume, &i->soft_volume, &i->volume_factor);
+-
+         /* Hooks have the ability to play games with i->soft_volume */
+         pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SINK_INPUT_SET_VOLUME], i);
+ 
+diff --git a/src/pulsecore/sink.h b/src/pulsecore/sink.h
+index 0d33679..56f3a56 100644
+--- a/src/pulsecore/sink.h
++++ b/src/pulsecore/sink.h
+@@ -4,7 +4,7 @@
+ /***
+   This file is part of PulseAudio.
+ 
+-  Copyright 2004-2006 Lennart Poettering
++  Copyright 2004-2006, 2009 Lennart Poettering
+   Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+ 
+   PulseAudio is free software; you can redistribute it and/or modify
+@@ -41,6 +41,7 @@ typedef struct pa_sink pa_sink;
+ #include <pulsecore/rtpoll.h>
+ #include <pulsecore/card.h>
+ #include <pulsecore/queue.h>
++#include <pulsecore/sink-input.h>
+ 
+ #define PA_MAX_INPUTS_PER_SINK 32
+ 
+@@ -242,7 +243,7 @@ int pa_sink_update_status(pa_sink*s);
+ int pa_sink_suspend(pa_sink *s, pa_bool_t suspend);
+ int pa_sink_suspend_all(pa_core *c, pa_bool_t suspend);
+ 
+-void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume);
++void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_input *new_input);
+ void pa_sink_propagate_flat_volume(pa_sink *s, const pa_cvolume *old_volume);
+ 
+ void pa_sink_set_volume(pa_sink *sink, const pa_cvolume *volume, pa_bool_t propagate, pa_bool_t sendmsg);
+-- 
+1.6.2.rc1.13.gfd76c.dirty
+
