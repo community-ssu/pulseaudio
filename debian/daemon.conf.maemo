@@ -4,6 +4,8 @@ exit-idle-time = -1
 
 ; This is an ugly combination and can lead into trouble, but needed for DVFS
 no-cpu-limit = 1
+; Limit max RT schedule slice to 10ms (= 10000000ns)
+rlimit-rttime = 10000000 
 
 high-priority = yes
 nice-level = -11
