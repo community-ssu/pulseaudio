@@ -1,14 +1,14 @@
-From a0e3571071843926560385fc15685123548144db Mon Sep 17 00:00:00 2001
+From 434ae82890e1a42151d8592e07e543ed09a08e33 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 20:08:34 +0200
-Subject: [PATCH 22/32] pulsecore: intermediate s-i soft_vol is 0dB
+Subject: [PATCH] pulsecore: intermediate s-i soft_vol is 0dB
 
 ---
  src/pulsecore/sink-input.c |    2 ++
  1 files changed, 2 insertions(+), 0 deletions(-)
 
 diff --git a/src/pulsecore/sink-input.c b/src/pulsecore/sink-input.c
-index cd0ade6..f5de201 100644
+index c2e9d96..0071ea6 100644
 --- a/src/pulsecore/sink-input.c
 +++ b/src/pulsecore/sink-input.c
 @@ -288,6 +288,8 @@ int pa_sink_input_new(
@@ -21,5 +21,5 @@ index cd0ade6..f5de201 100644
      i->save_sink = data->save_sink;
      i->save_muted = data->save_muted;
 -- 
-1.6.2.rc1.13.gfd76c.dirty
+1.5.6.3
 

@@ -1,14 +1,14 @@
-From 7a535306a7b0f0bc37d2fb0adab98b3a7aea6773 Mon Sep 17 00:00:00 2001
+From 3b63455a728ae36355e416636a5245fafb8ec19e Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 11 Mar 2009 20:14:49 +0200
-Subject: [PATCH 25/32] remap: flat remap sink volume
+Subject: [PATCH] remap: flat remap sink volume
 
 ---
  src/modules/module-remap-sink.c |    3 +++
  1 files changed, 3 insertions(+), 0 deletions(-)
 
 diff --git a/src/modules/module-remap-sink.c b/src/modules/module-remap-sink.c
-index 31824bc..3548d38 100644
+index f9777be..1ee3bb6 100644
 --- a/src/modules/module-remap-sink.c
 +++ b/src/modules/module-remap-sink.c
 @@ -233,6 +233,7 @@ static void sink_input_attach_cb(pa_sink_input *i) {
@@ -36,5 +36,5 @@ index 31824bc..3548d38 100644
      pa_proplist_sets(sink_input_data.proplist, PA_PROP_MEDIA_ROLE, "filter");
      pa_sink_input_new_data_set_sample_spec(&sink_input_data, &ss);
 -- 
-1.6.2.rc1.13.gfd76c.dirty
+1.5.6.3
 

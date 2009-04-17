@@ -1,17 +1,17 @@
-From d2a0fea9514b6c6b8d88a1c9144aa0045302887d Mon Sep 17 00:00:00 2001
+From ace47dd0de8dade79914255b3954bb8a72df20dc Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 17:13:17 +0200
-Subject: [PATCH 17/32] pulsecore: get_maximum_input_volume recursively
+Subject: [PATCH] pulsecore: get_maximum_input_volume recursively
 
 ---
  src/pulsecore/sink.c |   40 +++++++++++++++++++++++++++++-----------
  1 files changed, 29 insertions(+), 11 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index 526f44c..b3cfe36 100644
+index 95978c9..fbc9b52 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
-@@ -954,6 +954,34 @@ pa_usec_t pa_sink_get_latency(pa_sink *s) {
+@@ -960,6 +960,34 @@ pa_usec_t pa_sink_get_latency(pa_sink *s) {
  }
  
  /* Called from main thread */
@@ -46,7 +46,7 @@ index 526f44c..b3cfe36 100644
  void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_input *new_input) {
      pa_sink_input *i;
      uint32_t idx;
-@@ -980,17 +1008,7 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_inpu
+@@ -986,17 +1014,7 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_inpu
  
      /* First let's determine the new maximum volume of all inputs
       * connected to this sink */
@@ -66,5 +66,5 @@ index 526f44c..b3cfe36 100644
      /* Then, let's update the soft volumes of all inputs connected
       * to this sink */
 -- 
-1.6.2.rc1.13.gfd76c.dirty
+1.5.6.3
 

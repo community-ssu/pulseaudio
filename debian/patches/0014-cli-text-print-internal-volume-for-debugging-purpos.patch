@@ -1,7 +1,7 @@
 From 92bec05e8c928bed172611e2c1f6fd9433e60aff Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Sat, 4 Apr 2009 14:47:30 +0300
-Subject: [PATCH 26/32] cli-text: print internal volume for debugging purposes
+Subject: [PATCH] cli-text: print internal volume for debugging purposes
 
 ---
  src/pulsecore/cli-text.c |    8 ++++++++
@@ -48,5 +48,5 @@ index 324f83c..bd63690 100644
              (double) pa_sink_input_get_latency(i, NULL) / PA_USEC_PER_MSEC,
              clt,
 -- 
-1.6.2.rc1.13.gfd76c.dirty
+1.5.6.3
 

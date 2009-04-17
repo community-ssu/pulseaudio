@@ -1,7 +1,7 @@
-From bc1340c34af1a8b161624f854b9d667739bd8363 Mon Sep 17 00:00:00 2001
+From 51fa0430ab738d134820f6685015e417f45e214c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 16:33:36 +0200
-Subject: [PATCH 15/32] pulsecore: add an optional origin_sink on sink_input
+Subject: [PATCH] pulsecore: add an optional origin_sink on sink_input
 
 ---
  src/pulsecore/sink-input.c |    1 +
@@ -9,7 +9,7 @@ Subject: [PATCH 15/32] pulsecore: add an optional origin_sink on sink_input
  2 files changed, 3 insertions(+), 0 deletions(-)
 
 diff --git a/src/pulsecore/sink-input.c b/src/pulsecore/sink-input.c
-index 7f36fa1..cd0ade6 100644
+index d8e5a79..c2e9d96 100644
 --- a/src/pulsecore/sink-input.c
 +++ b/src/pulsecore/sink-input.c
 @@ -267,6 +267,7 @@ int pa_sink_input_new(
@@ -21,7 +21,7 @@ index 7f36fa1..cd0ade6 100644
  
      i->requested_resample_method = data->resample_method;
 diff --git a/src/pulsecore/sink-input.h b/src/pulsecore/sink-input.h
-index e380168..f181a36 100644
+index e7a555d..0dfd254 100644
 --- a/src/pulsecore/sink-input.h
 +++ b/src/pulsecore/sink-input.h
 @@ -80,6 +80,7 @@ struct pa_sink_input {
@@ -32,7 +32,7 @@ index e380168..f181a36 100644
  
      /* A sink input may be connected to multiple source outputs
       * directly, so that they don't get mixed data of the entire
-@@ -235,6 +236,7 @@ typedef struct pa_sink_input_new_data {
+@@ -237,6 +238,7 @@ typedef struct pa_sink_input_new_data {
      pa_client *client;
  
      pa_sink *sink;
@@ -41,5 +41,5 @@ index e380168..f181a36 100644
      pa_resample_method_t resample_method;
  
 -- 
-1.6.2.rc1.13.gfd76c.dirty
+1.5.6.3
 

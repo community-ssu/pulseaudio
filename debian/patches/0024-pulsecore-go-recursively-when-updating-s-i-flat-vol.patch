@@ -1,17 +1,17 @@
-From 3434dc74862f268dc86e0b8448efcdd1d58ec1f5 Mon Sep 17 00:00:00 2001
+From 5d01d49140b2dc9cef42e3c3486dbbbf72a942f2 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 17:22:11 +0200
-Subject: [PATCH 18/32] pulsecore: go recursively when updating s-i flat-volume
+Subject: [PATCH] pulsecore: go recursively when updating s-i flat-volume
 
 ---
  src/pulsecore/sink.c |   58 ++++++++++++++++++++++++++++++++-----------------
  1 files changed, 38 insertions(+), 20 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index b3cfe36..c84b6f7 100644
+index fbc9b52..c688f82 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
-@@ -982,12 +982,48 @@ static void get_maximum_input_volume(pa_sink *s, pa_cvolume *max_volume, const p
+@@ -988,12 +988,48 @@ static void get_maximum_input_volume(pa_sink *s, pa_cvolume *max_volume, const p
  }
  
  /* Called from main thread */
@@ -61,7 +61,7 @@ index b3cfe36..c84b6f7 100644
      pa_assert(PA_SINK_IS_LINKED(s->state));
      pa_assert(s->flags & PA_SINK_FLAT_VOLUME);
  
-@@ -1012,25 +1048,7 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_inpu
+@@ -1018,25 +1054,7 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_inpu
  
      /* Then, let's update the soft volumes of all inputs connected
       * to this sink */
@@ -89,5 +89,5 @@ index b3cfe36..c84b6f7 100644
  
  /* Called from main thread */
 -- 
-1.6.2.rc1.13.gfd76c.dirty
+1.5.6.3
 

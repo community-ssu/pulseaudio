@@ -1,13 +1,25 @@
-From 03368613de8433c58cdc834fa0f8144d3f1e548f Mon Sep 17 00:00:00 2001
-From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
-Date: Tue, 31 Mar 2009 14:26:08 +0300
-Subject: [PATCH 31/32] alsa: sink-volume, a complex mixer module
+From ce7b9e501e9633886e8e1426fb2c27c9f1d77451 Mon Sep 17 00:00:00 2001
+From: Jyri Sarha <jyri.sarha@nokia.com>
+Date: Fri, 17 Apr 2009 17:09:01 +0300
+Subject: [PATCH] alsa: sink-volume, a complex mixer module
 
+alsa-sink-volume: store mixer volumes using audio mode & mixer name as key
+
+alsa: sink-volume, a complex mixer module
+
+alsa-sink-volume: multiple tunings for single mixer element
+
+alsa-sink-volume: - don't always reload whole proplist
+                  - tuning table bugfixes
+
+alsa-sink-volume: change function parameter order
+
+alsa-sink-volume: add short description of tuning mode
 ---
  src/Makefile.am                                   |    7 +
  src/modules/alsa/module-alsa-sink-volume-symdef.h |   27 +
- src/modules/alsa/module-alsa-sink-volume.c        | 1432 +++++++++++++++++++++
- 3 files changed, 1466 insertions(+), 0 deletions(-)
+ src/modules/alsa/module-alsa-sink-volume.c        | 1522 +++++++++++++++++++++
+ 3 files changed, 1556 insertions(+), 0 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-volume-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-volume.c
 
@@ -78,10 +90,10 @@ index 0000000..30c44c1
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
 new file mode 100644
-index 0000000..6e1684f
+index 0000000..421fadc
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-volume.c
-@@ -0,0 +1,1432 @@
+@@ -0,0 +1,1522 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -148,14 +160,12 @@ index 0000000..6e1684f
 +        "sink_name=<name of the sink to connect> "
 +        "device=<ALSA device> "
 +        "mixer=<initial ALSA mixer> "
-+        "audio_mode=<initial audio mode> "
 +        "mixer_load=<load mixer controls in startup> ");
 +
 +static const char* const valid_modargs[] = {
 +    "device",
 +    "sink_name",
 +    "mixer",
-+    "audio_mode",
 +    "mixer_load",
 +    NULL
 +};
@@ -187,13 +197,34 @@ index 0000000..6e1684f
 + * MIXER=(HW REGISTER VALUE:mB VALUE,)+
 + * eg. "HP DAC=1:-5850,31:-4350,63:-2750,118:0"
 + */
-+#define PROP_MIXER_TUNING "x-maemo.alsa_sink.mixer_tuning"
++const char *PROP_MIXER_TUNING[2] = {
++    "x-maemo.alsa_sink.mixer_tuning",
++    "x-maemo.alsa_sink.alt_mixer_tuning"
++};
++
++/* String with single integer defining which mixer
++ * tuning table is used. Currently only two different tables
++ * can be defined.
++ */
++#define PROP_MIXER_TUNING_MODE "x-maemo.alsa_sink.mixer_tuning_mode"
++#define PROP_MIXER_TUNING_PRI (0)
++#define PROP_MIXER_TUNING_ALT (1)
++
++#define MAX_TUNING_TABLES (2)
 +
 +/* from Nokia modules */
 +#define XMAEMO_MODE "x-maemo.mode"
 +
 +struct slave_mixer_t;
 +typedef struct slave_mixer_t slave_mixer_t;
++
++typedef struct tuning_data_t {
++    pa_bool_t tuning_table_filled;
++    long *tuning_table;
++    int tuning_table_allocated_length;
++    int tuning_table_max;
++    long tuned_volume_max, tuned_volume_min;
++} tuning_data_t;
 +
 +typedef struct mixer_control_t {
 +    char *name;
@@ -210,11 +241,7 @@ index 0000000..6e1684f
 +    pa_cvolume hardware_volume;
 +
 +    enum { MM_UNUSED=0, MM_CONTROL, MM_STATIC, MM_SLAVE } mode;
-+    pa_bool_t tuning_table_filled;
-+    long *tuning_table;
-+    int tuning_table_allocated_length;
-+    int tuning_table_max;
-+    long tuned_volume_max, tuned_volume_min;
++    tuning_data_t tuning_data[MAX_TUNING_TABLES];
 +
 +    struct slave_mixer_t **slaves;
 +
@@ -262,6 +289,8 @@ index 0000000..6e1684f
 +
 +    /* current audio mode */
 +    char *audio_mode;
++    /* primary/alternative tuning for mixer */
++    int active_tuning;
 +
 +    pa_hook_slot *sink_proplist_changed_slot;
 +    pa_hook_slot *sink_unlink_slot;
@@ -309,47 +338,48 @@ index 0000000..6e1684f
 +    return 0;
 +}
 +
-+static size_t mB_to_hw_mixer_find(mixer_control_t *m, long mB, size_t l, size_t h) {
++static size_t mB_to_hw_mixer_find(mixer_control_t *m, const int table, long mB, size_t l, size_t h) {
 +
 +    if (l + 1 == h)
 +        return l;
 +
-+    if (mB > m->tuning_table[(l+h)/2])
-+        return mB_to_hw_mixer_find(m, mB, (l+h)/2, h);
++    if (mB > m->tuning_data[table].tuning_table[(l+h)/2])
++        return mB_to_hw_mixer_find(m, table, mB, (l+h)/2, h);
 +    else
-+        return mB_to_hw_mixer_find(m, mB, l, (l+h)/2);
++        return mB_to_hw_mixer_find(m, table, mB, l, (l+h)/2);
 +}
 +
-+static long mB_to_hw_mixer_value(mixer_control_t *m, long mB) {
++static long mB_to_hw_mixer_value(mixer_control_t *m, const int table, long mB) {
 +    int element;
 +    long ret;
++    tuning_data_t *td = &m->tuning_data[table];
 +    pa_assert(m);
-+    pa_assert(m->tuning_table_filled);
++    pa_assert(td->tuning_table_filled);
 +
-+    if (mB <= m->tuning_table[0])
-+        return m->tuned_volume_min;
++    if (mB <= td->tuning_table[0])
++        return td->tuned_volume_min;
 +
-+    if (mB >= m->tuning_table[m->tuning_table_max])
-+        return m->tuned_volume_max;
++    if (mB >= td->tuning_table[td->tuning_table_max])
++        return td->tuned_volume_max;
 +
-+    element = mB_to_hw_mixer_find(m, mB, 0, m->tuning_table_max);
++    element = mB_to_hw_mixer_find(m, table, mB, 0, td->tuning_table_max);
 +
-+    if ((mB - m->tuning_table[element]) < (m->tuning_table[element+1] - mB))
-+        ret = element + m->tuned_volume_min;
++    if ((mB - td->tuning_table[element]) < (td->tuning_table[element+1] - mB))
++        ret = element + td->tuned_volume_min;
 +    else
-+        ret = element + 1 + m->tuned_volume_min;
++        ret = element + 1 + td->tuned_volume_min;
 +
 +    return ret;
 +}
 +
-+static long hw_mixer_to_mB_value(mixer_control_t *m, long hw_vol) {
++static long hw_mixer_to_mB_value(mixer_control_t *m, const int table, long hw_vol) {
 +    pa_assert(m);
-+    pa_assert(m->tuning_table_filled);
++    pa_assert(m->tuning_data[table].tuning_table_filled);
 +
-+    return m->tuning_table[hw_vol - m->tuned_volume_min];
++    return m->tuning_data[table].tuning_table[hw_vol - m->tuning_data[table].tuned_volume_min];
 +}
 +
-+static void fill_tuning_table_range(struct mixer_control_t *m, size_t start, size_t end,
++static void fill_tuning_table_range(struct mixer_control_t *m, const int table, size_t start, size_t end,
 +                                   long mBstart, long mBend) {
 +    double mB_step;
 +    int i;
@@ -358,27 +388,32 @@ index 0000000..6e1684f
 +    mB_step  = (double)(mBend-mBstart)/(double)(end-start);
 +
 +    for (i = 0; i <= (int)(end - start); i++)
-+        m->tuning_table[start + i] = lrint((double)mBstart + mB_step*i);
++        m->tuning_data[table].tuning_table[start + i] = lrint((double)mBstart + mB_step*i);
 +}
 +
-+static void print_tuning_table(struct mixer_control_t *m) {
++static void print_tuning_table(struct mixer_control_t *m, const int table) {
 +    int i;
 +    pa_assert(m);
-+    pa_assert(m->tuning_table);
++    pa_assert(m->tuning_data[table].tuning_table);
 +
-+    for(i=0; i<= m->tuning_table_max; i++)
-+        pa_log_debug("%ld:%ld", i+m->tuned_volume_min, m->tuning_table[i]);
++    for(i=0; i<= m->tuning_data[table].tuning_table_max; i++)
++        pa_log_debug("%ld:%ld", i+m->tuning_data[table].tuned_volume_min, m->tuning_data[table].tuning_table[i]);
 +}
 +
-+static void fill_tuning_table_from_dB_info(struct mixer_control_t *m) {
++static void fill_tuning_table_from_dB_info(struct mixer_control_t *m, const int table) {
++    tuning_data_t *td = &m->tuning_data[table];
 +    pa_assert(m);
-+    pa_assert(m->tuning_table);
-+    m->tuned_volume_min = m->hw_volume_min;
-+    m->tuned_volume_max = m->hw_volume_max;
-+    m->tuning_table_max = m->tuning_table_allocated_length-1;
-+    fill_tuning_table_range(m, 0, m->tuning_table_max, m->hw_dB_min - m->hw_dB_max, 0);
-+    m->tuning_table_filled = TRUE;
++    pa_assert(td->tuning_table);
++
++    td->tuned_volume_min = m->hw_volume_min;
++    td->tuned_volume_max = m->hw_volume_max;
++    td->tuning_table_max = td->tuning_table_allocated_length-1;
++    fill_tuning_table_range(m, table, 0, td->tuning_table_max, m->hw_dB_min - m->hw_dB_max, 0);
++    td->tuning_table_filled  = TRUE;
 +}
++
++static int load_mixer_tuning(struct userdata *u, struct mixer_control_t *m, const int tuning_mode);
++static void fill_mixer_tuning(struct userdata *u, struct mixer_control_t *m, const int table);
 +
 +static void sink_get_volume_cb(pa_sink *s) {
 +    struct userdata *u = global_userdata;
@@ -387,6 +422,7 @@ index 0000000..6e1684f
 +    unsigned i;
 +    pa_cvolume r;
 +    char t[PA_CVOLUME_SNPRINT_MAX];
++    const int active_tuning = u->active_tuning;
 +
 +    pa_assert(u);
 +    pa_assert(u->active_mixer);
@@ -403,6 +439,14 @@ index 0000000..6e1684f
 +
 +    m = u->active_mixer;
 +
++    if (!m->tuning_data[active_tuning].tuning_table_filled) {
++        load_mixer_tuning(u, m, active_tuning);
++        if (!m->tuning_data[active_tuning].tuning_table_filled) {
++            pa_log_info("No tuning table %d filled for %s mixer", active_tuning, m->name);
++            fill_mixer_tuning(u, m, active_tuning);
++        }
++    }
++
 +    if (m->mixer_separate_channels) {
 +
 +        r.channels = u->sink->sample_spec.channels;
@@ -416,7 +460,7 @@ index 0000000..6e1684f
 +
 +            pa_log_debug("Got hw volume %s ch %d: %ld", m->name, i, hw_vol);
 +
-+            mB = hw_mixer_to_mB_value(m, hw_vol);
++            mB = hw_mixer_to_mB_value(m, active_tuning, hw_vol);
 +
 +            r.values[i] = pa_sw_volume_from_dB((double) mB / 100.0);
 +
@@ -432,7 +476,7 @@ index 0000000..6e1684f
 +
 +        pa_log_debug("Got mono alsa volume %s: %ld", m->name, hw_vol);
 +
-+        mB = hw_mixer_to_mB_value(m, hw_vol);
++        mB = hw_mixer_to_mB_value(m, active_tuning, hw_vol);
 +
 +        pa_vol = pa_sw_volume_from_dB((double) mB / 100.0);
 +
@@ -446,7 +490,7 @@ index 0000000..6e1684f
 +    if (!pa_cvolume_equal(&u->active_mixer->hardware_volume, &r)) {
 +        pa_cvolume reset;
 +
-+        pa_log_debug("Active mixer value has changed, updatng sink value");
++        pa_log_debug("Active mixer value has changed, updating sink value");
 +
 +        s->virtual_volume = u->active_mixer->hardware_volume = r;
 +
@@ -461,7 +505,7 @@ index 0000000..6e1684f
 +    pa_log_error("Unable to read volume: %s", snd_strerror(err));
 +}
 +
-+static pa_volume_t calculate_alsa_mixer_value(struct mixer_control_t *m, pa_volume_t pa_vol, long *hw_vol) {
++static pa_volume_t calculate_alsa_mixer_value(struct mixer_control_t *m, const int table, pa_volume_t pa_vol, long *hw_vol) {
 +    long mB_vol;
 +    long real_mB_vol;
 +    pa_volume_t real_pa_vol;
@@ -469,8 +513,8 @@ index 0000000..6e1684f
 +    pa_assert(hw_vol);
 +
 +    mB_vol = (long) (pa_sw_volume_to_dB(pa_vol) * 100);
-+    *hw_vol = mB_to_hw_mixer_value(m, mB_vol);
-+    real_mB_vol = hw_mixer_to_mB_value(m, *hw_vol);
++    *hw_vol = mB_to_hw_mixer_value(m, table, mB_vol);
++    real_mB_vol = hw_mixer_to_mB_value(m, table, *hw_vol);
 +    real_pa_vol = pa_sw_volume_from_dB((double) real_mB_vol / 100.0);
 +
 +    pa_log_debug("Setting pa vol %d = %ld mB -> %s: %ld = %ld mB = %d pa vol",
@@ -488,10 +532,13 @@ index 0000000..6e1684f
 +    unsigned i;
 +    pa_cvolume r;
 +
++    tuning_data_t *td = &m->tuning_data[u->active_tuning];
++    const int active_tuning = u->active_tuning;
++
 +    pa_assert(u);
 +    pa_assert(m->mixer_elem);
-+    pa_assert(m->tuning_table);
-+    pa_assert(m->tuning_table_filled);
++    pa_assert(td->tuning_table);
++    pa_assert(td->tuning_table_filled);
 +
 +    if (m->mixer_separate_channels) {
 +
@@ -499,7 +546,7 @@ index 0000000..6e1684f
 +
 +        for (i = 0; i < u->sink->sample_spec.channels; i++) {
 +            long hw_vol, real_hw_vol;
-+            pa_volume_t real_pa_vol = calculate_alsa_mixer_value(m, vv->values[i], &hw_vol);
++            pa_volume_t real_pa_vol = calculate_alsa_mixer_value(m, active_tuning, vv->values[i], &hw_vol);
 +
 +            if ((err = snd_mixer_selem_set_playback_volume(m->mixer_elem, m->mixer_map[i], hw_vol)) < 0)
 +                goto fail;
@@ -520,7 +567,7 @@ index 0000000..6e1684f
 +        }
 +    } else {
 +        long hw_vol, real_hw_vol;
-+        pa_volume_t real_pa_vol = calculate_alsa_mixer_value(m, pa_cvolume_max(vv), &hw_vol);
++        pa_volume_t real_pa_vol = calculate_alsa_mixer_value(m, active_tuning, pa_cvolume_max(vv), &hw_vol);
 +
 +
 +        if ((err = snd_mixer_selem_set_playback_volume_all(m->mixer_elem, hw_vol)) < 0)
@@ -566,6 +613,26 @@ index 0000000..6e1684f
 +    return 1;
 +}
 +
++static void fill_mixer_tuning(struct userdata *u, struct mixer_control_t *m, const int table) {
++    tuning_data_t *td;
++    pa_assert(u);
++    pa_assert(m);
++    td = &m->tuning_data[table];
++
++    if (m->hw_dB_supported) {
++        pa_log_info("Using ALSA dB info to fill tuning table for %s mixer", m->name);
++        fill_tuning_table_from_dB_info(m, table);
++        td->tuning_table_filled = TRUE;
++    } else {
++        pa_log_warn("No tuning table or ALSA dB info for %s, this is bad (assuming 0 - -60dB range)",
++                m->name);
++        td->tuning_table_max = td->tuning_table_allocated_length-1;
++        fill_tuning_table_range(m, table, 0, td->tuning_table_max, -6000, 0);
++        td->tuning_table_filled = TRUE;
++        u->sink->n_volume_steps = td->tuning_table_max+1;
++    }
++}
++
 +static void sink_set_volume_cb(pa_sink *s) {
 +    //struct userdata *u = s->userdata;
 +    struct userdata *u = global_userdata;
@@ -588,7 +655,15 @@ index 0000000..6e1684f
 +    }
 +
 +    if (u->active_mixer->slaves) {
-+        pa_log("SET SLAVE VOLUMES NOT IMPLEMENTED");
++        pa_log_error("SET SLAVE VOLUMES NOT IMPLEMENTED");
++    }
++
++    if (!u->active_mixer->tuning_data[u->active_tuning].tuning_table_filled) {
++        load_mixer_tuning(u, u->active_mixer, u->active_tuning);
++        if (!u->active_mixer->tuning_data[u->active_tuning].tuning_table_filled) {
++            pa_log_info("No tuning table %d filled for %s mixer", u->active_tuning, u->active_mixer->name);
++            fill_mixer_tuning(u, u->active_mixer, u->active_tuning);
++        }
 +    }
 +
 +    pa_log_debug("set volume to active mixer %s", u->active_mixer->name);
@@ -643,30 +718,19 @@ index 0000000..6e1684f
 +    return NULL;
 +}
 +
-+static int load_mixer_tuning(struct userdata *u, struct mixer_control_t *m);
-+
 +static int set_control_mixer_elem(struct userdata *u, struct mixer_control_t *m) {
++    const int active_tuning = u->active_tuning;
++    tuning_data_t *td = NULL;
 +    pa_assert(u);
 +    pa_assert(m);
 +
 +    pa_log_info("%s: setting active mixer to %s", u->device_name, m->name);
-+    load_mixer_tuning(u, m);
++    load_mixer_tuning(u, m, active_tuning);
++    td = &m->tuning_data[active_tuning];
 +
-+    if (!m->tuning_table_filled) {
++    if (!td->tuning_table_filled) {
 +        pa_log_info("No tuning table filled for %s mixer", m->name);
-+        if (m->hw_dB_supported) {
-+            pa_log_info("Using ALSA dB info to fill tuning table for %s mixer", m->name);
-+            fill_tuning_table_from_dB_info(m);
-+            m->tuning_table_filled = TRUE;
-+        }
-+        else {
-+            pa_log_warn("No tuning table or ALSA dB info for %s, this is bad (assuming 0 - -60dB range)",
-+                        m->name);
-+            m->tuning_table_max = m->tuning_table_allocated_length-1;
-+            fill_tuning_table_range(m, 0, m->tuning_table_max, -6000, 0);
-+            m->tuning_table_filled = TRUE;
-+            u->sink->n_volume_steps = m->tuning_table_max+1;
-+        }
++        fill_mixer_tuning(u, m, active_tuning);
 +    }
 +
 +    if (snd_mixer_selem_has_playback_switch(m->mixer_elem)) {
@@ -679,6 +743,8 @@ index 0000000..6e1684f
 +        u->sink->get_mute = NULL;
 +        u->sink->set_mute = NULL;
 +    }
++
++    pa_log("%s--> tuning %d filled %d", m->name, active_tuning, td->tuning_table_filled);
 +
 +    u->active_mixer = m;
 +    return 0;
@@ -701,6 +767,8 @@ index 0000000..6e1684f
 +static struct mixer_control_t* get_mixer_element(struct userdata *u, const char *mixer) {
 +    struct mixer_control_t *m = NULL;
 +    snd_mixer_elem_t *mixer_elem;
++    tuning_data_t *td = NULL;
++    unsigned i;
 +    pa_channel_map map;
 +    pa_assert(u);
 +    pa_assert(u->sink);
@@ -763,20 +831,23 @@ index 0000000..6e1684f
 +    m->mixer_fdl = pa_alsa_fdlist_new();
 +
 +    if (pa_alsa_fdlist_set_mixer(m->mixer_fdl, u->mixer_handle, u->core->mainloop) < 0) {
-+        pa_log("Failed to initialize file descriptor monitoring");
++        pa_log_error("Failed to initialize file descriptor monitoring");
 +        goto fail;
 +    }
 +
-+    m->tuning_table_filled = FALSE;
-+    m->tuning_table_allocated_length = m->hw_volume_max - m->hw_volume_min + 1;
-+    if (m->tuning_table_allocated_length > MAX_VALUE_STEPS) {
-+        pa_log_error("Too many mixer steps: %ld - %ld", m->hw_volume_max, m->hw_volume_min);
-+        goto fail;
-+    }
++    for (i = 0; i < MAX_TUNING_TABLES; i++) {
++        td = &m->tuning_data[i];
++        td->tuning_table_filled = FALSE;
++        td->tuning_table_allocated_length = m->hw_volume_max - m->hw_volume_min + 1;
++        if (td->tuning_table_allocated_length > MAX_VALUE_STEPS) {
++            pa_log_error("Too many mixer steps: %ld - %ld", m->hw_volume_max, m->hw_volume_min);
++            goto fail;
++        }
 +
-+    m->tuning_table_max = 0;
-+    m->tuning_table = pa_xmalloc0(m->tuning_table_allocated_length * sizeof(long));
-+    pa_assert(m->tuning_table);
++        td->tuning_table_max = 0;
++        td->tuning_table = pa_xmalloc0(td->tuning_table_allocated_length * sizeof(long));
++        pa_assert(td->tuning_table);
++    }
 +
 +    snd_mixer_elem_set_callback(m->mixer_elem, mixer_callback);
 +    snd_mixer_elem_set_callback_private(m->mixer_elem, u);
@@ -829,13 +900,16 @@ index 0000000..6e1684f
 +}
 +
 +static void free_mixer_element(struct mixer_control_t *m) {
++    unsigned i;
 +    pa_xfree(m->name);
 +    pa_alsa_fdlist_free(m->mixer_fdl);
 +    m->mixer_elem = NULL;
 +
-+    if (m->tuning_table) {
-+        pa_xfree(m->tuning_table);
-+        m->tuning_table = NULL;
++    for (i = 0; i < MAX_TUNING_TABLES; i++) {
++        if (m->tuning_data[i].tuning_table) {
++            pa_xfree(m->tuning_data[i].tuning_table);
++            m->tuning_data[i].tuning_table = NULL;
++        }
 +    }
 +
 +    pa_xfree(m);
@@ -869,7 +943,7 @@ index 0000000..6e1684f
 +    }
 +}
 +
-+static int load_mixer_tuning(struct userdata *u, struct mixer_control_t *m) {
++static int load_mixer_tuning(struct userdata *u, struct mixer_control_t *m, const int tuning_mode) {
 +    const char *tuning = NULL;
 +    const char *element = NULL;
 +    const char *mixer_name = NULL;
@@ -881,12 +955,13 @@ index 0000000..6e1684f
 +    long prev_mB_vol = -1;
 +    long hw_vol = -1;
 +    long mB_vol = -1;
++    tuning_data_t *td = &m->tuning_data[tuning_mode];
 +    pa_assert(u);
 +    pa_assert(m);
 +
-+    m->tuning_table_filled = FALSE;
++    td->tuning_table_filled = FALSE;
 +
-+    tuning = pa_proplist_gets(u->sink->proplist, PROP_MIXER_TUNING);
++    tuning = pa_proplist_gets(u->sink->proplist, PROP_MIXER_TUNING[tuning_mode]);
 +    if (!tuning) {
 +        pa_log_debug("Could not find mixer tuning");
 +        return -1;
@@ -954,7 +1029,7 @@ index 0000000..6e1684f
 +        }
 +
 +        if (element_count == 1) {
-+            m->tuned_volume_min = hw_vol;
++            td->tuned_volume_min = hw_vol;
 +        } else {
 +            if (prev_hw_vol > hw_vol || prev_mB_vol > mB_vol) {
 +                pa_log_error("The tuning values should be in increasing order, problem with element %d of %s",
@@ -962,7 +1037,7 @@ index 0000000..6e1684f
 +                pa_xfree((void *)element);
 +                return -1;
 +            }
-+            fill_tuning_table_range(m, prev_hw_vol - m->tuned_volume_min, hw_vol - m->tuned_volume_min,
++            fill_tuning_table_range(m, tuning_mode, prev_hw_vol - td->tuned_volume_min, hw_vol - td->tuned_volume_min,
 +                                    prev_mB_vol, mB_vol);
 +        }
 +        prev_hw_vol = hw_vol;
@@ -974,9 +1049,9 @@ index 0000000..6e1684f
 +        return -1;
 +    }
 +
-+    m->tuned_volume_max = hw_vol;
-+    m->tuning_table_max = m->tuned_volume_max - m->tuned_volume_min;
-+    m->tuning_table_filled = TRUE;
++    td->tuned_volume_max = hw_vol;
++    td->tuning_table_max = td->tuned_volume_max - td->tuned_volume_min;
++    td->tuning_table_filled = TRUE;
 +    return 0;
 +}
 +
@@ -1007,7 +1082,7 @@ index 0000000..6e1684f
 +            m->mode = MM_UNUSED;
 +
 +            if (strcmp(mode, PROP_MIXER_SLAVE) == 0) {
-+                pa_log("%s: set mixer %s slave: slave mode unimplemented (muting)", u->device_name, mixer);
++                pa_log_error("%s: set mixer %s slave: slave mode unimplemented (muting)", u->device_name, mixer);
 +                ret = 1;
 +            } else if (strcmp(mode, PROP_MIXER_OFF) == 0) {
 +                pa_log_debug("%s: set mixer %s off", u->device_name, mixer);
@@ -1100,6 +1175,8 @@ index 0000000..6e1684f
 +
 +static pa_hook_result_t sink_proplist_changed_hook_callback(pa_core *c, pa_sink *s, struct userdata *u) {
 +    const char *v = NULL;
++    int tmp;
++    pa_bool_t full_update = TRUE;
 +
 +    if (s != u->sink) {
 +        return PA_HOOK_OK;
@@ -1108,19 +1185,44 @@ index 0000000..6e1684f
 +    pa_assert(u);
 +    pa_assert(s);
 +
-+    /* store volumes from currently active mixer */
-+    store_active_mixer_volume(u);
++    /* store/read values only after we have properties loaded */
++    if (u->audio_mode)
++        /* store volumes from currently active mixer */
++        store_active_mixer_volume(u);
 +
 +    v = pa_proplist_gets(s->proplist, XMAEMO_MODE);
 +    if (v) {
-+        if (u->audio_mode)
-+            pa_xfree(u->audio_mode);
-+        u->audio_mode = pa_xstrdup(v);
++        if (u->audio_mode) {
++            if (strcmp(v, u->audio_mode) == 0) {
++                /* same mode as previously, so
++                 * we don't really need to reread
++                 * mixer tunings right now */
++                full_update = FALSE;
++            } else {
++                pa_xfree(u->audio_mode);
++                u->audio_mode = NULL;
++            }
++        }
++
++        if (!u->audio_mode)
++            u->audio_mode = pa_xstrdup(v);
 +    }
 +
-+    v = pa_proplist_gets(s->proplist, PROP_MIXER);
++    v = pa_proplist_gets(s->proplist, PROP_MIXER_TUNING_MODE);
 +    if (v) {
-+        update_mixer_setup(u, v);
++        if (!pa_atoi(v, &tmp)) {
++            if (u->active_tuning != tmp) {
++                pa_log_debug("change tuning mode to %d", tmp);
++                u->active_tuning = tmp;
++            }
++        }
++    }
++
++    if (full_update) {
++        v = pa_proplist_gets(s->proplist, PROP_MIXER);
++        if (v) {
++            update_mixer_setup(u, v);
++        }
 +    }
 +
 +    return PA_HOOK_OK;
@@ -1143,7 +1245,7 @@ index 0000000..6e1684f
 +        return 1;
 +
 +    if (!(u->gdbm_file = gdbm_open(fname, 0, GDBM_WRCREAT|GDBM_NOLOCK, 0600, NULL))) {
-+        pa_log("Failed to open volume database '%s': %s", fname, gdbm_strerror(gdbm_errno));
++        pa_log_error("Failed to open volume database '%s': %s", fname, gdbm_strerror(gdbm_errno));
 +        pa_xfree(fname);
 +        return 1;
 +    }
@@ -1161,12 +1263,9 @@ index 0000000..6e1684f
 +}
 +
 +static char* get_gdbm_key(struct userdata *u, struct mixer_control_t *m) {
-+    char *name = NULL;
-+    if (u->audio_mode)
-+        name = pa_sprintf_malloc("%s-%s", u->audio_mode, m->name);
-+    else
-+        name = pa_xstrdup(m->name);
-+    return name;
++    pa_assert(u);
++    pa_assert(u->audio_mode);
++    return pa_sprintf_malloc("%s-%s", u->audio_mode, m->name);
 +}
 +
 +static struct entry* read_entry(struct userdata *u, struct mixer_control_t *m) {
@@ -1327,19 +1426,19 @@ index 0000000..6e1684f
 +    }
 +
 +    if (!(ma = pa_modargs_new(m->argument, valid_modargs))) {
-+        pa_log("Failed to parse module arguments");
++        pa_log_error("Failed to parse module arguments");
 +        goto fail;
 +    }
 +
 +    sink_name = pa_modargs_get_value(ma, "sink_name", NULL);
 +    if (!sink_name) {
-+        pa_log("No sink_name defined.");
++        pa_log_error("No sink_name defined.");
 +        goto fail;
 +    }
 +
 +    hw_sink = pa_namereg_get(m->core, sink_name, PA_NAMEREG_SINK);
 +    if (!hw_sink) {
-+        pa_log("Couldn't get sink with name %s", sink_name);
++        pa_log_error("Couldn't get sink with name %s", sink_name);
 +        goto fail;
 +    }
 +
@@ -1364,6 +1463,7 @@ index 0000000..6e1684f
 +    global_userdata = u;
 +
 +    u->sink = hw_sink;
++    u->active_tuning = PROP_MIXER_TUNING_PRI;
 +
 +    /* get orignal variable values from sink */
 +    u->original_flags = u->sink->flags;
@@ -1378,20 +1478,17 @@ index 0000000..6e1684f
 +        u->device_name = pa_xstrdup(pa_proplist_gets(u->sink->proplist, PA_PROP_DEVICE_STRING));
 +
 +    if (!u->device_name) {
-+        pa_log("No device name defined or detected from sink");
++        pa_log_error("No device name defined or detected from sink");
 +        goto fail;
 +    }
 +
-+    if (pa_modargs_get_value(ma, "audio_mode", NULL))
-+        u->audio_mode = pa_xstrdup(pa_modargs_get_value(ma, "audio_mode", NULL));
-+
 +    if ((err = snd_mixer_open(&u->mixer_handle, 0)) < 0) {
-+        pa_log("Error opening mixer: %s", snd_strerror(err));
++        pa_log_error("Error opening mixer: %s", snd_strerror(err));
 +        goto fail;
 +    }
 +
 +    if (pa_alsa_prepare_mixer(u->mixer_handle, u->device_name) < 0) {
-+        pa_log("couldn't prepare mixer with %s", u->device_name);
++        pa_log_error("couldn't prepare mixer with %s", u->device_name);
 +        snd_mixer_close(u->mixer_handle);
 +        u->mixer_handle = NULL;
 +        goto fail;
@@ -1435,10 +1532,15 @@ index 0000000..6e1684f
 +            char *tmp = pa_sprintf_malloc("%s:%s", u->active_mixer->name, PROP_MIXER_CONTROL);
 +            pa_proplist_sets(u->sink->proplist, PROP_MIXER, tmp);
 +            pa_xfree(tmp);
-+            load_mixer_volume(u, u->active_mixer);
-+            pa_log_debug("%s: update active mixer volume", u->device_name);
-+            pa_sink_set_volume(u->sink, &u->active_mixer->cache_volume, TRUE, TRUE);
-+            pa_sink_set_mute(u->sink, u->active_mixer->cache_muted);
++            if (u->audio_mode) {
++                load_mixer_volume(u, u->active_mixer);
++                pa_log_debug("%s: update active mixer volume", u->device_name);
++                pa_sink_set_volume(u->sink, &u->active_mixer->cache_volume, TRUE, TRUE);
++                pa_sink_set_mute(u->sink, u->active_mixer->cache_muted);
++            } else {
++                /* TODO set softvolume to sink */
++                pa_log_debug("%s: audio mode undefined, cannot update mixer volume", u->device_name);
++            }
 +        }
 +    }
 +
@@ -1515,5 +1617,5 @@ index 0000000..6e1684f
 +    snd_config_update_free_global();
 +}
 -- 
-1.6.2.rc1.13.gfd76c.dirty
+1.5.6.3
 

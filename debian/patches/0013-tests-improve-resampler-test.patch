@@ -1,7 +1,7 @@
 From 43607d418eb6184084d6621b5575e2d1571fd4a3 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 5 Nov 2008 00:24:37 +0200
-Subject: [PATCH 13/32] tests: improve resampler test
+Subject: [PATCH] tests: improve resampler test
 
 ---
  src/tests/resampler-test.c |  202 +++++++++++++++++++++++++++++++++++++++++--
@@ -262,5 +262,5 @@ index 6b4a64c..2e18e96 100644
 +    return ret;
  }
 -- 
-1.6.2.rc1.13.gfd76c.dirty
+1.5.6.3
 

@@ -1,7 +1,7 @@
 From dbb4ff3a30ecf2b1b75fcfa0d07f1308b419bec4 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 3 Mar 2009 15:50:46 +0200
-Subject: [PATCH 10/32] pulse: use a simple timeout heuristic for poll construction
+Subject: [PATCH] pulse: use a simple timeout heuristic for poll construction
 
 ---
  src/pulse/mainloop.c |  103 ++++++++++++++++++++++++++++++++++++++++++--------
@@ -200,5 +200,5 @@ index 225fd09..abcf915 100644
          if (m->poll_func)
              m->poll_func_ret = m->poll_func(m->pollfds, m->n_pollfds, m->prepared_timeout, m->poll_func_userdata);
 -- 
-1.6.2.rc1.13.gfd76c.dirty
+1.5.6.3
 
