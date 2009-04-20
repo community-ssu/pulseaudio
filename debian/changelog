@@ -1,10 +1,15 @@
-pulseaudio (0.9.15~test7-0maemo2) unstabele; urgency=low
+pulseaudio (0.9.15~test7-0maemo2) unstable; urgency=low
+
+  * Altenate mixer added to volume module: Fixes NB#110041
+  * Increase RTLIMIT_RTTIME to 10000000: Fixes NB#109816
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Wed, 20 Apr 2009 19:36:35 +0300
+
+pulseaudio (0.9.15~test7-0maemo1) unstable; urgency=low
 
   * Various bluetooth fixes (new A2DP loop, check connected state before
     switching profile, volume support back on HSP, delayed
     initialization, new #NOKIA define for SCO over PCM).
-  * Altenate mixer added to volume module: Fixes NB#110041
-  * Increase RTLIMIT_RTTIME to 10000000: Fixes NB#109816
 
  -- Maemo Multimedia <multimedia@maemo.org>  Wed, 01 Apr 2009 13:36:35 +0300
 
