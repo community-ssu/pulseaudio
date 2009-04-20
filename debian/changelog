@@ -1,4 +1,4 @@
-pulseaudio (0.9.15~test7-0maemo1) unstabele; urgency=low
+pulseaudio (0.9.15~test7-0maemo2) unstabele; urgency=low
 
   * Various bluetooth fixes (new A2DP loop, check connected state before
     switching profile, volume support back on HSP, delayed
