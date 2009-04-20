@@ -1,28 +1,27 @@
-From fb4a6fda519a1ed44b2018a472b4e48e7d3ed4e9 Mon Sep 17 00:00:00 2001
+From 8f54d0cb238b202468073d59cbe7c652dc9016cf Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 17:43:55 +0200
-Subject: [PATCH] pulsecore: propagate flat-vol recursively
+Subject: [PATCH 25/31] pulsecore: propagate flat-vol recursively
 
 ---
- src/pulsecore/sink.c |   39 +++++++++++++++++++++++++--------------
- 1 files changed, 25 insertions(+), 14 deletions(-)
+ src/pulsecore/sink.c |   35 +++++++++++++++++++++++------------
+ 1 files changed, 23 insertions(+), 12 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index c688f82..ff7962a 100644
+index 10f32a9..930a87d 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
-@@ -1057,29 +1057,26 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_inpu
-     update_input_soft_volume(s, new_volume, &s->channel_map, new_input);
+@@ -1128,27 +1128,25 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume) {
+     update_input_soft_volume(s, new_volume, &s->channel_map);
  }
  
 -/* Called from main thread */
--void pa_sink_propagate_flat_volume(pa_sink *s, const pa_cvolume *old_volume) {
-+static void propagate_flat_volume(pa_sink *s, const pa_cvolume *new_volume, const pa_cvolume *old_volume, const pa_channel_map *channel_map) {
+-void pa_sink_propagate_flat_volume(pa_sink *s) {
++static void propagate_flat_volume(pa_sink *s, pa_sink *master_sink) {
      pa_sink_input *i;
      uint32_t idx;
  
 -    pa_sink_assert_ref(s);
--    pa_assert(old_volume);
 -    pa_assert(PA_SINK_IS_LINKED(s->state));
 -    pa_assert(s->flags & PA_SINK_FLAT_VOLUME);
 -
@@ -31,48 +30,45 @@ index c688f82..ff7962a 100644
 -     * sink input volumes accordingly */
 -
      for (i = PA_SINK_INPUT(pa_idxset_first(s->inputs, &idx)); i; i = PA_SINK_INPUT(pa_idxset_next(s->inputs, &idx))) {
-         pa_cvolume remapped_old_volume, remapped_new_volume, fixed_volume;
+         pa_cvolume sink_volume, new_virtual_volume;
          unsigned c;
  
--        remapped_new_volume = s->virtual_volume;
--        pa_cvolume_remap(&remapped_new_volume, &s->channel_map, &i->channel_map);
 +        if (i->origin_sink) {
 +            /* go recursively on slaved flatten sink
 +             * and ignore this intermediate sink-input. */
-+            propagate_flat_volume(i->origin_sink, new_volume, old_volume, channel_map);
++            propagate_flat_volume(i->origin_sink, master_sink);
 +            continue;
 +        }
 +
-+        remapped_new_volume = *new_volume;
-+        pa_cvolume_remap(&remapped_new_volume, channel_map, &i->channel_map);
+         /* This basically calculates i->virtual_volume := i->relative_volume * s->virtual_volume  */
  
-         remapped_old_volume = *old_volume;
--        pa_cvolume_remap(&remapped_old_volume, &s->channel_map, &i->channel_map);
-+        pa_cvolume_remap(&remapped_old_volume, channel_map, &i->channel_map);
+-        sink_volume = s->virtual_volume;
+-        pa_cvolume_remap(&sink_volume, &s->channel_map, &i->channel_map);
++        sink_volume = master_sink->virtual_volume;
++        pa_cvolume_remap(&sink_volume, &master_sink->channel_map, &i->channel_map);
  
          for (c = 0; c < i->sample_spec.channels; c++)
- 
-@@ -1103,6 +1100,20 @@ void pa_sink_propagate_flat_volume(pa_sink *s, const pa_cvolume *old_volume) {
+             new_virtual_volume.values[c] = pa_sw_volume_from_linear(
+@@ -1178,6 +1176,19 @@ void pa_sink_propagate_flat_volume(pa_sink *s) {
  }
  
  /* Called from main thread */
-+void pa_sink_propagate_flat_volume(pa_sink *s, const pa_cvolume *old_volume) {
++void pa_sink_propagate_flat_volume(pa_sink *s) {
 +
 +    pa_sink_assert_ref(s);
-+    pa_assert(old_volume);
 +    pa_assert(PA_SINK_IS_LINKED(s->state));
 +    pa_assert(s->flags & PA_SINK_FLAT_VOLUME);
 +
 +    /* This is called whenever the sink volume changes that is not
 +     * caused by a sink input volume change. We need to fix up the
 +     * sink input volumes accordingly */
-+    propagate_flat_volume(s, &s->virtual_volume, old_volume, &s->channel_map);
++    propagate_flat_volume(s, s);
 +}
 +
 +/* Called from main thread */
- void pa_sink_set_volume(pa_sink *s, const pa_cvolume *volume, pa_bool_t propagate, pa_bool_t sendmsg) {
-     pa_cvolume old_virtual_volume;
+ void pa_sink_set_volume(pa_sink *s, const pa_cvolume *volume, pa_bool_t propagate, pa_bool_t sendmsg, pa_bool_t become_reference) {
      pa_bool_t virtual_volume_changed;
+ 
 -- 
-1.5.6.3
+1.6.2.rc1.13.gfd76c.dirty
 

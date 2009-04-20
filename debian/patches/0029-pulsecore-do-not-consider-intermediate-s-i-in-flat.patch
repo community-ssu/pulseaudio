@@ -1,17 +1,17 @@
-From 6ee379b68994eaa029da355866cdd47281da65aa Mon Sep 17 00:00:00 2001
+From 2a83c601ec49c90a9033a7bfcf57be3ce759cb84 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 22:44:34 +0200
-Subject: [PATCH] pulsecore: do not consider intermediate s-i in flat-vol
+Subject: [PATCH 29/31] pulsecore: do not consider intermediate s-i in flat-vol
 
 ---
- src/pulsecore/sink.c |   34 ++++++++++++++++++++++++++--------
- 1 files changed, 26 insertions(+), 8 deletions(-)
+ src/pulsecore/sink.c |   33 ++++++++++++++++++++++++++-------
+ 1 files changed, 26 insertions(+), 7 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index f077255..a1dc098 100644
+index b9b8ae2..1d69d7f 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
-@@ -1026,6 +1026,25 @@ static void update_input_soft_volume(pa_sink *s, const pa_cvolume *new_volume, c
+@@ -1097,6 +1097,25 @@ static void update_input_soft_volume(pa_sink *s, const pa_cvolume *new_volume, c
  }
  
  /* Called from main thread */
@@ -34,10 +34,10 @@ index f077255..a1dc098 100644
 +}
 +
 +/* Called from main thread */
- void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_input *new_input) {
+ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume) {
  
      pa_sink_assert_ref(s);
-@@ -1046,18 +1065,17 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_inpu
+@@ -1117,18 +1136,18 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume) {
          return;
      }
  
@@ -45,8 +45,8 @@ index f077255..a1dc098 100644
 +    if (!flat_sink_has_inputs(s)) {
          /* In the special case that we have no sink input we leave the
           * volume unmodified. */
-         *new_volume = s->virtual_volume;
--        return;
+         *new_volume = s->reference_volume;
+         return;
 -    }
 -
 -    pa_cvolume_mute(new_volume, s->channel_map.channels);
@@ -64,5 +64,5 @@ index f077255..a1dc098 100644
      /* Then, let's update the soft volumes of all inputs connected
       * to this sink */
 -- 
-1.5.6.3
+1.6.2.rc1.13.gfd76c.dirty
 

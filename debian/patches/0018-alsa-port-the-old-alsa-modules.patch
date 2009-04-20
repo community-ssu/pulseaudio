@@ -1,12 +1,8 @@
-From 7dc4698ab7c6f8ff2264a88af9ba203e472fca73 Mon Sep 17 00:00:00 2001
-From: Jyri Sarha <jyri.sarha@nokia.com>
+From 4b67c94f5a1d06d6f05b8ef9601ad8a1be1ddd6d Mon Sep 17 00:00:00 2001
+From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:08:35 +0300
-Subject: [PATCH] alsa: port the old alsa modules
+Subject: [PATCH 18/31] alsa: port the old alsa modules
 
-alsa-sink-old: minor cleanup.
-remove unnecessary attribute from userdata struct.
-
-alsa: port the old alsa modules
 ---
  src/Makefile.am                                  |   16 +-
  src/modules/alsa/module-alsa-sink-old-symdef.h   |   27 +
@@ -95,7 +91,7 @@ index 0000000..0c74afc
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
 new file mode 100644
-index 0000000..231427b
+index 0000000..8e88204
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-old.c
 @@ -0,0 +1,986 @@
@@ -959,7 +955,7 @@ index 0000000..231427b
 +    pa_sink_new_data_set_sample_spec(&data, &ss);
 +    pa_sink_new_data_set_channel_map(&data, &map);
 +
-+    pa_alsa_init_proplist_pcm(m->core, data.proplist, u->pcm_handle);
++    pa_alsa_init_proplist_pcm(m->core, data.proplist, u->pcm_handle, NULL);
 +    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->device_name);
 +    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE, "%lu", (unsigned long) (period_size * frame_size * nfrags));
 +    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE, "%lu", (unsigned long) (period_size * frame_size));
@@ -1120,7 +1116,7 @@ index 0000000..033edd6
 +#endif
 diff --git a/src/modules/alsa/module-alsa-source-old.c b/src/modules/alsa/module-alsa-source-old.c
 new file mode 100644
-index 0000000..4907d18
+index 0000000..70e0d87
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-source-old.c
 @@ -0,0 +1,1360 @@
@@ -2257,7 +2253,7 @@ index 0000000..4907d18
 +    pa_source_new_data_set_sample_spec(&data, &ss);
 +    pa_source_new_data_set_channel_map(&data, &map);
 +
-+    pa_alsa_init_proplist_pcm(m->core, data.proplist, u->pcm_handle);
++    pa_alsa_init_proplist_pcm(m->core, data.proplist, u->pcm_handle, NULL);
 +    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->device_name);
 +    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE, "%lu", (unsigned long) (period_size * frame_size * nfrags));
 +    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE, "%lu", (unsigned long) (period_size * frame_size));
@@ -2485,5 +2481,5 @@ index 0000000..4907d18
 +    snd_config_update_free_global();
 +}
 -- 
-1.5.6.3
+1.6.2.rc1.13.gfd76c.dirty
 

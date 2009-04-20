@@ -1,14 +1,14 @@
-From 92bec05e8c928bed172611e2c1f6fd9433e60aff Mon Sep 17 00:00:00 2001
+From 5aae48ae4091c328c53561e0d025c09334fa513e Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Sat, 4 Apr 2009 14:47:30 +0300
-Subject: [PATCH] cli-text: print internal volume for debugging purposes
+Subject: [PATCH 14/31] cli-text: print internal volume for debugging purposes
 
 ---
  src/pulsecore/cli-text.c |    8 ++++++++
  1 files changed, 8 insertions(+), 0 deletions(-)
 
 diff --git a/src/pulsecore/cli-text.c b/src/pulsecore/cli-text.c
-index 324f83c..bd63690 100644
+index 604678b..7712f9e 100644
 --- a/src/pulsecore/cli-text.c
 +++ b/src/pulsecore/cli-text.c
 @@ -235,6 +235,7 @@ char *pa_sink_list_to_string(pa_core *c) {
@@ -29,7 +29,7 @@ index 324f83c..bd63690 100644
              sink->n_volume_steps,
              pa_yes_no(pa_sink_get_mute(sink, FALSE)),
              (double) pa_sink_get_latency(sink) / (double) PA_USEC_PER_MSEC,
-@@ -519,6 +523,8 @@ char *pa_sink_input_list_to_string(pa_core *c) {
+@@ -530,6 +534,8 @@ char *pa_sink_input_list_to_string(pa_core *c) {
              "\tvolume: %s\n"
              "\t        %s\n"
              "\t        balance %0.2f\n"
@@ -38,15 +38,15 @@ index 324f83c..bd63690 100644
              "\tmuted: %s\n"
              "\tcurrent latency: %0.2f ms\n"
              "\trequested latency: %s\n"
-@@ -542,6 +548,8 @@ char *pa_sink_input_list_to_string(pa_core *c) {
-             pa_cvolume_snprint(cv, sizeof(cv), pa_sink_input_get_volume(i)),
-             pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), pa_sink_input_get_volume(i)),
-             pa_cvolume_get_balance(pa_sink_input_get_volume(i), &i->channel_map),
+@@ -553,6 +559,8 @@ char *pa_sink_input_list_to_string(pa_core *c) {
+             pa_cvolume_snprint(cv, sizeof(cv), &v),
+             pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), &v),
+             pa_cvolume_get_balance(&v, &i->channel_map),
 +            pa_cvolume_snprint(cv, sizeof(cv), &i->soft_volume),
 +            pa_cvolume_snprint(cv, sizeof(cv), &i->volume_factor),
              pa_yes_no(pa_sink_input_get_mute(i)),
              (double) pa_sink_input_get_latency(i, NULL) / PA_USEC_PER_MSEC,
              clt,
 -- 
-1.5.6.3
+1.6.2.rc1.13.gfd76c.dirty
 

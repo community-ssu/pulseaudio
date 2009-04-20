@@ -1,22 +1,22 @@
-From 5d01d49140b2dc9cef42e3c3486dbbbf72a942f2 Mon Sep 17 00:00:00 2001
+From 776b5e145b328ec24b096f0e5cb54764e18fff32 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 17:22:11 +0200
-Subject: [PATCH] pulsecore: go recursively when updating s-i flat-volume
+Subject: [PATCH 24/31] pulsecore: go recursively when updating s-i flat-volume
 
 ---
- src/pulsecore/sink.c |   58 ++++++++++++++++++++++++++++++++-----------------
- 1 files changed, 38 insertions(+), 20 deletions(-)
+ src/pulsecore/sink.c |   44 ++++++++++++++++++++++++++++++--------------
+ 1 files changed, 30 insertions(+), 14 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index fbc9b52..c688f82 100644
+index dc4aa2b..10f32a9 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
-@@ -988,12 +988,48 @@ static void get_maximum_input_volume(pa_sink *s, pa_cvolume *max_volume, const p
+@@ -1067,12 +1067,40 @@ static void get_maximum_input_volume(pa_sink *s, pa_cvolume *max_volume, const p
  }
  
  /* Called from main thread */
--void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_input *new_input) {
-+static void update_input_soft_volume(pa_sink *s, const pa_cvolume *new_volume, const pa_channel_map *channel_map, pa_sink_input *new_input) {
+-void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume) {
++static void update_input_soft_volume(pa_sink *s, const pa_cvolume *new_volume, const pa_channel_map *channel_map) {
      pa_sink_input *i;
      uint32_t idx;
  
@@ -29,65 +29,51 @@ index fbc9b52..c688f82 100644
 +        if (i->origin_sink) {
 +            /* go recursively on slaved flatten sink
 +             * and ignore this intermediate sink-input. */
-+            update_input_soft_volume(i->origin_sink, new_volume, channel_map, new_input);
++            update_input_soft_volume(i->origin_sink, new_volume, channel_map);
 +            continue;
 +        }
 +
-+        if (new_input == i && pa_cvolume_is_muted(new_volume))
-+            pa_cvolume_reset(&i->soft_volume, i->channel_map.channels);
-+	else {
-+            remapped_new_volume = *new_volume;
-+            pa_cvolume_remap(&remapped_new_volume, channel_map, &i->channel_map);
-+            pa_sw_cvolume_divide(&i->soft_volume, &i->virtual_volume, &remapped_new_volume);
-+        }
++        remapped_new_volume = *new_volume;
++        pa_cvolume_remap(&remapped_new_volume, channel_map, &i->channel_map);
++        compute_new_soft_volume(i, &remapped_new_volume);
 +
-+        pa_sw_cvolume_multiply(&i->soft_volume, &i->soft_volume, &i->volume_factor);
-+
-+        /* Hooks have the ability to play games with i->soft_volume */
-+        pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SINK_INPUT_SET_VOLUME], i);
-+
-+        /* We don't issue PA_SINK_INPUT_MESSAGE_SET_VOLUME because
-+         * we want the update to have atomically with the sink
-+         * volume update, hence we do it within the
-+         * pa_sink_set_flat_volume() call below*/
++        /* We don't copy soft_volume to the thread_info data here
++         * (i.e. issue PA_SINK_INPUT_MESSAGE_SET_VOLUME) because we
++         * want the update to be atomically with the sink volume
++         * update, hence we do it within the pa_sink_set_volume() call
++         * below */
 +    }
 +}
 +
 +/* Called from main thread */
-+void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_input *new_input) {
++void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume) {
 +
 +    pa_sink_assert_ref(s);
 +    pa_assert(new_volume);
      pa_assert(PA_SINK_IS_LINKED(s->state));
      pa_assert(s->flags & PA_SINK_FLAT_VOLUME);
  
-@@ -1018,25 +1054,7 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume, pa_sink_inpu
+@@ -1097,19 +1125,7 @@ void pa_sink_update_flat_volume(pa_sink *s, pa_cvolume *new_volume) {
  
      /* Then, let's update the soft volumes of all inputs connected
       * to this sink */
 -    for (i = PA_SINK_INPUT(pa_idxset_first(s->inputs, &idx)); i; i = PA_SINK_INPUT(pa_idxset_next(s->inputs, &idx))) {
 -        pa_cvolume remapped_new_volume;
 -
--        if (new_input == i && pa_cvolume_is_muted(new_volume))
--            pa_cvolume_reset(&i->soft_volume, i->channel_map.channels);
--        else {
--            remapped_new_volume = *new_volume;
--            pa_cvolume_remap(&remapped_new_volume, &s->channel_map, &i->channel_map);
--            pa_sw_cvolume_divide(&i->soft_volume, &i->virtual_volume, &remapped_new_volume);
--        }
--        pa_sw_cvolume_multiply(&i->soft_volume, &i->soft_volume, &i->volume_factor);
--        /* Hooks have the ability to play games with i->soft_volume */
--        pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SINK_INPUT_SET_VOLUME], i);
+-        remapped_new_volume = *new_volume;
+-        pa_cvolume_remap(&remapped_new_volume, &s->channel_map, &i->channel_map);
+-        compute_new_soft_volume(i, &remapped_new_volume);
 -
--        /* We don't issue PA_SINK_INPUT_MESSAGE_SET_VOLUME because
--         * we want the update to have atomically with the sink
--         * volume update, hence we do it within the
--         * pa_sink_set_flat_volume() call below*/
+-        /* We don't copy soft_volume to the thread_info data here
+-         * (i.e. issue PA_SINK_INPUT_MESSAGE_SET_VOLUME) because we
+-         * want the update to be atomically with the sink volume
+-         * update, hence we do it within the pa_sink_set_volume() call
+-         * below */
 -    }
-+    update_input_soft_volume(s, new_volume, &s->channel_map, new_input);
++    update_input_soft_volume(s, new_volume, &s->channel_map);
  }
  
  /* Called from main thread */
 -- 
-1.5.6.3
+1.6.2.rc1.13.gfd76c.dirty
 

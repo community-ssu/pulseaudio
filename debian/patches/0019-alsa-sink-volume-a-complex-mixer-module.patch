@@ -1,20 +1,8 @@
-From ce7b9e501e9633886e8e1426fb2c27c9f1d77451 Mon Sep 17 00:00:00 2001
-From: Jyri Sarha <jyri.sarha@nokia.com>
+From a03e561098683bdc0f6e51a67b6c2b3dc5ccc23c Mon Sep 17 00:00:00 2001
+From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:09:01 +0300
-Subject: [PATCH] alsa: sink-volume, a complex mixer module
+Subject: [PATCH 19/31] alsa: sink-volume, a complex mixer module
 
-alsa-sink-volume: store mixer volumes using audio mode & mixer name as key
-
-alsa: sink-volume, a complex mixer module
-
-alsa-sink-volume: multiple tunings for single mixer element
-
-alsa-sink-volume: - don't always reload whole proplist
-                  - tuning table bugfixes
-
-alsa-sink-volume: change function parameter order
-
-alsa-sink-volume: add short description of tuning mode
 ---
  src/Makefile.am                                   |    7 +
  src/modules/alsa/module-alsa-sink-volume-symdef.h |   27 +
@@ -90,7 +78,7 @@ index 0000000..30c44c1
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
 new file mode 100644
-index 0000000..421fadc
+index 0000000..d660bc3
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-volume.c
 @@ -0,0 +1,1522 @@
@@ -331,7 +319,7 @@ index 0000000..421fadc
 +            return 0;
 +        }
 +
-+        pa_sink_get_volume(u->sink, TRUE);
++        pa_sink_get_volume(u->sink, TRUE, FALSE);
 +        pa_sink_get_mute(u->sink, TRUE);
 +    }
 +
@@ -1163,7 +1151,7 @@ index 0000000..421fadc
 +        /* mixer volume has to be loaded from gdbm every time mixer setup changes,
 +         * since same mixer can be in control in multiple audio modes. */
 +        load_mixer_volume(u, u->active_mixer);
-+        pa_sink_set_volume(u->sink, &u->active_mixer->cache_volume, TRUE, TRUE);
++        pa_sink_set_volume(u->sink, &u->active_mixer->cache_volume, TRUE, TRUE, TRUE);
 +        pa_sink_set_mute(u->sink, u->active_mixer->cache_muted);
 +    } else {
 +        pa_log_error("No active mixer, THIS IS BAD!");
@@ -1385,7 +1373,7 @@ index 0000000..421fadc
 +        pa_log_debug("The sink was already unloaded, storing cached values");
 +    }
 +    else {
-+        m->cache_volume = *pa_sink_get_volume(u->sink, TRUE);
++        m->cache_volume = *pa_sink_get_volume(u->sink, TRUE, FALSE);
 +        m->cache_muted = pa_sink_get_mute(u->sink, TRUE);
 +    }
 +
@@ -1535,7 +1523,7 @@ index 0000000..421fadc
 +            if (u->audio_mode) {
 +                load_mixer_volume(u, u->active_mixer);
 +                pa_log_debug("%s: update active mixer volume", u->device_name);
-+                pa_sink_set_volume(u->sink, &u->active_mixer->cache_volume, TRUE, TRUE);
++                pa_sink_set_volume(u->sink, &u->active_mixer->cache_volume, TRUE, TRUE, TRUE);
 +                pa_sink_set_mute(u->sink, u->active_mixer->cache_muted);
 +            } else {
 +                /* TODO set softvolume to sink */
@@ -1605,7 +1593,7 @@ index 0000000..421fadc
 +        u->sink->set_volume = u->original_set_volume;
 +        u->sink->get_mute = u->original_get_mute;
 +        u->sink->set_mute = u->original_set_mute;
-+        pa_sink_get_volume(u->sink, TRUE);
++        pa_sink_get_volume(u->sink, TRUE, FALSE);
 +        pa_sink_get_mute(u->sink, TRUE);
 +    }
 +
@@ -1617,5 +1605,5 @@ index 0000000..421fadc
 +    snd_config_update_free_global();
 +}
 -- 
-1.5.6.3
+1.6.2.rc1.13.gfd76c.dirty
 
