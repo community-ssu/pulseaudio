@@ -42,7 +42,9 @@
 #include <pulsecore/hashmap.h>
 #include <pulsecore/refcnt.h>
 #include <pulsecore/time-smoother.h>
+#ifdef HAVE_DBUS
 #include <pulsecore/dbus-util.h>
+#endif
 
 #include "client-conf.h"
 
@@ -51,8 +53,10 @@
 struct pa_context {
     PA_REFCNT_DECLARE;
 
+#ifdef HAVE_DBUS
     pa_dbus_wrap_connection *system_bus;
     pa_dbus_wrap_connection *session_bus;
+#endif
 
     pa_proplist *proplist;
     pa_mainloop_api* mainloop;
@@ -140,7 +144,7 @@ struct pa_stream {
     uint32_t syncid;
     uint32_t stream_index;
 
-    uint32_t requested_bytes;
+    int64_t requested_bytes;
     pa_buffer_attr buffer_attr;
 
     uint32_t device_index;
@@ -160,7 +164,7 @@ struct pa_stream {
     uint32_t write_index_not_before;
     uint32_t read_index_not_before;
 
-    /* Data about individual timing update correctoins */
+    /* Data about individual timing update corrections */
     pa_index_correction write_index_corrections[PA_MAX_WRITE_INDEX_CORRECTIONS];
     int current_write_index_correction;
 

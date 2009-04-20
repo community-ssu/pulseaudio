@@ -41,7 +41,7 @@ struct pa_dbus_connection {
     const char *property_name;
 };
 
-static pa_dbus_connection* pa_dbus_connection_new(pa_core *c, pa_dbus_wrap_connection *conn, const char *name) {
+static pa_dbus_connection* dbus_connection_new(pa_core *c, pa_dbus_wrap_connection *conn, const char *name) {
     pa_dbus_connection *pconn;
 
     pconn = pa_xnew(pa_dbus_connection, 1);
@@ -73,9 +73,7 @@ pa_dbus_connection* pa_dbus_bus_get(pa_core *c, DBusBusType type, DBusError *err
     if (!(conn = pa_dbus_wrap_connection_new(c->mainloop, type, error)))
         return NULL;
 
-    pconn = pa_dbus_connection_new(c, conn, prop_name[type]);
-
-    return pconn;
+    return dbus_connection_new(c, conn, prop_name[type]);
 }
 
 DBusConnection* pa_dbus_connection_get(pa_dbus_connection *c){
@@ -93,7 +91,8 @@ void pa_dbus_connection_unref(pa_dbus_connection *c) {
     if (PA_REFCNT_DEC(c) > 0)
         return;
 
-    /* already disconnected, just free */
+    pa_dbus_wrap_connection_free(c->connection);
+
     pa_shared_remove(c->core, c->property_name);
     pa_xfree(c);
 }
@@ -106,6 +105,3 @@ pa_dbus_connection* pa_dbus_connection_ref(pa_dbus_connection *c) {
 
     return c;
 }
-
-
-

@@ -258,10 +258,10 @@ char *pa_sink_list_to_string(pa_core *c) {
             sink->flags & PA_SINK_FLAT_VOLUME ? "FLAT_VOLUME " : "",
             sink->flags & PA_SINK_DYNAMIC_LATENCY ? "DYNAMIC_LATENCY" : "",
             sink_state_to_string(pa_sink_get_state(sink)),
-            pa_cvolume_snprint(cv, sizeof(cv), pa_sink_get_volume(sink, FALSE)),
+            pa_cvolume_snprint(cv, sizeof(cv), pa_sink_get_volume(sink, FALSE, FALSE)),
             sink->flags & PA_SINK_DECIBEL_VOLUME ? "\n\t        " : "",
-            sink->flags & PA_SINK_DECIBEL_VOLUME ? pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), pa_sink_get_volume(sink, FALSE)) : "",
-            pa_cvolume_get_balance(pa_sink_get_volume(sink, FALSE), &sink->channel_map),
+            sink->flags & PA_SINK_DECIBEL_VOLUME ? pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), pa_sink_get_volume(sink, FALSE, FALSE)) : "",
+            pa_cvolume_get_balance(pa_sink_get_volume(sink, FALSE, FALSE), &sink->channel_map),
             pa_volume_snprint(v, sizeof(v), sink->base_volume),
             sink->flags & PA_SINK_DECIBEL_VOLUME ? "\n\t             " : "",
             sink->flags & PA_SINK_DECIBEL_VOLUME ? pa_sw_volume_snprint_dB(vdb, sizeof(vdb), sink->base_volume) : "",
@@ -288,7 +288,11 @@ char *pa_sink_list_to_string(pa_core *c) {
                     (double) pa_sink_get_requested_latency(sink) / (double) PA_USEC_PER_MSEC,
                     (double) min_latency / PA_USEC_PER_MSEC,
                     (double) max_latency / PA_USEC_PER_MSEC);
-        }
+        } else
+            pa_strbuf_printf(
+                    s,
+                    "\tfixed latency: %0.2f ms\n",
+                    (double) pa_sink_get_requested_latency(sink) / PA_USEC_PER_MSEC);
 
         if (sink->card)
             pa_strbuf_printf(s, "\tcard: %u <%s>\n", sink->card->index, sink->card->name);
@@ -382,7 +386,11 @@ char *pa_source_list_to_string(pa_core *c) {
                     (double) pa_source_get_requested_latency(source) / PA_USEC_PER_MSEC,
                     (double) min_latency / PA_USEC_PER_MSEC,
                     (double) max_latency / PA_USEC_PER_MSEC);
-        }
+        } else
+            pa_strbuf_printf(
+                    s,
+                    "\tfixed latency: %0.2f ms\n",
+                    (double) pa_source_get_requested_latency(source) / PA_USEC_PER_MSEC);
 
         if (source->monitor_of)
             pa_strbuf_printf(s, "\tmonitor_of: %u\n", source->monitor_of->index);
@@ -499,6 +507,9 @@ char *pa_sink_input_list_to_string(pa_core *c) {
         char ss[PA_SAMPLE_SPEC_SNPRINT_MAX], cvdb[PA_SW_CVOLUME_SNPRINT_DB_MAX], cv[PA_CVOLUME_SNPRINT_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX], *t, clt[28];
         pa_usec_t cl;
         const char *cmn;
+        pa_cvolume v;
+
+        pa_sink_input_get_volume(i, &v, TRUE);
 
         cmn = pa_channel_map_to_pretty_name(&i->channel_map);
 
@@ -539,9 +550,9 @@ char *pa_sink_input_list_to_string(pa_core *c) {
             i->flags & PA_SINK_INPUT_FAIL_ON_SUSPEND ? "FAIL_ON_SUSPEND " : "",
             state_table[pa_sink_input_get_state(i)],
             i->sink->index, i->sink->name,
-            pa_cvolume_snprint(cv, sizeof(cv), pa_sink_input_get_volume(i)),
-            pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), pa_sink_input_get_volume(i)),
-            pa_cvolume_get_balance(pa_sink_input_get_volume(i), &i->channel_map),
+            pa_cvolume_snprint(cv, sizeof(cv), &v),
+            pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), &v),
+            pa_cvolume_get_balance(&v, &i->channel_map),
             pa_yes_no(pa_sink_input_get_mute(i)),
             (double) pa_sink_input_get_latency(i, NULL) / PA_USEC_PER_MSEC,
             clt,

@@ -87,6 +87,7 @@ static void reset_callbacks(pa_source_output *o) {
     o->attach = NULL;
     o->detach = NULL;
     o->suspend = NULL;
+    o->suspend_within_thread = NULL;
     o->moving = NULL;
     o->kill = NULL;
     o->get_latency = NULL;
@@ -434,10 +435,29 @@ void pa_source_output_push(pa_source_output *o, const pa_memchunk *chunk) {
 
     if (pa_memblockq_push(o->thread_info.delay_memblockq, chunk) < 0) {
         pa_log_debug("Delay queue overflow!");
-        pa_memblockq_seek(o->thread_info.delay_memblockq, (int64_t) chunk->length, PA_SEEK_RELATIVE);
+        pa_memblockq_seek(o->thread_info.delay_memblockq, (int64_t) chunk->length, PA_SEEK_RELATIVE, TRUE);
     }
 
     limit = o->process_rewind ? 0 : o->source->thread_info.max_rewind;
+
+    if (limit > 0 && o->source->monitor_of) {
+        pa_usec_t latency;
+        size_t n;
+
+        /* Hmm, check the latency for knowing how much of the buffered
+         * data is actually still unplayed and might hence still
+         * change. This is suboptimal. Ideally we'd have a call like
+         * pa_sink_get_changeable_size() or so that tells us how much
+         * of the queued data is actually still changeable. Hence
+         * FIXME! */
+
+        latency = pa_sink_get_latency_within_thread(o->source->monitor_of);
+
+        n = pa_usec_to_bytes(latency, &o->source->sample_spec);
+
+        if (n < limit)
+            limit = n;
+    }
 
     /* Implement the delay queue */
     while ((length = pa_memblockq_get_length(o->thread_info.delay_memblockq)) > limit) {
@@ -519,6 +539,9 @@ void pa_source_output_update_max_rewind(pa_source_output *o, size_t nbytes  /* i
 pa_usec_t pa_source_output_set_requested_latency_within_thread(pa_source_output *o, pa_usec_t usec) {
     pa_source_output_assert_ref(o);
 
+    if (!(o->source->flags & PA_SOURCE_DYNAMIC_LATENCY))
+        usec = o->source->fixed_latency;
+
     if (usec != (pa_usec_t) -1)
         usec = PA_CLAMP(usec, o->source->thread_info.min_latency, o->source->thread_info.max_latency);
 
@@ -530,8 +553,6 @@ pa_usec_t pa_source_output_set_requested_latency_within_thread(pa_source_output 
 
 /* Called from main context */
 pa_usec_t pa_source_output_set_requested_latency(pa_source_output *o, pa_usec_t usec) {
-    pa_usec_t min_latency, max_latency;
-
     pa_source_output_assert_ref(o);
 
     if (PA_SOURCE_OUTPUT_IS_LINKED(o->state) && o->source) {
@@ -543,10 +564,14 @@ pa_usec_t pa_source_output_set_requested_latency(pa_source_output *o, pa_usec_t 
      * have to touch the thread info data directly */
 
     if (o->source) {
-        pa_source_get_latency_range(o->source, &min_latency, &max_latency);
+        if (!(o->source->flags & PA_SOURCE_DYNAMIC_LATENCY))
+            usec = o->source->fixed_latency;
 
-        if (usec != (pa_usec_t) -1)
+        if (usec != (pa_usec_t) -1) {
+            pa_usec_t min_latency, max_latency;
+            pa_source_get_latency_range(o->source, &min_latency, &max_latency);
             usec = PA_CLAMP(usec, min_latency, max_latency);
+        }
     }
 
     o->thread_info.requested_source_latency = usec;
@@ -704,6 +729,8 @@ int pa_source_output_start_move(pa_source_output *o) {
     pa_source_update_status(o->source);
     o->source = NULL;
 
+    pa_source_output_unref(o);
+
     return 0;
 }
 
@@ -751,7 +778,7 @@ int pa_source_output_finish_move(pa_source_output *o, pa_source *dest, pa_bool_t
 
     o->source = dest;
     o->save_source = save;
-    pa_idxset_put(o->source->outputs, o, NULL);
+    pa_idxset_put(o->source->outputs, pa_source_output_ref(o), NULL);
 
     if (pa_source_output_get_state(o) == PA_SOURCE_OUTPUT_CORKED)
         o->source->n_corked++;
@@ -803,11 +830,19 @@ int pa_source_output_move_to(pa_source_output *o, pa_source *dest, pa_bool_t sav
     if (!pa_source_output_may_move_to(o, dest))
         return -PA_ERR_NOTSUPPORTED;
 
-    if ((r = pa_source_output_start_move(o)) < 0)
-        return r;
+    pa_source_output_ref(o);
 
-    if ((r = pa_source_output_finish_move(o, dest, save)) < 0)
+    if ((r = pa_source_output_start_move(o)) < 0) {
+        pa_source_output_unref(o);
         return r;
+    }
+
+    if ((r = pa_source_output_finish_move(o, dest, save)) < 0) {
+        pa_source_output_unref(o);
+        return r;
+    }
+
+    pa_source_output_unref(o);
 
     return 0;
 }
@@ -834,12 +869,9 @@ int pa_source_output_process_msg(pa_msgobject *mo, int code, void *userdata, int
 
         case PA_SOURCE_OUTPUT_MESSAGE_GET_LATENCY: {
             pa_usec_t *r = userdata;
-            pa_usec_t source_usec = 0;
 
             r[0] += pa_bytes_to_usec(pa_memblockq_get_length(o->thread_info.delay_memblockq), &o->source->sample_spec);
-
-            if (o->source->parent.process_msg(PA_MSGOBJECT(o->source), PA_SOURCE_MESSAGE_GET_LATENCY, &source_usec, 0, NULL) >= 0)
-                r[1] += source_usec;
+            r[1] += pa_source_get_latency_within_thread(o->source);
 
             return 0;
         }

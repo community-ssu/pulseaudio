@@ -334,27 +334,38 @@ static void set_all_rlimits(const pa_daemon_conf *conf) {
 #endif
 
 #ifdef HAVE_DBUS
-static void register_org_pulseaudio(pa_core *c)
-{
+static pa_dbus_connection *register_dbus(pa_core *c) {
     DBusError error;
     pa_dbus_connection *conn;
 
     dbus_error_init(&error);
+
     if (!(conn = pa_dbus_bus_get(c, pa_in_system_mode() ? DBUS_BUS_SYSTEM : DBUS_BUS_SESSION, &error)) || dbus_error_is_set(&error)) {
-        pa_log_warn("Unable to contact DBUS: %s: %s", error.name, error.message);
-        goto finish_dbus;
+        pa_log_warn("Unable to contact D-Bus: %s: %s", error.name, error.message);
+        goto fail;
     }
 
-    if (dbus_bus_request_name (pa_dbus_connection_get(conn), "org.pulseaudio.Server", DBUS_NAME_FLAG_DO_NOT_QUEUE, &error) == DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER)
+    if (dbus_bus_request_name(pa_dbus_connection_get(conn), "org.pulseaudio.Server", DBUS_NAME_FLAG_DO_NOT_QUEUE, &error) == DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
         pa_log_debug("Got org.pulseaudio.Server!");
-    else if (dbus_error_is_set(&error))
-        pa_log_warn("Unable to get org.pulseaudio.Server: %s: %s", error.name, error.message);
+        return conn;
+    }
 
-finish_dbus:
+    if (dbus_error_is_set(&error))
+        pa_log_warn("Failed to acquire org.pulseaudio.Server: %s: %s", error.name, error.message);
+    else
+        pa_log_warn("D-Bus name org.pulseaudio.Server already taken. Weird shit!");
+
+    /* PA cannot be started twice by the same user and hence we can
+     * ignore mostly the case that org.pulseaudio.Server is already
+     * taken. */
+
+fail:
+
     if (conn)
         pa_dbus_connection_unref(conn);
 
     dbus_error_free(&error);
+    return NULL;
 }
 #endif
 
@@ -380,9 +391,12 @@ int main(int argc, char *argv[]) {
 #endif
     int autospawn_fd = -1;
     pa_bool_t autospawn_locked = FALSE;
+#ifdef HAVE_DBUS
+    pa_dbus_connection *dbus = NULL;
+#endif
 
     pa_log_set_ident("pulseaudio");
-    pa_log_set_level(PA_LOG_INFO);
+    pa_log_set_level(PA_LOG_NOTICE);
     pa_log_set_flags(PA_LOG_COLORS|PA_LOG_PRINT_FILE|PA_LOG_PRINT_LEVEL, PA_LOG_RESET);
 
 #if defined(__linux__) && defined(__OPTIMIZE__)
@@ -427,7 +441,7 @@ int main(int argc, char *argv[]) {
         pa_limit_caps();
 
         /* When capabilities are not supported we will not be able to
-         * aquire RT sched anymore. But yes, that's the way it is. It
+         * acquire RT sched anymore. But yes, that's the way it is. It
          * is just too risky tun let PA run as root all the time. */
     }
 
@@ -538,7 +552,7 @@ int main(int argc, char *argv[]) {
 
         if ((conf->high_priority && !allow_high_priority) ||
             (conf->realtime_scheduling && !allow_realtime))
-            pa_log_notice(_("Called SUID root and real-time and/or high-priority scheduling was requested in the configuration. However, we lack the necessary privileges:\n"
+            pa_log_info(_("Called SUID root and real-time and/or high-priority scheduling was requested in the configuration. However, we lack the necessary privileges:\n"
                             "We are not in group '%s', PolicyKit refuse to grant us the requested privileges and we have no increase RLIMIT_NICE/RLIMIT_RTPRIO resource limits.\n"
                             "For enabling real-time/high-priority scheduling please acquire the appropriate PolicyKit privileges, or become a member of '%s', or increase the RLIMIT_NICE/RLIMIT_RTPRIO resource limits for this user."),
                           PA_REALTIME_GROUP, PA_REALTIME_GROUP);
@@ -563,7 +577,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     if (conf->high_priority && !pa_can_high_priority()) {
-        pa_log_warn(_("High-priority scheduling enabled in configuration but not allowed by policy."));
+        pa_log_info(_("High-priority scheduling enabled in configuration but not allowed by policy."));
         conf->high_priority = FALSE;
     }
 
@@ -609,7 +623,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (conf->realtime_scheduling && !pa_can_realtime()) {
-        pa_log_warn(_("Real-time scheduling enabled in configuration but not allowed by policy."));
+        pa_log_info(_("Real-time scheduling enabled in configuration but not allowed by policy."));
         conf->realtime_scheduling = FALSE;
     }
 
@@ -894,6 +908,11 @@ int main(int argc, char *argv[]) {
     pa_log_info(_("Machine ID is %s."), s);
     pa_xfree(s);
 
+    if ((s = pa_session_id())) {
+            pa_log_info(_("Session ID is %s."), s);
+            pa_xfree(s);
+    }
+
     if (!(s = pa_get_runtime_dir()))
         goto finish;
     pa_log_info(_("Using runtime directory %s."), s);
@@ -1026,7 +1045,7 @@ int main(int argc, char *argv[]) {
 #endif
 
 #ifdef HAVE_DBUS
-    register_org_pulseaudio(c);
+    dbus = register_dbus(c);
 #endif
 
     pa_log_info(_("Daemon startup complete."));
@@ -1038,6 +1057,10 @@ int main(int argc, char *argv[]) {
     pa_log_info(_("Daemon shutdown initiated."));
 
 finish:
+#ifdef HAVE_DBUS
+    if (dbus)
+        pa_dbus_connection_unref(dbus);
+#endif
 
     if (autospawn_fd >= 0) {
         if (autospawn_locked)

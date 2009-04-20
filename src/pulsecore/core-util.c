@@ -326,7 +326,7 @@ ssize_t pa_write(int fd, const void *buf, size_t count, int *type) {
 }
 
 /** Calls read() in a loop. Makes sure that as much as 'size' bytes,
- * unless EOF is reached or an error occured */
+ * unless EOF is reached or an error occurred */
 ssize_t pa_loop_read(int fd, void*data, size_t size, int *type) {
     ssize_t ret = 0;
     int _type;
@@ -1242,7 +1242,7 @@ int pa_lock_lockfile(const char *fn) {
             goto fail;
         }
 
-        /* Check wheter the file has been removed meanwhile. When yes,
+        /* Check whether the file has been removed meanwhile. When yes,
          * restart this loop, otherwise, we're done */
         if (st.st_nlink >= 1)
             break;
@@ -2462,7 +2462,7 @@ char *pa_machine_id(void) {
         pa_strip_nl(ln);
 
         if (r && ln[0])
-            return pa_xstrdup(ln);
+            return pa_utf8_filter(ln);
     }
 
     /* The we fall back to the host name. It supposed to be somewhat
@@ -2480,13 +2480,16 @@ char *pa_machine_id(void) {
                 break;
 
         } else if (strlen(c) < l-1) {
+            char *u;
 
             if (*c == 0) {
                 pa_xfree(c);
                 break;
             }
 
-            return c;
+            u = pa_utf8_filter(c);
+            pa_xfree(c);
+            return u;
         }
 
         /* Hmm, the hostname is as long the space we offered the
@@ -2498,8 +2501,17 @@ char *pa_machine_id(void) {
     }
 
     /* If no hostname was set we use the POSIX hostid. It's usually
-     * the IPv4 address.  Mit not be that stable. */
+     * the IPv4 address.  Might not be that stable. */
     return pa_sprintf_malloc("%08lx", (unsigned long) gethostid);
+}
+
+char *pa_session_id(void) {
+    const char *e;
+
+    if (!(e = getenv("XDG_SESSION_COOKIE")))
+        return NULL;
+
+    return pa_utf8_filter(e);
 }
 
 char *pa_uname_string(void) {

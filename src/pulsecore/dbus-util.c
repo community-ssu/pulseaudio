@@ -28,6 +28,8 @@
 
 #include <pulse/xmalloc.h>
 #include <pulse/timeval.h>
+
+#include <pulsecore/core-util.h>
 #include <pulsecore/log.h>
 
 #include "dbus-util.h"
@@ -244,7 +246,8 @@ static void wakeup_main(void *userdata) {
 
 pa_dbus_wrap_connection* pa_dbus_wrap_connection_new(pa_mainloop_api *m, DBusBusType type, DBusError *error) {
     DBusConnection *conn;
-    pa_dbus_wrap_connection *pconn = NULL;
+    pa_dbus_wrap_connection *pconn;
+    char *id;
 
     pa_assert(type == DBUS_BUS_SYSTEM || type == DBUS_BUS_SESSION || type == DBUS_BUS_STARTER);
 
@@ -263,6 +266,13 @@ pa_dbus_wrap_connection* pa_dbus_wrap_connection_new(pa_mainloop_api *m, DBusBus
 
     pconn->dispatch_event = pconn->mainloop->defer_new(pconn->mainloop, dispatch_cb, conn);
 
+    pa_log_debug("Successfully connected to D-Bus %s bus %s as %s",
+                 type == DBUS_BUS_SYSTEM ? "system" : (type == DBUS_BUS_SESSION ? "session" : "starter"),
+                 pa_strnull((id = dbus_connection_get_server_id(conn))),
+                 pa_strnull(dbus_bus_get_unique_name(conn)));
+
+    dbus_free(id);
+
     return pconn;
 }
 
@@ -273,7 +283,8 @@ void pa_dbus_wrap_connection_free(pa_dbus_wrap_connection* c) {
         dbus_connection_close(c->connection);
         /* must process remaining messages, bit of a kludge to handle
          * both unload and shutdown */
-        while (dbus_connection_read_write_dispatch(c->connection, -1));
+        while (dbus_connection_read_write_dispatch(c->connection, -1))
+            ;
     }
 
     c->mainloop->defer_free(c->dispatch_event);
@@ -369,8 +380,10 @@ pa_dbus_pending *pa_dbus_pending_new(
 void pa_dbus_pending_free(pa_dbus_pending *p) {
     pa_assert(p);
 
-    if (p->pending)
-        dbus_pending_call_cancel(p->pending); /* p->pending is freed by cancel() */
+    if (p->pending) {
+        dbus_pending_call_cancel(p->pending);
+        dbus_pending_call_unref(p->pending);
+    }
 
     if (p->message)
         dbus_message_unref(p->message);

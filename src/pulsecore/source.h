@@ -87,6 +87,8 @@ struct pa_source {
 
     pa_memchunk silence;
 
+    pa_usec_t fixed_latency; /* for sources with PA_SOURCE_DYNAMIC_LATENCY this is 0 */
+
     /* Called when the main loop requests a state change. Called from
      * main loop context. If returns -1 the state change will be
      * inhibited */
@@ -267,5 +269,6 @@ void pa_source_set_latency_range_within_thread(pa_source *s, pa_usec_t min_laten
 /*** To be called exclusively by source output drivers, from IO context */
 
 void pa_source_invalidate_requested_latency(pa_source *s);
+pa_usec_t pa_source_get_latency_within_thread(pa_source *s);
 
 #endif

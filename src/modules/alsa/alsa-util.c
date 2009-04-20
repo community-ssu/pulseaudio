@@ -529,39 +529,51 @@ static const struct pa_alsa_profile_info device_table[] = {
      "hw",
      N_("Analog Mono"),
      "analog-mono",
-     1 },
+     1,
+     "Master", "PCM",
+     "Capture", "Mic" },
 
     {{ 2, { PA_CHANNEL_POSITION_LEFT, PA_CHANNEL_POSITION_RIGHT }},
      "front",
      N_("Analog Stereo"),
      "analog-stereo",
-     10 },
+     10,
+     "Master", "PCM",
+     "Capture", "Mic" },
 
     {{ 2, { PA_CHANNEL_POSITION_LEFT, PA_CHANNEL_POSITION_RIGHT }},
      "iec958",
      N_("Digital Stereo (IEC958)"),
      "iec958-stereo",
-     5 },
+     5,
+     "IEC958", NULL,
+     "IEC958 In", NULL },
 
     {{ 2, { PA_CHANNEL_POSITION_LEFT, PA_CHANNEL_POSITION_RIGHT }},
      "hdmi",
      N_("Digital Stereo (HDMI)"),
      "hdmi-stereo",
-     4 },
+     4,
+     "IEC958", NULL,
+     "IEC958 In", NULL },
 
     {{ 4, { PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
             PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT }},
      "surround40",
      N_("Analog Surround 4.0"),
      "analog-surround-40",
-     7 },
+     7,
+     "Master", "PCM",
+     "Capture", "Mic" },
 
     {{ 4, { PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
             PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT }},
      "a52",
      N_("Digital Surround 4.0 (IEC958/AC3)"),
      "iec958-ac3-surround-40",
-     2 },
+     2,
+     "Master", "PCM",
+     "Capture", "Mic" },
 
     {{ 5, { PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
             PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
@@ -569,7 +581,9 @@ static const struct pa_alsa_profile_info device_table[] = {
      "surround41",
      N_("Analog Surround 4.1"),
      "analog-surround-41",
-     7 },
+     7,
+     "Master", "PCM",
+     "Capture", "Mic" },
 
     {{ 5, { PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
             PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
@@ -577,7 +591,9 @@ static const struct pa_alsa_profile_info device_table[] = {
      "surround50",
      N_("Analog Surround 5.0"),
      "analog-surround-50",
-     7 },
+     7,
+     "Master", "PCM",
+     "Capture", "Mic" },
 
     {{ 6, { PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
             PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
@@ -585,7 +601,9 @@ static const struct pa_alsa_profile_info device_table[] = {
      "surround51",
      N_("Analog Surround 5.1"),
      "analog-surround-51",
-     8 },
+     8,
+     "Master", "PCM",
+     "Capture", "Mic" },
 
     {{ 6, { PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
             PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
@@ -593,7 +611,9 @@ static const struct pa_alsa_profile_info device_table[] = {
      "a52",
      N_("Digital Surround 5.1 (IEC958/AC3)"),
      "iec958-ac3-surround-51",
-     3 },
+     3,
+     "IEC958", NULL,
+     "IEC958 In", NULL },
 
     {{ 8, { PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
             PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
@@ -602,9 +622,11 @@ static const struct pa_alsa_profile_info device_table[] = {
      "surround71",
      N_("Analog Surround 7.1"),
      "analog-surround-71",
-     7 },
+     7,
+     "Master", "PCM",
+     "Capture", "Mic" },
 
-    {{ 0, { 0 }}, NULL, NULL, NULL, 0 }
+    {{ 0, { 0 }}, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL }
 };
 
 snd_pcm_t *pa_alsa_open_by_device_id_auto(
@@ -705,7 +727,7 @@ snd_pcm_t *pa_alsa_open_by_device_id_auto(
             } else {
                 /* Hmm, so the next entry does not have the same
                  * number of channels, so let's go backwards until we
-                 * find the next entry with a differnt number of
+                 * find the next entry with a different number of
                  * channels */
 
                 for (i--; i >= 0; i--)
@@ -1063,7 +1085,7 @@ snd_mixer_elem_t *pa_alsa_find_elem(snd_mixer_t *mixer, const char *name, const 
                 fallback_elem = NULL;
         }
 
-        pa_log_warn("Cannot find fallback mixer control \"%s\" or mixer control is no combination of switch/volume.", snd_mixer_selem_id_get_name(sid));
+        pa_log_info("Cannot find fallback mixer control \"%s\" or mixer control is no combination of switch/volume.", snd_mixer_selem_id_get_name(sid));
     }
 
     if (elem && fallback_elem) {
@@ -1095,7 +1117,8 @@ int pa_alsa_find_mixer_and_elem(
         snd_pcm_t *pcm,
         snd_mixer_t **_m,
         snd_mixer_elem_t **_e,
-        const char *control_name) {
+        const char *control_name,
+        const pa_alsa_profile_info *profile) {
 
     int err;
     snd_mixer_t *m;
@@ -1106,6 +1129,11 @@ int pa_alsa_find_mixer_and_elem(
     pa_assert(pcm);
     pa_assert(_m);
     pa_assert(_e);
+
+    if (control_name && *control_name == 0) {
+        pa_log_debug("Hardware mixer usage disabled because empty control name passed");
+        return -1;
+    }
 
     if ((err = snd_mixer_open(&m, 0)) < 0) {
         pa_log("Error opening mixer: %s", snd_strerror(err));
@@ -1149,6 +1177,8 @@ int pa_alsa_find_mixer_and_elem(
         case SND_PCM_STREAM_PLAYBACK:
             if (control_name)
                 e = pa_alsa_find_elem(m, control_name, NULL, TRUE);
+            else if (profile)
+                e = pa_alsa_find_elem(m, profile->playback_control_name, profile->playback_control_fallback, TRUE);
             else
                 e = pa_alsa_find_elem(m, "Master", "PCM", TRUE);
             break;
@@ -1156,6 +1186,8 @@ int pa_alsa_find_mixer_and_elem(
         case SND_PCM_STREAM_CAPTURE:
             if (control_name)
                 e = pa_alsa_find_elem(m, control_name, NULL, FALSE);
+            else if (profile)
+                e = pa_alsa_find_elem(m, profile->record_control_name, profile->record_control_fallback, FALSE);
             else
                 e = pa_alsa_find_elem(m, "Capture", "Mic", FALSE);
             break;
@@ -1297,7 +1329,7 @@ int pa_alsa_calc_mixer_map(snd_mixer_elem_t *elem, const pa_channel_map *channel
     return 0;
 }
 
-void pa_alsa_dump(snd_pcm_t *pcm) {
+void pa_alsa_dump(pa_log_level_t level, snd_pcm_t *pcm) {
     int err;
     snd_output_t *out;
 
@@ -1306,11 +1338,11 @@ void pa_alsa_dump(snd_pcm_t *pcm) {
     pa_assert_se(snd_output_buffer_open(&out) == 0);
 
     if ((err = snd_pcm_dump(pcm, out)) < 0)
-        pa_log_debug("snd_pcm_dump(): %s", snd_strerror(err));
+        pa_logl(level, "snd_pcm_dump(): %s", snd_strerror(err));
     else {
         char *s = NULL;
         snd_output_buffer_string(out, &s);
-        pa_log_debug("snd_pcm_dump():\n%s", pa_strnull(s));
+        pa_logl(level, "snd_pcm_dump():\n%s", pa_strnull(s));
     }
 
     pa_assert_se(snd_output_close(out) == 0);
@@ -1483,7 +1515,7 @@ void pa_alsa_init_proplist_pcm_info(pa_core *c, pa_proplist *p, snd_pcm_info_t *
         pa_alsa_init_proplist_card(c, p, card);
 }
 
-void pa_alsa_init_proplist_pcm(pa_core *c, pa_proplist *p, snd_pcm_t *pcm) {
+void pa_alsa_init_proplist_pcm(pa_core *c, pa_proplist *p, snd_pcm_t *pcm, snd_mixer_elem_t *elem) {
     snd_pcm_hw_params_t *hwparams;
     snd_pcm_info_t *info;
     int bits, err;
@@ -1498,6 +1530,9 @@ void pa_alsa_init_proplist_pcm(pa_core *c, pa_proplist *p, snd_pcm_t *pcm) {
         if ((bits = snd_pcm_hw_params_get_sbits(hwparams)) >= 0)
             pa_proplist_setf(p, "alsa.resolution_bits", "%i", bits);
     }
+
+    if (elem)
+        pa_proplist_sets(p, "alsa.mixer_element", snd_mixer_selem_get_name(elem));
 
     if ((err = snd_pcm_info(pcm, info)) < 0)
         pa_log_warn("Error fetching PCM info: %s", snd_strerror(err));
@@ -1612,6 +1647,7 @@ snd_pcm_sframes_t pa_alsa_safe_avail(snd_pcm_t *pcm, size_t hwbuf_size, const pa
                    (unsigned long) (pa_bytes_to_usec(k, ss) / PA_USEC_PER_MSEC),
                    pa_strnull(dn));
             pa_xfree(dn);
+            pa_alsa_dump(PA_LOG_ERROR, pcm);
         } PA_ONCE_END;
 
         /* Mhmm, let's try not to fail completely */
@@ -1653,6 +1689,7 @@ int pa_alsa_safe_delay(snd_pcm_t *pcm, snd_pcm_sframes_t *delay, size_t hwbuf_si
                    (unsigned long) (pa_bytes_to_usec(abs_k, ss) / PA_USEC_PER_MSEC),
                    pa_strnull(dn));
             pa_xfree(dn);
+            pa_alsa_dump(PA_LOG_ERROR, pcm);
         } PA_ONCE_END;
 
         /* Mhmm, let's try not to fail completely */
@@ -1698,6 +1735,7 @@ int pa_alsa_safe_mmap_begin(snd_pcm_t *pcm, const snd_pcm_channel_area_t **areas
                    (unsigned long) (pa_bytes_to_usec(k, ss) / PA_USEC_PER_MSEC),
                    pa_strnull(dn));
             pa_xfree(dn);
+            pa_alsa_dump(PA_LOG_ERROR, pcm);
         } PA_ONCE_END;
 
     return r;
@@ -1768,4 +1806,16 @@ pa_bool_t pa_alsa_pcm_is_hw(snd_pcm_t *pcm) {
         return FALSE;
 
     return snd_pcm_info_get_card(info) >= 0;
+}
+
+pa_bool_t pa_alsa_pcm_is_modem(snd_pcm_t *pcm) {
+    snd_pcm_info_t* info;
+    snd_pcm_info_alloca(&info);
+
+    pa_assert(pcm);
+
+    if (snd_pcm_info(pcm, info) < 0)
+        return FALSE;
+
+    return snd_pcm_info_get_class(info) == SND_PCM_CLASS_MODEM;
 }
