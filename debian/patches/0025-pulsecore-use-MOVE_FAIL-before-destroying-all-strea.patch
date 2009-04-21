@@ -1,7 +1,7 @@
-From 398127bb14f5f62e4786a1356c791656aab23e40 Mon Sep 17 00:00:00 2001
+From 94270d3c9d2b306fa20eade31fbc5c3f095e7c5a Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 16 Mar 2009 20:03:33 +0200
-Subject: [PATCH 13/31] pulsecore: use MOVE_FAIL before destroying all streams
+Subject: [PATCH 25/32] pulsecore: use MOVE_FAIL before destroying all streams
 
 ---
  src/pulsecore/sink.c   |    4 ++++
@@ -9,10 +9,10 @@ Subject: [PATCH 13/31] pulsecore: use MOVE_FAIL before destroying all streams
  2 files changed, 8 insertions(+), 0 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index 30fa557..c01eabc 100644
+index 1d69d7f..f0a2f9b 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
-@@ -387,6 +387,7 @@ void pa_sink_put(pa_sink* s) {
+@@ -388,6 +388,7 @@ void pa_sink_put(pa_sink* s) {
  void pa_sink_unlink(pa_sink* s) {
      pa_bool_t linked;
      pa_sink_input *i, *j = NULL;
@@ -20,7 +20,7 @@ index 30fa557..c01eabc 100644
  
      pa_assert(s);
  
-@@ -410,6 +411,9 @@ void pa_sink_unlink(pa_sink* s) {
+@@ -411,6 +412,9 @@ void pa_sink_unlink(pa_sink* s) {
      if (s->card)
          pa_idxset_remove_by_data(s->card->sinks, s, NULL);
  

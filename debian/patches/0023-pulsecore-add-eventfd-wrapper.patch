@@ -1,7 +1,7 @@
-From 578553c7e1987e9ec6de04479794372405a93cb9 Mon Sep 17 00:00:00 2001
+From e2cd95895b5119eaf4d503a3d6125bfa303a18e3 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 2 Mar 2009 15:58:53 +0200
-Subject: [PATCH 11/31] pulsecore: add eventfd wrapper
+Subject: [PATCH 23/32] pulsecore: add eventfd wrapper
 
 ---
  src/Makefile.am         |    1 +
@@ -13,7 +13,7 @@ Subject: [PATCH 11/31] pulsecore: add eventfd wrapper
  create mode 100644 src/pulsecore/eventfd.h
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 6749d4e..5b5b9b6 100644
+index a49a746..59ce9d1 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -575,6 +575,7 @@ libpulsecommon_@PA_MAJORMINORMICRO@_la_SOURCES = \
