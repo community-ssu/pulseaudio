@@ -1,7 +1,7 @@
 From a66cb4a65c54e1ec9b6c45c8da8acc5b6fcee1b1 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 21 Apr 2009 14:12:46 +0300
-Subject: [PATCH 31/32] build: workaround scratchbox linker issue.. (Nokia specific)
+Subject: [PATCH 31/33] build: workaround scratchbox linker issue.. (Nokia specific)
 
 ---
  src/Makefile.am |   82 +++++++++++++++++++++++++++---------------------------
