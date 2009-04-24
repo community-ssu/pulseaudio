@@ -1,8 +1,9 @@
 pulseaudio (0.9.15-1maemo1) UNRELEASED; urgency=low
 
   * Rebased on v0.9.15.
+  * Give sidetone access to PulseAudio.
 
- -- Maemo Multimedia <multimedia@maemo.org>  Mon, 20 Apr 2009 19:25:41 +0300
+ -- Maemo Multimedia <multimedia@maemo.org>  Fri, 24 Apr 2009 13:15:12 +0300
 
 pulseaudio (0.9.15-1) unstable; urgency=low
 

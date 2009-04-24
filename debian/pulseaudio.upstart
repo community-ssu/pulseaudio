@@ -8,6 +8,24 @@ stop on starting shutdown
 
 console none
 
+pre-start script
+	if [ -e  /sys/devices/platform/omap-mcbsp.2/st_ch0gain ]; then
+		chown pulse:pulse /sys/devices/platform/omap-mcbsp.2/st_ch0gain
+	fi
+
+	if [ -e  /sys/devices/platform/omap-mcbsp.2/st_ch1gain ]; then
+		chown pulse:pulse /sys/devices/platform/omap-mcbsp.2/st_ch1gain
+	fi
+
+	if [ -e /sys/devices/platform/omap-mcbsp.2/st_enable ]; then
+		chown pulse:pulse /sys/devices/platform/omap-mcbsp.2/st_enable
+	fi
+
+	if [ -e /sys/devices/platform/omap-mcbsp.2/st_taps ]; then
+		chown pulse:pulse /sys/devices/platform/omap-mcbsp.2/st_taps
+	fi
+end script
+
 post-start script
 	if [ -e /var/run/pulse/.esd_auth ]; then
 		chown pulse:pulse-access /var/run/pulse/.esd_auth
@@ -20,7 +38,24 @@ post-start script
 	fi
 end script
 
-#exec TMPDIR=/var/run /usr/bin/pulseaudio --system --high-priority --log-target=syslog
+post-stop script
+	if [ -e  /sys/devices/platform/omap-mcbsp.2/st_ch0gain ]; then
+		chown root:root /sys/devices/platform/omap-mcbsp.2/st_ch0gain
+	fi
+
+	if [ -e  /sys/devices/platform/omap-mcbsp.2/st_ch1gain ]; then
+		chown root:root /sys/devices/platform/omap-mcbsp.2/st_ch1gain
+	fi
+
+	if [ -e /sys/devices/platform/omap-mcbsp.2/st_enable ]; then
+		chown root:root /sys/devices/platform/omap-mcbsp.2/st_enable
+	fi
+
+	if [ -e /sys/devices/platform/omap-mcbsp.2/st_taps ]; then
+		chown root:root /sys/devices/platform/omap-mcbsp.2/st_taps
+	fi
+end script
+
 exec /usr/bin/pulseaudio --system --high-priority
 
 respawn
