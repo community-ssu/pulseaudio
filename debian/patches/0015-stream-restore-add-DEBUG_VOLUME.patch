@@ -1,0 +1,27 @@
+From 2d2f4c066f1bd0aa3b357db75f68e7287c025777 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Sat, 4 Apr 2009 14:50:19 +0300
+Subject: [PATCH 15/35] stream-restore: add DEBUG_VOLUME
+
+---
+ src/modules/module-stream-restore.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
+index 70cd89a..b714e89 100644
+--- a/src/modules/module-stream-restore.c
++++ b/src/modules/module-stream-restore.c
+@@ -557,8 +557,8 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
+     }
+ }
+ 
+-#if 0
+-static void dump_database(struct userdata *u) {
++#ifdef DEBUG_VOLUME
++PA_GCC_UNUSED static void stream_restore_dump_database(struct userdata *u) {
+     datum key;
+ 
+     key = gdbm_firstkey(u->gdbm_file);
+-- 
+1.6.2.4
+

@@ -1,0 +1,26 @@
+From 6a35f6c1bd36ca2c236990de73ff3efd1d57564c Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Fri, 24 Apr 2009 15:33:05 +0300
+Subject: [PATCH 34/35] alsa-sink-old: FIXME workaround sink.hw1 drain..
+
+---
+ src/modules/alsa/module-alsa-sink-old.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
+index 8e88204..802dce2 100644
+--- a/src/modules/alsa/module-alsa-sink-old.c
++++ b/src/modules/alsa/module-alsa-sink-old.c
+@@ -418,7 +418,8 @@ static int suspend(struct userdata *u) {
+     pa_assert(u->pcm_handle);
+ 
+     /* Let's suspend */
+-    snd_pcm_drain(u->pcm_handle);
++    if (!pa_streq(u->device_name, "sink.hw1"))
++        snd_pcm_drain(u->pcm_handle);
+     snd_pcm_close(u->pcm_handle);
+     u->pcm_handle = NULL;
+ 
+-- 
+1.6.2.4
+
