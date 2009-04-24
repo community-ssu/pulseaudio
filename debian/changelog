@@ -1,6 +1,6 @@
-pulseaudio (0.9.15-1maemo2) UNRELEASED; urgency=low
+pulseaudio (0.9.15-1maemo2) unstable; urgency=low
 
-  * Post release bump.
+  * Workaround snd_pcm_drain() on sink.hw1.
 
  -- Maemo Multimedia <multimedia@maemo.org>  Fri, 24 Apr 2009 14:46:50 +0300
 
