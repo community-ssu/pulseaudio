@@ -1,7 +1,7 @@
 From 57bfcee91572da842f841add84be712bb527a60f Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Sat, 4 Apr 2009 14:50:19 +0300
-Subject: [PATCH 27/33] stream-restore: add DEBUG_VOLUME
+Subject: [PATCH 27/34] stream-restore: add DEBUG_VOLUME
 
 ---
  src/modules/module-stream-restore.c |    4 ++--
@@ -23,5 +23,5 @@ index 70cd89a..b714e89 100644
  
      key = gdbm_firstkey(u->gdbm_file);
 -- 
-1.6.2.rc1.13.gfd76c.dirty
+1.6.2.4
 

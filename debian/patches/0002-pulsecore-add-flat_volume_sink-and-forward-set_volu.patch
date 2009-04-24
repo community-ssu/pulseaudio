@@ -1,7 +1,7 @@
 From 75490b9c13e9eb6bfe68abd5285e82f6e2865972 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 17:07:35 +0200
-Subject: [PATCH 02/33] pulsecore: add flat_volume_sink and forward set_volume to it
+Subject: [PATCH 02/34] pulsecore: add flat_volume_sink and forward set_volume to it
 
 ---
  src/pulsecore/sink.c |   47 ++++++++++++++++++++++++++++++++---------------
@@ -118,5 +118,5 @@ index 352282b..c628c21 100644
      pa_channel_map channel_map;
      pa_cvolume volume;
 -- 
-1.6.2.rc1.13.gfd76c.dirty
+1.6.2.4
 

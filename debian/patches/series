@@ -31,3 +31,4 @@
 0031-build-workaround-scratchbox-linker-issue.-Nokia-s.patch
 0032-autofoo.patch
 0033-protocol-native-expose-sink-reference-volume-instea.patch
+0034-bluetooth-reset-u-sink-source-to-NULL-when-SCO-o.patch

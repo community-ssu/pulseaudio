@@ -1,7 +1,7 @@
 From 9888a4eae9d55c85ba6ae247e36630d6f3d7ca11 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 22 Apr 2009 13:07:01 +0300
-Subject: [PATCH 33/33] protocol-native: expose sink reference volume instead of virtual volume
+Subject: [PATCH 33/34] protocol-native: expose sink reference volume instead of virtual volume
 
 ---
  src/pulsecore/protocol-native.c |    2 +-
@@ -21,5 +21,5 @@ index aecaf71..dfa67fa 100644
          PA_TAG_U32, sink->monitor_source ? sink->monitor_source->index : PA_INVALID_INDEX,
          PA_TAG_STRING, sink->monitor_source ? sink->monitor_source->name : NULL,
 -- 
-1.6.2.rc1.13.gfd76c.dirty
+1.6.2.4
 
