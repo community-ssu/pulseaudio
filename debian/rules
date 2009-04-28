@@ -76,7 +76,6 @@ DEB_CONFIGURE_EXTRA_FLAGS =			\
 	always-sink				\
 	bluetooth-device			\
 	bluetooth-discover			\
-	cli					\
 	device-restore				\
 	native-protocol-unix			\
 	null-sink				\
