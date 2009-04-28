@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo3) unstable; urgency=low
+
+  * Removed module-cli.so from preopen-mods to break pulseaudio dependency to it
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Fri, 28 Apr 2009 12:16:50 +0300
+
 pulseaudio (0.9.15-1maemo2) unstable; urgency=low
 
   * Workaround snd_pcm_drain() on sink.hw1.
