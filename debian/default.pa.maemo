@@ -12,7 +12,7 @@ load-module module-device-restore
 load-module module-card-restore
 load-module module-stream-restore
 load-module module-rescue-streams
-load-module module-suspend-on-idle
+load-module module-suspend-on-idle timeout=5
 
 ### Automatically augment property information from .desktop files
 ### stored in /usr/share/application
@@ -27,10 +27,10 @@ load-module module-null-sink sink_name=sink.null
 ### Default static drivers
 load-module module-alsa-sink-old sink_name=sink.hw0 device=hw:0  rate=48000 fragment_size=1920 fragments=4 alt_fragment_size=960 alt_fragments=2
 load-module module-alsa-sink-volume sink_name=sink.hw0 mixer_load=HP_DAC,Headphone,Earphone mixer=HP_DAC
+update-sink-proplist sink.hw0 suspend-on-idle.timeout=2
 
 load-module module-alsa-source-old source_name=source.hw0 device=hw:0 rate=48000 fragment_size=1920 fragments=4 alt_fragment_size=960 alt_fragments=4
-
-# load-module module-alsa-sink sink_name=sink.hw0 device=hw:0 rate=48000 fragment_size=960 fragments=4 tsched=0 hwbuf_min_frames_to_write=32
+update-source-proplist sink.hw0 suspend-on-idle.timeout=2
 
 ### Nokia audio enhancements modules
 .ifexists module-nokia-voice.so
