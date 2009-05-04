@@ -1,7 +1,7 @@
 From 50fa687dde2606fa7b64e94a483585a9f8215f23 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 17:13:17 +0200
-Subject: [PATCH 23/35] pulsecore: get_maximum_input_volume recursively
+Subject: [PATCH 21/41] pulsecore: get_maximum_input_volume recursively
 
 ---
  src/pulsecore/sink.c |   40 +++++++++++++++++++++++++++++-----------

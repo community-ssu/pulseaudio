@@ -1,7 +1,7 @@
-From c209b18828b08409da45101df4e779db2fc377bc Mon Sep 17 00:00:00 2001
+From 53c95f35d6139b40b6ae80f693e549658f65e07f Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
-Date: Fri, 24 Apr 2009 15:35:18 +0300
-Subject: [PATCH 35/35] autofoo
+Date: Tue, 5 May 2009 19:08:00 +0300
+Subject: [PATCH 41/41] autofoo
 
 ---
  ABOUT-NLS              | 1068 ++
@@ -1169,11 +1169,11 @@ index 0000000..83bc72e
 +
 diff --git a/ChangeLog b/ChangeLog
 new file mode 100644
-index 0000000..3bfbdd8
+index 0000000..ff148bd
 --- /dev/null
 +++ b/ChangeLog
 @@ -0,0 +1,5 @@
-+2009-04-24  gettextize  <bug-gnu-gettext@gnu.org>
++2009-05-05  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* Makefile.am (EXTRA_DIST): Add config.rpath, m4/ChangeLog.
 +	* configure.ac (AC_CONFIG_FILES): Add po/Makefile.in.
@@ -49882,11 +49882,11 @@ index 0000000..3506ead
 +
 diff --git a/m4/ChangeLog b/m4/ChangeLog
 new file mode 100644
-index 0000000..180513d
+index 0000000..c555775
 --- /dev/null
 +++ b/m4/ChangeLog
 @@ -0,0 +1,11 @@
-+2009-04-24  gettextize  <bug-gnu-gettext@gnu.org>
++2009-05-05  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* gettext.m4: New file, from gettext-0.17.
 +	* iconv.m4: New file, from gettext-0.17.
@@ -61344,11 +61344,11 @@ index 0000000..1c8ff70
 +# End:
 diff --git a/po/ChangeLog b/po/ChangeLog
 new file mode 100644
-index 0000000..1ca6111
+index 0000000..07b43c1
 --- /dev/null
 +++ b/po/ChangeLog
 @@ -0,0 +1,11 @@
-+2009-04-24  gettextize  <bug-gnu-gettext@gnu.org>
++2009-05-05  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* Makefile.in.in: New file, from gettext-0.17.
 +	* boldquot.sed: New file, from gettext-0.17.
@@ -61361,7 +61361,7 @@ index 0000000..1ca6111
 +
 diff --git a/po/Makefile.in.in b/po/Makefile.in.in
 new file mode 100644
-index 0000000..c7e8302
+index 0000000..402a25f
 --- /dev/null
 +++ b/po/Makefile.in.in
 @@ -0,0 +1,217 @@
@@ -61423,7 +61423,7 @@ index 0000000..c7e8302
 +
 +PO_LINGUAS=$(shell if test -r $(srcdir)/LINGUAS; then grep -v "^\#" $(srcdir)/LINGUAS; else echo "$(ALL_LINGUAS)"; fi)
 +
-+USER_LINGUAS=$(shell if test -n "$(LINGUAS)"; then LLINGUAS="$(LINGUAS)"; ALINGUAS="$(ALL_LINGUAS)"; for lang in $$LLINGUAS; do if test -n "`grep '^$$lang$$' $(srcdir)/LINGUAS 2>/dev/null`" -o -n "`echo $$ALINGUAS|tr ' ' '\n'|grep '^$$lang$$'`"; then printf "$$lang "; fi; done; fi)
++USER_LINGUAS=$(shell if test -n "$(LINGUAS)"; then LLINGUAS="$(LINGUAS)"; ALINGUAS="$(ALL_LINGUAS)"; for lang in $$LLINGUAS; do if test -n "`grep \^$$lang$$ $(srcdir)/LINGUAS 2>/dev/null`" -o -n "`echo $$ALINGUAS|tr ' ' '\n'|grep \^$$lang$$`"; then printf "$$lang "; fi; done; fi)
 +
 +USE_LINGUAS=$(shell if test -n "$(USER_LINGUAS)" -o -n "$(LINGUAS)"; then LLINGUAS="$(USER_LINGUAS)"; else if test -n "$(PO_LINGUAS)"; then LLINGUAS="$(PO_LINGUAS)"; else LLINGUAS="$(ALL_LINGUAS)"; fi; fi; for lang in $$LLINGUAS; do printf "$$lang "; done)
 +

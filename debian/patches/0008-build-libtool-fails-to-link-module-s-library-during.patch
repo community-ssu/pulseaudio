@@ -1,7 +1,7 @@
 From 55931a7559d50dec834802344e73ec8b012e83fb Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 11 Dec 2008 17:09:11 +0200
-Subject: [PATCH 08/35] build: libtool fails to link module's library during build time (Nokia specific)
+Subject: [PATCH 08/41] build: libtool fails to link module's library during build time (Nokia specific)
 
 ---
  src/Makefile.am |    2 +-

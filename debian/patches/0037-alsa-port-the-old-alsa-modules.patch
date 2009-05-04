@@ -1,15 +1,15 @@
-From 4b67c94f5a1d06d6f05b8ef9601ad8a1be1ddd6d Mon Sep 17 00:00:00 2001
+From f9120f076640216366eb9bfb8ddd9da3dcf611fa Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:08:35 +0300
-Subject: [PATCH 18/35] alsa: port the old alsa modules
+Subject: [PATCH 37/41] alsa: port the old alsa modules
 
 ---
  src/Makefile.am                                  |   16 +-
  src/modules/alsa/module-alsa-sink-old-symdef.h   |   27 +
- src/modules/alsa/module-alsa-sink-old.c          |  986 ++++++++++++++++
+ src/modules/alsa/module-alsa-sink-old.c          |  987 ++++++++++++++++
  src/modules/alsa/module-alsa-source-old-symdef.h |   27 +
  src/modules/alsa/module-alsa-source-old.c        | 1360 ++++++++++++++++++++++
- 5 files changed, 2415 insertions(+), 1 deletions(-)
+ 5 files changed, 2416 insertions(+), 1 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-old-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-old.c
  create mode 100644 src/modules/alsa/module-alsa-source-old-symdef.h
@@ -91,10 +91,10 @@ index 0000000..0c74afc
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
 new file mode 100644
-index 0000000..8e88204
+index 0000000..d46a255
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-old.c
-@@ -0,0 +1,986 @@
+@@ -0,0 +1,987 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -247,13 +247,14 @@ index 0000000..8e88204
 +        return;
 +    }
 +    u->switch_mode = switch_mode;
-+    num_inputs = pa_idxset_size(u->sink->inputs);
++    num_inputs = pa_sink_used_by(u->sink);
 +
 +    pa_log_debug("switch_buffers() got %d inputs", num_inputs);
 +
 +    /* Suspend is dependent on the context where switch_buffers is run.
 +     * If using from thread_func, internal suspend() should be used. */
-+    pa_sink_suspend(u->sink, TRUE);
++    if (pa_sink_get_state(u->sink) != PA_SINK_SUSPENDED)
++        pa_sink_suspend(u->sink, TRUE);
 +
 +    if (u->switch_mode == SINK_SWITCH_PRIMARY) {
 +        pa_log_info("switch to primary buffer");
@@ -271,6 +272,9 @@ index 0000000..8e88204
 +        u->period_size = u->alt_period_size;
 +    }
 +
++    if (num_inputs > 0)
++        pa_sink_suspend(u->sink, FALSE);
++
 +    /* update buffer metrics */
 +    pa_proplist_setf(u->sink->proplist,
 +                     PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE,
@@ -278,9 +282,6 @@ index 0000000..8e88204
 +    pa_proplist_setf(u->sink->proplist,
 +                     PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE,
 +                     "%lu", (unsigned long) (u->period_size * u->frame_size));
-+
-+    if (num_inputs > 0)
-+        pa_sink_suspend(u->sink, FALSE);
 +}
 +
 +static int mmap_write(struct userdata *u) {
@@ -1116,7 +1117,7 @@ index 0000000..033edd6
 +#endif
 diff --git a/src/modules/alsa/module-alsa-source-old.c b/src/modules/alsa/module-alsa-source-old.c
 new file mode 100644
-index 0000000..70e0d87
+index 0000000..9c24664
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-source-old.c
 @@ -0,0 +1,1360 @@
@@ -1282,13 +1283,14 @@ index 0000000..70e0d87
 +        return;
 +    }
 +    u->switch_mode = switch_mode;
-+    num_outputs = pa_idxset_size(u->source->outputs);
++    num_outputs = pa_source_used_by(u->source);
 +
 +    pa_log_debug("switch_buffers() got %d outputs", num_outputs);
 +
 +    /* Suspend is dependent on the context where switch_buffers is run.
 +     * If using from thread_func, internal suspend() should be used. */
-+    pa_source_suspend(u->source, TRUE);
++    if (pa_source_get_state(u->source) != PA_SOURCE_SUSPENDED)
++        pa_source_suspend(u->source, TRUE);
 +
 +    if (u->switch_mode == SOURCE_SWITCH_PRIMARY) {
 +        pa_log_info("switch to primary buffer");
@@ -1306,16 +1308,15 @@ index 0000000..70e0d87
 +        u->period_size = u->alt_period_size;
 +    }
 +
++    if (num_outputs > 0)
++        pa_source_suspend(u->source, FALSE);
++
 +    pa_proplist_setf(u->source->proplist,
 +                     PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE,
 +                     "%lu", (unsigned long) (u->period_size * u->frame_size * u->nfragments));
 +    pa_proplist_setf(u->source->proplist,
 +                     PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE,
 +                     "%lu", (unsigned long) (u->period_size * u->frame_size));
-+
-+    if (num_outputs > 0) {
-+        pa_source_suspend(u->source, FALSE);
-+    }
 +}
 +
 +static int mmap_read(struct userdata *u) {
