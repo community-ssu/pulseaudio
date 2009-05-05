@@ -30,7 +30,7 @@ load-module module-alsa-sink-volume sink_name=sink.hw0 mixer_load=HP_DAC,Headpho
 update-sink-proplist sink.hw0 suspend-on-idle.timeout=2
 
 load-module module-alsa-source-old source_name=source.hw0 device=hw:0 rate=48000 fragment_size=1920 fragments=4 alt_fragment_size=960 alt_fragments=4
-update-source-proplist sink.hw0 suspend-on-idle.timeout=2
+update-source-proplist source.hw0 suspend-on-idle.timeout=2
 
 ### Nokia audio enhancements modules
 .ifexists module-nokia-voice.so
