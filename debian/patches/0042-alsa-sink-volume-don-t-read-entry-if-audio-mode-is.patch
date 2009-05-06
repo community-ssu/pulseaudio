@@ -1,0 +1,26 @@
+From 47ffb6c8a5f383546507a1aeb1c100d625868688 Mon Sep 17 00:00:00 2001
+From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
+Date: Wed, 6 May 2009 12:09:43 +0300
+Subject: [PATCH 42/43] alsa-sink-volume: don't read entry if audio mode is not set
+
+---
+ src/modules/alsa/module-alsa-sink-volume.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
+index 1a26675..01aea54 100644
+--- a/src/modules/alsa/module-alsa-sink-volume.c
++++ b/src/modules/alsa/module-alsa-sink-volume.c
+@@ -1262,7 +1262,8 @@ static void load_mixer_volume(struct userdata *u, struct mixer_control_t *m) {
+     pa_assert(u);
+     pa_assert(u->sink);
+ 
+-    if (u->cache_volumes)
++    /* don't allow reading entry, if audio mode is not set */
++    if (u->cache_volumes && u->audio_mode)
+         entry = read_entry(u, m);
+ 
+     if (entry && entry->volume.channels > 0) {
+-- 
+1.6.2.4
+

@@ -1,7 +1,7 @@
 From 601d1f01f3a730e5da6c61d3788e427e448080ad Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Fri, 1 May 2009 04:22:08 +0200
-Subject: [PATCH 36/41] sconv: fix a few minor conversion issues
+Subject: [PATCH 36/43] sconv: fix a few minor conversion issues
 
 ---
  src/pulsecore/sconv-s16le.c |   10 +++++-----
