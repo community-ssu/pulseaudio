@@ -1,7 +1,8 @@
 pulseaudio (0.9.15-1maemo4) unstable; urgency=low
 
   * Lower overall suspend-on-idle timeout. Fixes: NB#106649
-
+  * Fixes: NB#111554 - delay calculated sysfs timestamps in alsa-*-old
+	
  -- Maemo Multimedia <multimedia@maemo.org>  Mon, 04 May 2009 18:43:29 +0300
 
 pulseaudio (0.9.15-1maemo3) unstable; urgency=low
