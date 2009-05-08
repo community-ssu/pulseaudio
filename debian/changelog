@@ -1,8 +1,9 @@
 pulseaudio (0.9.15-1maemo6) unstable; urgency=low
 
-  * post-release bump.
+  * stream-restore: add volume_is_absolute in rule info.
+  * don't fail when session bus is not there. Fixes: NB#115682
 
- -- Maemo Multimedia <multimedia@maemo.org>  Tue, 12 May 2009 14:44:17 +0300
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 12 May 2009 14:45:06 +0300
 
 pulseaudio (0.9.15-1maemo5) unstable; urgency=low
 
