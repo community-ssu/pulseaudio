@@ -1,14 +1,20 @@
+pulseaudio (0.9.15-1maemo6) unstable; urgency=low
+
+  * post-release bump.
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 12 May 2009 14:44:17 +0300
+
 pulseaudio (0.9.15-1maemo5) unstable; urgency=low
 
   * Use snd_pcm_htimestamp instead of sysfs to calculated delay
-	
+
  -- Maemo Multimedia <multimedia@maemo.org>  Mon, 08 May 2009 17:12:29 +0300
 
 pulseaudio (0.9.15-1maemo4) unstable; urgency=low
 
   * Lower overall suspend-on-idle timeout. Fixes: NB#106649
   * Fixes: NB#111554 - delay calculated sysfs timestamps in alsa-*-old
-	
+
  -- Maemo Multimedia <multimedia@maemo.org>  Mon, 04 May 2009 18:43:29 +0300
 
 pulseaudio (0.9.15-1maemo3) unstable; urgency=low
