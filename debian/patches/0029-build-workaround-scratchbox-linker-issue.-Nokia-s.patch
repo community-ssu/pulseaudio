@@ -1,7 +1,7 @@
 From 2b020f76ab9d61420fe0c45465fce65e04a0607a Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 21 Apr 2009 14:12:46 +0300
-Subject: [PATCH 29/43] build: workaround scratchbox linker issue.. (Nokia specific)
+Subject: [PATCH] build: workaround scratchbox linker issue.. (Nokia specific)
 
 ---
  src/Makefile.am |   82 +++++++++++++++++++++++++++---------------------------
@@ -269,5 +269,5 @@ index 5b5b9b6..5c4afa2 100644
  gtk_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(GTK20_LIBS)
  
 -- 
-1.6.2.4
+1.5.6.3
 

@@ -40,4 +40,4 @@
 0040-suspend-on-idle-add-per-device-timeout-property.patch
 0041-autofoo.patch
 0042-alsa-sink-volume-don-t-read-entry-if-audio-mode-is.patch
-0043-alsa-old-delay-by-timestamps.patch
+0043-alsa-old-delay-by-snd_pcm_htimestamp.patch

@@ -1,7 +1,7 @@
 From 7b0d3418ba9a1028fda69b0c11ec6c1f0516a042 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:09:01 +0300
-Subject: [PATCH 38/43] alsa: sink-volume, a complex mixer module
+Subject: [PATCH] alsa: sink-volume, a complex mixer module
 
 ---
  src/Makefile.am                                   |    7 +
@@ -1617,5 +1617,5 @@ index 0000000..1a26675
 +    snd_config_update_free_global();
 +}
 -- 
-1.6.2.4
+1.5.6.3
 
