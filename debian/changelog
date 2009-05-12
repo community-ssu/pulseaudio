@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo7) UNRELEASED; urgency=low
+
+  * post-release bump
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 12 May 2009 19:43:59 +0300
+
 pulseaudio (0.9.15-1maemo6) unstable; urgency=low
 
   * stream-restore: add volume_is_absolute in rule info.
