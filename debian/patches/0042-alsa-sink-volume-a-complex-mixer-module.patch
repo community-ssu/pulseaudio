@@ -1,13 +1,13 @@
-From 7b0d3418ba9a1028fda69b0c11ec6c1f0516a042 Mon Sep 17 00:00:00 2001
+From a505774c54f4c75214d612a61686811250f45f30 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:09:01 +0300
-Subject: [PATCH] alsa: sink-volume, a complex mixer module
+Subject: [PATCH 42/49] alsa: sink-volume, a complex mixer module
 
 ---
  src/Makefile.am                                   |    7 +
  src/modules/alsa/module-alsa-sink-volume-symdef.h |   27 +
- src/modules/alsa/module-alsa-sink-volume.c        | 1534 +++++++++++++++++++++
- 3 files changed, 1568 insertions(+), 0 deletions(-)
+ src/modules/alsa/module-alsa-sink-volume.c        | 1535 +++++++++++++++++++++
+ 3 files changed, 1569 insertions(+), 0 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-volume-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-volume.c
 
@@ -78,10 +78,10 @@ index 0000000..30c44c1
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
 new file mode 100644
-index 0000000..1a26675
+index 0000000..01aea54
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-volume.c
-@@ -0,0 +1,1534 @@
+@@ -0,0 +1,1535 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -1346,7 +1346,8 @@ index 0000000..1a26675
 +    pa_assert(u);
 +    pa_assert(u->sink);
 +
-+    if (u->cache_volumes)
++    /* don't allow reading entry, if audio mode is not set */
++    if (u->cache_volumes && u->audio_mode)
 +        entry = read_entry(u, m);
 +
 +    if (entry && entry->volume.channels > 0) {
@@ -1617,5 +1618,5 @@ index 0000000..1a26675
 +    snd_config_update_free_global();
 +}
 -- 
-1.5.6.3
+1.6.2.4
 

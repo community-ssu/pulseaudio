@@ -1,15 +1,15 @@
-From f9120f076640216366eb9bfb8ddd9da3dcf611fa Mon Sep 17 00:00:00 2001
+From dba7c628a407a30a8b3afee31f267dbb437d23f1 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:08:35 +0300
-Subject: [PATCH] alsa: port the old alsa modules
+Subject: [PATCH 41/49] alsa: port the old alsa modules
 
 ---
  src/Makefile.am                                  |   16 +-
  src/modules/alsa/module-alsa-sink-old-symdef.h   |   27 +
- src/modules/alsa/module-alsa-sink-old.c          |  987 ++++++++++++++++
+ src/modules/alsa/module-alsa-sink-old.c          | 1012 ++++++++++++++++
  src/modules/alsa/module-alsa-source-old-symdef.h |   27 +
- src/modules/alsa/module-alsa-source-old.c        | 1360 ++++++++++++++++++++++
- 5 files changed, 2416 insertions(+), 1 deletions(-)
+ src/modules/alsa/module-alsa-source-old.c        | 1383 ++++++++++++++++++++++
+ 5 files changed, 2464 insertions(+), 1 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-old-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-old.c
  create mode 100644 src/modules/alsa/module-alsa-source-old-symdef.h
@@ -91,10 +91,10 @@ index 0000000..0c74afc
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
 new file mode 100644
-index 0000000..d46a255
+index 0000000..928051d
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-old.c
-@@ -0,0 +1,987 @@
+@@ -0,0 +1,1012 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -128,6 +128,7 @@ index 0000000..d46a255
 +
 +#include <pulse/xmalloc.h>
 +#include <pulse/util.h>
++#include <pulse/timeval.h>
 +
 +#ifdef HAVE_VALGRIND_MEMCHECK_H
 +#include <valgrind/memcheck.h>
@@ -147,6 +148,7 @@ index 0000000..d46a255
 +#include <pulsecore/thread-mq.h>
 +#include <pulsecore/rtpoll.h>
 +#include <pulsecore/atomic.h>
++#include <pulsecore/rtclock.h>
 +
 +#include "alsa-util.h"
 +#include "module-alsa-sink-old-symdef.h"
@@ -459,6 +461,27 @@ index 0000000..d46a255
 +    }
 +}
 +
++static int sink_get_latency_by_timestamps(struct userdata *u, pa_usec_t *d) {
++    snd_pcm_uframes_t avail;
++    snd_htimestamp_t tstamp;
++    struct timeval tv_now;
++    struct timespec ts_dma;
++    pa_usec_t fragment_usec;
++    
++    if (snd_pcm_htimestamp(u->pcm_handle, &avail, &tstamp) < 0)
++        return -1;
++
++    pa_rtclock_get(&tv_now);
++
++    ts_dma.tv_sec = tstamp.tv_sec;
++    ts_dma.tv_nsec = tstamp.tv_nsec;
++
++    fragment_usec = pa_bytes_to_usec(u->fragment_size, &u->sink->sample_spec);
++    *d = pa_timespec_load(&ts_dma) + fragment_usec - pa_timeval_load(&tv_now);
++
++    return 0;
++}
++
 +static pa_usec_t sink_get_latency(struct userdata *u) {
 +    pa_usec_t r = 0;
 +    snd_pcm_status_t *status;
@@ -470,13 +493,15 @@ index 0000000..d46a255
 +    pa_assert(u);
 +    pa_assert(u->pcm_handle);
 +
-+    if ((err = snd_pcm_status(u->pcm_handle, status)) < 0)
-+        pa_log("Failed to get delay: %s", snd_strerror(err));
-+    else
-+        frames = snd_pcm_status_get_delay(status);
++    if (sink_get_latency_by_timestamps(u, &r) < 0) {
++        if ((err = snd_pcm_status(u->pcm_handle, status)) < 0)
++            pa_log("Failed to get delay: %s", snd_strerror(err));
++        else
++            frames = snd_pcm_status_get_delay(status);
 +
-+    if (frames > 0)
-+        r = pa_bytes_to_usec(frames * u->frame_size, &u->sink->sample_spec);
++        if (frames > 0)
++            r = pa_bytes_to_usec(frames * u->frame_size, &u->sink->sample_spec);
++    }
 +
 +    if (u->memchunk.memblock)
 +        r += pa_bytes_to_usec(u->memchunk.length, &u->sink->sample_spec);
@@ -1117,10 +1142,10 @@ index 0000000..033edd6
 +#endif
 diff --git a/src/modules/alsa/module-alsa-source-old.c b/src/modules/alsa/module-alsa-source-old.c
 new file mode 100644
-index 0000000..9c24664
+index 0000000..0e08cb8
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-source-old.c
-@@ -0,0 +1,1360 @@
+@@ -0,0 +1,1383 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -1158,6 +1183,7 @@ index 0000000..9c24664
 +
 +#include <pulse/xmalloc.h>
 +#include <pulse/util.h>
++#include <pulse/timeval.h>
 +
 +#include <pulsecore/core-error.h>
 +#include <pulsecore/core.h>
@@ -1173,6 +1199,7 @@ index 0000000..9c24664
 +#include <pulsecore/core-error.h>
 +#include <pulsecore/thread-mq.h>
 +#include <pulsecore/rtpoll.h>
++#include <pulsecore/rtclock.h>
 +
 +#include "alsa-util.h"
 +#include "module-alsa-source-old-symdef.h"
@@ -1487,6 +1514,25 @@ index 0000000..9c24664
 +    }
 +}
 +
++static int source_get_latency_by_timestamps(struct userdata *u, pa_usec_t *d) {
++    snd_pcm_uframes_t avail;
++    snd_htimestamp_t tstamp;
++    struct timeval tv_now;
++    struct timespec ts_dma;
++
++    if (snd_pcm_htimestamp(u->pcm_handle, &avail, &tstamp) < 0) 
++        return -1;
++
++    pa_rtclock_get(&tv_now);
++
++    ts_dma.tv_sec = tstamp.tv_sec;
++    ts_dma.tv_nsec = tstamp.tv_nsec;
++
++    *d = pa_timeval_load(&tv_now) - pa_timespec_load(&ts_dma);
++
++    return 0;
++}
++
 +static pa_usec_t source_get_latency(struct userdata *u) {
 +    pa_usec_t r = 0;
 +    snd_pcm_status_t *status;
@@ -1498,13 +1544,15 @@ index 0000000..9c24664
 +    pa_assert(u);
 +    pa_assert(u->pcm_handle);
 +
-+    if ((err = snd_pcm_status(u->pcm_handle, status)) < 0)
-+        pa_log("Failed to get delay: %s", snd_strerror(err));
-+    else
-+        frames = snd_pcm_status_get_delay(status);
++    if (source_get_latency_by_timestamps(u, &r) < 0) {
++        if ((err = snd_pcm_status(u->pcm_handle, status)) < 0)
++            pa_log("Failed to get delay: %s", snd_strerror(err));
++        else
++            frames = snd_pcm_status_get_delay(status);
 +
-+    if (frames > 0)
-+        r = pa_bytes_to_usec(frames * u->frame_size, &u->source->sample_spec);
++        if (frames > 0)
++            r = pa_bytes_to_usec(frames * u->frame_size, &u->source->sample_spec);
++    }
 +
 +    return r;
 +}
@@ -2482,5 +2530,5 @@ index 0000000..9c24664
 +    snd_config_update_free_global();
 +}
 -- 
-1.5.6.3
+1.6.2.4
 

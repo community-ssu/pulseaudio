@@ -1,17 +1,17 @@
-From 3049552544a8e6b4060ff709e27277811dac5c6d Mon Sep 17 00:00:00 2001
+From f27950671fcfa40acea2c980cc14202efab8b1e0 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Fri, 24 Apr 2009 15:33:05 +0300
-Subject: [PATCH] alsa-sink-old: FIXME workaround sink.hw1 drain..
+Subject: [PATCH 43/49] alsa-sink-old: FIXME workaround sink.hw1 drain..
 
 ---
  src/modules/alsa/module-alsa-sink-old.c |    3 ++-
  1 files changed, 2 insertions(+), 1 deletions(-)
 
 diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
-index d46a255..90a1eb6 100644
+index 928051d..fc0c3bc 100644
 --- a/src/modules/alsa/module-alsa-sink-old.c
 +++ b/src/modules/alsa/module-alsa-sink-old.c
-@@ -419,7 +419,8 @@ static int suspend(struct userdata *u) {
+@@ -444,7 +444,8 @@ static int suspend(struct userdata *u) {
      pa_assert(u->pcm_handle);
  
      /* Let's suspend */
@@ -22,5 +22,5 @@ index d46a255..90a1eb6 100644
      u->pcm_handle = NULL;
  
 -- 
-1.5.6.3
+1.6.2.4
 

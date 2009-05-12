@@ -1,7 +1,7 @@
 From b94d466d4350f4199cd762bbaff221c98d177f47 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 11 Mar 2009 20:14:49 +0200
-Subject: [PATCH] remap: flat remap sink volume
+Subject: [PATCH 28/49] remap: flat remap sink volume
 
 ---
  src/modules/module-remap-sink.c |    3 +++
@@ -36,5 +36,5 @@ index f9777be..1ee3bb6 100644
      pa_proplist_sets(sink_input_data.proplist, PA_PROP_MEDIA_ROLE, "filter");
      pa_sink_input_new_data_set_sample_spec(&sink_input_data, &ss);
 -- 
-1.5.6.3
+1.6.2.4
 

@@ -1,14 +1,14 @@
-From 19a9ba2aed4511193819b2de7a443b2cc465f417 Mon Sep 17 00:00:00 2001
+From 9633cf2d3afd5ae7ca3e4527f969049a1867f9bf Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 22 Apr 2009 13:07:01 +0300
-Subject: [PATCH] protocol-native: expose sink reference volume instead of virtual volume
+Subject: [PATCH 35/49] protocol-native: expose sink reference volume instead of virtual volume
 
 ---
  src/pulsecore/protocol-native.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/pulsecore/protocol-native.c b/src/pulsecore/protocol-native.c
-index aecaf71..dfa67fa 100644
+index aecaf71..454fc54 100644
 --- a/src/pulsecore/protocol-native.c
 +++ b/src/pulsecore/protocol-native.c
 @@ -2819,7 +2819,7 @@ static void sink_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, pa_sin
@@ -16,10 +16,10 @@ index aecaf71..dfa67fa 100644
          PA_TAG_CHANNEL_MAP, &sink->channel_map,
          PA_TAG_U32, sink->module ? sink->module->index : PA_INVALID_INDEX,
 -        PA_TAG_CVOLUME, pa_sink_get_volume(sink, FALSE, FALSE),
-+        PA_TAG_CVOLUME, pa_sink_get_volume(sink, FALSE, TRUE),
++        PA_TAG_CVOLUME, PA_MAX (pa_sink_get_volume(sink, FALSE, TRUE), pa_sink_get_volume(sink, FALSE, FALSE)),
          PA_TAG_BOOLEAN, pa_sink_get_mute(sink, FALSE),
          PA_TAG_U32, sink->monitor_source ? sink->monitor_source->index : PA_INVALID_INDEX,
          PA_TAG_STRING, sink->monitor_source ? sink->monitor_source->name : NULL,
 -- 
-1.5.6.3
+1.6.2.4
 

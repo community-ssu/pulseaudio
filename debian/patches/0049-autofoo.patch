@@ -1,7 +1,7 @@
-From 53c95f35d6139b40b6ae80f693e549658f65e07f Mon Sep 17 00:00:00 2001
+From 039eb2b83a8acc235e76923e5a38f4a66cc18595 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
-Date: Tue, 5 May 2009 19:08:00 +0300
-Subject: [PATCH] autofoo
+Date: Tue, 12 May 2009 14:59:25 +0300
+Subject: [PATCH 49/49] autofoo
 
 ---
  ABOUT-NLS              | 1068 ++
@@ -9,10 +9,10 @@ Subject: [PATCH] autofoo
  Makefile.in            |  893 ++
  aclocal.m4             | 1521 +++
  compile                |  142 +
- config.guess           | 1526 +++
+ config.guess           | 1561 +++
  config.h.in            |  609 +
  config.rpath           |  666 +
- config.sub             | 1658 +++
+ config.sub             | 1686 +++
  configure              |31599 ++++++++++++++++++++++++++++++++++++++++++++++++
  depcomp                |  589 +
  doxygen/Makefile.in    |  486 +
@@ -46,7 +46,7 @@ Subject: [PATCH] autofoo
  po/quot.sed            |    6 +
  po/remove-potcdate.sin |   19 +
  src/Makefile.in        | 7075 +++++++++++
- 42 files changed, 68550 insertions(+), 0 deletions(-)
+ 42 files changed, 68613 insertions(+), 0 deletions(-)
  create mode 100644 ABOUT-NLS
  create mode 100644 ChangeLog
  create mode 100644 Makefile.in
@@ -1169,11 +1169,11 @@ index 0000000..83bc72e
 +
 diff --git a/ChangeLog b/ChangeLog
 new file mode 100644
-index 0000000..ff148bd
+index 0000000..276fc41
 --- /dev/null
 +++ b/ChangeLog
 @@ -0,0 +1,5 @@
-+2009-05-05  gettextize  <bug-gnu-gettext@gnu.org>
++2009-05-12  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* Makefile.am (EXTRA_DIST): Add config.rpath, m4/ChangeLog.
 +	* configure.ac (AC_CONFIG_FILES): Add po/Makefile.in.
@@ -3754,17 +3754,17 @@ index 0000000..1b1d232
 +# End:
 diff --git a/config.guess b/config.guess
 new file mode 100755
-index 0000000..f32079a
+index 0000000..da83314
 --- /dev/null
 +++ b/config.guess
-@@ -0,0 +1,1526 @@
+@@ -0,0 +1,1561 @@
 +#! /bin/sh
 +# Attempt to guess a canonical system name.
 +#   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
 +#   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
 +#   Free Software Foundation, Inc.
 +
-+timestamp='2008-01-23'
++timestamp='2009-04-27'
 +
 +# This file is free software; you can redistribute it and/or modify it
 +# under the terms of the GNU General Public License as published by
@@ -4084,6 +4084,9 @@ index 0000000..f32079a
 +	case `/usr/bin/uname -p` in
 +	    sparc) echo sparc-icl-nx7; exit ;;
 +	esac ;;
++    s390x:SunOS:*:*)
++	echo ${UNAME_MACHINE}-ibm-solaris2`echo ${UNAME_RELEASE}|sed -e 's/[^.]*//'`
++	exit ;;
 +    sun4H:SunOS:5.*:*)
 +	echo sparc-hal-solaris2`echo ${UNAME_RELEASE}|sed -e 's/[^.]*//'`
 +	exit ;;
@@ -4091,7 +4094,20 @@ index 0000000..f32079a
 +	echo sparc-sun-solaris2`echo ${UNAME_RELEASE}|sed -e 's/[^.]*//'`
 +	exit ;;
 +    i86pc:SunOS:5.*:* | i86xen:SunOS:5.*:*)
-+	echo i386-pc-solaris2`echo ${UNAME_RELEASE}|sed -e 's/[^.]*//'`
++	eval $set_cc_for_build
++	SUN_ARCH="i386"
++	# If there is a compiler, see if it is configured for 64-bit objects.
++	# Note that the Sun cc does not turn __LP64__ into 1 like gcc does.
++	# This test works for both compilers.
++	if [ "$CC_FOR_BUILD" != 'no_compiler_found' ]; then
++	    if (echo '#ifdef __amd64'; echo IS_64BIT_ARCH; echo '#endif') | \
++		(CCOPTS= $CC_FOR_BUILD -E - 2>/dev/null) | \
++		grep IS_64BIT_ARCH >/dev/null
++	    then
++		SUN_ARCH="x86_64"
++	    fi
++	fi
++	echo ${SUN_ARCH}-pc-solaris2`echo ${UNAME_RELEASE}|sed -e 's/[^.]*//'`
 +	exit ;;
 +    sun4*:SunOS:6*:*)
 +	# According to config.sub, this is the proper way to canonicalize
@@ -4556,7 +4572,7 @@ index 0000000..f32079a
 +	    x86)
 +		echo i586-pc-interix${UNAME_RELEASE}
 +		exit ;;
-+	    EM64T | authenticamd)
++	    EM64T | authenticamd | genuineintel)
 +		echo x86_64-unknown-interix${UNAME_RELEASE}
 +		exit ;;
 +	    IA64)
@@ -4695,6 +4711,9 @@ index 0000000..f32079a
 +	if test "$?" = 0 ; then LIBC="libc1" ; else LIBC="" ; fi
 +	echo ${UNAME_MACHINE}-unknown-linux-gnu${LIBC}
 +	exit ;;
++    padre:Linux:*:*)
++	echo sparc-unknown-linux-gnu
++	exit ;;
 +    parisc:Linux:*:* | hppa:Linux:*:*)
 +	# Look for CPU level
 +	case `grep '^cpu[^a-z]*:' /proc/cpuinfo 2>/dev/null | cut -d' ' -f2` in
@@ -4744,9 +4763,6 @@ index 0000000..f32079a
 +		;;
 +	  a.out-i386-linux)
 +		echo "${UNAME_MACHINE}-pc-linux-gnuaout"
-+		exit ;;
-+	  coff-i386)
-+		echo "${UNAME_MACHINE}-pc-linux-gnucoff"
 +		exit ;;
 +	  "")
 +		# Either a pre-BFD a.out linker (linux-gnuoldld) or
@@ -4862,8 +4878,11 @@ index 0000000..f32079a
 +    pc:*:*:*)
 +	# Left here for compatibility:
 +        # uname -m prints for DJGPP always 'pc', but it prints nothing about
-+        # the processor, so we play safe by assuming i386.
-+	echo i386-pc-msdosdjgpp
++        # the processor, so we play safe by assuming i586.
++	# Note: whatever this is, it MUST be the same as what config.sub
++	# prints for the "djgpp" host, or else GDB configury will decide that
++	# this is a cross-build.
++	echo i586-pc-msdosdjgpp
 +        exit ;;
 +    Intel:Mach:3*:*)
 +	echo i386-pc-mach3
@@ -4901,6 +4920,16 @@ index 0000000..f32079a
 +    3[34]??:*:4.0:* | 3[34]??,*:*:4.0:*)
 +        /bin/uname -p 2>/dev/null | grep 86 >/dev/null \
 +          && { echo i486-ncr-sysv4; exit; } ;;
++    NCR*:*:4.2:* | MPRAS*:*:4.2:*)
++	OS_REL='.3'
++	test -r /etc/.relid \
++	    && OS_REL=.`sed -n 's/[^ ]* [^ ]* \([0-9][0-9]\).*/\1/p' < /etc/.relid`
++	/bin/uname -p 2>/dev/null | grep 86 >/dev/null \
++	    && { echo i486-ncr-sysv4.3${OS_REL}; exit; }
++	/bin/uname -p 2>/dev/null | /bin/grep entium >/dev/null \
++	    && { echo i586-ncr-sysv4.3${OS_REL}; exit; }
++	/bin/uname -p 2>/dev/null | /bin/grep pteron >/dev/null \
++	    && { echo i586-ncr-sysv4.3${OS_REL}; exit; } ;;
 +    m68*:LynxOS:2.*:* | m68*:LynxOS:3.0*:*)
 +	echo m68k-unknown-lynxos${UNAME_RELEASE}
 +	exit ;;
@@ -4975,6 +5004,9 @@ index 0000000..f32079a
 +	exit ;;
 +    BePC:BeOS:*:*)	# BeOS running on Intel PC compatible.
 +	echo i586-pc-beos
++	exit ;;
++    BePC:Haiku:*:*)	# Haiku running on Intel PC compatible.
++	echo i586-pc-haiku
 +	exit ;;
 +    SX-4:SUPER-UX:*:*)
 +	echo sx4-nec-superux${UNAME_RELEASE}
@@ -5083,6 +5115,9 @@ index 0000000..f32079a
 +	exit ;;
 +    i*86:rdos:*:*)
 +	echo ${UNAME_MACHINE}-pc-rdos
++	exit ;;
++    i*86:AROS:*:*)
++	echo ${UNAME_MACHINE}-pc-aros
 +	exit ;;
 +esac
 +
@@ -6573,17 +6608,17 @@ index 0000000..c547c68
 +EOF
 diff --git a/config.sub b/config.sub
 new file mode 100755
-index 0000000..6759825
+index 0000000..a39437d
 --- /dev/null
 +++ b/config.sub
-@@ -0,0 +1,1658 @@
+@@ -0,0 +1,1686 @@
 +#! /bin/sh
 +# Configuration validation subroutine script.
 +#   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
 +#   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
 +#   Free Software Foundation, Inc.
 +
-+timestamp='2008-01-16'
++timestamp='2009-04-17'
 +
 +# This file is (in principle) common to ALL GNU software.
 +# The presence of a machine in this file suggests that SOME GNU software
@@ -6701,6 +6736,7 @@ index 0000000..6759825
 +case $maybe_os in
 +  nto-qnx* | linux-gnu* | linux-dietlibc | linux-newlib* | linux-uclibc* | \
 +  uclinux-uclibc* | uclinux-gnu* | kfreebsd*-gnu* | knetbsd*-gnu* | netbsd*-gnu* | \
++  kopensolaris*-gnu* | \
 +  storm-chaos* | os2-emx* | rtmk-nova*)
 +    os=-$maybe_os
 +    basic_machine=`echo $1 | sed 's/^\(.*\)-\([^-]*-[^-]*\)$/\1/'`
@@ -6828,13 +6864,16 @@ index 0000000..6759825
 +	| h8300 | h8500 | hppa | hppa1.[01] | hppa2.0 | hppa2.0[nw] | hppa64 \
 +	| i370 | i860 | i960 | ia64 \
 +	| ip2k | iq2000 \
++	| lm32 \
 +	| m32c | m32r | m32rle | m68000 | m68k | m88k \
-+	| maxq | mb | microblaze | mcore | mep \
++	| maxq | mb | microblaze | mcore | mep | metag \
 +	| mips | mipsbe | mipseb | mipsel | mipsle \
 +	| mips16 \
 +	| mips64 | mips64el \
-+	| mips64vr | mips64vrel \
++	| mips64octeon | mips64octeonel \
 +	| mips64orion | mips64orionel \
++	| mips64r5900 | mips64r5900el \
++	| mips64vr | mips64vrel \
 +	| mips64vr4100 | mips64vr4100el \
 +	| mips64vr4300 | mips64vr4300el \
 +	| mips64vr5000 | mips64vr5000el \
@@ -6847,6 +6886,7 @@ index 0000000..6759825
 +	| mipsisa64sr71k | mipsisa64sr71kel \
 +	| mipstx39 | mipstx39el \
 +	| mn10200 | mn10300 \
++	| moxie \
 +	| mt \
 +	| msp430 \
 +	| nios | nios2 \
@@ -6856,7 +6896,7 @@ index 0000000..6759825
 +	| powerpc | powerpc64 | powerpc64le | powerpcle | ppcbe \
 +	| pyramid \
 +	| score \
-+	| sh | sh[1234] | sh[24]a | sh[23]e | sh[34]eb | sheb | shbe | shle | sh[1234]le | sh3ele \
++	| sh | sh[1234] | sh[24]a | sh[24]aeb | sh[23]e | sh[34]eb | sheb | shbe | shle | sh[1234]le | sh3ele \
 +	| sh64 | sh64le \
 +	| sparc | sparc64 | sparc64b | sparc64v | sparc86x | sparclet | sparclite \
 +	| sparcv8 | sparcv9 | sparcv9b | sparcv9v \
@@ -6865,7 +6905,7 @@ index 0000000..6759825
 +	| v850 | v850e \
 +	| we32k \
 +	| x86 | xc16x | xscale | xscalee[bl] | xstormy16 | xtensa \
-+	| z8k)
++	| z8k | z80)
 +		basic_machine=$basic_machine-unknown
 +		;;
 +	m6811 | m68hc11 | m6812 | m68hc12)
@@ -6908,14 +6948,17 @@ index 0000000..6759825
 +	| hppa-* | hppa1.[01]-* | hppa2.0-* | hppa2.0[nw]-* | hppa64-* \
 +	| i*86-* | i860-* | i960-* | ia64-* \
 +	| ip2k-* | iq2000-* \
++	| lm32-* \
 +	| m32c-* | m32r-* | m32rle-* \
 +	| m68000-* | m680[012346]0-* | m68360-* | m683?2-* | m68k-* \
-+	| m88110-* | m88k-* | maxq-* | mcore-* \
++	| m88110-* | m88k-* | maxq-* | mcore-* | metag-* \
 +	| mips-* | mipsbe-* | mipseb-* | mipsel-* | mipsle-* \
 +	| mips16-* \
 +	| mips64-* | mips64el-* \
-+	| mips64vr-* | mips64vrel-* \
++	| mips64octeon-* | mips64octeonel-* \
 +	| mips64orion-* | mips64orionel-* \
++	| mips64r5900-* | mips64r5900el-* \
++	| mips64vr-* | mips64vrel-* \
 +	| mips64vr4100-* | mips64vr4100el-* \
 +	| mips64vr4300-* | mips64vr4300el-* \
 +	| mips64vr5000-* | mips64vr5000el-* \
@@ -6937,20 +6980,20 @@ index 0000000..6759825
 +	| powerpc-* | powerpc64-* | powerpc64le-* | powerpcle-* | ppcbe-* \
 +	| pyramid-* \
 +	| romp-* | rs6000-* \
-+	| sh-* | sh[1234]-* | sh[24]a-* | sh[23]e-* | sh[34]eb-* | sheb-* | shbe-* \
++	| sh-* | sh[1234]-* | sh[24]a-* | sh[24]aeb-* | sh[23]e-* | sh[34]eb-* | sheb-* | shbe-* \
 +	| shle-* | sh[1234]le-* | sh3ele-* | sh64-* | sh64le-* \
 +	| sparc-* | sparc64-* | sparc64b-* | sparc64v-* | sparc86x-* | sparclet-* \
 +	| sparclite-* \
 +	| sparcv8-* | sparcv9-* | sparcv9b-* | sparcv9v-* | strongarm-* | sv1-* | sx?-* \
 +	| tahoe-* | thumb-* \
-+	| tic30-* | tic4x-* | tic54x-* | tic55x-* | tic6x-* | tic80-* \
++	| tic30-* | tic4x-* | tic54x-* | tic55x-* | tic6x-* | tic80-* | tile-* \
 +	| tron-* \
 +	| v850-* | v850e-* | vax-* \
 +	| we32k-* \
 +	| x86-* | x86_64-* | xc16x-* | xps100-* | xscale-* | xscalee[bl]-* \
 +	| xstormy16-* | xtensa*-* \
 +	| ymp-* \
-+	| z8k-*)
++	| z8k-* | z80-*)
 +		;;
 +	# Recognize the basic CPU types without company name, with glob match.
 +	xtensa*)
@@ -7018,6 +7061,10 @@ index 0000000..6759825
 +		basic_machine=m68k-apollo
 +		os=-bsd
 +		;;
++	aros)
++		basic_machine=i386-pc
++		os=-aros
++		;;
 +	aux)
 +		basic_machine=m68k-apple
 +		os=-aux
@@ -7037,6 +7084,10 @@ index 0000000..6759825
 +	c90)
 +		basic_machine=c90-cray
 +		os=-unicos
++		;;
++        cegcc)
++		basic_machine=arm-unknown
++		os=-cegcc
 +		;;
 +	convex-c1)
 +		basic_machine=c1-convex
@@ -7104,6 +7155,10 @@ index 0000000..6759825
 +	delta88)
 +		basic_machine=m88k-motorola
 +		os=-sysv3
++		;;
++	dicos)
++		basic_machine=i686-pc
++		os=-dicos
 +		;;
 +	djgpp)
 +		basic_machine=i586-pc
@@ -7707,6 +7762,10 @@ index 0000000..6759825
 +		basic_machine=z8k-unknown
 +		os=-sim
 +		;;
++	z80-*-coff)
++		basic_machine=z80-unknown
++		os=-sim
++		;;
 +	none)
 +		basic_machine=none-none
 +		os=-none
@@ -7745,7 +7804,7 @@ index 0000000..6759825
 +	we32k)
 +		basic_machine=we32k-att
 +		;;
-+	sh[1234] | sh[24]a | sh[34]eb | sh[1234]le | sh[23]ele)
++	sh[1234] | sh[24]a | sh[24]aeb | sh[34]eb | sh[1234]le | sh[23]ele)
 +		basic_machine=sh-unknown
 +		;;
 +	sparc | sparcv8 | sparcv9 | sparcv9b | sparcv9v)
@@ -7817,8 +7876,9 @@ index 0000000..6759825
 +	-gnu* | -bsd* | -mach* | -minix* | -genix* | -ultrix* | -irix* \
 +	      | -*vms* | -sco* | -esix* | -isc* | -aix* | -sunos | -sunos[34]*\
 +	      | -hpux* | -unos* | -osf* | -luna* | -dgux* | -solaris* | -sym* \
++	      | -kopensolaris* \
 +	      | -amigaos* | -amigados* | -msdos* | -newsos* | -unicos* | -aof* \
-+	      | -aos* \
++	      | -aos* | -aros* \
 +	      | -nindy* | -vxsim* | -vxworks* | -ebmon* | -hms* | -mvs* \
 +	      | -clix* | -riscos* | -uniplus* | -iris* | -rtu* | -xenix* \
 +	      | -hiux* | -386bsd* | -knetbsd* | -mirbsd* | -netbsd* \
@@ -7827,7 +7887,7 @@ index 0000000..6759825
 +	      | -bosx* | -nextstep* | -cxux* | -aout* | -elf* | -oabi* \
 +	      | -ptx* | -coff* | -ecoff* | -winnt* | -domain* | -vsta* \
 +	      | -udi* | -eabi* | -lites* | -ieee* | -go32* | -aux* \
-+	      | -chorusos* | -chorusrdb* \
++	      | -chorusos* | -chorusrdb* | -cegcc* \
 +	      | -cygwin* | -pe* | -psos* | -moss* | -proelf* | -rtems* \
 +	      | -mingw32* | -linux-gnu* | -linux-newlib* | -linux-uclibc* \
 +	      | -uxpv* | -beos* | -mpeix* | -udk* \
@@ -7966,6 +8026,9 @@ index 0000000..6759825
 +		;;
 +	-zvmoe)
 +		os=-zvmoe
++		;;
++	-dicos*)
++		os=-dicos
 +		;;
 +	-none)
 +		;;
@@ -8237,7 +8300,7 @@ index 0000000..6759825
 +# End:
 diff --git a/configure b/configure
 new file mode 100755
-index 0000000..79b613b
+index 0000000..da7b869
 --- /dev/null
 +++ b/configure
 @@ -0,0 +1,31599 @@
@@ -11161,7 +11224,7 @@ index 0000000..79b613b
 +
 +PA_API_VERSION=12
 +
-+PA_PROTOCOL_VERSION=15
++PA_PROTOCOL_VERSION=16
 +
 +
 +# The stable ABI for client applications, for the version info x:y:z
@@ -49882,11 +49945,11 @@ index 0000000..3506ead
 +
 diff --git a/m4/ChangeLog b/m4/ChangeLog
 new file mode 100644
-index 0000000..c555775
+index 0000000..bc7c253
 --- /dev/null
 +++ b/m4/ChangeLog
 @@ -0,0 +1,11 @@
-+2009-05-05  gettextize  <bug-gnu-gettext@gnu.org>
++2009-05-12  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* gettext.m4: New file, from gettext-0.17.
 +	* iconv.m4: New file, from gettext-0.17.
@@ -61344,11 +61407,11 @@ index 0000000..1c8ff70
 +# End:
 diff --git a/po/ChangeLog b/po/ChangeLog
 new file mode 100644
-index 0000000..07b43c1
+index 0000000..23c1854
 --- /dev/null
 +++ b/po/ChangeLog
 @@ -0,0 +1,11 @@
-+2009-05-05  gettextize  <bug-gnu-gettext@gnu.org>
++2009-05-12  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* Makefile.in.in: New file, from gettext-0.17.
 +	* boldquot.sed: New file, from gettext-0.17.
@@ -68905,5 +68968,5 @@ index 0000000..dd00ee3
 +# Otherwise a system limit (for SysV at least) may be exceeded.
 +.NOEXPORT:
 -- 
-1.5.6.3
+1.6.2.4
 

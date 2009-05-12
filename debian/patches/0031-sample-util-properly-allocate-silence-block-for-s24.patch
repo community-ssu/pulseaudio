@@ -1,7 +1,7 @@
 From 9ec6e9f9d1321f91430f2813596cd30cfe8a6c4e Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Fri, 1 May 2009 04:14:02 +0200
-Subject: [PATCH] sample-util: properly allocate silence block for s24-32 formats
+Subject: [PATCH 31/49] sample-util: properly allocate silence block for s24-32 formats
 
 ---
  src/pulsecore/sample-util.c |    4 ++++
@@ -30,5 +30,5 @@ index a3e490b..dda3883 100644
                  cache->blocks[PA_SAMPLE_FLOAT32BE] = pa_memblock_ref(b);
                  break;
 -- 
-1.5.6.3
+1.6.2.4
 
