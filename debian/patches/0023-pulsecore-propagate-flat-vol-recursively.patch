@@ -1,7 +1,7 @@
 From 8f54d0cb238b202468073d59cbe7c652dc9016cf Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 17:43:55 +0200
-Subject: [PATCH 23/49] pulsecore: propagate flat-vol recursively
+Subject: [PATCH 23/51] pulsecore: propagate flat-vol recursively
 
 ---
  src/pulsecore/sink.c |   35 +++++++++++++++++++++++------------

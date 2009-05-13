@@ -1,7 +1,7 @@
 From 9ec6e9f9d1321f91430f2813596cd30cfe8a6c4e Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Fri, 1 May 2009 04:14:02 +0200
-Subject: [PATCH 31/49] sample-util: properly allocate silence block for s24-32 formats
+Subject: [PATCH 31/51] sample-util: properly allocate silence block for s24-32 formats
 
 ---
  src/pulsecore/sample-util.c |    4 ++++

@@ -1,6 +1,7 @@
 etc/pulse/daemon.conf
 etc/pulse/default.pa
 etc/pulse/system.pa
+etc/pulse/x-maemo-match.table
 usr/bin/pulseaudio
 usr/lib/libpulsecore-*.so
 usr/lib/pulse-*/modules/libalsa-util.so
@@ -19,6 +20,7 @@ usr/lib/pulse-*/modules/module-augment-properties.so
 usr/lib/pulse-*/modules/module-card-restore.so
 usr/lib/pulse-*/modules/module-combine.so
 usr/lib/pulse-*/modules/module-device-restore.so
+usr/lib/pulse-*/modules/module-match.so
 usr/lib/pulse-*/modules/module-native-protocol-unix.so
 usr/lib/pulse-*/modules/module-null-sink.so
 usr/lib/pulse-*/modules/module-null-source.so

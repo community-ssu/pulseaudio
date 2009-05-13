@@ -1,7 +1,7 @@
 From f27950671fcfa40acea2c980cc14202efab8b1e0 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Fri, 24 Apr 2009 15:33:05 +0300
-Subject: [PATCH 43/49] alsa-sink-old: FIXME workaround sink.hw1 drain..
+Subject: [PATCH 43/51] alsa-sink-old: FIXME workaround sink.hw1 drain..
 
 ---
  src/modules/alsa/module-alsa-sink-old.c |    3 ++-

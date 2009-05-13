@@ -46,4 +46,6 @@
 0046-core-Take-samples-from-silence-cache-rather-than-wr.patch
 0047-suspend-on-idle-add-per-device-timeout-property.patch
 0048-context-don-t-fail-if-session-bus-is-not-there.patch
-0049-autofoo.patch
+0049-match-don-t-double-in-case-of-missing-table-file.patch
+0050-match-match-rule-earlier-in-SINK_INPUT_NEW.patch
+0051-autofoo.patch

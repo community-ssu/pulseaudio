@@ -1,7 +1,7 @@
 From 2d2f4c066f1bd0aa3b357db75f68e7287c025777 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Sat, 4 Apr 2009 14:50:19 +0300
-Subject: [PATCH 15/49] stream-restore: add DEBUG_VOLUME
+Subject: [PATCH 15/51] stream-restore: add DEBUG_VOLUME
 
 ---
  src/modules/module-stream-restore.c |    4 ++--
