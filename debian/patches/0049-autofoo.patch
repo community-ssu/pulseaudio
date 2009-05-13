@@ -1,6 +1,6 @@
-From 039eb2b83a8acc235e76923e5a38f4a66cc18595 Mon Sep 17 00:00:00 2001
+From 8a00b806177fdf0c7dc6fdf255863f76b483c8af Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
-Date: Tue, 12 May 2009 14:59:25 +0300
+Date: Wed, 13 May 2009 14:26:05 +0300
 Subject: [PATCH 49/49] autofoo
 
 ---
@@ -1169,11 +1169,11 @@ index 0000000..83bc72e
 +
 diff --git a/ChangeLog b/ChangeLog
 new file mode 100644
-index 0000000..276fc41
+index 0000000..c399ffd
 --- /dev/null
 +++ b/ChangeLog
 @@ -0,0 +1,5 @@
-+2009-05-12  gettextize  <bug-gnu-gettext@gnu.org>
++2009-05-13  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* Makefile.am (EXTRA_DIST): Add config.rpath, m4/ChangeLog.
 +	* configure.ac (AC_CONFIG_FILES): Add po/Makefile.in.
@@ -49945,11 +49945,11 @@ index 0000000..3506ead
 +
 diff --git a/m4/ChangeLog b/m4/ChangeLog
 new file mode 100644
-index 0000000..bc7c253
+index 0000000..8fd5a30
 --- /dev/null
 +++ b/m4/ChangeLog
 @@ -0,0 +1,11 @@
-+2009-05-12  gettextize  <bug-gnu-gettext@gnu.org>
++2009-05-13  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* gettext.m4: New file, from gettext-0.17.
 +	* iconv.m4: New file, from gettext-0.17.
@@ -61407,11 +61407,11 @@ index 0000000..1c8ff70
 +# End:
 diff --git a/po/ChangeLog b/po/ChangeLog
 new file mode 100644
-index 0000000..23c1854
+index 0000000..322547c
 --- /dev/null
 +++ b/po/ChangeLog
 @@ -0,0 +1,11 @@
-+2009-05-12  gettextize  <bug-gnu-gettext@gnu.org>
++2009-05-13  gettextize  <bug-gnu-gettext@gnu.org>
 +
 +	* Makefile.in.in: New file, from gettext-0.17.
 +	* boldquot.sed: New file, from gettext-0.17.

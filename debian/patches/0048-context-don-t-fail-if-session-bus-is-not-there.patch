@@ -1,4 +1,4 @@
-From 7619ea9dbf9b00a56fb5bc03e796bc831d8a842d Mon Sep 17 00:00:00 2001
+From 9dffebb642cb72bb01b776e4316a5a0d0b997e5d Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 12 May 2009 01:39:55 +0300
 Subject: [PATCH 48/49] context: don't fail if session bus is not there

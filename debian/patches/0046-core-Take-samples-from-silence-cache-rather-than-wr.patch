@@ -1,4 +1,4 @@
-From 89aeac77d935e28df09db15d6b7658a1a596c6d9 Mon Sep 17 00:00:00 2001
+From 9b684af615291b71a1615cc8a476a9ffabf25368 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Thu, 7 May 2009 19:55:57 +0300
 Subject: [PATCH 46/49] core: Take samples from silence cache rather than write zeros
@@ -11,7 +11,7 @@ gain was not what I hoped for.
  1 files changed, 22 insertions(+), 10 deletions(-)
 
 diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
-index c5a9803..10d4dc5 100644
+index 63752d9..c9bf5ef 100644
 --- a/src/pulsecore/sink.c
 +++ b/src/pulsecore/sink.c
 @@ -788,11 +788,17 @@ void pa_sink_render(pa_sink*s, size_t length, pa_memchunk *result) {

@@ -1,4 +1,4 @@
-From 33ea1c3dc37626d007919d50597cfc7dde5e1dbd Mon Sep 17 00:00:00 2001
+From b4052aa7608bb0cda8be1a69c26581378cf4e5a3 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 12 May 2009 01:48:05 +0300
 Subject: [PATCH 47/49] suspend-on-idle: add per-device timeout property

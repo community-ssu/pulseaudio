@@ -1,6 +1,6 @@
-pulseaudio (0.9.15-1maemo7) UNRELEASED; urgency=low
+pulseaudio (0.9.15-1maemo7) unstable; urgency=low
 
-  * post-release bump
+  * Fix sound distortion introduced in previous version.
 
  -- Maemo Multimedia <multimedia@maemo.org>  Tue, 12 May 2009 19:43:59 +0300
 
