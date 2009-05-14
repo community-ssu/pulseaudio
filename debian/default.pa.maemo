@@ -40,6 +40,9 @@ load-module module-nokia-voice master_sink=sink.hw0 master_source=source.hw0 dbu
 .ifexists module-nokia-music.so
 load-module module-nokia-music sink_name=sink.music master_sink=sink.voice.raw
 .endif
+.ifexists module-nokia-record.so
+load-module module-nokia-record source_name=source.record master_source=source.hw0
+.endif
 
 set-default-sink sink.music
 set-default-source source.voice
