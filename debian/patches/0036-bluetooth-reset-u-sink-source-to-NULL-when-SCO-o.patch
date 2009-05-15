@@ -1,7 +1,7 @@
 From 9078ba53fedd019956d67a6022b91c57ce5b51dc Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 22 Apr 2009 15:42:35 +0300
-Subject: [PATCH 36/51] bluetooth: reset u->{sink,source} to NULL when SCO over PCM fails
+Subject: [PATCH 36/53] bluetooth: reset u->{sink,source} to NULL when SCO over PCM fails
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |    5 ++++-

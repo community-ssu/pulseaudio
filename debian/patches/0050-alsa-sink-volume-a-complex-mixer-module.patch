@@ -1,13 +1,13 @@
-From a505774c54f4c75214d612a61686811250f45f30 Mon Sep 17 00:00:00 2001
+From 091646a1c9a638962503e43684c3b53735689c49 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:09:01 +0300
-Subject: [PATCH 42/51] alsa: sink-volume, a complex mixer module
+Subject: [PATCH 50/53] alsa: sink-volume, a complex mixer module
 
 ---
  src/Makefile.am                                   |    7 +
  src/modules/alsa/module-alsa-sink-volume-symdef.h |   27 +
- src/modules/alsa/module-alsa-sink-volume.c        | 1535 +++++++++++++++++++++
- 3 files changed, 1569 insertions(+), 0 deletions(-)
+ src/modules/alsa/module-alsa-sink-volume.c        | 1582 +++++++++++++++++++++
+ 3 files changed, 1616 insertions(+), 0 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-volume-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-volume.c
 
@@ -78,10 +78,10 @@ index 0000000..30c44c1
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
 new file mode 100644
-index 0000000..01aea54
+index 0000000..c279a01
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-volume.c
-@@ -0,0 +1,1535 @@
+@@ -0,0 +1,1582 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -161,6 +161,8 @@ index 0000000..01aea54
 +    NULL
 +};
 +
++//#define DEPRECATED_VOLUME
++
 +/* Update mixer states,
 + * max       0dB
 + * off       mute
@@ -203,8 +205,22 @@ index 0000000..01aea54
 +
 +#define MAX_TUNING_TABLES (2)
 +
++#ifdef DEPRECATED_VOLUME
++/* String with single integer defining current default volume.
++ * If property is not defined, hard coded default volume is
++ * used. */
++#define PROP_MIXER_DEFAULT_VOLUME "x-maemo.alsa_sink.default_volume"
++#endif
++
 +/* from Nokia modules */
 +#define XMAEMO_MODE "x-maemo.mode"
++
++#ifdef DEBUG_VOLUME
++#define log_spam(args...) pa_log_debug(args)
++#else
++#define log_spam(args...)
++#endif
++
 +
 +struct slave_mixer_t;
 +typedef struct slave_mixer_t slave_mixer_t;
@@ -236,9 +252,11 @@ index 0000000..01aea54
 +
 +    struct slave_mixer_t **slaves;
 +
++#ifdef DEPRECATED_VOLUME
 +    /* store mixer volumes when mixer not in use */
 +    pa_cvolume cache_volume;
 +    pa_bool_t cache_muted;
++#endif
 +
 +    PA_LLIST_FIELDS(struct mixer_control_t);
 +} mixer_control_t;
@@ -274,11 +292,14 @@ index 0000000..01aea54
 +
 +    pa_bool_t sw_vol_compensation;
 +
++#ifdef DEPRECATED_VOLUME
 +    /* store mixer volumes */
 +    GDBM_FILE gdbm_file;
 +    pa_bool_t cache_volumes;
 +    /* default mixer dB value */
 +    int default_volume;
++    pa_bool_t mixers_initialized;
++#endif
 +
 +    /* current audio mode */
 +    char *audio_mode;
@@ -451,13 +472,13 @@ index 0000000..01aea54
 +            if ((err = snd_mixer_selem_get_playback_volume(m->mixer_elem, m->mixer_map[i], &hw_vol)) < 0)
 +                goto fail;
 +
-+            pa_log_debug("Got hw volume %s ch %d: %ld", m->name, i, hw_vol);
++            log_spam("Got hw volume %s ch %d: %ld", m->name, i, hw_vol);
 +
 +            mB = hw_mixer_to_mB_value(m, active_tuning, hw_vol);
 +
 +            r.values[i] = pa_sw_volume_from_dB((double) mB / 100.0);
 +
-+            pa_log_debug("Alsa %ld hw = tuned mB %ld = %d PA volume", hw_vol, mB, r.values[i]);
++            log_spam("Alsa %ld hw = tuned mB %ld = %d PA volume", hw_vol, mB, r.values[i]);
 +        }
 +
 +    } else {
@@ -467,23 +488,23 @@ index 0000000..01aea54
 +        if ((err = snd_mixer_selem_get_playback_volume(u->active_mixer->mixer_elem, SND_MIXER_SCHN_MONO, &hw_vol)) < 0)
 +            goto fail;
 +
-+        pa_log_debug("Got mono alsa volume %s: %ld", m->name, hw_vol);
++        log_spam("Got mono alsa volume %s: %ld", m->name, hw_vol);
 +
 +        mB = hw_mixer_to_mB_value(m, active_tuning, hw_vol);
 +
 +        pa_vol = pa_sw_volume_from_dB((double) mB / 100.0);
 +
-+        pa_log_debug("Alsa %ld hw = tuned mB %ld = %d PA volume", hw_vol, mB, pa_vol);
++        log_spam("Alsa %ld hw = tuned mB %ld = %d PA volume", hw_vol, mB, pa_vol);
 +
 +        pa_cvolume_set(&r, u->sink->sample_spec.channels, pa_vol);
 +    }
 +
-+    pa_log_debug("Read hardware volume: %s", pa_cvolume_snprint(t, sizeof(t), &r));
++    log_spam("Read hardware volume: %s", pa_cvolume_snprint(t, sizeof(t), &r));
 +
 +    if (!pa_cvolume_equal(&u->active_mixer->hardware_volume, &r)) {
 +        pa_cvolume reset;
 +
-+        pa_log_debug("Active mixer value has changed, updating sink value");
++        log_spam("Active mixer value has changed, updating sink value");
 +
 +        s->virtual_volume = u->active_mixer->hardware_volume = r;
 +
@@ -510,7 +531,7 @@ index 0000000..01aea54
 +    real_mB_vol = hw_mixer_to_mB_value(m, table, *hw_vol);
 +    real_pa_vol = pa_sw_volume_from_dB((double) real_mB_vol / 100.0);
 +
-+    pa_log_debug("Setting pa vol %d = %ld mB -> %s: %ld = %ld mB = %d pa vol",
++    log_spam("Setting pa vol %d = %ld mB -> %s: %ld = %ld mB = %d pa vol",
 +                 pa_vol, mB_vol, m->name, *hw_vol, real_mB_vol, real_pa_vol);
 +
 +    return real_pa_vol;
@@ -584,17 +605,17 @@ index 0000000..01aea54
 +
 +    m->hardware_volume = r;
 +
-+    pa_log_debug("Requested volume: %s", pa_cvolume_snprint(t, sizeof(t), vv));
-+    pa_log_debug("Got hardware volume: %s", pa_cvolume_snprint(t, sizeof(t), &m->hardware_volume));
++    log_spam("Requested volume: %s", pa_cvolume_snprint(t, sizeof(t), vv));
++    log_spam("Got hardware volume: %s", pa_cvolume_snprint(t, sizeof(t), &m->hardware_volume));
 +
 +    if (u->sw_vol_compensation)  {
 +        /* Match exactly what the user requested by software */
 +        pa_sw_cvolume_divide(&u->sink->soft_volume, vv, &m->hardware_volume);
-+        pa_log_debug("Calculated software volume: %s", pa_cvolume_snprint(t, sizeof(t), &u->sink->soft_volume));
++        log_spam("Calculated software volume: %s", pa_cvolume_snprint(t, sizeof(t), &u->sink->soft_volume));
 +    } else {
 +        /* We can't match exactly what the user requested, hence let's
 +         * at least tell the user about it */
-+            pa_log_debug("Skip software volume calculation");
++            log_spam("Skip software volume calculation");
 +        *vv = r;
 +    }
 +
@@ -659,7 +680,7 @@ index 0000000..01aea54
 +        }
 +    }
 +
-+    pa_log_debug("set volume to active mixer %s", u->active_mixer->name);
++    log_spam("set volume to active mixer %s", u->active_mixer->name);
 +
 +    set_alsa_mixer_volumes(u, u->active_mixer, &s->virtual_volume);
 +}
@@ -737,7 +758,7 @@ index 0000000..01aea54
 +        u->sink->set_mute = NULL;
 +    }
 +
-+    pa_log("%s--> tuning %d filled %d", m->name, active_tuning, td->tuning_table_filled);
++    log_spam("%s--> tuning %d filled %d", m->name, active_tuning, td->tuning_table_filled);
 +
 +    u->active_mixer = m;
 +    return 0;
@@ -910,7 +931,7 @@ index 0000000..01aea54
 +
 +static void free_mixer_elements(struct userdata *u) {
 +    struct mixer_control_t *m;
-+    pa_log_debug("free mixer elements");
++    log_spam("free mixer elements");
 +
 +    u->active_mixer = NULL;
 +
@@ -960,7 +981,7 @@ index 0000000..01aea54
 +        return -1;
 +    }
 +
-+    pa_log_debug("Parsing mixer tuning: %s", tuning);
++    log_spam("Parsing mixer tuning: %s", tuning);
 +
 +    /* The mixer tuning should look like this "HP DAC=5:-6000,50:-3000,110:0" where the
 +       first value in ":" separated pair is HW register value and the second value
@@ -1078,17 +1099,17 @@ index 0000000..01aea54
 +                pa_log_error("%s: set mixer %s slave: slave mode unimplemented (muting)", u->device_name, mixer);
 +                ret = 1;
 +            } else if (strcmp(mode, PROP_MIXER_OFF) == 0) {
-+                pa_log_debug("%s: set mixer %s off", u->device_name, mixer);
++                log_spam("%s: set mixer %s off", u->device_name, mixer);
 +                m->mode = MM_STATIC;
 +            } else if (strcmp(mode, PROP_MIXER_MAX) == 0) {
-+                pa_log_debug("%s: set mixer %s to max", u->device_name, mixer);
++                log_spam("%s: set mixer %s to max", u->device_name, mixer);
 +                m->mode = MM_STATIC;
 +                mute_state = FALSE;
 +                hw_volume = m->hw_volume_max;
 +            } else {
 +                if (pa_atoi(mode, &hw_volume) == 0 &&
 +                    hw_volume >= m->hw_volume_min && hw_volume <= m->hw_volume_max) {
-+                    pa_log_debug("%s: set mixer %s to %d", u->device_name, mixer, hw_volume);
++                    log_spam("%s: set mixer %s to %d", u->device_name, mixer, hw_volume);
 +                }
 +                else {
 +                    pa_log_error("%s: Bad mode for mixer %s: %s (muting)", u->device_name, mixer, mode);
@@ -1120,8 +1141,10 @@ index 0000000..01aea54
 +    return ret;
 +}
 +
++#ifdef DEPRECATED_VOLUME
 +static void store_active_mixer_volume(struct userdata *u);
 +static void load_mixer_volume(struct userdata *u, struct mixer_control_t *m);
++#endif
 +
 +/** Parse mixer control list.
 + *
@@ -1151,6 +1174,7 @@ index 0000000..01aea54
 +        pa_log_warn("Setting mixer state for %d mixers failed", ret);
 +    }
 +
++#ifdef DEPRECATED_VOLUME
 +    /* update previously stored volumes to sink */
 +    if (u->active_mixer) {
 +        /* mixer volume has to be loaded from gdbm every time mixer setup changes,
@@ -1162,6 +1186,7 @@ index 0000000..01aea54
 +        pa_log_error("No active mixer, THIS IS BAD!");
 +        ret = -1;
 +    }
++#endif
 +
 +    return ret;
 +}
@@ -1178,10 +1203,12 @@ index 0000000..01aea54
 +    pa_assert(u);
 +    pa_assert(s);
 +
++#ifdef DEPRECATED_VOLUME
 +    /* store/read values only after we have properties loaded */
 +    if (u->audio_mode)
 +        /* store volumes from currently active mixer */
 +        store_active_mixer_volume(u);
++#endif
 +
 +    v = pa_proplist_gets(s->proplist, XMAEMO_MODE);
 +    if (v) {
@@ -1201,11 +1228,25 @@ index 0000000..01aea54
 +            u->audio_mode = pa_xstrdup(v);
 +    }
 +
++#ifdef DEPRECATED_VOLUME
++    if (u->audio_mode) {
++        v = pa_proplist_gets(s->proplist, PROP_MIXER_DEFAULT_VOLUME);
++        if (v) {
++            if (!pa_atoi(v, &tmp)) {
++                u->default_volume = tmp;
++                log_spam("using %d as default_volume", u->default_volume);
++            }
++        } else {
++            u->default_volume = DEFAULT_MIXER_DB_VALUE_ON_FIRST_BOOT;
++        }
++    }
++#endif
++
 +    v = pa_proplist_gets(s->proplist, PROP_MIXER_TUNING_MODE);
 +    if (v) {
 +        if (!pa_atoi(v, &tmp)) {
 +            if (u->active_tuning != tmp) {
-+                pa_log_debug("change tuning mode to %d", tmp);
++                log_spam("change tuning mode to %d", tmp);
 +                u->active_tuning = tmp;
 +            }
 +        }
@@ -1216,11 +1257,23 @@ index 0000000..01aea54
 +        if (v) {
 +            update_mixer_setup(u, v);
 +        }
++
++#ifdef DEPRECATED_VOLUME
++        if (u->active_mixer && !u->mixers_initialized) {
++            /* Everything should be in order, write new volume callbacks */
++            u->sink->flags = u->original_flags | PA_SINK_HW_VOLUME_CTRL | PA_SINK_DECIBEL_VOLUME;
++            u->sink->get_volume = sink_get_volume_cb;
++            u->sink->set_volume = sink_set_volume_cb;
++            log_spam("%s setting new volume callbacks", u->device_name);
++            u->mixers_initialized = TRUE;
++        }
++#endif
 +    }
 +
 +    return PA_HOOK_OK;
 +}
 +
++#ifdef DEPRECATED_VOLUME
 +static int init_volume_cache(struct userdata *u) {
 +    char *fn;
 +    char *fname;
@@ -1254,13 +1307,17 @@ index 0000000..01aea54
 +
 +    return 0;
 +}
++#endif
 +
++#ifdef DEPRECATED_VOLUME
 +static char* get_gdbm_key(struct userdata *u, struct mixer_control_t *m) {
 +    pa_assert(u);
 +    pa_assert(u->audio_mode);
 +    return pa_sprintf_malloc("%s-%s", u->audio_mode, m->name);
 +}
++#endif
 +
++#ifdef DEPRECATED_VOLUME
 +static struct entry* read_entry(struct userdata *u, struct mixer_control_t *m) {
 +    datum key, data;
 +    struct entry *e;
@@ -1306,7 +1363,9 @@ index 0000000..01aea54
 +    pa_xfree(data.dptr);
 +    return NULL;
 +}
++#endif
 +
++#ifdef DEPRECATED_VOLUME
 +/* TODO: I don't think the active mixer name should be the key for stored volume,
 +   audio mode ("x-maemo.mode") would serve purpose much better. */
 +static int store_mixer_volume(struct userdata *u, struct mixer_control_t *m) {
@@ -1337,7 +1396,9 @@ index 0000000..01aea54
 +
 +    return 0;
 +}
++#endif
 +
++#ifdef DEPRECATED_VOLUME
 +/** Load mixer values from gdbm.
 + *
 + */
@@ -1365,7 +1426,9 @@ index 0000000..01aea54
 +    if (entry)
 +        pa_xfree(entry);
 +}
++#endif
 +
++#ifdef DEPRECATED_VOLUME
 +static void store_active_mixer_volume(struct userdata *u) {
 +    struct mixer_control_t *m = u->active_mixer;
 +    pa_assert(u);
@@ -1390,7 +1453,7 @@ index 0000000..01aea54
 +        pa_log_info("%s: Synced.", u->device_name);
 +    }
 +}
-+
++#endif
 +
 +static pa_hook_result_t sink_unlink_hook_callback(pa_core *c, pa_sink *s, struct userdata *u) {
 +    if (s != u->sink)
@@ -1456,6 +1519,9 @@ index 0000000..01aea54
 +
 +    global_userdata = u;
 +
++#ifdef DEPRECATED_VOLUME
++    u->mixers_initialized = FALSE;
++#endif
 +    u->sink = hw_sink;
 +    u->active_tuning = PROP_MIXER_TUNING_PRI;
 +
@@ -1476,8 +1542,10 @@ index 0000000..01aea54
 +        goto fail;
 +    }
 +
++#ifdef DEPRECATED_VOLUME
 +    u->default_volume = DEFAULT_MIXER_DB_VALUE_ON_FIRST_BOOT;
 +    pa_modargs_get_value_s32(ma, "default_volume", &u->default_volume);
++#endif
 +
 +    if ((err = snd_mixer_open(&u->mixer_handle, 0)) < 0) {
 +        pa_log_error("Error opening mixer: %s", snd_strerror(err));
@@ -1503,7 +1571,9 @@ index 0000000..01aea54
 +            u->sw_vol_compensation = FALSE;
 +    }
 +
++#ifdef DEPRECATED_VOLUME
 +    init_volume_cache(u);
++#endif
 +
 +    /* hook in case the sink is unloaded */
 +    u->sink_unlink_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_UNLINK],
@@ -1515,35 +1585,8 @@ index 0000000..01aea54
 +                                                    PA_HOOK_LATE,
 +                                                    (pa_hook_cb_t)sink_proplist_changed_hook_callback, u);
 +
-+    /* Everything should be in order, write new volume callbacks */
-+    u->sink->flags = u->original_flags | PA_SINK_HW_VOLUME_CTRL | PA_SINK_DECIBEL_VOLUME;
-+    u->sink->get_volume = sink_get_volume_cb;
-+    u->sink->set_volume = sink_set_volume_cb;
-+
 +    /* Try to load the initial mixer settings. */
 +    (void)sink_proplist_changed_hook_callback(u->core, u->sink, u);
-+
-+    if (!u->active_mixer) {
-+        pa_log_info("No control mixer found from initial settings, selecting default %s", alsa_mixer);
-+        if (set_control_mixer_elem_by_name(u, alsa_mixer)) {
-+            pa_log_error("Unable set control mixer %s", alsa_mixer);
-+            goto fail;
-+        }
-+        else {
-+            char *tmp = pa_sprintf_malloc("%s:%s", u->active_mixer->name, PROP_MIXER_CONTROL);
-+            pa_proplist_sets(u->sink->proplist, PROP_MIXER, tmp);
-+            pa_xfree(tmp);
-+            if (u->audio_mode) {
-+                load_mixer_volume(u, u->active_mixer);
-+                pa_log_debug("%s: update active mixer volume", u->device_name);
-+                pa_sink_set_volume(u->sink, &u->active_mixer->cache_volume, TRUE, TRUE, TRUE);
-+                pa_sink_set_mute(u->sink, u->active_mixer->cache_muted);
-+            } else {
-+                /* TODO set softvolume to sink */
-+                pa_log_debug("%s: audio mode undefined, cannot update mixer volume", u->device_name);
-+            }
-+        }
-+    }
 +
 +    if (alsa_mixer)
 +        pa_xfree(alsa_mixer);
@@ -1584,14 +1627,18 @@ index 0000000..01aea54
 +    if (u->sink_unlink_slot)
 +        pa_hook_slot_free(u->sink_unlink_slot);
 +
++#ifdef DEPRECATED_VOLUME
 +    if (u->cache_volumes)
 +        store_active_mixer_volume(u);
++#endif
 +
 +    if (u->mixer_list)
 +        free_mixer_elements(u);
 +
++#ifdef DEPRECATED_VOLUME
 +    if (u->gdbm_file)
 +        gdbm_close(u->gdbm_file);
++#endif
 +
 +    if (u->audio_mode)
 +        pa_xfree(u->audio_mode);

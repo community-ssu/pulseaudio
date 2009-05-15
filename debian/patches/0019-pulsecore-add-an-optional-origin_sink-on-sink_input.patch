@@ -1,7 +1,7 @@
 From c4d0f777436c949dc5f4507f4ab6cb00e93951db Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 16:33:36 +0200
-Subject: [PATCH 19/51] pulsecore: add an optional origin_sink on sink_input
+Subject: [PATCH 19/53] pulsecore: add an optional origin_sink on sink_input
 
 ---
  src/pulsecore/sink-input.c |    1 +

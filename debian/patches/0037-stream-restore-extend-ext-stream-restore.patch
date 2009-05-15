@@ -1,7 +1,7 @@
 From 7167090e4498ec087ce2df8c7f8e268420ed4aa7 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 7 May 2009 15:50:17 +0300
-Subject: [PATCH 37/51] stream-restore: extend ext-stream-restore
+Subject: [PATCH 37/53] stream-restore: extend ext-stream-restore
 
 This time, the patch introduces new functions using a struct
 pa_ext_stream_restore2_info.
