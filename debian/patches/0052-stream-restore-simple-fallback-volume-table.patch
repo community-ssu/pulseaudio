@@ -1,14 +1,14 @@
-From a359897dcefc013d8e99ec1724897209f2b81a02 Mon Sep 17 00:00:00 2001
+From 9a6fe0aee8507fc5fcfe91455b27d74d56ccb9be Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 15 May 2009 17:24:54 +0300
-Subject: [PATCH 51/53] stream-restore: simple fallback volume table
+Subject: [PATCH 52/53] stream-restore: simple fallback volume table
 
 ---
- src/modules/module-stream-restore.c |   92 ++++++++++++++++++++++++++++++++++-
- 1 files changed, 91 insertions(+), 1 deletions(-)
+ src/modules/module-stream-restore.c |   94 ++++++++++++++++++++++++++++++++++-
+ 1 files changed, 93 insertions(+), 1 deletions(-)
 
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index 2fc34a2..424c9d5 100644
+index 2fc34a2..f796122 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
 @@ -59,15 +59,22 @@ PA_MODULE_LOAD_ONCE(TRUE);
@@ -35,7 +35,7 @@ index 2fc34a2..424c9d5 100644
      NULL
  };
  
-@@ -495,6 +502,86 @@ static void clear_db(struct userdata *u) {
+@@ -495,6 +502,88 @@ static void clear_db(struct userdata *u) {
      gdbm_reorganize(u->gdbm_file);
  }
  
@@ -92,6 +92,8 @@ index 2fc34a2..424c9d5 100644
 +            e.volume_valid = TRUE;
 +            pa_cvolume_set(&e.volume, 1, pa_sw_volume_from_dB(db));
 +            pa_channel_map_init_mono(&e.channel_map);
++	    e.volume_is_absolute = TRUE;
++	    e.volume_is_absolute_valid = TRUE;
 +
 +            key.dptr = (void*) ln;
 +            key.dsize = (int) strlen(ln);
@@ -122,7 +124,7 @@ index 2fc34a2..424c9d5 100644
  static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
      pa_sink_input *si;
      pa_source_output *so;
-@@ -875,6 +962,9 @@ int pa__init(pa_module*m) {
+@@ -875,6 +964,9 @@ int pa__init(pa_module*m) {
      pa_log_info("Sucessfully opened database file '%s'.", fname);
      pa_xfree(fname);
  

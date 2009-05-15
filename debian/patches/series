@@ -48,6 +48,6 @@
 0048-blueototh-make-auto-connect-optional.patch
 0049-alsa-port-the-old-alsa-modules.patch
 0050-alsa-sink-volume-a-complex-mixer-module.patch
-0051-stream-restore-simple-fallback-volume-table.patch
-0052-debug-default-who-try-to-set-default-sink-source.patch
+0051-debug-default-who-try-to-set-default-sink-source.patch
+0052-stream-restore-simple-fallback-volume-table.patch
 0053-autofoo.patch

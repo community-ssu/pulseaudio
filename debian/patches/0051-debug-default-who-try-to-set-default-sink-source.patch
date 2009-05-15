@@ -1,7 +1,7 @@
 From 72d32a59abfd8f3678e6582ebafd06b381f93bb0 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Fri, 15 May 2009 18:11:52 +0300
-Subject: [PATCH 52/53] debug default who try to set default sink/source
+Subject: [PATCH 51/53] debug default who try to set default sink/source
 
 ---
  src/pulsecore/protocol-native.c |    4 ++++
