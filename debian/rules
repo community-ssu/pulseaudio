@@ -44,7 +44,7 @@ common-install-arch::
 	cp -a $(CURDIR)/debian/daemon.conf.maemo $(CURDIR)/debian/tmp/etc/pulse/daemon.conf
 	cp -a $(CURDIR)/debian/default.pa.maemo $(CURDIR)/debian/tmp/etc/pulse/default.pa
 	cp -a $(CURDIR)/debian/default.pa.maemo $(CURDIR)/debian/tmp/etc/pulse/system.pa
-	cp -a $(CURDIR)/debian/x-maemo-match.table $(CURDIR)/debian/tmp/etc/pulse/x-maemo-match.table
+	cp -a $(CURDIR)/debian/x-maemo-*.table $(CURDIR)/debian/tmp/etc/pulse/x-maemo-*.table
 	cp -a $(CURDIR)/config.h $(CURDIR)/debian/tmp/usr/include/pulsecore/pulsecore-config.h
 
 common-binary-post-install-arch:: list-missing

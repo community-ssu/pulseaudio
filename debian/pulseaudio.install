@@ -2,6 +2,7 @@ etc/pulse/daemon.conf
 etc/pulse/default.pa
 etc/pulse/system.pa
 etc/pulse/x-maemo-match.table
+etc/pulse/x-maemo-stream-restore.table
 usr/bin/pulseaudio
 usr/lib/libpulsecore-*.so
 usr/lib/pulse-*/modules/libalsa-util.so
