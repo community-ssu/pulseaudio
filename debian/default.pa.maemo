@@ -8,7 +8,6 @@ load-module module-native-protocol-unix
 load-module module-simple-protocol-unix
 
 ### Automatically restore the volume of streams and devices
-load-module module-match table=/etc/pulse/x-maemo-match.table
 load-module module-stream-restore fallback_table=/etc/pulse/x-maemo-stream-restore.table
 load-module module-rescue-streams
 load-module module-suspend-on-idle timeout=5
@@ -85,3 +84,5 @@ load-module module-policy-enforcement
 .ifexists module-nokia-audiots.so
 load-module module-nokia-audiots hw_sink_name=sink.hw0 port=3001
 .endif
+
+load-module module-match table=/etc/pulse/x-maemo-match.table
