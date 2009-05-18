@@ -1,25 +1,24 @@
-From 053f2f5a4c76a842e253c0b85ca284eec796fb5b Mon Sep 17 00:00:00 2001
+From fdc76d27e244247c177b20f18e45aead7f4d49c7 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 11 May 2009 21:54:10 +0300
-Subject: [PATCH 40/53] native-protocol: send supported extensions in client & server
+Subject: [PATCH 49/53] native-protocol: send supported extensions in client & server
 
 The client will send a list of extension-id along with SET_NAME.
 ---
  PROTOCOL                            |   12 ++++++
  src/modules/module-stream-restore.c |    4 +-
  src/pulse/context.c                 |   51 ++++++++++++++++++++++++--
- src/pulse/context.h                 |    3 ++
  src/pulse/ext-stream-restore.c      |    9 +++--
- src/pulse/internal.h                |    3 +-
- src/pulse/xmalloc.h                 |   13 +++++++
- src/pulsecore/core-util.h           |   16 ++++++++
+ src/pulse/internal.h                |    5 ++-
+ src/pulsecore/core-util.c           |   28 ++++++++++++++
+ src/pulsecore/core-util.h           |    3 ++
  src/pulsecore/native-common.h       |    1 +
  src/pulsecore/protocol-native.c     |   69 ++++++++++++++++++++++++++++++++---
  src/pulsecore/protocol-native.h     |    1 +
  src/pulsecore/strlist.c             |   37 +++++++++++++++++++
  src/pulsecore/strlist.h             |    9 +++++
  src/tests/strlist-test.c            |    9 +++++
- 14 files changed, 220 insertions(+), 17 deletions(-)
+ 13 files changed, 221 insertions(+), 17 deletions(-)
 
 diff --git a/PROTOCOL b/PROTOCOL
 index 9955da5..9603051 100644
@@ -45,7 +44,7 @@ index 9955da5..9603051 100644
  
  First version supported.
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index db30528..2fc34a2 100644
+index db30528..0ec83fc 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
 @@ -648,7 +648,7 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
@@ -53,7 +52,7 @@ index db30528..2fc34a2 100644
                      pa_tagstruct_puts(reply, e->device_valid ? e->device : NULL);
                      pa_tagstruct_put_boolean(reply, e->muted_valid ? e->muted : FALSE);
 -		    if (c->version >= 16) /* FIXME: should be client side extension version */
-+		    if (pa_native_connection_extension_supported(c, "stream-restore-2"))
++                    if (pa_native_connection_extension_supported(c, "stream-restore-2"))
                          pa_tagstruct_put_boolean(reply, e->volume_is_absolute_valid ? e->volume_is_absolute : FALSE);
  
                      pa_xfree(e);
@@ -62,7 +61,7 @@ index db30528..2fc34a2 100644
                      goto fail;
  
 -                if (c->version >= 16) {
-+		if (pa_native_connection_extension_supported(c, "stream-restore-2")) {
++                if (pa_native_connection_extension_supported(c, "stream-restore-2")) {
                      if (pa_tagstruct_get_boolean(t, &volume_is_absolute) < 0)
                          goto fail;
  
@@ -160,22 +159,8 @@ index 90c15b1..5443bac 100644
 +
 +    return !pa_strv_index((const char * const *)c->supported_extensions, extension, NULL);
 +}
-diff --git a/src/pulse/context.h b/src/pulse/context.h
-index 139d0e0..8762b51 100644
---- a/src/pulse/context.h
-+++ b/src/pulse/context.h
-@@ -260,6 +260,9 @@ pa_operation *pa_context_proplist_remove(pa_context *c, const char *const keys[]
-  * introspection functions, such as pa_context_get_client_info(). \since 0.9.11 */
- uint32_t pa_context_get_index(pa_context *s);
- 
-+/** Check if "extension" is supported in server side. \since 0.9.16 */
-+int pa_context_extension_supported(pa_context *c, const char *extension);
-+
- PA_C_DECL_END
- 
- #endif
 diff --git a/src/pulse/ext-stream-restore.c b/src/pulse/ext-stream-restore.c
-index a361ff4..ba05a3f 100644
+index 40d40a7..7ca8333 100644
 --- a/src/pulse/ext-stream-restore.c
 +++ b/src/pulse/ext-stream-restore.c
 @@ -46,6 +46,7 @@ enum {
@@ -204,7 +189,7 @@ index a361ff4..ba05a3f 100644
      }
  
  finish:
-@@ -173,7 +174,7 @@ static void ext_stream_restore2_read_cb(pa_pdispatch *pd, uint32_t command, uint
+@@ -175,7 +176,7 @@ static void ext_stream_restore2_read_cb(pa_pdispatch *pd, uint32_t command, uint
                  goto finish;
              }
  
@@ -213,7 +198,7 @@ index a361ff4..ba05a3f 100644
                  pa_tagstruct_get_boolean(t, &volume_is_absolute) < 0) {
  
                  pa_context_fail(o->context, PA_ERR_PROTOCOL);
-@@ -307,7 +308,7 @@ pa_operation *pa_ext_stream_restore2_write(
+@@ -309,7 +310,7 @@ pa_operation *pa_ext_stream_restore2_write(
          pa_tagstruct_put_cvolume(t, &data[i]->volume);
          pa_tagstruct_puts(t, data[i]->device);
          pa_tagstruct_put_boolean(t, data[i]->mute);
@@ -223,7 +208,7 @@ index a361ff4..ba05a3f 100644
      }
  
 diff --git a/src/pulse/internal.h b/src/pulse/internal.h
-index 3c58c49..d1ac12c 100644
+index 3c58c49..25b41a5 100644
 --- a/src/pulse/internal.h
 +++ b/src/pulse/internal.h
 @@ -99,11 +99,12 @@ struct pa_context {
@@ -240,39 +225,25 @@ index 3c58c49..d1ac12c 100644
      } ext_stream_restore;
  };
  
-diff --git a/src/pulse/xmalloc.h b/src/pulse/xmalloc.h
-index db20496..39f2d0d 100644
---- a/src/pulse/xmalloc.h
-+++ b/src/pulse/xmalloc.h
-@@ -91,6 +91,19 @@ static inline void* _pa_xnewdup_internal(const void *p, size_t n, size_t k) {
- /** Same as pa_xnew() but set the memory to zero */
- #define pa_xnewdup(type, p, n) ((type*) _pa_xnewdup_internal((p), (n), sizeof(type)))
- 
-+/** Free a string array and its strings */
-+static inline void pa_strv_free(char *strv[]) {
-+    unsigned i;
+@@ -241,6 +242,8 @@ int pa_context_set_error(pa_context *c, int error);
+ void pa_context_set_state(pa_context *c, pa_context_state_t st);
+ int pa_context_handle_error(pa_context *c, uint32_t command, pa_tagstruct *t, pa_bool_t fail);
+ pa_operation* pa_context_send_simple_command(pa_context *c, uint32_t command, void (*internal_callback)(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata), void (*cb)(void), void *userdata);
++int pa_context_extension_supported(pa_context *c, const char *extension);
 +
-+    if (!strv)
-+        return;
-+
-+    for (i = 0; strv[i]; ++i)
-+        pa_xfree(strv[i]);
-+
-+    pa_xfree(strv);
-+}
-+
- PA_C_DECL_END
  
- #endif
-diff --git a/src/pulsecore/core-util.h b/src/pulsecore/core-util.h
-index f96fa44..6f929e4 100644
---- a/src/pulsecore/core-util.h
-+++ b/src/pulsecore/core-util.h
-@@ -201,6 +201,22 @@ pa_bool_t pa_in_system_mode(void);
+ void pa_stream_set_state(pa_stream *s, pa_stream_state_t st);
  
- #define pa_streq(a,b) (!strcmp((a),(b)))
+diff --git a/src/pulsecore/core-util.c b/src/pulsecore/core-util.c
+index 24d929d..aa736d8 100644
+--- a/src/pulsecore/core-util.c
++++ b/src/pulsecore/core-util.c
+@@ -2657,3 +2657,31 @@ char *pa_realpath(const char *path) {
  
-+static inline int pa_strv_index(const char * const *strv, const char *needle, unsigned *idx) {
+     return t;
+ }
++
++int pa_strv_index(const char * const *strv, const char *needle, unsigned *idx) {
 +    unsigned i;
 +
 +    if (!strv)
@@ -287,6 +258,28 @@ index f96fa44..6f929e4 100644
 +
 +    return -1;
 +}
++
++void pa_strv_free(char *strv[]) {
++    unsigned i;
++
++    if (!strv)
++        return;
++
++    for (i = 0; strv[i]; ++i)
++        pa_xfree(strv[i]);
++
++    pa_xfree(strv);
++}
+diff --git a/src/pulsecore/core-util.h b/src/pulsecore/core-util.h
+index f96fa44..60a434c 100644
+--- a/src/pulsecore/core-util.h
++++ b/src/pulsecore/core-util.h
+@@ -201,6 +201,9 @@ pa_bool_t pa_in_system_mode(void);
+ 
+ #define pa_streq(a,b) (!strcmp((a),(b)))
+ 
++int pa_strv_index(const char * const *strv, const char *needle, unsigned *idx);
++void pa_strv_free(char *strv[]);
 +
  char *pa_machine_id(void);
  char *pa_session_id(void);

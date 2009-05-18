@@ -1,7 +1,7 @@
-From 7167090e4498ec087ce2df8c7f8e268420ed4aa7 Mon Sep 17 00:00:00 2001
+From cdf80c6be3396a166f6f65d64285b7a53c8e517c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 7 May 2009 15:50:17 +0300
-Subject: [PATCH 37/53] stream-restore: extend ext-stream-restore
+Subject: [PATCH 46/53] stream-restore: extend ext-stream-restore
 
 This time, the patch introduces new functions using a struct
 pa_ext_stream_restore2_info.
@@ -21,10 +21,10 @@ TEST, by extending context AUTH)
  PROTOCOL                       |   11 ++++
  src/map-file                   |    2 +
  src/pulse/context.c            |    2 +
- src/pulse/ext-stream-restore.c |  120 +++++++++++++++++++++++++++++++++-------
+ src/pulse/ext-stream-restore.c |  122 +++++++++++++++++++++++++++++++++-------
  src/pulse/ext-stream-restore.h |   41 +++++++++++++-
  src/pulse/internal.h           |    1 +
- 6 files changed, 154 insertions(+), 23 deletions(-)
+ 6 files changed, 156 insertions(+), 23 deletions(-)
 
 diff --git a/PROTOCOL b/PROTOCOL
 index 88166f1..9955da5 100644
@@ -72,7 +72,7 @@ index 4aad737..90c15b1 100644
      c->server_list = NULL;
      c->server = NULL;
 diff --git a/src/pulse/ext-stream-restore.c b/src/pulse/ext-stream-restore.c
-index 63c911f..a361ff4 100644
+index 63c911f..40d40a7 100644
 --- a/src/pulse/ext-stream-restore.c
 +++ b/src/pulse/ext-stream-restore.c
 @@ -25,6 +25,7 @@
@@ -109,7 +109,7 @@ index 63c911f..a361ff4 100644
      }
  
  finish:
-@@ -104,7 +104,41 @@ pa_operation *pa_ext_stream_restore_test(
+@@ -104,7 +104,43 @@ pa_operation *pa_ext_stream_restore_test(
      return o;
  }
  
@@ -125,14 +125,16 @@ index 63c911f..a361ff4 100644
 +
 +    pa_assert_se(u = userdata);
 +
-+    i.name = info->name;
-+    i.channel_map = info->channel_map;
-+    i.volume = info->volume;
-+    i.device = info->device;
-+    i.mute = info->mute;
++    if (info) {
++        i.name = info->name;
++        i.channel_map = info->channel_map;
++        i.volume = info->volume;
++        i.device = info->device;
++        i.mute = info->mute;
++    }
 +
 +    if (u->cb)
-+        u->cb(c, &i, eol, u->userdata);
++        u->cb(c, info ? &i : NULL, eol, u->userdata);
 +
 +    if (eol != 0)
 +        pa_xfree(u);
@@ -152,7 +154,7 @@ index 63c911f..a361ff4 100644
      pa_operation *o = userdata;
      int eol = 1;
  
-@@ -123,8 +157,9 @@ static void ext_stream_restore_read_cb(pa_pdispatch *pd, uint32_t command, uint3
+@@ -123,8 +159,9 @@ static void ext_stream_restore_read_cb(pa_pdispatch *pd, uint32_t command, uint3
      } else {
  
          while (!pa_tagstruct_eof(t)) {
@@ -163,7 +165,7 @@ index 63c911f..a361ff4 100644
  
              memset(&i, 0, sizeof(i));
  
-@@ -138,28 +173,36 @@ static void ext_stream_restore_read_cb(pa_pdispatch *pd, uint32_t command, uint3
+@@ -138,28 +175,36 @@ static void ext_stream_restore_read_cb(pa_pdispatch *pd, uint32_t command, uint3
                  goto finish;
              }
  
@@ -206,7 +208,7 @@ index 63c911f..a361ff4 100644
          void *userdata) {
  
      uint32_t tag;
-@@ -180,7 +223,7 @@ pa_operation *pa_ext_stream_restore_read(
+@@ -180,7 +225,7 @@ pa_operation *pa_ext_stream_restore_read(
      pa_tagstruct_puts(t, "module-stream-restore");
      pa_tagstruct_putu32(t, SUBCOMMAND_READ);
      pa_pstream_send_tagstruct(c->pstream, t);
@@ -215,7 +217,7 @@ index 63c911f..a361ff4 100644
  
      return o;
  }
-@@ -193,10 +236,43 @@ pa_operation *pa_ext_stream_restore_write(
+@@ -193,10 +238,43 @@ pa_operation *pa_ext_stream_restore_write(
          int apply_immediately,
          pa_context_success_cb_t cb,
          void *userdata) {
@@ -259,7 +261,7 @@ index 63c911f..a361ff4 100644
  
      pa_assert(c);
      pa_assert(PA_REFCNT_VALUE(c) >= 1);
-@@ -217,20 +293,22 @@ pa_operation *pa_ext_stream_restore_write(
+@@ -217,20 +295,22 @@ pa_operation *pa_ext_stream_restore_write(
      pa_tagstruct_putu32(t, mode);
      pa_tagstruct_put_boolean(t, apply_immediately);
  

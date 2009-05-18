@@ -1,14 +1,14 @@
-From ea62250a28d1e8a82c35d7544b5e474a4a5ff71b Mon Sep 17 00:00:00 2001
+From 58c189f708e792cccc526ea776bc3043085122a4 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 13 May 2009 21:32:03 +0300
-Subject: [PATCH 47/53] match: match rule earlier, in SINK_INPUT_NEW
+Subject: [PATCH 51/53] match: match rule earlier, in SINK_INPUT_NEW
 
 ---
  src/modules/module-match.c |   30 +++++++++++-------------------
  1 files changed, 11 insertions(+), 19 deletions(-)
 
 diff --git a/src/modules/module-match.c b/src/modules/module-match.c
-index d94c889..a7d1d8b 100644
+index 0014dec..2fea4d0 100644
 --- a/src/modules/module-match.c
 +++ b/src/modules/module-match.c
 @@ -38,7 +38,6 @@
@@ -28,7 +28,7 @@ index d94c889..a7d1d8b 100644
  };
  
  static int load_rules(struct userdata *u, const char *filename) {
-@@ -188,23 +187,15 @@ finish:
+@@ -186,23 +185,15 @@ finish:
      return ret;
  }
  
@@ -54,7 +54,7 @@ index d94c889..a7d1d8b 100644
  
      pa_log_debug("Matching with %s", n);
  
-@@ -214,13 +205,14 @@ static void callback(pa_core *c, pa_subscription_event_type_t t, uint32_t idx, v
+@@ -212,13 +203,14 @@ static void callback(pa_core *c, pa_subscription_event_type_t t, uint32_t idx, v
                  pa_log_debug("updating proplist of sink input '%s'", n);
                  pa_proplist_update(si->proplist, PA_UPDATE_MERGE, r->proplist);
              } else {
@@ -72,7 +72,7 @@ index d94c889..a7d1d8b 100644
  }
  
  int pa__init(pa_module*m) {
-@@ -236,7 +228,6 @@ int pa__init(pa_module*m) {
+@@ -234,7 +226,6 @@ int pa__init(pa_module*m) {
  
      u = pa_xnew(struct userdata, 1);
      u->rules = NULL;
@@ -80,7 +80,7 @@ index d94c889..a7d1d8b 100644
      m->userdata = u;
  
      u->property_key = pa_xstrdup(pa_modargs_get_value(ma, "key", PA_PROP_MEDIA_NAME));
-@@ -244,7 +235,8 @@ int pa__init(pa_module*m) {
+@@ -242,7 +233,8 @@ int pa__init(pa_module*m) {
      if (load_rules(u, pa_modargs_get_value(ma, "table", NULL)) < 0)
          goto fail;
  
@@ -90,7 +90,7 @@ index d94c889..a7d1d8b 100644
  
      pa_modargs_free(ma);
      return 0;
-@@ -266,8 +258,8 @@ void pa__done(pa_module*m) {
+@@ -264,8 +256,8 @@ void pa__done(pa_module*m) {
      if (!(u = m->userdata))
          return;
  
