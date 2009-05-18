@@ -1,13 +1,13 @@
-From 091646a1c9a638962503e43684c3b53735689c49 Mon Sep 17 00:00:00 2001
+From 2e3b088be3a54fe7ddd6195fb09ea2a7448f9617 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:09:01 +0300
-Subject: [PATCH 44/53] alsa: sink-volume, a complex mixer module
+Subject: [PATCH 52/53] alsa: sink-volume, a complex mixer module
 
 ---
  src/Makefile.am                                   |    7 +
  src/modules/alsa/module-alsa-sink-volume-symdef.h |   27 +
- src/modules/alsa/module-alsa-sink-volume.c        | 1582 +++++++++++++++++++++
- 3 files changed, 1616 insertions(+), 0 deletions(-)
+ src/modules/alsa/module-alsa-sink-volume.c        | 1590 +++++++++++++++++++++
+ 3 files changed, 1624 insertions(+), 0 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-volume-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-volume.c
 
@@ -78,10 +78,10 @@ index 0000000..30c44c1
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
 new file mode 100644
-index 0000000..c279a01
+index 0000000..efa26df
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-volume.c
-@@ -0,0 +1,1582 @@
+@@ -0,0 +1,1590 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -1584,6 +1584,14 @@ index 0000000..c279a01
 +    u->sink_proplist_changed_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_PROPLIST_CHANGED],
 +                                                    PA_HOOK_LATE,
 +                                                    (pa_hook_cb_t)sink_proplist_changed_hook_callback, u);
++
++#if !defined(DEPRECATED_VOLUME)
++    /* Everything should be in order, write new volume callbacks */
++    u->sink->flags = u->original_flags | PA_SINK_HW_VOLUME_CTRL | PA_SINK_DECIBEL_VOLUME;
++    u->sink->get_volume = sink_get_volume_cb;
++    u->sink->set_volume = sink_set_volume_cb;
++    log_spam("%s setting new volume callbacks", u->device_name);
++#endif
 +
 +    /* Try to load the initial mixer settings. */
 +    (void)sink_proplist_changed_hook_callback(u->core, u->sink, u);
