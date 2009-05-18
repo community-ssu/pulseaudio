@@ -3,6 +3,7 @@ pulseaudio (0.9.15-1maemo8) unstable; urgency=low
   * Add match table to classify unclassified streams in "x-maemo" role.
   * Add a source.record. Fixes: NB#110033
   * Disable device/card restore for now.
+  * Suspend on idle timeout property has been changed. Fixes: NB#106649
 
  -- Maemo Multimedia <multimedia@maemo.org>  Wed, 13 May 2009 21:45:37 +0300
 
