@@ -4,6 +4,7 @@ pulseaudio (0.9.15-1maemo8) unstable; urgency=low
   * Add a source.record. Fixes: NB#110033
   * Disable device/card restore for now.
   * Suspend on idle timeout property has been changed. Fixes: NB#106649
+  * Default volume set to -18dB for phone, -32dB for general. Fixes: NB#116935
 
  -- Maemo Multimedia <multimedia@maemo.org>  Wed, 13 May 2009 21:45:37 +0300
 
