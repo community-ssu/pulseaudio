@@ -1,13 +1,13 @@
-From 2e3b088be3a54fe7ddd6195fb09ea2a7448f9617 Mon Sep 17 00:00:00 2001
+From 1f018101ceacdf1974c9ba243fac7e65a6f1f974 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:09:01 +0300
-Subject: [PATCH 52/53] alsa: sink-volume, a complex mixer module
+Subject: [PATCH 45/56] alsa: sink-volume, a complex mixer module
 
 ---
  src/Makefile.am                                   |    7 +
  src/modules/alsa/module-alsa-sink-volume-symdef.h |   27 +
- src/modules/alsa/module-alsa-sink-volume.c        | 1590 +++++++++++++++++++++
- 3 files changed, 1624 insertions(+), 0 deletions(-)
+ src/modules/alsa/module-alsa-sink-volume.c        | 1599 +++++++++++++++++++++
+ 3 files changed, 1633 insertions(+), 0 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-volume-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-volume.c
 
@@ -78,10 +78,10 @@ index 0000000..30c44c1
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
 new file mode 100644
-index 0000000..efa26df
+index 0000000..2b00316
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-volume.c
-@@ -0,0 +1,1590 @@
+@@ -0,0 +1,1599 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -1092,7 +1092,7 @@ index 0000000..efa26df
 +            int err;
 +            /* By default mute all mixers. */
 +            int hw_volume = (long)m->hw_volume_min;
-+            pa_bool_t mute_state = TRUE;
++            pa_bool_t mute_state = FALSE; // no reason to mute hw mixers
 +            m->mode = MM_UNUSED;
 +
 +            if (strcmp(mode, PROP_MIXER_SLAVE) == 0) {
@@ -1152,11 +1152,14 @@ index 0000000..efa26df
 + */
 +static int update_mixer_setup(struct userdata *u, const char *value_list) {
 +    int ret = 0;
++    pa_cvolume *vol = NULL;
 +    const char *state = NULL;
 +    char *value;
 +
 +    pa_assert(u);
 +    pa_assert(u->sink);
++
++    vol = pa_sink_get_volume(u->sink, FALSE, FALSE);
 +
 +    while ((value = pa_split(value_list, ",", &state))) {
 +        if (value) {
@@ -1187,6 +1190,12 @@ index 0000000..efa26df
 +        ret = -1;
 +    }
 +#endif
++
++    if (u->active_mixer) {
++        log_spam("update mixer volume (vol was %d) sink->refresh_volume %d", vol->values[0], u->sink->refresh_volume);
++        //pa_sink_set_volume(u->sink, vol, FALSE,FALSE,FALSE);
++        set_alsa_mixer_volumes(u, u->active_mixer, vol);
++    }
 +
 +    return ret;
 +}
@@ -1673,5 +1682,5 @@ index 0000000..efa26df
 +    snd_config_update_free_global();
 +}
 -- 
-1.6.2.4
+1.6.3.1
 

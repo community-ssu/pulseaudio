@@ -1,7 +1,7 @@
 From 9b684af615291b71a1615cc8a476a9ffabf25368 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Thu, 7 May 2009 19:55:57 +0300
-Subject: [PATCH 39/53] core: Take samples from silence cache rather than write zeros
+Subject: [PATCH 39/56] core: Take samples from silence cache rather than write zeros
 
 If the only stream to render from is muted take samples from the
 silence cache. This should shrink memory/cache bandwidth. Again the
@@ -63,5 +63,5 @@ index 63752d9..c9bf5ef 100644
          void *ptr;
  
 -- 
-1.6.2.4
+1.6.3.1
 

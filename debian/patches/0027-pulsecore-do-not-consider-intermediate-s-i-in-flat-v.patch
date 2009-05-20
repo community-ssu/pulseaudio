@@ -1,7 +1,7 @@
 From 2a83c601ec49c90a9033a7bfcf57be3ce759cb84 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 22:44:34 +0200
-Subject: [PATCH 27/53] pulsecore: do not consider intermediate s-i in flat-vol
+Subject: [PATCH 27/56] pulsecore: do not consider intermediate s-i in flat-vol
 
 ---
  src/pulsecore/sink.c |   33 ++++++++++++++++++++++++++-------
@@ -64,5 +64,5 @@ index b9b8ae2..1d69d7f 100644
      /* Then, let's update the soft volumes of all inputs connected
       * to this sink */
 -- 
-1.6.2.4
+1.6.3.1
 

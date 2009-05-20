@@ -1,7 +1,7 @@
-From 8362e00db18b0d93af631cb8d86daabf78bc1701 Mon Sep 17 00:00:00 2001
+From e16e20de440a0187ca5b0d3a9d9e27e55bc8eca6 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 7 May 2009 17:07:37 +0300
-Subject: [PATCH 46/53] stream-restore: add volume_is_absolute bool in server side
+Subject: [PATCH 46/56] stream-restore: add volume_is_absolute bool in server side
 
 ---
  configure.ac                        |    2 +-
@@ -22,7 +22,7 @@ index 25cee57..1366386 100644
  # The stable ABI for client applications, for the version info x:y:z
  # always will hold y=z
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index 70cd89a..4ff6c57 100644
+index 70cd89a..c9642ca 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
 @@ -91,12 +91,13 @@ struct userdata {
@@ -92,7 +92,7 @@ index 70cd89a..4ff6c57 100644
                      pa_tagstruct_put_cvolume(reply, e->volume_valid ? &e->volume : pa_cvolume_init(&r));
                      pa_tagstruct_puts(reply, e->device_valid ? e->device : NULL);
                      pa_tagstruct_put_boolean(reply, e->muted_valid ? e->muted : FALSE);
-+		    if (c->version >= 16) /* FIXME: should be client side extension version */
++                    if (c->version >= 16) /* FIXME: should be client side extension version */
 +                        pa_tagstruct_put_boolean(reply, e->volume_is_absolute_valid ? e->volume_is_absolute : FALSE);
  
                      pa_xfree(e);
@@ -122,5 +122,5 @@ index 70cd89a..4ff6c57 100644
                      goto fail;
  
 -- 
-1.6.2.4
+1.6.3.1
 

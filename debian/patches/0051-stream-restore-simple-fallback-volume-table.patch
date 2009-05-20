@@ -1,14 +1,14 @@
-From eca145803f1e06fbde94f17b9328872180389fc6 Mon Sep 17 00:00:00 2001
+From 35dc326c2769e5e604d82eac9164de4b2240aad9 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 15 May 2009 17:24:54 +0300
-Subject: [PATCH 51/53] stream-restore: simple fallback volume table
+Subject: [PATCH 51/56] stream-restore: simple fallback volume table
 
 ---
  src/modules/module-stream-restore.c |   94 ++++++++++++++++++++++++++++++++++-
  1 files changed, 93 insertions(+), 1 deletions(-)
 
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index 0ec83fc..594521c 100644
+index 0ec83fc..2b98840 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
 @@ -59,15 +59,22 @@ PA_MODULE_LOAD_ONCE(TRUE);
@@ -92,8 +92,8 @@ index 0ec83fc..594521c 100644
 +            e.volume_valid = TRUE;
 +            pa_cvolume_set(&e.volume, 1, pa_sw_volume_from_dB(db));
 +            pa_channel_map_init_mono(&e.channel_map);
-+	    e.volume_is_absolute = TRUE;
-+	    e.volume_is_absolute_valid = TRUE;
++            e.volume_is_absolute = TRUE;
++            e.volume_is_absolute_valid = TRUE;
 +
 +            key.dptr = (void*) ln;
 +            key.dsize = (int) strlen(ln);
@@ -135,5 +135,5 @@ index 0ec83fc..594521c 100644
          subscribe_callback(m->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_NEW, si->index, u);
  
 -- 
-1.6.2.4
+1.6.3.1
 

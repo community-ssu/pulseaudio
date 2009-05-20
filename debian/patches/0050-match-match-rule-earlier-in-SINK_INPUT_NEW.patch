@@ -1,7 +1,7 @@
-From 58c189f708e792cccc526ea776bc3043085122a4 Mon Sep 17 00:00:00 2001
+From 959c910dd6c1deaca741a71d7cc7926e469f54ec Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 13 May 2009 21:32:03 +0300
-Subject: [PATCH 50/53] match: match rule earlier, in SINK_INPUT_NEW
+Subject: [PATCH 50/56] match: match rule earlier, in SINK_INPUT_NEW
 
 ---
  src/modules/module-match.c |   30 +++++++++++-------------------
@@ -102,5 +102,5 @@ index 0014dec..2fea4d0 100644
      if (u->property_key)
          pa_xfree(u->property_key);
 -- 
-1.6.2.4
+1.6.3.1
 

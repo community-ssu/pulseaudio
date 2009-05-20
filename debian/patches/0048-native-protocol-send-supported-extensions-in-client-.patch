@@ -1,7 +1,7 @@
-From fdc76d27e244247c177b20f18e45aead7f4d49c7 Mon Sep 17 00:00:00 2001
+From 690744d1014fda26c7f2cb18e124ad0250ca46e0 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 11 May 2009 21:54:10 +0300
-Subject: [PATCH 48/53] native-protocol: send supported extensions in client & server
+Subject: [PATCH 48/56] native-protocol: send supported extensions in client & server
 
 The client will send a list of extension-id along with SET_NAME.
 ---
@@ -44,14 +44,14 @@ index 9955da5..9603051 100644
  
  First version supported.
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index db30528..0ec83fc 100644
+index 62cf7b9..0ec83fc 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
 @@ -648,7 +648,7 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
                      pa_tagstruct_put_cvolume(reply, e->volume_valid ? &e->volume : pa_cvolume_init(&r));
                      pa_tagstruct_puts(reply, e->device_valid ? e->device : NULL);
                      pa_tagstruct_put_boolean(reply, e->muted_valid ? e->muted : FALSE);
--		    if (c->version >= 16) /* FIXME: should be client side extension version */
+-                    if (c->version >= 16) /* FIXME: should be client side extension version */
 +                    if (pa_native_connection_extension_supported(c, "stream-restore-2"))
                          pa_tagstruct_put_boolean(reply, e->volume_is_absolute_valid ? e->volume_is_absolute : FALSE);
  
@@ -528,5 +528,5 @@ index 10f370c..adbf492 100644
  
      return 0;
 -- 
-1.6.2.4
+1.6.3.1
 

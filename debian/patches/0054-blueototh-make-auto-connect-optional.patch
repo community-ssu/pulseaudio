@@ -1,14 +1,14 @@
-From 5bb8b31ed5260ad9fc52d512a25c563c3e662f18 Mon Sep 17 00:00:00 2001
+From 98b5f6f3cb6867821d73a972a2f430f026f738f5 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 13 May 2009 22:46:50 +0300
-Subject: [PATCH 42/53] blueototh: make auto-connect optional
+Subject: [PATCH 54/56] blueototh: make auto-connect optional
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |   19 ++++++++++++++++++-
  1 files changed, 18 insertions(+), 1 deletions(-)
 
 diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
-index 74c066f..b2bdaf1 100644
+index 74c066f..53a8028 100644
 --- a/src/modules/bluetooth/module-bluetooth-device.c
 +++ b/src/modules/bluetooth/module-bluetooth-device.c
 @@ -73,6 +73,12 @@ PA_MODULE_USAGE(
@@ -28,7 +28,7 @@ index 74c066f..b2bdaf1 100644
      "rate",
      "channels",
      "path",
-+    "auto_connect"
++    "auto_connect",
  #ifdef NOKIA
      "sco_sink",
      "sco_source",
@@ -66,5 +66,5 @@ index 74c066f..b2bdaf1 100644
      path = pa_modargs_get_value(ma, "path", NULL);
  
 -- 
-1.6.2.4
+1.6.3.1
 
