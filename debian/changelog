@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo9) unstable; urgency=low
+
+  * Post-release.
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Mon, 25 May 2009 18:18:52 +0300
+
 pulseaudio (0.9.15-1maemo8) unstable; urgency=low
 
   * Add match table to classify unclassified streams in "x-maemo" role.
