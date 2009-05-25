@@ -1,6 +1,6 @@
 pulseaudio (0.9.15-1maemo9) unstable; urgency=low
 
-  * Post-release.
+  * Don't open SCO channel unconditionally. Fixes: NB#117454
 
  -- Maemo Multimedia <multimedia@maemo.org>  Mon, 25 May 2009 18:18:52 +0300
 
