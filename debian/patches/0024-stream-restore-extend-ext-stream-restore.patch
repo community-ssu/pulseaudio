@@ -1,0 +1,387 @@
+From cdf80c6be3396a166f6f65d64285b7a53c8e517c Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Thu, 7 May 2009 15:50:17 +0300
+Subject: [PATCH 24/57] stream-restore: extend ext-stream-restore
+
+This time, the patch introduces new functions using a struct
+pa_ext_stream_restore2_info.
+
+pa_ext_stream_restore2_write()
+pa_ext_stream_restore2_read()
+
+This will ensure extendability of the stream-restore API without
+breakage.
+
+In the pa_ext_stream_restore2_info, a new flag int
+volume_is_absolute:1 indicates if the rule volume is absolute.
+
+(The following patches solves the query of extension version with
+TEST, by extending context AUTH)
+---
+ PROTOCOL                       |   11 ++++
+ src/map-file                   |    2 +
+ src/pulse/context.c            |    2 +
+ src/pulse/ext-stream-restore.c |  122 +++++++++++++++++++++++++++++++++-------
+ src/pulse/ext-stream-restore.h |   41 +++++++++++++-
+ src/pulse/internal.h           |    1 +
+ 6 files changed, 156 insertions(+), 23 deletions(-)
+
+diff --git a/PROTOCOL b/PROTOCOL
+index 88166f1..9955da5 100644
+--- a/PROTOCOL
++++ b/PROTOCOL
+@@ -181,3 +181,14 @@ new messages:
+ 
+   PA_COMMAND_PLAYBACK_BUFFER_ATTR_CHANGED
+   PA_COMMAND_RECORD_BUFFER_ATTR_CHANGED
++
++
++### ext-stream-restore v1, implemented by >= 0.9.12
++
++First version supported.
++
++### ext-stream-restore v2, implemented by >= 0.9.16
++
++SUBCOMMAND_WRITE, SUBCOMMAND_READ
++
++  bool volume_is_absolute at the end
+diff --git a/src/map-file b/src/map-file
+index d0102ae..cc21727 100644
+--- a/src/map-file
++++ b/src/map-file
+@@ -131,6 +131,8 @@ pa_ext_stream_restore_set_subscribe_cb;
+ pa_ext_stream_restore_subscribe;
+ pa_ext_stream_restore_test;
+ pa_ext_stream_restore_write;
++pa_ext_stream_restore2_read;
++pa_ext_stream_restore2_write;
+ pa_frame_size;
+ pa_get_binary_name;
+ pa_get_fqdn;
+diff --git a/src/pulse/context.c b/src/pulse/context.c
+index 4aad737..90c15b1 100644
+--- a/src/pulse/context.c
++++ b/src/pulse/context.c
+@@ -168,6 +168,8 @@ pa_context *pa_context_new_with_proplist(pa_mainloop_api *mainloop, const char *
+ 
+     reset_callbacks(c);
+ 
++    c->ext_stream_restore.version = 1; /* default version, updated by TEST message */
++
+     c->is_local = FALSE;
+     c->server_list = NULL;
+     c->server = NULL;
+diff --git a/src/pulse/ext-stream-restore.c b/src/pulse/ext-stream-restore.c
+index 63c911f..40d40a7 100644
+--- a/src/pulse/ext-stream-restore.c
++++ b/src/pulse/ext-stream-restore.c
+@@ -25,6 +25,7 @@
+ 
+ #include <pulse/context.h>
+ #include <pulse/gccmacro.h>
++#include <pulse/xmalloc.h>
+ 
+ #include <pulsecore/macro.h>
+ #include <pulsecore/pstream-util.h>
+@@ -46,7 +47,6 @@ enum {
+ 
+ static void ext_stream_restore_test_cb(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
+     pa_operation *o = userdata;
+-    uint32_t version = PA_INVALID_INDEX;
+ 
+     pa_assert(pd);
+     pa_assert(o);
+@@ -59,7 +59,7 @@ static void ext_stream_restore_test_cb(pa_pdispatch *pd, uint32_t command, uint3
+         if (pa_context_handle_error(o->context, command, t, FALSE) < 0)
+             goto finish;
+ 
+-    } else if (pa_tagstruct_getu32(t, &version) < 0 ||
++    } else if (pa_tagstruct_getu32(t, &o->context->ext_stream_restore.version) < 0 ||
+                !pa_tagstruct_eof(t)) {
+ 
+         pa_context_fail(o->context, PA_ERR_PROTOCOL);
+@@ -68,7 +68,7 @@ static void ext_stream_restore_test_cb(pa_pdispatch *pd, uint32_t command, uint3
+ 
+     if (o->callback) {
+         pa_ext_stream_restore_test_cb_t cb = (pa_ext_stream_restore_test_cb_t) o->callback;
+-        cb(o->context, version, o->userdata);
++        cb(o->context, o->context->ext_stream_restore.version, o->userdata);
+     }
+ 
+ finish:
+@@ -104,7 +104,43 @@ pa_operation *pa_ext_stream_restore_test(
+     return o;
+ }
+ 
+-static void ext_stream_restore_read_cb(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
++struct stream_restore_read_data {
++    pa_ext_stream_restore_read_cb_t cb;
++    void *userdata;
++};
++
++static void ext_stream_restore_read_cb(pa_context *c, const pa_ext_stream_restore2_info *info, int eol, void *userdata) {
++    struct stream_restore_read_data *u;
++    pa_ext_stream_restore_info i;
++
++    pa_assert_se(u = userdata);
++
++    if (info) {
++        i.name = info->name;
++        i.channel_map = info->channel_map;
++        i.volume = info->volume;
++        i.device = info->device;
++        i.mute = info->mute;
++    }
++
++    if (u->cb)
++        u->cb(c, info ? &i : NULL, eol, u->userdata);
++
++    if (eol != 0)
++        pa_xfree(u);
++}
++
++pa_operation *pa_ext_stream_restore_read(pa_context *c, pa_ext_stream_restore_read_cb_t cb, void *userdata) {
++    struct stream_restore_read_data *u;
++
++    u = pa_xnew(struct stream_restore_read_data, 1);
++    u->cb = cb;
++    u->userdata = userdata;
++
++    return pa_ext_stream_restore2_read(c, ext_stream_restore_read_cb, u);
++}
++
++static void ext_stream_restore2_read_cb(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
+     pa_operation *o = userdata;
+     int eol = 1;
+ 
+@@ -123,8 +159,9 @@ static void ext_stream_restore_read_cb(pa_pdispatch *pd, uint32_t command, uint3
+     } else {
+ 
+         while (!pa_tagstruct_eof(t)) {
+-            pa_ext_stream_restore_info i;
++            pa_ext_stream_restore2_info i;
+             pa_bool_t mute = FALSE;
++            pa_bool_t volume_is_absolute = FALSE;
+ 
+             memset(&i, 0, sizeof(i));
+ 
+@@ -138,28 +175,36 @@ static void ext_stream_restore_read_cb(pa_pdispatch *pd, uint32_t command, uint3
+                 goto finish;
+             }
+ 
+-            i.mute = (int) mute;
++            if (o->context->ext_stream_restore.version >= 2 &&
++                pa_tagstruct_get_boolean(t, &volume_is_absolute) < 0) {
++
++                pa_context_fail(o->context, PA_ERR_PROTOCOL);
++                goto finish;
++            }
++
++	    i.mute = (int) mute;
++	    i.volume_is_absolute = (int) volume_is_absolute;
+ 
+             if (o->callback) {
+-                pa_ext_stream_restore_read_cb_t cb = (pa_ext_stream_restore_read_cb_t) o->callback;
++                pa_ext_stream_restore2_read_cb_t cb = (pa_ext_stream_restore2_read_cb_t) o->callback;
+                 cb(o->context, &i, 0, o->userdata);
+             }
+         }
+     }
+ 
+     if (o->callback) {
+-        pa_ext_stream_restore_read_cb_t cb = (pa_ext_stream_restore_read_cb_t) o->callback;
++        pa_ext_stream_restore2_read_cb_t cb = (pa_ext_stream_restore2_read_cb_t) o->callback;
+         cb(o->context, NULL, eol, o->userdata);
+     }
+ 
+-finish:
++ finish:
+     pa_operation_done(o);
+     pa_operation_unref(o);
+ }
+ 
+-pa_operation *pa_ext_stream_restore_read(
++pa_operation *pa_ext_stream_restore2_read(
+         pa_context *c,
+-        pa_ext_stream_restore_read_cb_t cb,
++        pa_ext_stream_restore2_read_cb_t cb,
+         void *userdata) {
+ 
+     uint32_t tag;
+@@ -180,7 +225,7 @@ pa_operation *pa_ext_stream_restore_read(
+     pa_tagstruct_puts(t, "module-stream-restore");
+     pa_tagstruct_putu32(t, SUBCOMMAND_READ);
+     pa_pstream_send_tagstruct(c->pstream, t);
+-    pa_pdispatch_register_reply(c->pdispatch, tag, DEFAULT_TIMEOUT, ext_stream_restore_read_cb, pa_operation_ref(o), (pa_free_cb_t) pa_operation_unref);
++    pa_pdispatch_register_reply(c->pdispatch, tag, DEFAULT_TIMEOUT, ext_stream_restore2_read_cb, pa_operation_ref(o), (pa_free_cb_t) pa_operation_unref);
+ 
+     return o;
+ }
+@@ -193,10 +238,43 @@ pa_operation *pa_ext_stream_restore_write(
+         int apply_immediately,
+         pa_context_success_cb_t cb,
+         void *userdata) {
++    pa_ext_stream_restore2_info **infos;
++    unsigned i;
++    pa_operation *o;
++
++    infos = pa_xnew(pa_ext_stream_restore2_info *, n);
++    for (i = 0; i < n; ++i) {
++        infos[i] = pa_xnew0(pa_ext_stream_restore2_info, 1);
++        infos[i]->name = data[i].name;
++        infos[i]->channel_map = data[i].channel_map;
++        infos[i]->volume = data[i].volume;
++        infos[i]->device = data[i].device;
++        infos[i]->mute = data[i].mute;
++    }
++
++    /* this needs a cast: see http://stackoverflow.com/questions/847772/dynamic-array-of-structs-and-function-call-fconst-structtype-const-data */
++    o = pa_ext_stream_restore2_write(c, mode, (const pa_ext_stream_restore2_info * const *)infos, n, apply_immediately, cb, userdata);
++
++    for (i = 0; i < n; ++i)
++        pa_xfree(infos[i]);
++    pa_xfree(infos);
++
++    return o;
++}
++
++pa_operation *pa_ext_stream_restore2_write(
++        pa_context *c,
++        pa_update_mode_t mode,
++        const pa_ext_stream_restore2_info *const data[],
++        unsigned n,
++        int apply_immediately,
++        pa_context_success_cb_t cb,
++        void *userdata) {
+ 
+     uint32_t tag;
+     pa_operation *o = NULL;
+     pa_tagstruct *t = NULL;
++    unsigned i;
+ 
+     pa_assert(c);
+     pa_assert(PA_REFCNT_VALUE(c) >= 1);
+@@ -217,20 +295,22 @@ pa_operation *pa_ext_stream_restore_write(
+     pa_tagstruct_putu32(t, mode);
+     pa_tagstruct_put_boolean(t, apply_immediately);
+ 
+-    for (; n > 0; n--, data++) {
+-        if (!data->name || !*data->name)
++    for (i = 0; i < n; ++i) {
++        if (!data[i]->name || !*data[i]->name)
+             goto fail;
+ 
+-        pa_tagstruct_puts(t, data->name);
++        pa_tagstruct_puts(t, data[i]->name);
+ 
+-        if (data->volume.channels > 0 &&
+-            !pa_cvolume_compatible_with_channel_map(&data->volume, &data->channel_map))
++        if (data[i]->volume.channels > 0 &&
++            !pa_cvolume_compatible_with_channel_map(&data[i]->volume, &data[i]->channel_map))
+             goto fail;
+ 
+-        pa_tagstruct_put_channel_map(t, &data->channel_map);
+-        pa_tagstruct_put_cvolume(t, &data->volume);
+-        pa_tagstruct_puts(t, data->device);
+-        pa_tagstruct_put_boolean(t, data->mute);
++        pa_tagstruct_put_channel_map(t, &data[i]->channel_map);
++        pa_tagstruct_put_cvolume(t, &data[i]->volume);
++        pa_tagstruct_puts(t, data[i]->device);
++        pa_tagstruct_put_boolean(t, data[i]->mute);
++        if (c->ext_stream_restore.version >= 2)
++            pa_tagstruct_put_boolean(t, data[i]->volume_is_absolute);
+     }
+ 
+     pa_pstream_send_tagstruct(c->pstream, t);
+diff --git a/src/pulse/ext-stream-restore.h b/src/pulse/ext-stream-restore.h
+index 0b5d8eb..2efcf0c 100644
+--- a/src/pulse/ext-stream-restore.h
++++ b/src/pulse/ext-stream-restore.h
+@@ -42,6 +42,20 @@ typedef struct pa_ext_stream_restore_info {
+     int mute;                    /**< The boolean mute state of the stream when it was last seen, if applicable and saved */
+ } pa_ext_stream_restore_info;
+ 
++/** Stores information about one entry in the stream database that is
++ * maintained by module-stream-restore v2. This structure deprecate
++ * and replace the pa_ext_stream_restore_info which was not
++ * extensible. This new structure ca be extended without breaking
++ * API/ABI.  \since 0.9.16 */
++typedef struct pa_ext_stream_restore2_info {
++    const char *name;            /**< Identifier string of the stream. A string like "sink-input-by-role:" or similar followed by some arbitrary property value. */
++    pa_channel_map channel_map;  /**< The channel map for the volume field, if applicable */
++    pa_cvolume volume;           /**< The volume of the stream when it was seen last, if applicable and saved */
++    const char *device;          /**< The sink/source of the stream when it was last seen, if applicable and saved */
++    int mute:1;                  /**< The boolean mute state of the stream when it was last seen, if applicable and saved */
++    int volume_is_absolute:1;    /**< True if the volume is absolute, if applicable and saved */
++} pa_ext_stream_restore2_info;
++
+ /** Callback prototype for pa_ext_stream_restore_test(). \since 0.9.12 */
+ typedef void (*pa_ext_stream_restore_test_cb_t)(
+         pa_context *c,
+@@ -54,19 +68,32 @@ pa_operation *pa_ext_stream_restore_test(
+         pa_ext_stream_restore_test_cb_t cb,
+         void *userdata);
+ 
+-/** Callback prototype for pa_ext_stream_restore_read(). \since 0.9.12 */
++/** Callback prototype for pa_ext_stream_restore_read(). \since 0.9.12 \deprecated Use pa_ext_stream_restore2_read instead */
+ typedef void (*pa_ext_stream_restore_read_cb_t)(
+         pa_context *c,
+         const pa_ext_stream_restore_info *info,
+         int eol,
+         void *userdata);
+ 
+-/** Read all entries from the stream database. \since 0.9.12 */
++/** Read all entries from the stream database. \since 0.9.12 \deprecated Use pa_ext_stream_restore2_read instead */
+ pa_operation *pa_ext_stream_restore_read(
+         pa_context *c,
+         pa_ext_stream_restore_read_cb_t cb,
+         void *userdata);
+ 
++/** Callback prototype for pa_ext_stream_restore2_read(). \since 0.9.16 */
++typedef void (*pa_ext_stream_restore2_read_cb_t)(
++        pa_context *c,
++        const pa_ext_stream_restore2_info *info,
++        int eol,
++        void *userdata);
++
++/** Read all entries from the stream database. \since 0.9.16 */
++pa_operation *pa_ext_stream_restore2_read(
++        pa_context *c,
++        pa_ext_stream_restore2_read_cb_t cb,
++        void *userdata);
++
+ /** Store entries in the stream database. \since 0.9.12 */
+ pa_operation *pa_ext_stream_restore_write(
+         pa_context *c,
+@@ -77,6 +104,16 @@ pa_operation *pa_ext_stream_restore_write(
+         pa_context_success_cb_t cb,
+         void *userdata);
+ 
++/** Store entries in the stream database. \since 0.9.16 */
++pa_operation *pa_ext_stream_restore2_write(
++        pa_context *c,
++        pa_update_mode_t mode,
++        const pa_ext_stream_restore2_info *const data[],
++        unsigned n,
++        int apply_immediately,
++        pa_context_success_cb_t cb,
++        void *userdata);
++
+ /** Delete entries from the stream database. \since 0.9.12 */
+ pa_operation *pa_ext_stream_restore_delete(
+         pa_context *c,
+diff --git a/src/pulse/internal.h b/src/pulse/internal.h
+index 28a989b..3c58c49 100644
+--- a/src/pulse/internal.h
++++ b/src/pulse/internal.h
+@@ -103,6 +103,7 @@ struct pa_context {
+     struct {
+         pa_ext_stream_restore_subscribe_cb_t callback;
+         void *userdata;
++        uint32_t version;
+     } ext_stream_restore;
+ };
+ 
+-- 
+1.6.3.1
+

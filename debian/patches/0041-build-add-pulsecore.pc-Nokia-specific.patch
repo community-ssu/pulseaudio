@@ -1,0 +1,59 @@
+From 96277e6eb0f7c27dfa3e03ce1937951875726795 Mon Sep 17 00:00:00 2001
+From: Ismo Puustinen <ismo.h.puustinen@nokia.com>
+Date: Tue, 30 Sep 2008 18:45:55 +0300
+Subject: [PATCH 41/57] build: add pulsecore.pc (Nokia specific)
+
+Original patch updated for 0.9.14 with pulse/pulsecore/pulsecommon.
+---
+ Makefile.am     |    2 +-
+ configure.ac    |    1 +
+ pulsecore.pc.in |   12 ++++++++++++
+ 3 files changed, 14 insertions(+), 1 deletions(-)
+ create mode 100644 pulsecore.pc.in
+
+diff --git a/Makefile.am b/Makefile.am
+index 9a3ca7b..191c274 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -24,7 +24,7 @@ MAINTAINERCLEANFILES =
+ noinst_DATA =
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+-pkgconfig_DATA = libpulse.pc libpulse-simple.pc
++pkgconfig_DATA = libpulse.pc libpulse-simple.pc pulsecore.pc
+ 
+ if HAVE_AVAHI
+ pkgconfig_DATA += \
+diff --git a/configure.ac b/configure.ac
+index 25cee57..31d0731 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1314,6 +1314,7 @@ libpulse.pc
+ libpulse-simple.pc
+ libpulse-browse.pc
+ libpulse-mainloop-glib.pc
++pulsecore.pc
+ doxygen/Makefile
+ doxygen/doxygen.conf
+ src/pulse/version.h
+diff --git a/pulsecore.pc.in b/pulsecore.pc.in
+new file mode 100644
+index 0000000..8f39d59
+--- /dev/null
++++ b/pulsecore.pc.in
+@@ -0,0 +1,12 @@
++prefix=@prefix@
++exec_prefix=${prefix}
++libdir=@libdir@
++includedir=${prefix}/include
++libexecdir=@libexecdir@
++pulsetestdir=${libexecdir}/pulse-tests
++
++Name: pulsecore
++Description: Module building interface for pulseaudio
++Version: @PACKAGE_VERSION@
++Libs: -L${libdir} -lpulsecore-@PA_MAJORMINORMICRO@ -lpulsecommon-@PA_MAJORMINORMICRO@ -lpulse @PTHREAD_LIBS@
++Cflags: -D_REENTRANT -I${includedir} -I${includedir}/pulsecore/modules
+-- 
+1.6.3.1
+

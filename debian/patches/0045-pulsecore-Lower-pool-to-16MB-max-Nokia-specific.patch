@@ -1,0 +1,25 @@
+From ec8beb1bf4fd9a8a896db0343ea77e5833e52ff2 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Wed, 18 Feb 2009 16:21:34 +0200
+Subject: [PATCH 45/57] pulsecore: Lower pool to 16MB max (Nokia specific)
+
+---
+ src/pulsecore/memblock.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/src/pulsecore/memblock.c b/src/pulsecore/memblock.c
+index 6cc0ff3..c4e0fbe 100644
+--- a/src/pulsecore/memblock.c
++++ b/src/pulsecore/memblock.c
+@@ -53,7 +53,7 @@
+  * stored in SHM and our OS does not commit the memory before we use
+  * it for the first time. */
+ #define PA_MEMPOOL_SLOTS_MAX 1024
+-#define PA_MEMPOOL_SLOT_SIZE (64*1024)
++#define PA_MEMPOOL_SLOT_SIZE (16*1024)
+ 
+ #define PA_MEMEXPORT_SLOTS_MAX 128
+ 
+-- 
+1.6.3.1
+
