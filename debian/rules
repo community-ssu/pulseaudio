@@ -63,6 +63,7 @@ update-patch-series:
 DEB_CONFIGURE_EXTRA_FLAGS =			\
 	--enable-shave				\
 	--with-realtime-group=pulse-rt		\
+	--disable-ipv6				\
 	--disable-legacy-runtime-dir		\
 	--disable-x11				\
 	--disable-nls				\
