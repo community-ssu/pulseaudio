@@ -1,0 +1,1010 @@
+From 18bec537e02248fa5f4cc112f85deb0650da320d Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Sat, 4 Apr 2009 23:19:53 +0300
+Subject: [PATCH 02/61] pulse: move pa_rtclock_now in pulsecommon
+
+---
+ src/Makefile.am                                 |    3 +-
+ src/daemon/cpulimit.c                           |    3 +-
+ src/daemon/main.c                               |    2 +-
+ src/map-file                                    |    1 +
+ src/modules/alsa/alsa-sink.c                    |    9 +-
+ src/modules/alsa/alsa-source.c                  |    9 +-
+ src/modules/alsa/module-alsa-source.c           |    2 +-
+ src/modules/bluetooth/module-bluetooth-device.c |    9 +-
+ src/modules/module-combine.c                    |    3 +-
+ src/modules/module-esound-sink.c                |    5 +-
+ src/modules/module-null-sink.c                  |    3 +-
+ src/modules/module-raop-sink.c                  |    5 +-
+ src/modules/module-sine-source.c                |    5 +-
+ src/modules/module-tunnel.c                     |    3 +-
+ src/modules/rtp/module-rtp-recv.c               |    3 +-
+ src/pulse/rtclock.c                             |   35 +++++
+ src/pulse/rtclock.h                             |   39 ++++++
+ src/pulse/stream.c                              |    3 +-
+ src/pulsecore/core-rtclock.c                    |  152 ++++++++++++++++++++++
+ src/pulsecore/core-rtclock.h                    |   45 +++++++
+ src/pulsecore/log.c                             |    3 +-
+ src/pulsecore/ratelimit.c                       |    3 +-
+ src/pulsecore/rtclock.c                         |  158 -----------------------
+ src/pulsecore/rtclock.h                         |   47 -------
+ src/pulsecore/rtpoll.c                          |    2 +-
+ 25 files changed, 317 insertions(+), 235 deletions(-)
+ create mode 100644 src/pulse/rtclock.c
+ create mode 100644 src/pulse/rtclock.h
+ create mode 100644 src/pulsecore/core-rtclock.c
+ create mode 100644 src/pulsecore/core-rtclock.h
+ delete mode 100644 src/pulsecore/rtclock.c
+ delete mode 100644 src/pulsecore/rtclock.h
+
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 0d4f53a..fdf5914 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -545,6 +545,7 @@ libpulsecommon_@PA_MAJORMINORMICRO@_la_SOURCES = \
+ 		pulsecore/authkey.c pulsecore/authkey.h \
+ 		pulsecore/conf-parser.c pulsecore/conf-parser.h \
+ 		pulsecore/core-error.c pulsecore/core-error.h \
++		pulsecore/core-rtclock.c pulsecore/core-rtclock.h \
+ 		pulsecore/core-util.c pulsecore/core-util.h \
+ 		pulsecore/creds.h \
+ 		pulsecore/dynarray.c pulsecore/dynarray.h \
+@@ -581,7 +582,6 @@ libpulsecommon_@PA_MAJORMINORMICRO@_la_SOURCES = \
+ 		pulsecore/queue.c pulsecore/queue.h \
+ 		pulsecore/random.c pulsecore/random.h \
+ 		pulsecore/refcnt.h \
+-		pulsecore/rtclock.c pulsecore/rtclock.h \
+ 		pulsecore/shm.c pulsecore/shm.h \
+ 		pulsecore/bitset.c pulsecore/bitset.h \
+ 		pulsecore/socket-client.c pulsecore/socket-client.h \
+@@ -708,6 +708,7 @@ libpulse_la_SOURCES = \
+ 		pulse/operation.c pulse/operation.h \
+ 		pulse/proplist.c pulse/proplist.h \
+ 		pulse/pulseaudio.h \
++		pulse/rtclock.c pulse/rtclock.h \
+ 		pulse/sample.c pulse/sample.h \
+ 		pulse/scache.c pulse/scache.h \
+ 		pulse/stream.c pulse/stream.h \
+diff --git a/src/daemon/cpulimit.c b/src/daemon/cpulimit.c
+index e9cefdc..c2877ec 100644
+--- a/src/daemon/cpulimit.c
++++ b/src/daemon/cpulimit.c
+@@ -24,13 +24,14 @@
+ #endif
+ 
+ #include <pulse/error.h>
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+ 
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/log.h>
+ #include <pulsecore/macro.h>
+-#include <pulsecore/rtclock.h>
+ 
+ #include "cpulimit.h"
+ 
+diff --git a/src/daemon/main.c b/src/daemon/main.c
+index c456e6d..f860485 100644
+--- a/src/daemon/main.c
++++ b/src/daemon/main.c
+@@ -69,6 +69,7 @@
+ #include <pulsecore/lock-autospawn.h>
+ #include <pulsecore/winsock.h>
+ #include <pulsecore/core-error.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core.h>
+ #include <pulsecore/memblock.h>
+ #include <pulsecore/module.h>
+@@ -81,7 +82,6 @@
+ #include <pulsecore/namereg.h>
+ #include <pulsecore/random.h>
+ #include <pulsecore/rtsig.h>
+-#include <pulsecore/rtclock.h>
+ #include <pulsecore/macro.h>
+ #include <pulsecore/mutex.h>
+ #include <pulsecore/thread.h>
+diff --git a/src/map-file b/src/map-file
+index d0102ae..72e1d14 100644
+--- a/src/map-file
++++ b/src/map-file
+@@ -182,6 +182,7 @@ pa_proplist_to_string_sep;
+ pa_proplist_unset;
+ pa_proplist_unset_many;
+ pa_proplist_update;
++pa_rtclock_now;
+ pa_sample_format_to_string;
+ pa_sample_size;
+ pa_sample_size_of_format;
+diff --git a/src/modules/alsa/alsa-sink.c b/src/modules/alsa/alsa-sink.c
+index 037c128..0cd89d0 100644
+--- a/src/modules/alsa/alsa-sink.c
++++ b/src/modules/alsa/alsa-sink.c
+@@ -32,16 +32,18 @@
+ #include <valgrind/memcheck.h>
+ #endif
+ 
+-#include <pulse/xmalloc.h>
+-#include <pulse/util.h>
+-#include <pulse/timeval.h>
+ #include <pulse/i18n.h>
++#include <pulse/rtclock.h>
++#include <pulse/timeval.h>
++#include <pulse/util.h>
++#include <pulse/xmalloc.h>
+ 
+ #include <pulsecore/core.h>
+ #include <pulsecore/module.h>
+ #include <pulsecore/memchunk.h>
+ #include <pulsecore/sink.h>
+ #include <pulsecore/modargs.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/sample-util.h>
+ #include <pulsecore/log.h>
+@@ -50,7 +52,6 @@
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/thread-mq.h>
+ #include <pulsecore/rtpoll.h>
+-#include <pulsecore/rtclock.h>
+ #include <pulsecore/time-smoother.h>
+ 
+ #include <modules/reserve-wrap.h>
+diff --git a/src/modules/alsa/alsa-source.c b/src/modules/alsa/alsa-source.c
+index 9fdc0e9..9ae9d1b 100644
+--- a/src/modules/alsa/alsa-source.c
++++ b/src/modules/alsa/alsa-source.c
+@@ -32,10 +32,11 @@
+ #include <valgrind/memcheck.h>
+ #endif
+ 
+-#include <pulse/xmalloc.h>
+-#include <pulse/util.h>
+-#include <pulse/timeval.h>
+ #include <pulse/i18n.h>
++#include <pulse/rtclock.h>
++#include <pulse/timeval.h>
++#include <pulse/util.h>
++#include <pulse/xmalloc.h>
+ 
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/core.h>
+@@ -43,6 +44,7 @@
+ #include <pulsecore/memchunk.h>
+ #include <pulsecore/sink.h>
+ #include <pulsecore/modargs.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/sample-util.h>
+ #include <pulsecore/log.h>
+@@ -52,7 +54,6 @@
+ #include <pulsecore/thread-mq.h>
+ #include <pulsecore/rtpoll.h>
+ #include <pulsecore/time-smoother.h>
+-#include <pulsecore/rtclock.h>
+ 
+ #include <modules/reserve-wrap.h>
+ 
+diff --git a/src/modules/alsa/module-alsa-source.c b/src/modules/alsa/module-alsa-source.c
+index e6b27b3..b01cce9 100644
+--- a/src/modules/alsa/module-alsa-source.c
++++ b/src/modules/alsa/module-alsa-source.c
+@@ -37,6 +37,7 @@
+ #include <pulse/timeval.h>
+ 
+ #include <pulsecore/core-error.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core.h>
+ #include <pulsecore/module.h>
+ #include <pulsecore/memchunk.h>
+@@ -51,7 +52,6 @@
+ #include <pulsecore/thread-mq.h>
+ #include <pulsecore/rtpoll.h>
+ #include <pulsecore/time-smoother.h>
+-#include <pulsecore/rtclock.h>
+ 
+ #include "alsa-util.h"
+ #include "alsa-source.h"
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index d3e0fab..f73ab1c 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -30,13 +30,15 @@
+ #include <linux/sockios.h>
+ #include <arpa/inet.h>
+ 
+-#include <pulse/xmalloc.h>
+-#include <pulse/timeval.h>
+-#include <pulse/sample.h>
+ #include <pulse/i18n.h>
++#include <pulse/rtclock.h>
++#include <pulse/sample.h>
++#include <pulse/timeval.h>
++#include <pulse/xmalloc.h>
+ 
+ #include <pulsecore/module.h>
+ #include <pulsecore/modargs.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/socket-util.h>
+@@ -44,7 +46,6 @@
+ #include <pulsecore/thread-mq.h>
+ #include <pulsecore/rtpoll.h>
+ #include <pulsecore/time-smoother.h>
+-#include <pulsecore/rtclock.h>
+ #include <pulsecore/namereg.h>
+ #include <pulsecore/dbus-shared.h>
+ 
+diff --git a/src/modules/module-combine.c b/src/modules/module-combine.c
+index ee4f424..69b69f2 100644
+--- a/src/modules/module-combine.c
++++ b/src/modules/module-combine.c
+@@ -26,6 +26,7 @@
+ #include <stdio.h>
+ #include <errno.h>
+ 
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+ #include <pulse/xmalloc.h>
+ 
+@@ -36,6 +37,7 @@
+ #include <pulsecore/sink-input.h>
+ #include <pulsecore/memblockq.h>
+ #include <pulsecore/log.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/modargs.h>
+ #include <pulsecore/namereg.h>
+@@ -43,7 +45,6 @@
+ #include <pulsecore/thread.h>
+ #include <pulsecore/thread-mq.h>
+ #include <pulsecore/rtpoll.h>
+-#include <pulsecore/rtclock.h>
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/time-smoother.h>
+ 
+diff --git a/src/modules/module-esound-sink.c b/src/modules/module-esound-sink.c
+index f22cc01..5b80a52 100644
+--- a/src/modules/module-esound-sink.c
++++ b/src/modules/module-esound-sink.c
+@@ -41,13 +41,15 @@
+ #include <linux/sockios.h>
+ #endif
+ 
+-#include <pulse/xmalloc.h>
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
++#include <pulse/xmalloc.h>
+ 
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/iochannel.h>
+ #include <pulsecore/sink.h>
+ #include <pulsecore/module.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/modargs.h>
+ #include <pulsecore/log.h>
+@@ -57,7 +59,6 @@
+ #include <pulsecore/thread-mq.h>
+ #include <pulsecore/thread.h>
+ #include <pulsecore/time-smoother.h>
+-#include <pulsecore/rtclock.h>
+ #include <pulsecore/socket-util.h>
+ 
+ #include "module-esound-sink-symdef.h"
+diff --git a/src/modules/module-null-sink.c b/src/modules/module-null-sink.c
+index 1611424..7e7df33 100644
+--- a/src/modules/module-null-sink.c
++++ b/src/modules/module-null-sink.c
+@@ -32,12 +32,14 @@
+ #include <unistd.h>
+ #include <limits.h>
+ 
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+ #include <pulse/xmalloc.h>
+ 
+ #include <pulsecore/macro.h>
+ #include <pulsecore/sink.h>
+ #include <pulsecore/module.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/modargs.h>
+@@ -45,7 +47,6 @@
+ #include <pulsecore/thread.h>
+ #include <pulsecore/thread-mq.h>
+ #include <pulsecore/rtpoll.h>
+-#include <pulsecore/rtclock.h>
+ 
+ #include "module-null-sink-symdef.h"
+ 
+diff --git a/src/modules/module-raop-sink.c b/src/modules/module-raop-sink.c
+index 344bb95..710e9a6 100644
+--- a/src/modules/module-raop-sink.c
++++ b/src/modules/module-raop-sink.c
+@@ -42,13 +42,15 @@
+ #include <linux/sockios.h>
+ #endif
+ 
+-#include <pulse/xmalloc.h>
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
++#include <pulse/xmalloc.h>
+ 
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/iochannel.h>
+ #include <pulsecore/sink.h>
+ #include <pulsecore/module.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/modargs.h>
+ #include <pulsecore/log.h>
+@@ -57,7 +59,6 @@
+ #include <pulsecore/thread-mq.h>
+ #include <pulsecore/thread.h>
+ #include <pulsecore/time-smoother.h>
+-#include <pulsecore/rtclock.h>
+ #include <pulsecore/socket-util.h>
+ 
+ #include "module-raop-sink-symdef.h"
+diff --git a/src/modules/module-sine-source.c b/src/modules/module-sine-source.c
+index 58a8c24..c6992ff 100644
+--- a/src/modules/module-sine-source.c
++++ b/src/modules/module-sine-source.c
+@@ -34,19 +34,20 @@
+ #include <sys/ioctl.h>
+ #include <sys/poll.h>
+ 
+-#include <pulse/xmalloc.h>
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
++#include <pulse/xmalloc.h>
+ 
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/source.h>
+ #include <pulsecore/module.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/modargs.h>
+ #include <pulsecore/log.h>
+ #include <pulsecore/thread.h>
+ #include <pulsecore/thread-mq.h>
+ #include <pulsecore/rtpoll.h>
+-#include <pulsecore/rtclock.h>
+ 
+ #include "module-sine-source-symdef.h"
+ 
+diff --git a/src/modules/module-tunnel.c b/src/modules/module-tunnel.c
+index 05480cb..f0188fd 100644
+--- a/src/modules/module-tunnel.c
++++ b/src/modules/module-tunnel.c
+@@ -31,6 +31,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+ #include <pulse/util.h>
+ #include <pulse/version.h>
+@@ -50,7 +51,7 @@
+ #include <pulsecore/time-smoother.h>
+ #include <pulsecore/thread.h>
+ #include <pulsecore/thread-mq.h>
+-#include <pulsecore/rtclock.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/proplist-util.h>
+ #include <pulsecore/auth-cookie.h>
+diff --git a/src/modules/rtp/module-rtp-recv.c b/src/modules/rtp/module-rtp-recv.c
+index 0c17161..a6825b3 100644
+--- a/src/modules/rtp/module-rtp-recv.c
++++ b/src/modules/rtp/module-rtp-recv.c
+@@ -33,6 +33,7 @@
+ #include <unistd.h>
+ #include <poll.h>
+ 
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+ #include <pulse/xmalloc.h>
+ 
+@@ -43,13 +44,13 @@
+ #include <pulsecore/sink-input.h>
+ #include <pulsecore/memblockq.h>
+ #include <pulsecore/log.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/modargs.h>
+ #include <pulsecore/namereg.h>
+ #include <pulsecore/sample-util.h>
+ #include <pulsecore/macro.h>
+ #include <pulsecore/atomic.h>
+-#include <pulsecore/rtclock.h>
+ #include <pulsecore/atomic.h>
+ #include <pulsecore/time-smoother.h>
+ #include <pulsecore/socket-util.h>
+diff --git a/src/pulse/rtclock.c b/src/pulse/rtclock.c
+new file mode 100644
+index 0000000..49ff6aa
+--- /dev/null
++++ b/src/pulse/rtclock.c
+@@ -0,0 +1,35 @@
++/***
++  This file is part of PulseAudio.
++
++  Copyright 2004-2006 Lennart Poettering
++
++  PulseAudio is free software; you can redistribute it and/or modify
++  it under the terms of the GNU Lesser General Public License as
++  published by the Free Software Foundation; either version 2.1 of the
++  License, or (at your option) any later version.
++
++  PulseAudio is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  Lesser General Public License for more details.
++
++  You should have received a copy of the GNU Lesser General Public
++  License along with PulseAudio; if not, write to the Free Software
++  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
++  USA.
++***/
++
++#ifdef HAVE_CONFIG_H
++#include <config.h>
++#endif
++
++#include <pulsecore/core-rtclock.h>
++
++#include "rtclock.h"
++#include "timeval.h"
++
++pa_usec_t pa_rtclock_now(void) {
++    struct timeval tv;
++
++    return pa_timeval_load(pa_rtclock_get(&tv));
++}
+diff --git a/src/pulse/rtclock.h b/src/pulse/rtclock.h
+new file mode 100644
+index 0000000..da1af5e
+--- /dev/null
++++ b/src/pulse/rtclock.h
+@@ -0,0 +1,39 @@
++#ifndef foortclockfoo
++#define foortclockfoo
++
++/***
++  This file is part of PulseAudio.
++
++  Copyright 2004-2009 Lennart Poettering
++
++  PulseAudio is free software; you can redistribute it and/or modify
++  it under the terms of the GNU Lesser General Public License as
++  published by the Free Software Foundation; either version 2.1 of the
++  License, or (at your option) any later version.
++
++  PulseAudio is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  Lesser General Public License for more details.
++
++  You should have received a copy of the GNU Lesser General Public
++  License along with PulseAudio; if not, write to the Free Software
++  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
++  USA.
++***/
++
++#include <pulse/cdecl.h>
++#include <pulse/def.h>
++#include <pulse/gccmacro.h>
++
++/** \file
++ *  Monotonic clock utility. */
++
++PA_C_DECL_BEGIN
++
++/** Return the current CLOCK_MONOTONIC time.  \since FIXME-RTCLOCK */
++pa_usec_t pa_rtclock_now(void);
++
++PA_C_DECL_END
++
++#endif
+diff --git a/src/pulse/stream.c b/src/pulse/stream.c
+index 8df8a5e..dd44ff4 100644
+--- a/src/pulse/stream.c
++++ b/src/pulse/stream.c
+@@ -30,13 +30,14 @@
+ 
+ #include <pulse/def.h>
+ #include <pulse/timeval.h>
++#include <pulse/rtclock.h>
+ #include <pulse/xmalloc.h>
+ 
+ #include <pulsecore/pstream-util.h>
+ #include <pulsecore/log.h>
+ #include <pulsecore/hashmap.h>
+ #include <pulsecore/macro.h>
+-#include <pulsecore/rtclock.h>
++#include <pulsecore/core-rtclock.h>
+ 
+ #include "fork-detect.h"
+ #include "internal.h"
+diff --git a/src/pulsecore/core-rtclock.c b/src/pulsecore/core-rtclock.c
+new file mode 100644
+index 0000000..0610e29
+--- /dev/null
++++ b/src/pulsecore/core-rtclock.c
+@@ -0,0 +1,152 @@
++/***
++  This file is part of PulseAudio.
++
++  Copyright 2004-2006 Lennart Poettering
++  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
++
++  PulseAudio is free software; you can redistribute it and/or modify
++  it under the terms of the GNU Lesser General Public License as
++  published by the Free Software Foundation; either version 2.1 of the
++  License, or (at your option) any later version.
++
++  PulseAudio is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  Lesser General Public License for more details.
++
++  You should have received a copy of the GNU Lesser General Public
++  License along with PulseAudio; if not, write to the Free Software
++  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
++  USA.
++***/
++
++#ifdef HAVE_CONFIG_H
++#include <config.h>
++#endif
++
++#include <stddef.h>
++#include <time.h>
++#include <sys/time.h>
++#include <errno.h>
++
++#ifdef HAVE_SYS_PRCTL_H
++#include <sys/prctl.h>
++#endif
++
++#include <pulse/timeval.h>
++#include <pulsecore/macro.h>
++#include <pulsecore/core-error.h>
++
++#include "core-rtclock.h"
++
++pa_usec_t pa_rtclock_age(const struct timeval *tv) {
++    struct timeval now;
++    pa_assert(tv);
++
++    return pa_timeval_diff(pa_rtclock_get(&now), tv);
++}
++
++struct timeval *pa_rtclock_get(struct timeval *tv) {
++#ifdef HAVE_CLOCK_GETTIME
++    struct timespec ts;
++
++#ifdef CLOCK_MONOTONIC
++    /* No locking or atomic ops for no_monotonic here */
++    static pa_bool_t no_monotonic = FALSE;
++
++    if (!no_monotonic)
++        if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0)
++            no_monotonic = TRUE;
++
++    if (no_monotonic)
++#endif
++        pa_assert_se(clock_gettime(CLOCK_REALTIME, &ts) == 0);
++
++    pa_assert(tv);
++
++    tv->tv_sec = ts.tv_sec;
++    tv->tv_usec = ts.tv_nsec / 1000;
++
++    return tv;
++
++#else /* HAVE_CLOCK_GETTIME */
++
++    return pa_gettimeofday(tv);
++
++#endif
++}
++
++pa_bool_t pa_rtclock_hrtimer(void) {
++#ifdef HAVE_CLOCK_GETTIME
++    struct timespec ts;
++
++#ifdef CLOCK_MONOTONIC
++    if (clock_getres(CLOCK_MONOTONIC, &ts) >= 0)
++        return ts.tv_sec == 0 && ts.tv_nsec <= PA_HRTIMER_THRESHOLD_USEC*1000;
++#endif
++
++    pa_assert_se(clock_getres(CLOCK_REALTIME, &ts) == 0);
++    return ts.tv_sec == 0 && ts.tv_nsec <= PA_HRTIMER_THRESHOLD_USEC*1000;
++
++#else /* HAVE_CLOCK_GETTIME */
++
++    return FALSE;
++
++#endif
++}
++
++#define TIMER_SLACK_NS (int) ((500 * PA_NSEC_PER_USEC))
++
++void pa_rtclock_hrtimer_enable(void) {
++#ifdef PR_SET_TIMERSLACK
++    int slack_ns;
++
++    if ((slack_ns = prctl(PR_GET_TIMERSLACK, 0, 0, 0, 0)) < 0) {
++        pa_log_info("PR_GET_TIMERSLACK/PR_SET_TIMERSLACK not supported.");
++        return;
++    }
++
++    pa_log_debug("Timer slack is set to %i us.", (int) (slack_ns/PA_NSEC_PER_USEC));
++
++    if (slack_ns > TIMER_SLACK_NS) {
++        slack_ns = TIMER_SLACK_NS;
++
++        pa_log_debug("Setting timer slack to %i us.", (int) (slack_ns/PA_NSEC_PER_USEC));
++
++        if (prctl(PR_SET_TIMERSLACK, slack_ns, 0, 0, 0) < 0) {
++            pa_log_warn("PR_SET_TIMERSLACK failed: %s", pa_cstrerror(errno));
++            return;
++        }
++    }
++
++#endif
++}
++
++struct timeval* pa_rtclock_from_wallclock(struct timeval *tv) {
++
++#ifdef HAVE_CLOCK_GETTIME
++    struct timeval wc_now, rt_now;
++
++    pa_gettimeofday(&wc_now);
++    pa_rtclock_get(&rt_now);
++
++    pa_assert(tv);
++
++    if (pa_timeval_cmp(&wc_now, tv) < 0)
++        pa_timeval_add(&rt_now, pa_timeval_diff(tv, &wc_now));
++    else
++        pa_timeval_sub(&rt_now, pa_timeval_diff(&wc_now, tv));
++
++    *tv = rt_now;
++#endif
++
++    return tv;
++}
++
++pa_usec_t pa_timespec_load(const struct timespec *ts) {
++    pa_assert(ts);
++
++    return
++        (pa_usec_t) ts->tv_sec * PA_USEC_PER_SEC +
++        (pa_usec_t) ts->tv_nsec / PA_NSEC_PER_USEC;
++}
+diff --git a/src/pulsecore/core-rtclock.h b/src/pulsecore/core-rtclock.h
+new file mode 100644
+index 0000000..83ff7c7
+--- /dev/null
++++ b/src/pulsecore/core-rtclock.h
+@@ -0,0 +1,45 @@
++#ifndef foopulsertclockhfoo
++#define foopulsertclockhfoo
++
++/***
++  This file is part of PulseAudio.
++
++  Copyright 2004-2006 Lennart Poettering
++
++  PulseAudio is free software; you can redistribute it and/or modify
++  it under the terms of the GNU Lesser General Public License as
++  published by the Free Software Foundation; either version 2.1 of the
++  License, or (at your option) any later version.
++
++  PulseAudio is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  Lesser General Public License for more details.
++
++  You should have received a copy of the GNU Lesser General Public
++  License along with PulseAudio; if not, write to the Free Software
++  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
++  USA.
++***/
++
++#include <pulsecore/macro.h>
++#include <pulse/sample.h>
++
++struct timeval;
++
++/* Something like pulse/timeval.h but based on CLOCK_MONOTONIC */
++
++struct timeval *pa_rtclock_get(struct timeval *ts);
++
++pa_usec_t pa_rtclock_age(const struct timeval *tv);
++pa_bool_t pa_rtclock_hrtimer(void);
++void pa_rtclock_hrtimer_enable(void);
++
++/* timer with a resolution better than this are considered high-resolution */
++#define PA_HRTIMER_THRESHOLD_USEC 10
++
++struct timeval* pa_rtclock_from_wallclock(struct timeval *tv);
++
++pa_usec_t pa_timespec_load(const struct timespec *ts);
++
++#endif
+diff --git a/src/pulsecore/log.c b/src/pulsecore/log.c
+index 46770ab..0f24440 100644
+--- a/src/pulsecore/log.c
++++ b/src/pulsecore/log.c
+@@ -38,6 +38,7 @@
+ #include <syslog.h>
+ #endif
+ 
++#include <pulse/rtclock.h>
+ #include <pulse/utf8.h>
+ #include <pulse/xmalloc.h>
+ #include <pulse/util.h>
+@@ -45,7 +46,7 @@
+ 
+ #include <pulsecore/macro.h>
+ #include <pulsecore/core-util.h>
+-#include <pulsecore/rtclock.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/once.h>
+ #include <pulsecore/ratelimit.h>
+ 
+diff --git a/src/pulsecore/ratelimit.c b/src/pulsecore/ratelimit.c
+index 6a9782d..bba5bde 100644
+--- a/src/pulsecore/ratelimit.c
++++ b/src/pulsecore/ratelimit.c
+@@ -23,7 +23,8 @@
+ #include <config.h>
+ #endif
+ 
+-#include <pulsecore/rtclock.h>
++#include <pulse/rtclock.h>
++
+ #include <pulsecore/log.h>
+ #include <pulsecore/mutex.h>
+ 
+diff --git a/src/pulsecore/rtclock.c b/src/pulsecore/rtclock.c
+deleted file mode 100644
+index 53c0258..0000000
+--- a/src/pulsecore/rtclock.c
++++ /dev/null
+@@ -1,158 +0,0 @@
+-/***
+-  This file is part of PulseAudio.
+-
+-  Copyright 2004-2006 Lennart Poettering
+-  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+-
+-  PulseAudio is free software; you can redistribute it and/or modify
+-  it under the terms of the GNU Lesser General Public License as
+-  published by the Free Software Foundation; either version 2.1 of the
+-  License, or (at your option) any later version.
+-
+-  PulseAudio is distributed in the hope that it will be useful, but
+-  WITHOUT ANY WARRANTY; without even the implied warranty of
+-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+-  Lesser General Public License for more details.
+-
+-  You should have received a copy of the GNU Lesser General Public
+-  License along with PulseAudio; if not, write to the Free Software
+-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+-  USA.
+-***/
+-
+-#ifdef HAVE_CONFIG_H
+-#include <config.h>
+-#endif
+-
+-#include <stddef.h>
+-#include <time.h>
+-#include <sys/time.h>
+-#include <errno.h>
+-
+-#ifdef HAVE_SYS_PRCTL_H
+-#include <sys/prctl.h>
+-#endif
+-
+-#include <pulse/timeval.h>
+-#include <pulsecore/macro.h>
+-#include <pulsecore/core-error.h>
+-
+-#include "rtclock.h"
+-
+-pa_usec_t pa_rtclock_age(const struct timeval *tv) {
+-    struct timeval now;
+-    pa_assert(tv);
+-
+-    return pa_timeval_diff(pa_rtclock_get(&now), tv);
+-}
+-
+-struct timeval *pa_rtclock_get(struct timeval *tv) {
+-#ifdef HAVE_CLOCK_GETTIME
+-    struct timespec ts;
+-
+-#ifdef CLOCK_MONOTONIC
+-    /* No locking or atomic ops for no_monotonic here */
+-    static pa_bool_t no_monotonic = FALSE;
+-
+-    if (!no_monotonic)
+-        if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0)
+-            no_monotonic = TRUE;
+-
+-    if (no_monotonic)
+-#endif
+-        pa_assert_se(clock_gettime(CLOCK_REALTIME, &ts) == 0);
+-
+-    pa_assert(tv);
+-
+-    tv->tv_sec = ts.tv_sec;
+-    tv->tv_usec = ts.tv_nsec / 1000;
+-
+-    return tv;
+-
+-#else /* HAVE_CLOCK_GETTIME */
+-
+-    return pa_gettimeofday(tv);
+-
+-#endif
+-}
+-
+-pa_bool_t pa_rtclock_hrtimer(void) {
+-#ifdef HAVE_CLOCK_GETTIME
+-    struct timespec ts;
+-
+-#ifdef CLOCK_MONOTONIC
+-    if (clock_getres(CLOCK_MONOTONIC, &ts) >= 0)
+-        return ts.tv_sec == 0 && ts.tv_nsec <= PA_HRTIMER_THRESHOLD_USEC*1000;
+-#endif
+-
+-    pa_assert_se(clock_getres(CLOCK_REALTIME, &ts) == 0);
+-    return ts.tv_sec == 0 && ts.tv_nsec <= PA_HRTIMER_THRESHOLD_USEC*1000;
+-
+-#else /* HAVE_CLOCK_GETTIME */
+-
+-    return FALSE;
+-
+-#endif
+-}
+-
+-#define TIMER_SLACK_NS (int) ((500 * PA_NSEC_PER_USEC))
+-
+-void pa_rtclock_hrtimer_enable(void) {
+-#ifdef PR_SET_TIMERSLACK
+-    int slack_ns;
+-
+-    if ((slack_ns = prctl(PR_GET_TIMERSLACK, 0, 0, 0, 0)) < 0) {
+-        pa_log_info("PR_GET_TIMERSLACK/PR_SET_TIMERSLACK not supported.");
+-        return;
+-    }
+-
+-    pa_log_debug("Timer slack is set to %i us.", (int) (slack_ns/PA_NSEC_PER_USEC));
+-
+-    if (slack_ns > TIMER_SLACK_NS) {
+-        slack_ns = TIMER_SLACK_NS;
+-
+-        pa_log_debug("Setting timer slack to %i us.", (int) (slack_ns/PA_NSEC_PER_USEC));
+-
+-        if (prctl(PR_SET_TIMERSLACK, slack_ns, 0, 0, 0) < 0) {
+-            pa_log_warn("PR_SET_TIMERSLACK failed: %s", pa_cstrerror(errno));
+-            return;
+-        }
+-    }
+-
+-#endif
+-}
+-
+-pa_usec_t pa_rtclock_now(void) {
+-    struct timeval tv;
+-
+-    return pa_timeval_load(pa_rtclock_get(&tv));
+-}
+-
+-struct timeval* pa_rtclock_from_wallclock(struct timeval *tv) {
+-
+-#ifdef HAVE_CLOCK_GETTIME
+-    struct timeval wc_now, rt_now;
+-
+-    pa_gettimeofday(&wc_now);
+-    pa_rtclock_get(&rt_now);
+-
+-    pa_assert(tv);
+-
+-    if (pa_timeval_cmp(&wc_now, tv) < 0)
+-        pa_timeval_add(&rt_now, pa_timeval_diff(tv, &wc_now));
+-    else
+-        pa_timeval_sub(&rt_now, pa_timeval_diff(&wc_now, tv));
+-
+-    *tv = rt_now;
+-#endif
+-
+-    return tv;
+-}
+-
+-pa_usec_t pa_timespec_load(const struct timespec *ts) {
+-    pa_assert(ts);
+-
+-    return
+-        (pa_usec_t) ts->tv_sec * PA_USEC_PER_SEC +
+-        (pa_usec_t) ts->tv_nsec / PA_NSEC_PER_USEC;
+-}
+diff --git a/src/pulsecore/rtclock.h b/src/pulsecore/rtclock.h
+deleted file mode 100644
+index b8a588c..0000000
+--- a/src/pulsecore/rtclock.h
++++ /dev/null
+@@ -1,47 +0,0 @@
+-#ifndef foopulsertclockhfoo
+-#define foopulsertclockhfoo
+-
+-/***
+-  This file is part of PulseAudio.
+-
+-  Copyright 2004-2006 Lennart Poettering
+-
+-  PulseAudio is free software; you can redistribute it and/or modify
+-  it under the terms of the GNU Lesser General Public License as
+-  published by the Free Software Foundation; either version 2.1 of the
+-  License, or (at your option) any later version.
+-
+-  PulseAudio is distributed in the hope that it will be useful, but
+-  WITHOUT ANY WARRANTY; without even the implied warranty of
+-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+-  Lesser General Public License for more details.
+-
+-  You should have received a copy of the GNU Lesser General Public
+-  License along with PulseAudio; if not, write to the Free Software
+-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+-  USA.
+-***/
+-
+-#include <pulsecore/macro.h>
+-#include <pulse/sample.h>
+-
+-struct timeval;
+-
+-/* Something like pulse/timeval.h but based on CLOCK_MONOTONIC */
+-
+-struct timeval *pa_rtclock_get(struct timeval *ts);
+-
+-pa_usec_t pa_rtclock_now(void);
+-
+-pa_usec_t pa_rtclock_age(const struct timeval *tv);
+-pa_bool_t pa_rtclock_hrtimer(void);
+-void pa_rtclock_hrtimer_enable(void);
+-
+-/* timer with a resolution better than this are considered high-resolution */
+-#define PA_HRTIMER_THRESHOLD_USEC 10
+-
+-struct timeval* pa_rtclock_from_wallclock(struct timeval *tv);
+-
+-pa_usec_t pa_timespec_load(const struct timespec *ts);
+-
+-#endif
+diff --git a/src/pulsecore/rtpoll.c b/src/pulsecore/rtpoll.c
+index 006b93f..9401deb 100644
+--- a/src/pulsecore/rtpoll.c
++++ b/src/pulsecore/rtpoll.c
+@@ -44,7 +44,7 @@
+ #include <pulse/timeval.h>
+ 
+ #include <pulsecore/core-error.h>
+-#include <pulsecore/rtclock.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/macro.h>
+ #include <pulsecore/llist.h>
+ #include <pulsecore/rtsig.h>
+-- 
+1.6.3.1
+

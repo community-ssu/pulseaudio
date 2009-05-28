@@ -1,0 +1,41 @@
+From 4d1a3e64d8fbebc32180319da43feed1c1eda92e Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Tue, 12 May 2009 01:39:55 +0300
+Subject: [PATCH 11/61] context: don't fail if session bus is not there
+
+Also invert the order of bus tracking since we expect session_bus to
+be present when we check for it. Although that should not change
+anything in practise.
+---
+ src/pulse/context.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/pulse/context.c b/src/pulse/context.c
+index 4aad737..9f6f55c 100644
+--- a/src/pulse/context.c
++++ b/src/pulse/context.c
+@@ -811,10 +811,10 @@ static int try_next_connection(pa_context *c) {
+ 
+ #ifdef HAVE_DBUS
+             if (c->no_fail && !c->server_specified) {
+-                if (!c->system_bus)
+-                    track_pulseaudio_on_dbus(c, DBUS_BUS_SYSTEM, &c->system_bus);
+                 if (!c->session_bus)
+                     track_pulseaudio_on_dbus(c, DBUS_BUS_SESSION, &c->session_bus);
++                if (!c->system_bus)
++                    track_pulseaudio_on_dbus(c, DBUS_BUS_SYSTEM, &c->system_bus);
+             } else
+ #endif
+                 pa_context_fail(c, PA_ERR_CONNECTIONREFUSED);
+@@ -892,7 +892,7 @@ static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *message, vo
+ 
+     /* FIXME: We probably should check if this is actually the NameOwnerChanged we were looking for */
+ 
+-    is_session = bus == pa_dbus_wrap_connection_get(c->session_bus);
++    is_session = c->session_bus && bus == pa_dbus_wrap_connection_get(c->session_bus);
+     pa_log_debug("Rock!! PulseAudio is back on %s bus", is_session ? "session" : "system");
+ 
+     if (is_session)
+-- 
+1.6.3.1
+

@@ -1,0 +1,126 @@
+From e1f9fb8df7f747ed90f72758f4a5cb430cdb3918 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Thu, 7 May 2009 17:07:37 +0300
+Subject: [PATCH 33/61] stream-restore: add volume_is_absolute bool in server side
+
+---
+ configure.ac                        |    2 +-
+ src/modules/module-stream-restore.c |   29 ++++++++++++++++++++++-------
+ 2 files changed, 23 insertions(+), 8 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 25cee57..1366386 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -40,7 +40,7 @@ AC_SUBST(PA_MAJORMINORMICRO, pa_major.pa_minor.pa_micro)
+ AC_SUBST(PACKAGE_URL, [http://pulseaudio.org/])
+ 
+ AC_SUBST(PA_API_VERSION, 12)
+-AC_SUBST(PA_PROTOCOL_VERSION, 15)
++AC_SUBST(PA_PROTOCOL_VERSION, 16)
+ 
+ # The stable ABI for client applications, for the version info x:y:z
+ # always will hold y=z
+diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
+index ad5baf9..d3ec72f 100644
+--- a/src/modules/module-stream-restore.c
++++ b/src/modules/module-stream-restore.c
+@@ -92,12 +92,13 @@ struct userdata {
+     pa_idxset *subscribed;
+ };
+ 
+-#define ENTRY_VERSION 2
++#define ENTRY_VERSION 3
+ 
+ struct entry {
+     uint8_t version;
+-    pa_bool_t muted_valid:1, volume_valid:1, device_valid:1;
++    pa_bool_t muted_valid:1, volume_valid:1, device_valid:1, volume_is_absolute_valid:1;
+     pa_bool_t muted:1;
++    pa_bool_t volume_is_absolute:1;
+     pa_channel_map channel_map;
+     pa_cvolume volume;
+     char device[PA_NAME_MAX];
+@@ -246,6 +247,10 @@ static pa_bool_t entries_equal(const struct entry *a, const struct entry *b) {
+         (a->muted_valid && (a->muted != b->muted)))
+         return FALSE;
+ 
++    if (a->volume_is_absolute_valid != b->volume_is_absolute_valid ||
++        (a->volume_is_absolute_valid && (a->volume_is_absolute != b->volume_is_absolute)))
++        return FALSE;
++
+     t = b->volume;
+     if (a->volume_valid != b->volume_valid ||
+         (a->volume_valid && !pa_cvolume_equal(pa_cvolume_remap(&t, &b->channel_map, &a->channel_map), &a->volume)))
+@@ -286,7 +291,7 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
+ 
+         if (sink_input->save_volume) {
+             entry.channel_map = sink_input->channel_map;
+-            pa_sink_input_get_volume(sink_input, &entry.volume, FALSE);
++            pa_sink_input_get_volume(sink_input, &entry.volume, entry.volume_is_absolute);
+             entry.volume_valid = TRUE;
+         }
+ 
+@@ -405,7 +410,7 @@ static pa_hook_result_t sink_input_fixate_hook_callback(pa_core *c, pa_sink_inpu
+                 pa_cvolume_remap(&v, &e->channel_map, &new_data->channel_map);
+                 pa_sink_input_new_data_set_volume(new_data, &v);
+ 
+-                new_data->volume_is_absolute = FALSE;
++                new_data->volume_is_absolute = e->volume_is_absolute;
+                 new_data->save_volume = FALSE;
+             } else
+                 pa_log_debug("Not restoring volume for sink input %s, because already set.", name);
+@@ -466,7 +471,7 @@ static pa_hook_result_t source_output_new_hook_callback(pa_core *c, pa_source_ou
+     return PA_HOOK_OK;
+ }
+ 
+-#define EXT_VERSION 1
++#define EXT_VERSION 2
+ 
+ static void clear_db(struct userdata *u) {
+     datum key;
+@@ -514,7 +519,7 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
+ 
+             v = e->volume;
+             pa_log_info("Restoring volume for sink input %s.", name);
+-            pa_sink_input_set_volume(si, pa_cvolume_remap(&v, &e->channel_map, &si->channel_map), FALSE, FALSE);
++            pa_sink_input_set_volume(si, pa_cvolume_remap(&v, &e->channel_map, &si->channel_map), FALSE, e->volume_is_absolute);
+         }
+ 
+         if (u->restore_muted && e->muted_valid) {
+@@ -640,6 +645,8 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
+                     pa_tagstruct_put_cvolume(reply, e->volume_valid ? &e->volume : pa_cvolume_init(&r));
+                     pa_tagstruct_puts(reply, e->device_valid ? e->device : NULL);
+                     pa_tagstruct_put_boolean(reply, e->muted_valid ? e->muted : FALSE);
++                    if (c->version >= 16) /* FIXME: should be client side extension version */
++                        pa_tagstruct_put_boolean(reply, e->volume_is_absolute_valid ? e->volume_is_absolute : FALSE);
+ 
+                     pa_xfree(e);
+                 }
+@@ -670,7 +677,7 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
+ 
+             while (!pa_tagstruct_eof(t)) {
+                 const char *name, *device;
+-                pa_bool_t muted;
++                pa_bool_t muted, volume_is_absolute;
+                 struct entry entry;
+                 datum key, data;
+                 int k;
+@@ -685,6 +692,14 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
+                     pa_tagstruct_get_boolean(t, &muted) < 0)
+                     goto fail;
+ 
++                if (c->version >= 16) {
++                    if (pa_tagstruct_get_boolean(t, &volume_is_absolute) < 0)
++                        goto fail;
++
++                    entry.volume_is_absolute = volume_is_absolute;
++                    entry.volume_is_absolute_valid = TRUE;
++                }
++
+                 if (!name || !*name)
+                     goto fail;
+ 
+-- 
+1.6.3.1
+

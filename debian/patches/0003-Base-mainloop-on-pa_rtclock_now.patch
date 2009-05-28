@@ -1,0 +1,1781 @@
+From c55a4d569891e6778a76059dad23127c7b1dc3ef Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Sun, 5 Apr 2009 02:13:43 +0300
+Subject: [PATCH 03/61] Base mainloop on pa_rtclock_now()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Move the mainloop to monotonic based time events.
+
+Introduces rtclock_time_new() and rtclock_time_restart() in order to
+keep API compatibility.
+
+This patch received timeval wrappers patch from Jyri.
+
+Both mainloop-test and mainloop-test-glib works with rt and timeval
+based time events. PulseAudio and clients are fully functional.
+
+Signed-off-by: Marc-André Lureau <marca-andre.lureau@nokia.com>
+Signed-off-by: Jyri Sarha <jyri.sarha@nokia.com>
+---
+ src/Makefile.am                             |    1 +
+ src/daemon/main.c                           |    4 +-
+ src/modules/module-card-restore.c           |   12 +--
+ src/modules/module-combine.c                |   15 +--
+ src/modules/module-default-device-restore.c |   13 +--
+ src/modules/module-device-restore.c         |   12 +--
+ src/modules/module-stream-restore.c         |   11 +--
+ src/modules/module-suspend-on-idle.c        |   20 ++--
+ src/modules/module-tunnel.c                 |   14 +--
+ src/modules/module-waveout.c                |    4 +-
+ src/modules/rtp/module-rtp-recv.c           |   13 +--
+ src/modules/rtp/module-rtp-send.c           |   16 +--
+ src/pulse/glib-mainloop.c                   |  133 ++++++++++++++++++---------
+ src/pulse/mainloop-api.h                    |    8 ++
+ src/pulse/mainloop.c                        |  119 ++++++++++++++++++------
+ src/pulse/rtclock.h                         |    2 +-
+ src/pulse/stream.c                          |   13 +--
+ src/pulse/timeval.h                         |    3 +
+ src/pulsecore/avahi-wrap.c                  |   33 +++++--
+ src/pulsecore/core-scache.c                 |   18 +---
+ src/pulsecore/core.c                        |    9 +-
+ src/pulsecore/dbus-util.c                   |   24 ++----
+ src/pulsecore/pdispatch.c                   |    9 +-
+ src/pulsecore/protocol-esound.c             |   15 +--
+ src/pulsecore/protocol-native.c             |   15 +--
+ src/pulsecore/socket-client.c               |    9 +-
+ src/tests/mainloop-test.c                   |   12 ++-
+ src/tests/thread-mainloop-test.c            |    8 +-
+ src/utils/pabrowse.c                        |    3 +-
+ src/utils/pacat.c                           |   17 +---
+ 30 files changed, 325 insertions(+), 260 deletions(-)
+
+diff --git a/src/Makefile.am b/src/Makefile.am
+index fdf5914..6d26863 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -658,6 +658,7 @@ pulseinclude_HEADERS = \
+ 		pulse/operation.h \
+ 		pulse/proplist.h \
+ 		pulse/pulseaudio.h \
++		pulse/rtclock.h \
+ 		pulse/sample.h \
+ 		pulse/scache.h \
+ 		pulse/simple.h \
+diff --git a/src/daemon/main.c b/src/daemon/main.c
+index f860485..8d5416e 100644
+--- a/src/daemon/main.c
++++ b/src/daemon/main.c
+@@ -128,7 +128,7 @@ static void message_cb(pa_mainloop_api*a, pa_time_event*e, const struct timeval
+     }
+ 
+     pa_timeval_add(pa_gettimeofday(&tvnext), 100000);
+-    a->time_restart(e, &tvnext);
++    a->rtclock_time_restart(e, &tvnext);
+ }
+ 
+ #endif
+@@ -997,7 +997,7 @@ int main(int argc, char *argv[]) {
+ #endif
+ 
+ #ifdef OS_IS_WIN32
+-    win32_timer = pa_mainloop_get_api(mainloop)->time_new(pa_mainloop_get_api(mainloop), pa_gettimeofday(&win32_tv), message_cb, NULL);
++    win32_timer = pa_mainloop_get_api(mainloop)->rtclock_time_new(pa_mainloop_get_api(mainloop), pa_gettimeofday(&win32_tv), message_cb, NULL);
+ #endif
+ 
+     oil_init();
+diff --git a/src/modules/module-card-restore.c b/src/modules/module-card-restore.c
+index 17f1f8c..f371775 100644
+--- a/src/modules/module-card-restore.c
++++ b/src/modules/module-card-restore.c
+@@ -36,6 +36,7 @@
+ #include <pulse/volume.h>
+ #include <pulse/timeval.h>
+ #include <pulse/util.h>
++#include <pulse/rtclock.h>
+ 
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/module.h>
+@@ -53,7 +54,7 @@ PA_MODULE_DESCRIPTION("Automatically restore profile of cards");
+ PA_MODULE_VERSION(PACKAGE_VERSION);
+ PA_MODULE_LOAD_ONCE(TRUE);
+ 
+-#define SAVE_INTERVAL 10
++#define SAVE_INTERVAL (10 * PA_USEC_PER_SEC)
+ 
+ static const char* const valid_modargs[] = {
+     NULL
+@@ -75,12 +76,11 @@ struct entry {
+     char profile[PA_NAME_MAX];
+ } PA_GCC_PACKED ;
+ 
+-static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, const struct timeval *tv, void *userdata) {
++static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, pa_usec_t t, void *userdata) {
+     struct userdata *u = userdata;
+ 
+     pa_assert(a);
+     pa_assert(e);
+-    pa_assert(tv);
+     pa_assert(u);
+ 
+     pa_assert(e == u->save_time_event);
+@@ -132,14 +132,10 @@ fail:
+ }
+ 
+ static void trigger_save(struct userdata *u) {
+-    struct timeval tv;
+-
+     if (u->save_time_event)
+         return;
+ 
+-    pa_gettimeofday(&tv);
+-    tv.tv_sec += SAVE_INTERVAL;
+-    u->save_time_event = u->core->mainloop->time_new(u->core->mainloop, &tv, save_time_callback, u);
++    u->save_time_event = u->core->mainloop->rtclock_time_new(u->core->mainloop, pa_rtclock_now() + SAVE_INTERVAL, save_time_callback, u);
+ }
+ 
+ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint32_t idx, void *userdata) {
+diff --git a/src/modules/module-combine.c b/src/modules/module-combine.c
+index 69b69f2..caaeb88 100644
+--- a/src/modules/module-combine.c
++++ b/src/modules/module-combine.c
+@@ -223,9 +223,8 @@ static void adjust_rates(struct userdata *u) {
+     pa_asyncmsgq_send(u->sink->asyncmsgq, PA_MSGOBJECT(u->sink), SINK_MESSAGE_UPDATE_LATENCY, NULL, (int64_t) avg_total_latency, NULL);
+ }
+ 
+-static void time_callback(pa_mainloop_api*a, pa_time_event* e, const struct timeval *tv, void *userdata) {
++static void time_callback(pa_mainloop_api*a, pa_time_event* e, pa_usec_t t, void *userdata) {
+     struct userdata *u = userdata;
+-    struct timeval n;
+ 
+     pa_assert(u);
+     pa_assert(a);
+@@ -233,9 +232,7 @@ static void time_callback(pa_mainloop_api*a, pa_time_event* e, const struct time
+ 
+     adjust_rates(u);
+ 
+-    pa_gettimeofday(&n);
+-    n.tv_sec += (time_t) u->adjust_time;
+-    u->sink->core->mainloop->time_restart(e, &n);
++    u->sink->core->mainloop->rtclock_time_restart(e, pa_rtclock_now() + u->adjust_time * PA_USEC_PER_SEC);
+ }
+ 
+ static void process_render_null(struct userdata *u, pa_usec_t now) {
+@@ -1163,12 +1160,8 @@ int pa__init(pa_module*m) {
+         if (o->sink_input)
+             pa_sink_input_put(o->sink_input);
+ 
+-    if (u->adjust_time > 0) {
+-        struct timeval tv;
+-        pa_gettimeofday(&tv);
+-        tv.tv_sec += (time_t) u->adjust_time;
+-        u->time_event = m->core->mainloop->time_new(m->core->mainloop, &tv, time_callback, u);
+-    }
++    if (u->adjust_time > 0)
++        u->time_event = m->core->mainloop->rtclock_time_new(m->core->mainloop, pa_rtclock_now() + u->adjust_time * PA_USEC_PER_SEC, time_callback, u);
+ 
+     pa_modargs_free(ma);
+ 
+diff --git a/src/modules/module-default-device-restore.c b/src/modules/module-default-device-restore.c
+index 0092d1c..d53f46f 100644
+--- a/src/modules/module-default-device-restore.c
++++ b/src/modules/module-default-device-restore.c
+@@ -26,6 +26,7 @@
+ #include <errno.h>
+ #include <stdio.h>
+ 
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+ #include <pulse/util.h>
+ 
+@@ -42,7 +43,7 @@ PA_MODULE_DESCRIPTION("Automatically restore the default sink and source");
+ PA_MODULE_VERSION(PACKAGE_VERSION);
+ PA_MODULE_LOAD_ONCE(TRUE);
+ 
+-#define DEFAULT_SAVE_INTERVAL 5
++#define SAVE_INTERVAL (5 * PA_USEC_PER_SEC)
+ 
+ struct userdata {
+     pa_core *core;
+@@ -127,7 +128,7 @@ static void save(struct userdata *u) {
+     u->modified = FALSE;
+ }
+ 
+-static void time_cb(pa_mainloop_api *a, pa_time_event *e, const struct timeval *tv, void *userdata) {
++static void time_cb(pa_mainloop_api *a, pa_time_event *e, pa_usec_t t, void *userdata) {
+     struct userdata *u = userdata;
+ 
+     pa_assert(u);
+@@ -146,12 +147,8 @@ static void subscribe_cb(pa_core *c, pa_subscription_event_type_t t, uint32_t id
+ 
+     u->modified = TRUE;
+ 
+-    if (!u->time_event) {
+-        struct timeval tv;
+-        pa_gettimeofday(&tv);
+-        pa_timeval_add(&tv, DEFAULT_SAVE_INTERVAL*PA_USEC_PER_SEC);
+-        u->time_event = u->core->mainloop->time_new(u->core->mainloop, &tv, time_cb, u);
+-    }
++    if (!u->time_event)
++        u->time_event = u->core->mainloop->rtclock_time_new(u->core->mainloop, pa_rtclock_now() + SAVE_INTERVAL, time_cb, u);
+ }
+ 
+ int pa__init(pa_module *m) {
+diff --git a/src/modules/module-device-restore.c b/src/modules/module-device-restore.c
+index 7d87ca0..3dcca80 100644
+--- a/src/modules/module-device-restore.c
++++ b/src/modules/module-device-restore.c
+@@ -36,6 +36,7 @@
+ #include <pulse/volume.h>
+ #include <pulse/timeval.h>
+ #include <pulse/util.h>
++#include <pulse/rtclock.h>
+ 
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/module.h>
+@@ -57,7 +58,7 @@ PA_MODULE_USAGE(
+         "restore_volume=<Save/restore volumes?> "
+         "restore_muted=<Save/restore muted states?>");
+ 
+-#define SAVE_INTERVAL 10
++#define SAVE_INTERVAL (10 * PA_USEC_PER_SEC)
+ 
+ static const char* const valid_modargs[] = {
+     "restore_volume",
+@@ -88,12 +89,11 @@ struct entry {
+     pa_cvolume volume;
+ } PA_GCC_PACKED;
+ 
+-static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, const struct timeval *tv, void *userdata) {
++static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, pa_usec_t t, void *userdata) {
+     struct userdata *u = userdata;
+ 
+     pa_assert(a);
+     pa_assert(e);
+-    pa_assert(tv);
+     pa_assert(u);
+ 
+     pa_assert(e == u->save_time_event);
+@@ -155,14 +155,10 @@ fail:
+ }
+ 
+ static void trigger_save(struct userdata *u) {
+-    struct timeval tv;
+-
+     if (u->save_time_event)
+         return;
+ 
+-    pa_gettimeofday(&tv);
+-    tv.tv_sec += SAVE_INTERVAL;
+-    u->save_time_event = u->core->mainloop->time_new(u->core->mainloop, &tv, save_time_callback, u);
++    u->save_time_event = u->core->mainloop->rtclock_time_new(u->core->mainloop, pa_rtclock_now() + SAVE_INTERVAL, save_time_callback, u);
+ }
+ 
+ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint32_t idx, void *userdata) {
+diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
+index 70cd89a..ad5baf9 100644
+--- a/src/modules/module-stream-restore.c
++++ b/src/modules/module-stream-restore.c
+@@ -36,6 +36,7 @@
+ #include <pulse/volume.h>
+ #include <pulse/timeval.h>
+ #include <pulse/util.h>
++#include <pulse/rtclock.h>
+ 
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/module.h>
+@@ -61,7 +62,7 @@ PA_MODULE_USAGE(
+         "restore_volume=<Save/restore volumes?> "
+         "restore_muted=<Save/restore muted states?>");
+ 
+-#define SAVE_INTERVAL 10
++#define SAVE_INTERVAL (10 * PA_USEC_PER_SEC)
+ #define IDENTIFICATION_PROPERTY "module-stream-restore.id"
+ 
+ static const char* const valid_modargs[] = {
+@@ -111,12 +112,11 @@ enum {
+     SUBCOMMAND_EVENT
+ };
+ 
+-static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, const struct timeval *tv, void *userdata) {
++static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, pa_usec_t t, void *userdata) {
+     struct userdata *u = userdata;
+ 
+     pa_assert(a);
+     pa_assert(e);
+-    pa_assert(tv);
+     pa_assert(u);
+ 
+     pa_assert(e == u->save_time_event);
+@@ -210,7 +210,6 @@ fail:
+ }
+ 
+ static void trigger_save(struct userdata *u) {
+-    struct timeval tv;
+     pa_native_connection *c;
+     uint32_t idx;
+ 
+@@ -230,9 +229,7 @@ static void trigger_save(struct userdata *u) {
+     if (u->save_time_event)
+         return;
+ 
+-    pa_gettimeofday(&tv);
+-    tv.tv_sec += SAVE_INTERVAL;
+-    u->save_time_event = u->core->mainloop->time_new(u->core->mainloop, &tv, save_time_callback, u);
++    u->save_time_event = u->core->mainloop->rtclock_time_new(u->core->mainloop, pa_rtclock_now() + SAVE_INTERVAL, save_time_callback, u);
+ }
+ 
+ static pa_bool_t entries_equal(const struct entry *a, const struct entry *b) {
+diff --git a/src/modules/module-suspend-on-idle.c b/src/modules/module-suspend-on-idle.c
+index 7e17f8f..5200f19 100644
+--- a/src/modules/module-suspend-on-idle.c
++++ b/src/modules/module-suspend-on-idle.c
+@@ -25,6 +25,7 @@
+ 
+ #include <pulse/xmalloc.h>
+ #include <pulse/timeval.h>
++#include <pulse/rtclock.h>
+ 
+ #include <pulsecore/core.h>
+ #include <pulsecore/sink-input.h>
+@@ -74,16 +75,16 @@ struct device_info {
+     struct userdata *userdata;
+     pa_sink *sink;
+     pa_source *source;
+-    struct timeval last_use;
++    pa_usec_t last_use;
+     pa_time_event *time_event;
+ };
+ 
+-static void timeout_cb(pa_mainloop_api*a, pa_time_event* e, const struct timeval *tv, void *userdata) {
++static void timeout_cb(pa_mainloop_api*a, pa_time_event* e, pa_usec_t t, void *userdata) {
+     struct device_info *d = userdata;
+ 
+     pa_assert(d);
+ 
+-    d->userdata->core->mainloop->time_restart(d->time_event, NULL);
++    d->userdata->core->mainloop->rtclock_time_restart(d->time_event, PA_USEC_INVALID);
+ 
+     if (d->sink && pa_sink_check_suspend(d->sink) <= 0 && pa_sink_get_state(d->sink) != PA_SINK_SUSPENDED) {
+         pa_log_info("Sink %s idle for too long, suspending ...", d->sink->name);
+@@ -97,13 +98,12 @@ static void timeout_cb(pa_mainloop_api*a, pa_time_event* e, const struct timeval
+ }
+ 
+ static void restart(struct device_info *d) {
+-    struct timeval tv;
++    pa_usec_t now;
++
+     pa_assert(d);
+ 
+-    pa_gettimeofday(&tv);
+-    d->last_use = tv;
+-    pa_timeval_add(&tv, d->userdata->timeout*1000000);
+-    d->userdata->core->mainloop->time_restart(d->time_event, &tv);
++    d->last_use = now = pa_rtclock_now();
++    d->userdata->core->mainloop->rtclock_time_restart(d->time_event, now + d->userdata->timeout * PA_USEC_PER_SEC);
+ 
+     if (d->sink)
+         pa_log_debug("Sink %s becomes idle.", d->sink->name);
+@@ -114,7 +114,7 @@ static void restart(struct device_info *d) {
+ static void resume(struct device_info *d) {
+     pa_assert(d);
+ 
+-    d->userdata->core->mainloop->time_restart(d->time_event, NULL);
++    d->userdata->core->mainloop->rtclock_time_restart(d->time_event, PA_USEC_INVALID);
+ 
+     if (d->sink) {
+         pa_sink_suspend(d->sink, FALSE);
+@@ -328,7 +328,7 @@ static pa_hook_result_t device_new_hook_cb(pa_core *c, pa_object *o, struct user
+     d->userdata = u;
+     d->source = source ? pa_source_ref(source) : NULL;
+     d->sink = sink ? pa_sink_ref(sink) : NULL;
+-    d->time_event = c->mainloop->time_new(c->mainloop, NULL, timeout_cb, d);
++    d->time_event = c->mainloop->rtclock_time_new(c->mainloop, PA_USEC_INVALID, timeout_cb, d);
+     pa_hashmap_put(u->device_infos, o, d);
+ 
+     if ((d->sink && pa_sink_check_suspend(d->sink) <= 0) ||
+diff --git a/src/modules/module-tunnel.c b/src/modules/module-tunnel.c
+index f0188fd..a47a62c 100644
+--- a/src/modules/module-tunnel.c
++++ b/src/modules/module-tunnel.c
+@@ -109,7 +109,7 @@ static const char* const valid_modargs[] = {
+ 
+ #define DEFAULT_TIMEOUT 5
+ 
+-#define LATENCY_INTERVAL 10
++#define LATENCY_INTERVAL (10*PA_USEC_PER_SEC)
+ 
+ #define MIN_NETWORK_LATENCY_USEC (8*PA_USEC_PER_MSEC)
+ 
+@@ -875,9 +875,8 @@ static void request_latency(struct userdata *u) {
+ }
+ 
+ /* Called from main context */
+-static void timeout_callback(pa_mainloop_api *m, pa_time_event*e,  const struct timeval *tv, void *userdata) {
++static void timeout_callback(pa_mainloop_api *m, pa_time_event*e,  pa_usec_t t, void *userdata) {
+     struct userdata *u = userdata;
+-    struct timeval ntv;
+ 
+     pa_assert(m);
+     pa_assert(e);
+@@ -885,9 +884,7 @@ static void timeout_callback(pa_mainloop_api *m, pa_time_event*e,  const struct
+ 
+     request_latency(u);
+ 
+-    pa_gettimeofday(&ntv);
+-    ntv.tv_sec += LATENCY_INTERVAL;
+-    m->time_restart(e, &ntv);
++    m->rtclock_time_restart(e, pa_rtclock_now() + LATENCY_INTERVAL);
+ }
+ 
+ /* Called from main context */
+@@ -1354,7 +1351,6 @@ static void start_subscribe(struct userdata *u) {
+ /* Called from main context */
+ static void create_stream_callback(pa_pdispatch *pd, uint32_t command,  uint32_t tag, pa_tagstruct *t, void *userdata) {
+     struct userdata *u = userdata;
+-    struct timeval ntv;
+ #ifdef TUNNEL_SINK
+     uint32_t bytes;
+ #endif
+@@ -1436,9 +1432,7 @@ static void create_stream_callback(pa_pdispatch *pd, uint32_t command,  uint32_t
+     request_info(u);
+ 
+     pa_assert(!u->time_event);
+-    pa_gettimeofday(&ntv);
+-    ntv.tv_sec += LATENCY_INTERVAL;
+-    u->time_event = u->core->mainloop->time_new(u->core->mainloop, &ntv, timeout_callback, u);
++    u->time_event = u->core->mainloop->rtclock_time_new(u->core->mainloop, pa_rtclock_now() + LATENCY_INTERVAL, timeout_callback, u);
+ 
+     request_latency(u);
+ 
+diff --git a/src/modules/module-waveout.c b/src/modules/module-waveout.c
+index 2d35828..d1b9f2f 100644
+--- a/src/modules/module-waveout.c
++++ b/src/modules/module-waveout.c
+@@ -256,7 +256,7 @@ static void poll_cb(pa_mainloop_api*a, pa_time_event *e, const struct timeval *t
+     pa_gettimeofday(&ntv);
+     pa_timeval_add(&ntv, u->poll_timeout);
+ 
+-    a->time_restart(e, &ntv);
++    a->rtclock_time_restart(e, &ntv);
+ }
+ 
+ static void defer_cb(pa_mainloop_api*a, pa_defer_event *e, void *userdata) {
+@@ -549,7 +549,7 @@ int pa__init(pa_core *c, pa_module*m) {
+     pa_gettimeofday(&tv);
+     pa_timeval_add(&tv, u->poll_timeout);
+ 
+-    u->event = c->mainloop->time_new(c->mainloop, &tv, poll_cb, u);
++    u->event = c->mainloop->rtclock_time_new(c->mainloop, &tv, poll_cb, u);
+     assert(u->event);
+ 
+     u->defer = c->mainloop->defer_new(c->mainloop, defer_cb, u);
+diff --git a/src/modules/rtp/module-rtp-recv.c b/src/modules/rtp/module-rtp-recv.c
+index a6825b3..2e79f1c 100644
+--- a/src/modules/rtp/module-rtp-recv.c
++++ b/src/modules/rtp/module-rtp-recv.c
+@@ -622,15 +622,13 @@ static void sap_event_cb(pa_mainloop_api *m, pa_io_event *e, int fd, pa_io_event
+     }
+ }
+ 
+-static void check_death_event_cb(pa_mainloop_api *m, pa_time_event *t, const struct timeval *ptv, void *userdata) {
++static void check_death_event_cb(pa_mainloop_api *m, pa_time_event *t, pa_usec_t tusec, void *userdata) {
+     struct session *s, *n;
+     struct userdata *u = userdata;
+     struct timeval now;
+-    struct timeval tv;
+ 
+     pa_assert(m);
+     pa_assert(t);
+-    pa_assert(ptv);
+     pa_assert(u);
+ 
+     pa_rtclock_get(&now);
+@@ -648,9 +646,7 @@ static void check_death_event_cb(pa_mainloop_api *m, pa_time_event *t, const str
+     }
+ 
+     /* Restart timer */
+-    pa_gettimeofday(&tv);
+-    pa_timeval_add(&tv, DEATH_TIMEOUT*PA_USEC_PER_SEC);
+-    m->time_restart(t, &tv);
++    m->rtclock_time_restart(t, pa_rtclock_now() + DEATH_TIMEOUT * PA_USEC_PER_SEC);
+ }
+ 
+ int pa__init(pa_module*m) {
+@@ -664,7 +660,6 @@ int pa__init(pa_module*m) {
+     socklen_t salen;
+     const char *sap_address;
+     int fd = -1;
+-    struct timeval tv;
+ 
+     pa_assert(m);
+ 
+@@ -706,9 +701,7 @@ int pa__init(pa_module*m) {
+     u->n_sessions = 0;
+     u->by_origin = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
+ 
+-    pa_gettimeofday(&tv);
+-    pa_timeval_add(&tv, DEATH_TIMEOUT * PA_USEC_PER_SEC);
+-    u->check_death_event = m->core->mainloop->time_new(m->core->mainloop, &tv, check_death_event_cb, u);
++    u->check_death_event = m->core->mainloop->rtclock_time_new(m->core->mainloop, pa_rtclock_now() + DEATH_TIMEOUT * PA_USEC_PER_SEC, check_death_event_cb, u);
+ 
+     pa_modargs_free(ma);
+ 
+diff --git a/src/modules/rtp/module-rtp-send.c b/src/modules/rtp/module-rtp-send.c
+index cdd2c57..172aa3e 100644
+--- a/src/modules/rtp/module-rtp-send.c
++++ b/src/modules/rtp/module-rtp-send.c
+@@ -31,6 +31,7 @@
+ #include <string.h>
+ #include <unistd.h>
+ 
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+ #include <pulse/util.h>
+ #include <pulse/xmalloc.h>
+@@ -77,7 +78,7 @@ PA_MODULE_USAGE(
+ #define DEFAULT_DESTINATION "224.0.0.56"
+ #define MEMBLOCKQ_MAXLENGTH (1024*170)
+ #define DEFAULT_MTU 1280
+-#define SAP_INTERVAL 5
++#define SAP_INTERVAL (5*PA_USEC_PER_SEC)
+ 
+ static const char* const valid_modargs[] = {
+     "source",
+@@ -149,20 +150,16 @@ static void source_output_kill(pa_source_output* o) {
+     u->source_output = NULL;
+ }
+ 
+-static void sap_event_cb(pa_mainloop_api *m, pa_time_event *t, const struct timeval *tv, void *userdata) {
++static void sap_event_cb(pa_mainloop_api *m, pa_time_event *t, pa_usec_t tusec, void *userdata) {
+     struct userdata *u = userdata;
+-    struct timeval next;
+ 
+     pa_assert(m);
+     pa_assert(t);
+-    pa_assert(tv);
+     pa_assert(u);
+ 
+     pa_sap_send(&u->sap_context, 0);
+ 
+-    pa_gettimeofday(&next);
+-    pa_timeval_add(&next, SAP_INTERVAL * PA_USEC_PER_SEC);
+-    m->time_restart(t, &next);
++    m->rtclock_time_restart(t, pa_rtclock_now() + SAP_INTERVAL);
+ }
+ 
+ int pa__init(pa_module*m) {
+@@ -186,7 +183,6 @@ int pa__init(pa_module*m) {
+     char *p;
+     int r, j;
+     socklen_t k;
+-    struct timeval tv;
+     char hn[128], *n;
+     pa_bool_t loop = FALSE;
+     pa_source_output_new_data data;
+@@ -395,9 +391,7 @@ int pa__init(pa_module*m) {
+ 
+     pa_sap_send(&u->sap_context, 0);
+ 
+-    pa_gettimeofday(&tv);
+-    pa_timeval_add(&tv, SAP_INTERVAL * PA_USEC_PER_SEC);
+-    u->sap_event = m->core->mainloop->time_new(m->core->mainloop, &tv, sap_event_cb, u);
++    u->sap_event = m->core->mainloop->rtclock_time_new(m->core->mainloop, pa_rtclock_now() + SAP_INTERVAL, sap_event_cb, u);
+ 
+     pa_source_output_put(u->source_output);
+ 
+diff --git a/src/pulse/glib-mainloop.c b/src/pulse/glib-mainloop.c
+index 6afb7a2..3024c06 100644
+--- a/src/pulse/glib-mainloop.c
++++ b/src/pulse/glib-mainloop.c
+@@ -23,8 +23,9 @@
+ #include <config.h>
+ #endif
+ 
+-#include <pulse/xmalloc.h>
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
++#include <pulse/xmalloc.h>
+ 
+ #include <pulsecore/idxset.h>
+ #include <pulsecore/core-util.h>
+@@ -53,9 +54,11 @@ struct pa_time_event {
+     int dead;
+ 
+     int enabled;
++    pa_usec_t time;
+     struct timeval timeval;
+ 
+     pa_time_event_cb_t callback;
++    pa_rtclock_event_cb_t rt_callback;
+     void *userdata;
+     pa_time_event_destroy_cb_t destroy_callback;
+ 
+@@ -276,10 +279,12 @@ static void glib_io_set_destroy(pa_io_event*e, pa_io_event_destroy_cb_t cb) {
+ 
+ /* Time sources */
+ 
+-static pa_time_event* glib_time_new(
++static pa_time_event* time_new(
+         pa_mainloop_api*m,
++        pa_usec_t t,
++        pa_rtclock_event_cb_t rt_callback,
+         const struct timeval *tv,
+-        pa_time_event_cb_t cb,
++        pa_time_event_cb_t callback,
+         void *userdata) {
+ 
+     pa_glib_mainloop *g;
+@@ -287,7 +292,9 @@ static pa_time_event* glib_time_new(
+ 
+     g_assert(m);
+     g_assert(m->userdata);
+-    g_assert(cb);
++    g_assert(rt_callback || callback);
++    g_assert(!(rt_callback && callback));
++    g_assert(!!tv == !!callback);
+ 
+     g = m->userdata;
+ 
+@@ -295,19 +302,23 @@ static pa_time_event* glib_time_new(
+     e->mainloop = g;
+     e->dead = 0;
+ 
+-    if ((e->enabled = !!tv)) {
+-        e->timeval = *tv;
++    if ((e->enabled = (t != PA_USEC_INVALID))) {
++        e->time = t;
++        if (tv)
++            e->timeval = *tv;
++
+         g->n_enabled_time_events++;
+ 
+         if (g->cached_next_time_event) {
+             g_assert(g->cached_next_time_event->enabled);
+ 
+-            if (pa_timeval_cmp(tv, &g->cached_next_time_event->timeval) < 0)
++            if (t < g->cached_next_time_event->time)
+                 g->cached_next_time_event = e;
+         }
+     }
+ 
+-    e->callback = cb;
++    e->callback = callback;
++    e->rt_callback = rt_callback;
+     e->userdata = userdata;
+     e->destroy_callback = NULL;
+ 
+@@ -316,28 +327,77 @@ static pa_time_event* glib_time_new(
+     return e;
+ }
+ 
+-static void glib_time_restart(pa_time_event*e, const struct timeval *tv) {
++static pa_time_event* glib_rtclock_time_new(
++        pa_mainloop_api*m,
++        pa_usec_t t,
++        pa_rtclock_event_cb_t cb,
++        void *userdata) {
++
++    return time_new(m, t, cb, NULL, NULL, userdata);
++}
++
++static void glib_rtclock_time_restart(pa_time_event*e, pa_usec_t t) {
++    pa_bool_t valid;
++
+     g_assert(e);
+     g_assert(!e->dead);
+ 
+-    if (e->enabled && !tv) {
++    valid = (t != PA_USEC_INVALID);
++    if (e->enabled && !valid) {
+         g_assert(e->mainloop->n_enabled_time_events > 0);
+         e->mainloop->n_enabled_time_events--;
+-    } else if (!e->enabled && tv)
++    } else if (!e->enabled && valid)
+         e->mainloop->n_enabled_time_events++;
+ 
+-    if ((e->enabled = !!tv))
+-        e->timeval = *tv;
++    if ((e->enabled = valid))
++        e->time = t;
+ 
+     if (e->mainloop->cached_next_time_event && e->enabled) {
+         g_assert(e->mainloop->cached_next_time_event->enabled);
+ 
+-        if (pa_timeval_cmp(tv, &e->mainloop->cached_next_time_event->timeval) < 0)
++        if (t < e->mainloop->cached_next_time_event->time)
+             e->mainloop->cached_next_time_event = e;
+     } else if (e->mainloop->cached_next_time_event == e)
+         e->mainloop->cached_next_time_event = NULL;
+  }
+ 
++static pa_time_event* glib_time_new(pa_mainloop_api*a, const struct timeval *tv, pa_time_event_cb_t cb, void *userdata) {
++    pa_usec_t t;
++
++    if (tv) {
++        struct timeval now;
++
++        pa_gettimeofday(&now);
++        t = pa_rtclock_now();
++        if (pa_timeval_cmp(tv, &now) > 0)
++            t += pa_timeval_diff(tv, &now);
++
++    } else
++        t = PA_USEC_INVALID;
++
++    return time_new(a, t, NULL, tv, cb, userdata);
++}
++
++static void glib_time_restart(pa_time_event* e, const struct timeval *tv) {
++    pa_usec_t t;
++    g_assert(e);
++    g_assert(!e->dead);
++
++    if (tv) {
++        struct timeval now;
++
++        pa_gettimeofday(&now);
++        t = pa_rtclock_now();
++        if (pa_timeval_cmp(tv, &now) > 0)
++            t += pa_timeval_diff(tv, &now);
++        e->timeval = *tv;
++
++    } else
++        t = PA_USEC_INVALID;
++
++    glib_rtclock_time_restart(e, t);
++}
++
+ static void glib_time_free(pa_time_event *e) {
+     g_assert(e);
+     g_assert(!e->dead);
+@@ -444,11 +504,10 @@ static pa_time_event* find_next_time_event(pa_glib_mainloop *g) {
+         if (t->dead || !t->enabled)
+             continue;
+ 
+-        if (!n || pa_timeval_cmp(&t->timeval, &n->timeval) < 0) {
++        if (!n || t->time < n->time) {
+             n = t;
+ 
+-            /* Shortcut for tv = { 0, 0 } */
+-            if (n->timeval.tv_sec <= 0)
++            if (n->time == 0)
+                 break;
+         }
+     }
+@@ -483,22 +542,17 @@ static gboolean prepare_func(GSource *source, gint *timeout) {
+         return TRUE;
+     } else if (g->n_enabled_time_events) {
+         pa_time_event *t;
+-        GTimeVal now;
+-        struct timeval tvnow;
+-        pa_usec_t usec;
++        pa_usec_t usec, now;
+ 
+         t = find_next_time_event(g);
+         g_assert(t);
+ 
+-        g_source_get_current_time(source, &now);
+-        tvnow.tv_sec = now.tv_sec;
+-        tvnow.tv_usec = now.tv_usec;
+-
+-        if (pa_timeval_cmp(&t->timeval, &tvnow) <= 0) {
++        now = pa_rtclock_now();
++        if (t->time <= now) {
+             *timeout = 0;
+             return TRUE;
+         }
+-        usec = pa_timeval_diff(&t->timeval, &tvnow);
++        usec = t->time - now;
+         *timeout = (gint) (usec / 1000);
+     } else
+         *timeout = -1;
+@@ -515,17 +569,11 @@ static gboolean check_func(GSource *source) {
+         return TRUE;
+     else if (g->n_enabled_time_events) {
+         pa_time_event *t;
+-        GTimeVal now;
+-        struct timeval tvnow;
+ 
+         t = find_next_time_event(g);
+         g_assert(t);
+ 
+-        g_source_get_current_time(source, &now);
+-        tvnow.tv_sec = now.tv_sec;
+-        tvnow.tv_usec = now.tv_usec;
+-
+-        if (pa_timeval_cmp(&t->timeval, &tvnow) <= 0)
++        if (t->time <= pa_rtclock_now())
+             return TRUE;
+     }
+ 
+@@ -559,23 +607,22 @@ static gboolean dispatch_func(GSource *source, GSourceFunc callback, gpointer us
+     }
+ 
+     if (g->n_enabled_time_events) {
+-        GTimeVal now;
+-        struct timeval tvnow;
+         pa_time_event *t;
+ 
+         t = find_next_time_event(g);
+         g_assert(t);
+ 
+-        g_source_get_current_time(source, &now);
+-        tvnow.tv_sec = now.tv_sec;
+-        tvnow.tv_usec = now.tv_usec;
+-
+-        if (pa_timeval_cmp(&t->timeval, &tvnow) <= 0) {
++        if (t->time <= pa_rtclock_now()) {
++            g_assert(t->callback || t->rt_callback);
+ 
+             /* Disable time event */
+-            glib_time_restart(t, NULL);
++            glib_rtclock_time_restart(t, PA_USEC_INVALID);
+ 
+-            t->callback(&g->api, t, &t->timeval, t->userdata);
++            if (t->rt_callback)
++                t->rt_callback(&g->api, t, t->time, t->userdata);
++            else {
++                t->callback(&g->api, t, &t->timeval, t->userdata);
++            }
+             return TRUE;
+         }
+     }
+@@ -600,6 +647,8 @@ static const pa_mainloop_api vtable = {
+ 
+     .time_new = glib_time_new,
+     .time_restart = glib_time_restart,
++    .rtclock_time_new = glib_rtclock_time_new,
++    .rtclock_time_restart = glib_rtclock_time_restart,
+     .time_free = glib_time_free,
+     .time_set_destroy = glib_time_set_destroy,
+ 
+diff --git a/src/pulse/mainloop-api.h b/src/pulse/mainloop-api.h
+index e353ed9..ab81d99 100644
+--- a/src/pulse/mainloop-api.h
++++ b/src/pulse/mainloop-api.h
+@@ -27,6 +27,7 @@
+ #include <time.h>
+ 
+ #include <pulse/cdecl.h>
++#include <pulse/sample.h>
+ #include <pulse/version.h>
+ 
+ /** \file
+@@ -69,6 +70,8 @@ typedef void (*pa_io_event_destroy_cb_t)(pa_mainloop_api*a, pa_io_event *e, void
+ typedef struct pa_time_event pa_time_event;
+ /** A time event callback prototype \since 0.9.3 */
+ typedef void (*pa_time_event_cb_t)(pa_mainloop_api*a, pa_time_event* e, const struct timeval *tv, void *userdata);
++/** A rtclock time event callback prototype \since 0.9.16 */
++typedef void (*pa_rtclock_event_cb_t)(pa_mainloop_api*a, pa_time_event* e, pa_usec_t time, void *userdata);
+ /** A time event destroy callback prototype \ since 0.9.3 */
+ typedef void (*pa_time_event_destroy_cb_t)(pa_mainloop_api*a, pa_time_event *e, void *userdata);
+ 
+@@ -113,6 +116,11 @@ struct pa_mainloop_api  {
+ 
+     /** Exit the main loop and return the specfied retval*/
+     void (*quit)(pa_mainloop_api*a, int retval);
++
++    /** Create a new timer event source object for the specified monotonic time \since 0.9.16 */
++    pa_time_event* (*rtclock_time_new)(pa_mainloop_api*a, pa_usec_t time, pa_rtclock_event_cb_t cb, void *userdata);
++    /** Restart a running or expired timer event source with a new monotonic time \since 0.9.16 */
++    void (*rtclock_time_restart)(pa_time_event* e, pa_usec_t time);
+ };
+ 
+ /** Run the specified callback function once from the main loop using an anonymous defer event. */
+diff --git a/src/pulse/mainloop.c b/src/pulse/mainloop.c
+index 225fd09..9b4fc9f 100644
+--- a/src/pulse/mainloop.c
++++ b/src/pulse/mainloop.c
+@@ -42,9 +42,10 @@
+ #include <pulsecore/pipe.h>
+ #endif
+ 
++#include <pulse/i18n.h>
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+ #include <pulse/xmalloc.h>
+-#include <pulse/i18n.h>
+ 
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/llist.h>
+@@ -75,9 +76,11 @@ struct pa_time_event {
+     pa_bool_t dead:1;
+ 
+     pa_bool_t enabled:1;
++    pa_usec_t time;
+     struct timeval timeval;
+ 
+     pa_time_event_cb_t callback;
++    pa_rtclock_event_cb_t rt_callback;
+     void *userdata;
+     pa_time_event_destroy_cb_t destroy_callback;
+ 
+@@ -317,8 +320,10 @@ static void mainloop_defer_set_destroy(pa_defer_event *e, pa_defer_event_destroy
+ }
+ 
+ /* Time events */
+-static pa_time_event* mainloop_time_new(
++static pa_time_event* time_new(
+         pa_mainloop_api*a,
++        pa_usec_t t,
++        pa_rtclock_event_cb_t rt_callback,
+         const struct timeval *tv,
+         pa_time_event_cb_t callback,
+         void *userdata) {
+@@ -328,8 +333,9 @@ static pa_time_event* mainloop_time_new(
+ 
+     pa_assert(a);
+     pa_assert(a->userdata);
+-    pa_assert(callback);
+-
++    pa_assert(rt_callback || callback);
++    pa_assert(!(rt_callback && callback));
++    pa_assert(!!tv == !!callback);
+     m = a->userdata;
+     pa_assert(a == &m->api);
+ 
+@@ -337,20 +343,23 @@ static pa_time_event* mainloop_time_new(
+     e->mainloop = m;
+     e->dead = FALSE;
+ 
+-    if ((e->enabled = !!tv)) {
+-        e->timeval = *tv;
++    if ((e->enabled = (t != PA_USEC_INVALID))) {
++        e->time = t;
++        if (tv)
++            e->timeval = *tv;
+ 
+         m->n_enabled_time_events++;
+ 
+         if (m->cached_next_time_event) {
+             pa_assert(m->cached_next_time_event->enabled);
+ 
+-            if (pa_timeval_cmp(tv, &m->cached_next_time_event->timeval) < 0)
++            if (t < m->cached_next_time_event->time)
+                 m->cached_next_time_event = e;
+         }
+     }
+ 
+     e->callback = callback;
++    e->rt_callback = rt_callback;
+     e->userdata = userdata;
+     e->destroy_callback = NULL;
+ 
+@@ -362,30 +371,82 @@ static pa_time_event* mainloop_time_new(
+     return e;
+ }
+ 
+-static void mainloop_time_restart(pa_time_event *e, const struct timeval *tv) {
++static pa_time_event* mainloop_rtclock_time_new(
++        pa_mainloop_api*a,
++        pa_usec_t t,
++        pa_rtclock_event_cb_t callback,
++        void *userdata) {
++
++    return time_new(a, t, callback, NULL, NULL, userdata);
++}
++
++static void mainloop_rtclock_time_restart(pa_time_event *e, pa_usec_t t) {
++    pa_bool_t valid;
+     pa_assert(e);
+     pa_assert(!e->dead);
+ 
+-    if (e->enabled && !tv) {
++    valid = t != PA_USEC_INVALID;
++    if (e->enabled && !valid) {
+         pa_assert(e->mainloop->n_enabled_time_events > 0);
+         e->mainloop->n_enabled_time_events--;
+-    } else if (!e->enabled && tv)
++    } else if (!e->enabled && valid)
+         e->mainloop->n_enabled_time_events++;
+ 
+-    if ((e->enabled = !!tv)) {
+-        e->timeval = *tv;
++    if ((e->enabled = valid)) {
++        e->time = t;
+         pa_mainloop_wakeup(e->mainloop);
+     }
+ 
+     if (e->mainloop->cached_next_time_event && e->enabled) {
+         pa_assert(e->mainloop->cached_next_time_event->enabled);
+ 
+-        if (pa_timeval_cmp(tv, &e->mainloop->cached_next_time_event->timeval) < 0)
++        if (t < e->mainloop->cached_next_time_event->time)
+             e->mainloop->cached_next_time_event = e;
+     } else if (e->mainloop->cached_next_time_event == e)
+         e->mainloop->cached_next_time_event = NULL;
+ }
+ 
++static pa_time_event* mainloop_time_new(
++        pa_mainloop_api*a,
++        const struct timeval *tv,
++        pa_time_event_cb_t callback,
++        void *userdata) {
++    pa_usec_t t;
++
++    if (tv) {
++        struct timeval now;
++
++        pa_gettimeofday(&now);
++        t = pa_rtclock_now();
++        if (pa_timeval_cmp(tv, &now) > 0)
++            t += pa_timeval_diff(tv, &now);
++
++    } else
++        t = PA_USEC_INVALID;
++
++    return time_new(a, t, NULL, tv, callback, userdata);
++}
++
++static void mainloop_time_restart(pa_time_event *e, const struct timeval *tv) {
++    pa_usec_t t;
++    pa_assert(e);
++    pa_assert(!e->dead);
++
++    if (tv) {
++        struct timeval now;
++
++        pa_gettimeofday(&now);
++        t = pa_rtclock_now();
++        if (pa_timeval_cmp(tv, &now) > 0)
++            t += pa_timeval_diff(tv, &now);
++        e->timeval = *tv;
++
++    } else
++        t = PA_USEC_INVALID;
++
++    mainloop_rtclock_time_restart(e, t);
++}
++
+ static void mainloop_time_free(pa_time_event *e) {
+     pa_assert(e);
+     pa_assert(!e->dead);
+@@ -435,6 +496,8 @@ static const pa_mainloop_api vtable = {
+ 
+     .time_new = mainloop_time_new,
+     .time_restart = mainloop_time_restart,
++    .rtclock_time_new = mainloop_rtclock_time_new,
++    .rtclock_time_restart = mainloop_rtclock_time_restart,
+     .time_free = mainloop_time_free,
+     .time_set_destroy = mainloop_time_set_destroy,
+ 
+@@ -721,11 +784,11 @@ static pa_time_event* find_next_time_event(pa_mainloop *m) {
+         if (t->dead || !t->enabled)
+             continue;
+ 
+-        if (!n || pa_timeval_cmp(&t->timeval, &n->timeval) < 0) {
++        if (!n || t->time < n->time) {
+             n = t;
+ 
+-            /* Shortcut for tv = { 0, 0 } */
+-            if (n->timeval.tv_sec <= 0)
++            /* Shortcut for time == 0 */
++            if (n->time == 0)
+                 break;
+         }
+     }
+@@ -736,7 +799,6 @@ static pa_time_event* find_next_time_event(pa_mainloop *m) {
+ 
+ static int calc_next_timeout(pa_mainloop *m) {
+     pa_time_event *t;
+-    struct timeval now;
+     pa_usec_t usec;
+ 
+     if (!m->n_enabled_time_events)
+@@ -745,41 +807,43 @@ static int calc_next_timeout(pa_mainloop *m) {
+     t = find_next_time_event(m);
+     pa_assert(t);
+ 
+-    if (t->timeval.tv_sec <= 0)
++    if (t->time == 0)
+         return 0;
+ 
+-    pa_gettimeofday(&now);
++    usec = t->time - pa_rtclock_now();
+ 
+-    if (pa_timeval_cmp(&t->timeval, &now) <= 0)
++    if (usec <= 0)
+         return 0;
+ 
+-    usec = pa_timeval_diff(&t->timeval, &now);
+     return (int) (usec / 1000);
+ }
+ 
+ static int dispatch_timeout(pa_mainloop *m) {
+     pa_time_event *e;
+-    struct timeval now;
++    pa_usec_t now;
+     int r = 0;
+     pa_assert(m);
+ 
+     if (m->n_enabled_time_events <= 0)
+         return 0;
+ 
+-    pa_gettimeofday(&now);
++    now = pa_rtclock_now();
+ 
+     for (e = m->time_events; e && !m->quit; e = e->next) {
+ 
+         if (e->dead || !e->enabled)
+             continue;
+ 
+-        if (pa_timeval_cmp(&e->timeval, &now) <= 0) {
+-            pa_assert(e->callback);
++        if (e->time <= now) {
++            pa_assert(e->callback || e->rt_callback);
+ 
+             /* Disable time event */
+-            mainloop_time_restart(e, NULL);
++            mainloop_rtclock_time_restart(e, PA_USEC_INVALID);
+ 
+-            e->callback(&m->api, e, &e->timeval, e->userdata);
++            if (e->rt_callback)
++                e->rt_callback(&m->api, e, e->time, e->userdata);
++            else
++                e->callback(&m->api, e, &e->timeval, e->userdata);
+ 
+             r++;
+         }
+@@ -967,3 +1031,4 @@ void pa_mainloop_set_poll_func(pa_mainloop *m, pa_poll_func poll_func, void *use
+     m->poll_func = poll_func;
+     m->poll_func_userdata = userdata;
+ }
++
+diff --git a/src/pulse/rtclock.h b/src/pulse/rtclock.h
+index da1af5e..59b4b11 100644
+--- a/src/pulse/rtclock.h
++++ b/src/pulse/rtclock.h
+@@ -31,7 +31,7 @@
+ 
+ PA_C_DECL_BEGIN
+ 
+-/** Return the current CLOCK_MONOTONIC time.  \since FIXME-RTCLOCK */
++/** Return the current CLOCK_MONOTONIC time in usec.  \since FIXME-RTCLOCK */
+ pa_usec_t pa_rtclock_now(void);
+ 
+ PA_C_DECL_END
+diff --git a/src/pulse/stream.c b/src/pulse/stream.c
+index dd44ff4..c9383a8 100644
+--- a/src/pulse/stream.c
++++ b/src/pulse/stream.c
+@@ -320,14 +320,10 @@ static void request_auto_timing_update(pa_stream *s, pa_bool_t force) {
+     }
+ 
+     if (s->auto_timing_update_event) {
+-        struct timeval next;
+-
+         if (force)
+             s->auto_timing_interval_usec = AUTO_TIMING_INTERVAL_START_USEC;
+ 
+-        pa_gettimeofday(&next);
+-        pa_timeval_add(&next, s->auto_timing_interval_usec);
+-        s->mainloop->time_restart(s->auto_timing_update_event, &next);
++        s->mainloop->rtclock_time_restart(s->auto_timing_update_event, pa_rtclock_now() + s->auto_timing_interval_usec);
+ 
+         s->auto_timing_interval_usec = PA_MIN(AUTO_TIMING_INTERVAL_END_USEC, s->auto_timing_interval_usec*2);
+     }
+@@ -801,7 +797,7 @@ static void invalidate_indexes(pa_stream *s, pa_bool_t r, pa_bool_t w) {
+     request_auto_timing_update(s, TRUE);
+ }
+ 
+-static void auto_timing_update_callback(pa_mainloop_api *m, pa_time_event *e, const struct timeval *tv, void *userdata) {
++static void auto_timing_update_callback(pa_mainloop_api *m, pa_time_event *e, pa_usec_t t, void *userdata) {
+     pa_stream *s = userdata;
+ 
+     pa_assert(s);
+@@ -823,12 +819,9 @@ static void create_stream_complete(pa_stream *s) {
+         s->write_callback(s, (size_t) s->requested_bytes, s->write_userdata);
+ 
+     if (s->flags & PA_STREAM_AUTO_TIMING_UPDATE) {
+-        struct timeval tv;
+-        pa_gettimeofday(&tv);
+         s->auto_timing_interval_usec = AUTO_TIMING_INTERVAL_START_USEC;
+-        pa_timeval_add(&tv, s->auto_timing_interval_usec);
+         pa_assert(!s->auto_timing_update_event);
+-        s->auto_timing_update_event = s->mainloop->time_new(s->mainloop, &tv, &auto_timing_update_callback, s);
++        s->auto_timing_update_event = s->mainloop->rtclock_time_new(s->mainloop, pa_rtclock_now() + s->auto_timing_interval_usec, &auto_timing_update_callback, s);
+ 
+         request_auto_timing_update(s, TRUE);
+     }
+diff --git a/src/pulse/timeval.h b/src/pulse/timeval.h
+index 651da95..6307735 100644
+--- a/src/pulse/timeval.h
++++ b/src/pulse/timeval.h
+@@ -51,6 +51,9 @@ PA_C_DECL_BEGIN
+ /** The number of nanoseconds in a microsecond */
+ #define PA_NSEC_PER_USEC ((pa_usec_t) 1000ULL)
+ 
++/** Invalid time in usec */
++#define PA_USEC_INVALID ((pa_usec_t) -1)
++
+ struct timeval;
+ 
+ /** Return the current timestamp, just like UNIX gettimeofday() */
+diff --git a/src/pulsecore/avahi-wrap.c b/src/pulsecore/avahi-wrap.c
+index 56d9d3d..2e18b90 100644
+--- a/src/pulsecore/avahi-wrap.c
++++ b/src/pulsecore/avahi-wrap.c
+@@ -23,6 +23,7 @@
+ #include <config.h>
+ #endif
+ 
++#include <pulse/timeval.h>
+ #include <pulse/xmalloc.h>
+ 
+ #include <pulsecore/log.h>
+@@ -116,19 +117,20 @@ struct AvahiTimeout {
+     void *userdata;
+ };
+ 
+-static void timeout_callback(pa_mainloop_api*a, pa_time_event* e, const struct timeval *tv, void *userdata) {
+-    AvahiTimeout *t = userdata;
++static void timeout_callback(pa_mainloop_api*a, pa_time_event* e, pa_usec_t t, void *userdata) {
++    AvahiTimeout *to = userdata;
+ 
+     pa_assert(a);
+     pa_assert(e);
+-    pa_assert(t);
+ 
+-    t->callback(t, t->userdata);
++    to->callback(to, to->userdata);
+ }
+ 
+ static AvahiTimeout* timeout_new(const AvahiPoll *api, const struct timeval *tv, AvahiTimeoutCallback callback, void *userdata) {
+     pa_avahi_poll *p;
+     AvahiTimeout *t;
++    struct timeval now;
++    pa_usec_t usec;
+ 
+     pa_assert(api);
+     pa_assert(callback);
+@@ -139,18 +141,35 @@ static AvahiTimeout* timeout_new(const AvahiPoll *api, const struct timeval *tv,
+     t->callback = callback;
+     t->userdata = userdata;
+ 
+-    t->time_event = tv ? p->mainloop->time_new(p->mainloop, tv, timeout_callback, t) : NULL;
++    pa_gettimeofday(&now);
++    if (!tv || pa_timeval_cmp(tv, &now) < 0)
++        usec = 0;
++    else
++        usec = pa_timeval_diff(tv, &now);
++    t->time_event = tv ? p->mainloop->rtclock_time_new(p->mainloop, usec, timeout_callback, t) : NULL;
+ 
+     return t;
+ }
+ 
+ static void timeout_update(AvahiTimeout *t, const struct timeval *tv) {
++    struct timeval now;
++    pa_usec_t usec;
++
+     pa_assert(t);
+ 
++    if (tv) {
++        pa_gettimeofday(&now);
++        if (pa_timeval_cmp(tv, &now) < 0)
++            usec = 0;
++        else
++            usec = pa_timeval_diff(tv, &now);
++    } else
++        usec = PA_USEC_INVALID;
++
+     if (t->time_event && tv)
+-        t->avahi_poll->mainloop->time_restart(t->time_event, tv);
++        t->avahi_poll->mainloop->rtclock_time_restart(t->time_event, usec);
+     else if (!t->time_event && tv)
+-        t->time_event = t->avahi_poll->mainloop->time_new(t->avahi_poll->mainloop, tv, timeout_callback, t);
++        t->time_event = t->avahi_poll->mainloop->rtclock_time_new(t->avahi_poll->mainloop, usec, timeout_callback, t);
+     else if (t->time_event && !tv) {
+         t->avahi_poll->mainloop->time_free(t->time_event);
+         t->time_event = NULL;
+diff --git a/src/pulsecore/core-scache.c b/src/pulsecore/core-scache.c
+index 34d60a8..f6bd305 100644
+--- a/src/pulsecore/core-scache.c
++++ b/src/pulsecore/core-scache.c
+@@ -47,6 +47,7 @@
+ #include <pulse/util.h>
+ #include <pulse/volume.h>
+ #include <pulse/xmalloc.h>
++#include <pulse/rtclock.h>
+ 
+ #include <pulsecore/sink-input.h>
+ #include <pulsecore/sample-util.h>
+@@ -61,11 +62,10 @@
+ 
+ #include "core-scache.h"
+ 
+-#define UNLOAD_POLL_TIME 60
++#define UNLOAD_POLL_TIME (60 * PA_USEC_PER_SEC)
+ 
+-static void timeout_callback(pa_mainloop_api *m, pa_time_event*e, const struct timeval *tv, void *userdata) {
++static void timeout_callback(pa_mainloop_api *m, pa_time_event*e, pa_usec_t t, void *userdata) {
+     pa_core *c = userdata;
+-    struct timeval ntv;
+ 
+     pa_assert(c);
+     pa_assert(c->mainloop == m);
+@@ -73,9 +73,7 @@ static void timeout_callback(pa_mainloop_api *m, pa_time_event*e, const struct t
+ 
+     pa_scache_unload_unused(c);
+ 
+-    pa_gettimeofday(&ntv);
+-    ntv.tv_sec += UNLOAD_POLL_TIME;
+-    m->time_restart(e, &ntv);
++    m->rtclock_time_restart(e, pa_rtclock_now() + UNLOAD_POLL_TIME);
+ }
+ 
+ static void free_entry(pa_scache_entry *e) {
+@@ -253,12 +251,8 @@ int pa_scache_add_file_lazy(pa_core *c, const char *name, const char *filename,
+ 
+     pa_proplist_sets(e->proplist, PA_PROP_MEDIA_FILENAME, filename);
+ 
+-    if (!c->scache_auto_unload_event) {
+-        struct timeval ntv;
+-        pa_gettimeofday(&ntv);
+-        ntv.tv_sec += UNLOAD_POLL_TIME;
+-        c->scache_auto_unload_event = c->mainloop->time_new(c->mainloop, &ntv, timeout_callback, c);
+-    }
++    if (!c->scache_auto_unload_event)
++        c->scache_auto_unload_event = c->mainloop->rtclock_time_new(c->mainloop, pa_rtclock_now() + UNLOAD_POLL_TIME, timeout_callback, c);
+ 
+     if (idx)
+         *idx = e->index;
+diff --git a/src/pulsecore/core.c b/src/pulsecore/core.c
+index 06573f1..19f633b 100644
+--- a/src/pulsecore/core.c
++++ b/src/pulsecore/core.c
+@@ -28,6 +28,7 @@
+ #include <stdio.h>
+ #include <signal.h>
+ 
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+ #include <pulse/xmalloc.h>
+ 
+@@ -214,7 +215,7 @@ static void core_free(pa_object *o) {
+     pa_xfree(c);
+ }
+ 
+-static void exit_callback(pa_mainloop_api*m, pa_time_event *e, const struct timeval *tv, void *userdata) {
++static void exit_callback(pa_mainloop_api *m, pa_time_event *e, pa_usec_t t, void *userdata) {
+     pa_core *c = userdata;
+     pa_assert(c->exit_event == e);
+ 
+@@ -229,11 +230,7 @@ void pa_core_check_idle(pa_core *c) {
+         c->exit_idle_time >= 0 &&
+         pa_idxset_size(c->clients) == 0) {
+ 
+-        struct timeval tv;
+-        pa_gettimeofday(&tv);
+-        tv.tv_sec+= c->exit_idle_time;
+-
+-        c->exit_event = c->mainloop->time_new(c->mainloop, &tv, exit_callback, c);
++        c->exit_event = c->mainloop->rtclock_time_new(c->mainloop, pa_rtclock_now() + c->exit_idle_time * PA_USEC_PER_SEC, exit_callback, c);
+ 
+     } else if (c->exit_event && pa_idxset_size(c->clients) > 0) {
+         c->mainloop->time_free(c->exit_event);
+diff --git a/src/pulsecore/dbus-util.c b/src/pulsecore/dbus-util.c
+index ece36de..e8523c5 100644
+--- a/src/pulsecore/dbus-util.c
++++ b/src/pulsecore/dbus-util.c
+@@ -26,8 +26,9 @@
+ 
+ #include <stdarg.h>
+ 
+-#include <pulse/xmalloc.h>
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
++#include <pulse/xmalloc.h>
+ 
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/log.h>
+@@ -118,16 +119,14 @@ static void handle_io_event(pa_mainloop_api *ea, pa_io_event *e, int fd, pa_io_e
+ }
+ 
+ /* pa_time_event_cb_t timer event handler */
+-static void handle_time_event(pa_mainloop_api *ea, pa_time_event* e, const struct timeval *tv, void *userdata) {
++static void handle_time_event(pa_mainloop_api *ea, pa_time_event* e, pa_usec_t t, void *userdata) {
+     DBusTimeout *timeout = userdata;
+ 
+     if (dbus_timeout_get_enabled(timeout)) {
+-        struct timeval next = *tv;
+         dbus_timeout_handle(timeout);
+ 
+         /* restart it for the next scheduled time */
+-        pa_timeval_add(&next, (pa_usec_t) dbus_timeout_get_interval(timeout) * 1000);
+-        ea->time_restart(e, &next);
++        ea->rtclock_time_restart(e, t + dbus_timeout_get_interval(timeout) * PA_USEC_PER_MSEC);
+     }
+ }
+ 
+@@ -183,7 +182,6 @@ static void toggle_watch(DBusWatch *watch, void *data) {
+ static dbus_bool_t add_timeout(DBusTimeout *timeout, void *data) {
+     pa_dbus_wrap_connection *c = data;
+     pa_time_event *ev;
+-    struct timeval tv;
+ 
+     pa_assert(timeout);
+     pa_assert(c);
+@@ -191,10 +189,7 @@ static dbus_bool_t add_timeout(DBusTimeout *timeout, void *data) {
+     if (!dbus_timeout_get_enabled(timeout))
+         return FALSE;
+ 
+-    pa_gettimeofday(&tv);
+-    pa_timeval_add(&tv, (pa_usec_t) dbus_timeout_get_interval(timeout) * 1000);
+-
+-    ev = c->mainloop->time_new(c->mainloop, &tv, handle_time_event, timeout);
++    ev = c->mainloop->rtclock_time_new(c->mainloop, pa_rtclock_now() + dbus_timeout_get_interval(timeout) * PA_USEC_PER_MSEC, handle_time_event, timeout);
+ 
+     dbus_timeout_set_data(timeout, ev, NULL);
+ 
+@@ -224,14 +219,9 @@ static void toggle_timeout(DBusTimeout *timeout, void *data) {
+     pa_assert_se(ev = dbus_timeout_get_data(timeout));
+ 
+     if (dbus_timeout_get_enabled(timeout)) {
+-        struct timeval tv;
+-
+-        pa_gettimeofday(&tv);
+-        pa_timeval_add(&tv, (pa_usec_t) dbus_timeout_get_interval(timeout) * 1000);
+-
+-        c->mainloop->time_restart(ev, &tv);
++        c->mainloop->rtclock_time_restart(ev, pa_rtclock_now() + dbus_timeout_get_interval(timeout) * PA_USEC_PER_MSEC);
+     } else
+-        c->mainloop->time_restart(ev, NULL);
++        c->mainloop->rtclock_time_restart(ev, PA_USEC_INVALID);
+ }
+ 
+ static void wakeup_main(void *userdata) {
+diff --git a/src/pulsecore/pdispatch.c b/src/pulsecore/pdispatch.c
+index d00106b..3aa991e 100644
+--- a/src/pulsecore/pdispatch.c
++++ b/src/pulsecore/pdispatch.c
+@@ -27,6 +27,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+ #include <pulse/xmalloc.h>
+ 
+@@ -342,7 +343,7 @@ finish:
+     return ret;
+ }
+ 
+-static void timeout_callback(pa_mainloop_api*m, pa_time_event*e, const struct timeval *tv, void *userdata) {
++static void timeout_callback(pa_mainloop_api*m, pa_time_event*e, pa_usec_t t, void *userdata) {
+     struct reply_info*r = userdata;
+ 
+     pa_assert(r);
+@@ -356,7 +357,6 @@ static void timeout_callback(pa_mainloop_api*m, pa_time_event*e, const struct ti
+ 
+ void pa_pdispatch_register_reply(pa_pdispatch *pd, uint32_t tag, int timeout, pa_pdispatch_cb_t cb, void *userdata, pa_free_cb_t free_cb) {
+     struct reply_info *r;
+-    struct timeval tv;
+ 
+     pa_assert(pd);
+     pa_assert(PA_REFCNT_VALUE(pd) >= 1);
+@@ -371,10 +371,7 @@ void pa_pdispatch_register_reply(pa_pdispatch *pd, uint32_t tag, int timeout, pa
+     r->free_cb = free_cb;
+     r->tag = tag;
+ 
+-    pa_gettimeofday(&tv);
+-    tv.tv_sec += timeout;
+-
+-    pa_assert_se(r->time_event = pd->mainloop->time_new(pd->mainloop, &tv, timeout_callback, r));
++    pa_assert_se(r->time_event = pd->mainloop->rtclock_time_new(pd->mainloop, pa_rtclock_now() + timeout * PA_USEC_PER_SEC, timeout_callback, r));
+ 
+     PA_LLIST_PREPEND(struct reply_info, pd->replies, r);
+ }
+diff --git a/src/pulsecore/protocol-esound.c b/src/pulsecore/protocol-esound.c
+index 7e7126e..539a654 100644
+--- a/src/pulsecore/protocol-esound.c
++++ b/src/pulsecore/protocol-esound.c
+@@ -30,6 +30,7 @@
+ #include <stdlib.h>
+ #include <limits.h>
+ 
++#include <pulse/rtclock.h>
+ #include <pulse/sample.h>
+ #include <pulse/timeval.h>
+ #include <pulse/utf8.h>
+@@ -63,7 +64,7 @@
+ #define MAX_CONNECTIONS 64
+ 
+ /* Kick a client if it doesn't authenticate within this time */
+-#define AUTH_TIMEOUT 5
++#define AUTH_TIMEOUT (5*PA_USEC_PER_SEC)
+ 
+ #define DEFAULT_COOKIE_FILE ".esd_auth"
+ 
+@@ -1459,11 +1460,10 @@ static pa_usec_t source_output_get_latency_cb(pa_source_output *o) {
+ 
+ /*** entry points ***/
+ 
+-static void auth_timeout(pa_mainloop_api*m, pa_time_event *e, const struct timeval *tv, void *userdata) {
++static void auth_timeout(pa_mainloop_api *m, pa_time_event *e, pa_usec_t t, void *userdata) {
+     connection *c = CONNECTION(userdata);
+ 
+     pa_assert(m);
+-    pa_assert(tv);
+     connection_assert_ref(c);
+     pa_assert(c->auth_timeout_event == e);
+ 
+@@ -1553,12 +1553,9 @@ void pa_esound_protocol_connect(pa_esound_protocol *p, pa_iochannel *io, pa_esou
+         c->authorized = TRUE;
+     }
+ 
+-    if (!c->authorized) {
+-        struct timeval tv;
+-        pa_gettimeofday(&tv);
+-        tv.tv_sec += AUTH_TIMEOUT;
+-        c->auth_timeout_event = p->core->mainloop->time_new(p->core->mainloop, &tv, auth_timeout, c);
+-    } else
++    if (!c->authorized)
++        c->auth_timeout_event = p->core->mainloop->rtclock_time_new(p->core->mainloop, pa_rtclock_now() + AUTH_TIMEOUT, auth_timeout, c);
++    else
+         c->auth_timeout_event = NULL;
+ 
+     c->defer_event = p->core->mainloop->defer_new(p->core->mainloop, defer_callback, c);
+diff --git a/src/pulsecore/protocol-native.c b/src/pulsecore/protocol-native.c
+index aecaf71..92171bf 100644
+--- a/src/pulsecore/protocol-native.c
++++ b/src/pulsecore/protocol-native.c
+@@ -29,6 +29,7 @@
+ #include <stdlib.h>
+ #include <unistd.h>
+ 
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+ #include <pulse/version.h>
+ #include <pulse/utf8.h>
+@@ -61,7 +62,7 @@
+ #include "protocol-native.h"
+ 
+ /* Kick a client if it doesn't authenticate within this time */
+-#define AUTH_TIMEOUT 60
++#define AUTH_TIMEOUT (60 * PA_USEC_PER_SEC)
+ 
+ /* Don't accept more connection than this */
+ #define MAX_CONNECTIONS 64
+@@ -4375,11 +4376,10 @@ static void client_send_event_cb(pa_client *client, const char*event, pa_proplis
+ 
+ /*** module entry points ***/
+ 
+-static void auth_timeout(pa_mainloop_api*m, pa_time_event *e, const struct timeval *tv, void *userdata) {
++static void auth_timeout(pa_mainloop_api*m, pa_time_event *e, pa_usec_t t, void *userdata) {
+     pa_native_connection *c = PA_NATIVE_CONNECTION(userdata);
+ 
+     pa_assert(m);
+-    pa_assert(tv);
+     pa_native_connection_assert_ref(c);
+     pa_assert(c->auth_timeout_event == e);
+ 
+@@ -4437,12 +4437,9 @@ void pa_native_protocol_connect(pa_native_protocol *p, pa_iochannel *io, pa_nati
+         c->authorized = TRUE;
+     }
+ 
+-    if (!c->authorized) {
+-        struct timeval tv;
+-        pa_gettimeofday(&tv);
+-        tv.tv_sec += AUTH_TIMEOUT;
+-        c->auth_timeout_event = p->core->mainloop->time_new(p->core->mainloop, &tv, auth_timeout, c);
+-    } else
++    if (!c->authorized)
++        c->auth_timeout_event = p->core->mainloop->rtclock_time_new(p->core->mainloop, pa_rtclock_now() + AUTH_TIMEOUT, auth_timeout, c);
++    else
+         c->auth_timeout_event = NULL;
+ 
+     c->is_local = pa_iochannel_socket_is_local(io);
+diff --git a/src/pulsecore/socket-client.c b/src/pulsecore/socket-client.c
+index dc23bff..d3d1733 100644
+--- a/src/pulsecore/socket-client.c
++++ b/src/pulsecore/socket-client.c
+@@ -52,6 +52,7 @@
+ #include <asyncns.h>
+ #endif
+ 
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+ #include <pulse/xmalloc.h>
+ 
+@@ -420,12 +421,11 @@ fail:
+ 
+ #endif
+ 
+-static void timeout_cb(pa_mainloop_api *m, pa_time_event *e, const struct timeval *tv, void *userdata) {
++static void timeout_cb(pa_mainloop_api *m, pa_time_event *e, pa_usec_t t, void *userdata) {
+     pa_socket_client *c = userdata;
+ 
+     pa_assert(m);
+     pa_assert(e);
+-    pa_assert(tv);
+     pa_assert(c);
+ 
+     if (c->fd >= 0) {
+@@ -438,13 +438,10 @@ static void timeout_cb(pa_mainloop_api *m, pa_time_event *e, const struct timeva
+ }
+ 
+ static void start_timeout(pa_socket_client *c) {
+-    struct timeval tv;
+     pa_assert(c);
+     pa_assert(!c->timeout_event);
+ 
+-    pa_gettimeofday(&tv);
+-    pa_timeval_add(&tv, CONNECT_TIMEOUT * PA_USEC_PER_SEC);
+-    c->timeout_event = c->mainloop->time_new(c->mainloop, &tv, timeout_cb, c);
++    c->timeout_event = c->mainloop->rtclock_time_new(c->mainloop, pa_rtclock_now() + CONNECT_TIMEOUT * PA_USEC_PER_SEC, timeout_cb, c);
+ }
+ 
+ pa_socket_client* pa_socket_client_new_string(pa_mainloop_api *m, const char*name, uint16_t default_port) {
+diff --git a/src/tests/mainloop-test.c b/src/tests/mainloop-test.c
+index 4ca6351..d29a56f 100644
+--- a/src/tests/mainloop-test.c
++++ b/src/tests/mainloop-test.c
+@@ -26,6 +26,7 @@
+ #include <sys/time.h>
+ #include <assert.h>
+ 
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+ #include <pulse/gccmacro.h>
+ 
+@@ -56,7 +57,7 @@ static void dcb(pa_mainloop_api*a, pa_defer_event *e, void *userdata) {
+     a->defer_enable(e, 0);
+ }
+ 
+-static void tcb(pa_mainloop_api*a, pa_time_event *e, const struct timeval *tv, void *userdata) {
++static void rtcb(pa_mainloop_api*a, pa_time_event *e, pa_usec_t t, void *userdata) {
+     fprintf(stderr, "TIME EVENT\n");
+ 
+ #if defined(GLIB_MAIN_LOOP)
+@@ -66,6 +67,13 @@ static void tcb(pa_mainloop_api*a, pa_time_event *e, const struct timeval *tv, v
+ #endif
+ }
+ 
++static void tcb(pa_mainloop_api*a, pa_time_event *e, const struct timeval *tv, void *userdata) {
++    pa_time_event *te;
++
++    fprintf(stderr, "TIMEVAL TIME EVENT\n");
++    te = a->rtclock_time_new(a, pa_rtclock_now() + 10 * PA_USEC_PER_SEC, rtcb, NULL);
++}
++
+ int main(int argc, char *argv[]) {
+     pa_mainloop_api *a;
+     pa_io_event *ioe;
+@@ -100,7 +108,7 @@ int main(int argc, char *argv[]) {
+     assert(de);
+ 
+     pa_gettimeofday(&tv);
+-    tv.tv_sec += 10;
++    tv.tv_sec += 2;
+     te = a->time_new(a, &tv, tcb, NULL);
+ 
+ #if defined(GLIB_MAIN_LOOP)
+diff --git a/src/tests/thread-mainloop-test.c b/src/tests/thread-mainloop-test.c
+index ad89414..38f2e09 100644
+--- a/src/tests/thread-mainloop-test.c
++++ b/src/tests/thread-mainloop-test.c
+@@ -25,6 +25,7 @@
+ #include <unistd.h>
+ #include <stdio.h>
+ 
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+ #include <pulse/util.h>
+ #include <pulse/thread-mainloop.h>
+@@ -32,7 +33,7 @@
+ 
+ #include <pulsecore/macro.h>
+ 
+-static void tcb(pa_mainloop_api*a, pa_time_event *e, const struct timeval *tv, void *userdata) {
++static void tcb(pa_mainloop_api *a, pa_time_event *e, pa_usec_t t, void *userdata) {
+     pa_assert_se(pa_threaded_mainloop_in_thread(userdata));
+     fprintf(stderr, "TIME EVENT START\n");
+     pa_threaded_mainloop_signal(userdata, 1);
+@@ -42,7 +43,6 @@ static void tcb(pa_mainloop_api*a, pa_time_event *e, const struct timeval *tv, v
+ int main(int argc, char *argv[]) {
+     pa_mainloop_api *a;
+     pa_threaded_mainloop *m;
+-    struct timeval tv;
+ 
+     pa_assert_se(m = pa_threaded_mainloop_new());
+     pa_assert_se(a = pa_threaded_mainloop_get_api(m));
+@@ -53,9 +53,7 @@ int main(int argc, char *argv[]) {
+ 
+     pa_assert_se(!pa_threaded_mainloop_in_thread(m));
+ 
+-    pa_gettimeofday(&tv);
+-    tv.tv_sec += 5;
+-    a->time_new(a, &tv, tcb, m);
++    a->rtclock_time_new(a, pa_rtclock_now() + 5 * PA_USEC_PER_SEC, tcb, m);
+ 
+     fprintf(stderr, "waiting 5s (signal)\n");
+     pa_threaded_mainloop_wait(m);
+diff --git a/src/utils/pabrowse.c b/src/utils/pabrowse.c
+index 288d44a..0cf3324 100644
+--- a/src/utils/pabrowse.c
++++ b/src/utils/pabrowse.c
+@@ -27,8 +27,9 @@
+ #include <assert.h>
+ #include <signal.h>
+ 
+-#include <pulse/pulseaudio.h>
+ #include <pulse/browser.h>
++#include <pulse/pulseaudio.h>
++#include <pulse/rtclock.h>
+ 
+ static void exit_signal_callback(pa_mainloop_api*m, pa_signal_event *e, int sig, void *userdata) {
+     fprintf(stderr, "Got signal, exiting\n");
+diff --git a/src/utils/pacat.c b/src/utils/pacat.c
+index 15e842f..c1f979f 100644
+--- a/src/utils/pacat.c
++++ b/src/utils/pacat.c
+@@ -37,6 +37,7 @@
+ 
+ #include <pulse/i18n.h>
+ #include <pulse/pulseaudio.h>
++#include <pulse/rtclock.h>
+ 
+ #define TIME_EVENT_USEC 50000
+ 
+@@ -489,9 +490,7 @@ static void sigusr1_signal_callback(pa_mainloop_api*m, pa_signal_event *e, int s
+     pa_operation_unref(pa_stream_update_timing_info(stream, stream_update_timing_callback, NULL));
+ }
+ 
+-static void time_event_callback(pa_mainloop_api*m, pa_time_event *e, const struct timeval *tv, void *userdata) {
+-    struct timeval next;
+-
++static void time_event_callback(pa_mainloop_api *m, pa_time_event *e, pa_usec_t t, void *userdata) {
+     if (stream && pa_stream_get_state(stream) == PA_STREAM_READY) {
+         pa_operation *o;
+         if (!(o = pa_stream_update_timing_info(stream, stream_update_timing_callback, NULL)))
+@@ -500,10 +499,7 @@ static void time_event_callback(pa_mainloop_api*m, pa_time_event *e, const struc
+             pa_operation_unref(o);
+     }
+ 
+-    pa_gettimeofday(&next);
+-    pa_timeval_add(&next, TIME_EVENT_USEC);
+-
+-    m->time_restart(e, &next);
++    m->rtclock_time_restart(e, pa_rtclock_now() + TIME_EVENT_USEC);
+ }
+ 
+ static void help(const char *argv0) {
+@@ -801,12 +797,7 @@ int main(int argc, char *argv[]) {
+     }
+ 
+     if (verbose) {
+-        struct timeval tv;
+-
+-        pa_gettimeofday(&tv);
+-        pa_timeval_add(&tv, TIME_EVENT_USEC);
+-
+-        if (!(time_event = mainloop_api->time_new(mainloop_api, &tv, time_event_callback, NULL))) {
++        if (!(time_event = mainloop_api->rtclock_time_new(mainloop_api, pa_rtclock_now() + TIME_EVENT_USEC, time_event_callback, NULL))) {
+             fprintf(stderr, _("time_new() failed.\n"));
+             goto quit;
+         }
+-- 
+1.6.3.1
+

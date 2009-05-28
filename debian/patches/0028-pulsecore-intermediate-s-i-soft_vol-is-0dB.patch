@@ -1,0 +1,25 @@
+From d66247765c17de69f857a54abb66a0d2679b9973 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Tue, 10 Mar 2009 20:08:34 +0200
+Subject: [PATCH 28/61] pulsecore: intermediate s-i soft_vol is 0dB
+
+---
+ src/pulsecore/sink-input.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/src/pulsecore/sink-input.c b/src/pulsecore/sink-input.c
+index d059240..2ba8b0c 100644
+--- a/src/pulsecore/sink-input.c
++++ b/src/pulsecore/sink-input.c
+@@ -281,6 +281,8 @@ int pa_sink_input_new(
+     i->volume_factor = data->volume_factor;
+     pa_cvolume_init(&i->soft_volume);
+     memset(i->relative_volume, 0, sizeof(i->relative_volume));
++    if (i->origin_sink)
++      pa_cvolume_reset(&i->soft_volume, i->origin_sink->sample_spec.channels);
+     i->save_volume = data->save_volume;
+     i->save_sink = data->save_sink;
+     i->save_muted = data->save_muted;
+-- 
+1.6.3.1
+

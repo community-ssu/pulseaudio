@@ -1,0 +1,123 @@
+From 5af35455908c413dd2178a55c8731673fc674769 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Fri, 29 May 2009 16:01:56 +0300
+Subject: [PATCH 18/61] alsa-old: fix rtclock and style
+
+---
+ src/modules/alsa/module-alsa-sink-old.c   |   14 ++++++--------
+ src/modules/alsa/module-alsa-source-old.c |   14 ++++++--------
+ 2 files changed, 12 insertions(+), 16 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
+index 33af6e1..a3ce3d2 100644
+--- a/src/modules/alsa/module-alsa-sink-old.c
++++ b/src/modules/alsa/module-alsa-sink-old.c
+@@ -29,9 +29,10 @@
+ 
+ #include <asoundlib.h>
+ 
+-#include <pulse/xmalloc.h>
+-#include <pulse/util.h>
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
++#include <pulse/util.h>
++#include <pulse/xmalloc.h>
+ 
+ #ifdef HAVE_VALGRIND_MEMCHECK_H
+ #include <valgrind/memcheck.h>
+@@ -42,6 +43,7 @@
+ #include <pulsecore/memchunk.h>
+ #include <pulsecore/sink.h>
+ #include <pulsecore/modargs.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/sample-util.h>
+ #include <pulsecore/log.h>
+@@ -51,7 +53,6 @@
+ #include <pulsecore/thread-mq.h>
+ #include <pulsecore/rtpoll.h>
+ #include <pulsecore/atomic.h>
+-#include <pulsecore/rtclock.h>
+ 
+ #include "alsa-util.h"
+ #include "module-alsa-sink-old-symdef.h"
+@@ -367,20 +368,17 @@ static int unix_write(struct userdata *u) {
+ static int sink_get_latency_by_timestamps(struct userdata *u, pa_usec_t *d) {
+     snd_pcm_uframes_t avail;
+     snd_htimestamp_t tstamp;
+-    struct timeval tv_now;
+     struct timespec ts_dma;
+     pa_usec_t fragment_usec;
+-    
++
+     if (snd_pcm_htimestamp(u->pcm_handle, &avail, &tstamp) < 0)
+         return -1;
+ 
+-    pa_rtclock_get(&tv_now);
+-
+     ts_dma.tv_sec = tstamp.tv_sec;
+     ts_dma.tv_nsec = tstamp.tv_nsec;
+ 
+     fragment_usec = pa_bytes_to_usec(u->fragment_size, &u->sink->sample_spec);
+-    *d = pa_timespec_load(&ts_dma) + fragment_usec - pa_timeval_load(&tv_now);
++    *d = pa_timespec_load(&ts_dma) + fragment_usec - pa_rtclock_now();
+ 
+     return 0;
+ }
+diff --git a/src/modules/alsa/module-alsa-source-old.c b/src/modules/alsa/module-alsa-source-old.c
+index 0e08cb8..5238658 100644
+--- a/src/modules/alsa/module-alsa-source-old.c
++++ b/src/modules/alsa/module-alsa-source-old.c
+@@ -33,9 +33,10 @@
+ #include <valgrind/memcheck.h>
+ #endif
+ 
+-#include <pulse/xmalloc.h>
+-#include <pulse/util.h>
++#include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
++#include <pulse/util.h>
++#include <pulse/xmalloc.h>
+ 
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/core.h>
+@@ -43,6 +44,7 @@
+ #include <pulsecore/memchunk.h>
+ #include <pulsecore/source.h>
+ #include <pulsecore/modargs.h>
++#include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/sample-util.h>
+ #include <pulsecore/log.h>
+@@ -51,7 +53,6 @@
+ #include <pulsecore/core-error.h>
+ #include <pulsecore/thread-mq.h>
+ #include <pulsecore/rtpoll.h>
+-#include <pulsecore/rtclock.h>
+ 
+ #include "alsa-util.h"
+ #include "module-alsa-source-old-symdef.h"
+@@ -369,18 +370,15 @@ static int unix_read(struct userdata *u) {
+ static int source_get_latency_by_timestamps(struct userdata *u, pa_usec_t *d) {
+     snd_pcm_uframes_t avail;
+     snd_htimestamp_t tstamp;
+-    struct timeval tv_now;
+     struct timespec ts_dma;
+ 
+-    if (snd_pcm_htimestamp(u->pcm_handle, &avail, &tstamp) < 0) 
++    if (snd_pcm_htimestamp(u->pcm_handle, &avail, &tstamp) < 0)
+         return -1;
+ 
+-    pa_rtclock_get(&tv_now);
+-
+     ts_dma.tv_sec = tstamp.tv_sec;
+     ts_dma.tv_nsec = tstamp.tv_nsec;
+ 
+-    *d = pa_timeval_load(&tv_now) - pa_timespec_load(&ts_dma);
++    *d = pa_rtclock_now() - pa_timespec_load(&ts_dma);
+ 
+     return 0;
+ }
+-- 
+1.6.3.1
+
