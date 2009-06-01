@@ -1,0 +1,25 @@
+From cd386d8b2378a2fab3ecf8ea514345d64e107f61 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Sat, 4 Apr 2009 14:50:37 +0300
+Subject: [PATCH 52/60] bootstrap: enable DEBUG_VOLUME and NOKIA
+
+---
+ bootstrap.sh |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/bootstrap.sh b/bootstrap.sh
+index cb74121..6fffb35 100755
+--- a/bootstrap.sh
++++ b/bootstrap.sh
+@@ -77,7 +77,7 @@ else
+     run_versioned automake "$VERSION" --copy --foreign --add-missing
+ 
+     if test "x$NOCONFIGURE" = "x"; then
+-        CFLAGS="-g -O0" ./configure --sysconfdir=/etc --localstatedir=/var --enable-force-preopen --enable-shave "$@"
++        CFLAGS="-g -O0 -DNOKIA=1 -DDEBUG_VOLUME=1" ./configure --sysconfdir=/etc --localstatedir=/var --enable-force-preopen --enable-shave "$@"
+         make clean
+     fi
+ fi
+-- 
+1.6.3.1
+

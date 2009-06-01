@@ -1,0 +1,24 @@
+From 236eb2ace05dda6c348d2f1cc521deaa6e991abc Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Tue, 4 Nov 2008 16:47:09 +0200
+Subject: [PATCH 16/60] interpol-test: remove unused include getopt.h
+
+---
+ src/tests/interpol-test.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/src/tests/interpol-test.c b/src/tests/interpol-test.c
+index 0c906d3..5ee4e4d 100644
+--- a/src/tests/interpol-test.c
++++ b/src/tests/interpol-test.c
+@@ -28,7 +28,6 @@
+ #include <assert.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+-#include <getopt.h>
+ #include <math.h>
+ 
+ #include <pulse/pulseaudio.h>
+-- 
+1.6.3.1
+

@@ -1,7 +1,7 @@
 From 1da2e807bfd55bed21470cc2148b941dfb105761 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Thu, 7 May 2009 18:41:20 +0300
-Subject: [PATCH 09/61] optimization: Optimized pa_sink_render_full.
+Subject: [PATCH 09/60] optimization: Optimized pa_sink_render_full.
 
 This is finally the latest version of the patch.
 ---
