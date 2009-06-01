@@ -2,7 +2,7 @@ pulseaudio (0.9.15-1maemo9) unstable; urgency=low
 
   * Don't open SCO channel unconditionally. Fixes: NB#117454
   * Disable IPv6 support. Fixes: NB#117852
-  * Use monotonic time.
+  * Use monotonic time. Fixes: NB#112134
 
  -- Maemo Multimedia <multimedia@maemo.org>  Mon, 25 May 2009 18:18:52 +0300
 
