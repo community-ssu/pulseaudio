@@ -1,7 +1,7 @@
 From c91ca053ba2f821355e029e3f7c7255a1548578c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Fri, 29 May 2009 15:56:24 +0300
-Subject: [PATCH 18/60] resample: fix rtclock and style
+Subject: [PATCH 18/61] resample: fix rtclock and style
 
 ---
  src/tests/resampler-test.c |   15 ++++++++-------

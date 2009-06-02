@@ -1,7 +1,7 @@
 From f7df7399497118cbfb6a6035daa1315068b1e17a Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 15 May 2009 17:24:54 +0300
-Subject: [PATCH 35/60] stream-restore: simple fallback volume table
+Subject: [PATCH 35/61] stream-restore: simple fallback volume table
 
 ---
  src/modules/module-stream-restore.c |   94 ++++++++++++++++++++++++++++++++++-

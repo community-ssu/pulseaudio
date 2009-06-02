@@ -55,6 +55,7 @@
 0055-protocol-native-expose-sink-reference-volume-instead.patch
 0056-debug-default-who-try-to-set-default-sink-source.patch
 0057-mainloop-log-as-deprecated-timeval-time_new.patch
-0058-alsa-port-the-old-alsa-modules.patch
-0059-alsa-sink-volume-a-complex-mixer-module.patch
-0060-autofoo.patch
+0058-stream-restore-make-route-volume-optional.patch
+0059-alsa-port-the-old-alsa-modules.patch
+0060-alsa-sink-volume-a-complex-mixer-module.patch
+0061-autofoo.patch

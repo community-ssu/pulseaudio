@@ -1,0 +1,79 @@
+From 7235f865c3ddbeb9be6317fe61ca6271478e89df Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Tue, 2 Jun 2009 18:20:00 +0300
+Subject: [PATCH 58/61] stream-restore: make route volume optional
+
+---
+ src/modules/module-stream-restore.c |   14 +++++++++++---
+ 1 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
+index 15743b6..ad058de 100644
+--- a/src/modules/module-stream-restore.c
++++ b/src/modules/module-stream-restore.c
+@@ -75,6 +75,7 @@ static const char* const valid_modargs[] = {
+     "restore_device",
+     "restore_volume",
+     "restore_muted",
++    "restore_route_volume",
+     "fallback_table",
+     NULL
+ };
+@@ -101,6 +102,7 @@ struct userdata {
+     pa_bool_t restore_device:1;
+     pa_bool_t restore_volume:1;
+     pa_bool_t restore_muted:1;
++    pa_bool_t restore_route_volume:1;
+ 
+     pa_native_protocol *protocol;
+     pa_idxset *subscribed;
+@@ -574,6 +576,9 @@ static void trigger_save(struct userdata *u) {
+         pa_pstream_send_tagstruct(pa_native_connection_get_pstream(c), t);
+     }
+ 
++    if (!u->restore_route_volume)
++        goto end;
++
+     if (!u->route)
+         goto end;
+ 
+@@ -1263,7 +1268,7 @@ int pa__init(pa_module*m) {
+     pa_sink_input *si;
+     pa_source_output *so;
+     uint32_t idx;
+-    pa_bool_t restore_device = TRUE, restore_volume = TRUE, restore_muted = TRUE;
++    pa_bool_t restore_device = TRUE, restore_volume = TRUE, restore_muted = TRUE, restore_route_volume = TRUE;
+     int gdbm_cache_size;
+     const char* ext_supported[] = { "stream-restore-1", "stream-restore-2", NULL };
+ 
+@@ -1276,7 +1281,8 @@ int pa__init(pa_module*m) {
+ 
+     if (pa_modargs_get_value_boolean(ma, "restore_device", &restore_device) < 0 ||
+         pa_modargs_get_value_boolean(ma, "restore_volume", &restore_volume) < 0 ||
+-        pa_modargs_get_value_boolean(ma, "restore_muted", &restore_muted) < 0) {
++        pa_modargs_get_value_boolean(ma, "restore_muted", &restore_muted) < 0 ||
++        pa_modargs_get_value_boolean(ma, "restore_route_volume", &restore_route_volume) < 0) {
+         pa_log("restore_device=, restore_volume= and restore_muted= expect boolean arguments");
+         goto fail;
+     }
+@@ -1291,6 +1297,7 @@ int pa__init(pa_module*m) {
+     u->restore_device = restore_device;
+     u->restore_volume = restore_volume;
+     u->restore_muted = restore_muted;
++    u->restore_route_volume = restore_route_volume;
+     u->gdbm_file = NULL;
+     u->subscribed = pa_idxset_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
+ 
+@@ -1309,7 +1316,8 @@ int pa__init(pa_module*m) {
+     if (restore_volume || restore_muted)
+         u->sink_input_fixate_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_INPUT_FIXATE], PA_HOOK_EARLY, (pa_hook_cb_t) sink_input_fixate_hook_callback, u);
+ 
+-    u->sink_proplist_changed_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_PROPLIST_CHANGED], PA_HOOK_LATE, (pa_hook_cb_t)sink_proplist_changed_hook_callback, u);
++    if (u->restore_route_volume)
++        u->sink_proplist_changed_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_PROPLIST_CHANGED], PA_HOOK_LATE, (pa_hook_cb_t)sink_proplist_changed_hook_callback, u);
+     u->route = NULL;
+ 
+     /* We include the host identifier in the file name because gdbm
+-- 
+1.6.3.1
+
