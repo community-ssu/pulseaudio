@@ -57,10 +57,6 @@ load-module module-bluetooth-discover sco_sink=sink.hw1 sco_source=source.hw1
 #         other modules           #
 ###################################
 
-.ifexists module-position-event-sounds.so
-load-module module-position-event-sounds
-.endif
-
 .ifexists module-esound-protocol-unix.so
 load-module module-esound-protocol-unix
 .endif
