@@ -4,6 +4,7 @@ pulseaudio (0.9.15-1maemo9) unstable; urgency=low
   * Disable IPv6 support. Fixes: NB#117852
   * Use monotonic time. Fixes: NB#112134
   * Classify vengine as "phone" role.
+  * Changed default volume for phone and general. Fixes: NB#116935
 
  -- Maemo Multimedia <multimedia@maemo.org>  Mon, 25 May 2009 18:18:52 +0300
 
