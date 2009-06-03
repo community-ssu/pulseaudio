@@ -81,4 +81,4 @@ load-module module-policy-enforcement
 load-module module-nokia-audiots hw_sink_name=sink.hw0 port=3001
 .endif
 
-load-module module-match table=/etc/pulse/x-maemo-match.table
+load-module module-match table=/etc/pulse/x-maemo-match.table key=application.name
