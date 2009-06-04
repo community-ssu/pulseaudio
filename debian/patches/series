@@ -59,3 +59,4 @@
 0059-alsa-port-the-old-alsa-modules.patch
 0060-alsa-sink-volume-a-complex-mixer-module.patch
 0061-autofoo.patch
+0062-alsa-sink-volume-mixer-volume-control-delayed.patch

@@ -1,0 +1,115 @@
+From eb0d21c5c50e427f12ceac4cecc478a866d9de95 Mon Sep 17 00:00:00 2001
+From: Pekka Ervasti <peervast@gmail.com>
+Date: Thu, 4 Jun 2009 16:11:35 +0300
+Subject: [PATCH 62/62] alsa-sink-volume: mixer volume control delayed
+
+---
+ src/modules/alsa/module-alsa-sink-volume.c |   57 +++++++++++++++++++++++++++-
+ 1 files changed, 56 insertions(+), 1 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
+index 2b00316..0bd3b6e 100644
+--- a/src/modules/alsa/module-alsa-sink-volume.c
++++ b/src/modules/alsa/module-alsa-sink-volume.c
+@@ -52,6 +52,7 @@
+ #include <pulsecore/rtpoll.h>
+ #include <pulsecore/atomic.h>
+ #include <pulsecore/namereg.h>
++#include <pulse/rtclock.h>
+ 
+ #include "alsa-util.h"
+ #include "module-alsa-sink-volume-symdef.h"
+@@ -92,6 +93,9 @@ static const char* const valid_modargs[] = {
+ #define PROP_MIXER_CONTROL "control"
+ #define PROP_MIXER_SLAVE   "slave"
+ 
++#define MIXER_DELAY_PADDING             10000
++#define MIXER_DELAY_SAFETY_MARGIN_USEC  3000
++
+ /* String of comma separated integer pairs defining alsa volumes,
+  * where the first value is HW register value and the second value
+  * is the corresponding millibel value. The register values should
+@@ -182,6 +186,12 @@ struct slave_mixer_t {
+     long *tuning_table;
+ };
+ 
++struct delayed_mixer_ctrl_args_t {
++    struct mixer_control_t *m;
++    pa_cvolume *vv;
++    long hw_vol_current;
++};
++
+ #define DEFAULT_MIXER_DB_VALUE_ON_FIRST_BOOT (-12)
+ #define MAX_VALUE_STEPS (1024)
+ #define MAX_MIXER_COUNT (16)
+@@ -224,6 +234,8 @@ struct userdata {
+ 
+     pa_hook_slot *sink_proplist_changed_slot;
+     pa_hook_slot *sink_unlink_slot;
++
++    struct delayed_mixer_ctrl_args_t delayed_mixer_ctrl;
+ };
+ 
+ static struct userdata *global_userdata = NULL;
+@@ -543,6 +555,49 @@ static int set_alsa_mixer_volumes(struct userdata *u,
+     return 1;
+ }
+ 
++static void set_alsa_mixer_volume_timer_cb(pa_mainloop_api *a, pa_time_event *e, pa_usec_t usec, void *userdata) {
++    struct userdata *u = (struct userdata *)userdata;
++
++    u->core->mainloop->time_free(e);
++
++    if (u->active_mixer != u->delayed_mixer_ctrl.m)
++        pa_log_warn("Active mixer has changed during compensation delay.");
++
++    set_alsa_mixer_volumes(u, u->delayed_mixer_ctrl.m, u->delayed_mixer_ctrl.vv);
++}
++
++static int set_alsa_mixer_volumes_delay_compensated(struct userdata *u,
++                                                    struct mixer_control_t *m,
++                                                    pa_cvolume *vv) {
++    pa_usec_t padding = MIXER_DELAY_PADDING;
++    pa_usec_t sink_latency;
++    long hw_vol;
++
++    pa_assert(u);
++    pa_assert(m);
++    pa_assert(vv);
++
++    u->delayed_mixer_ctrl.m = m;
++    u->delayed_mixer_ctrl.vv = vv;
++
++    /*pa_volume_t real_pa_vol = */ calculate_alsa_mixer_value(m, u->active_tuning, pa_cvolume_max(vv), &hw_vol);
++
++    if (hw_vol > u->delayed_mixer_ctrl.hw_vol_current)
++        padding += MIXER_DELAY_SAFETY_MARGIN_USEC;
++    else
++        padding -= MIXER_DELAY_SAFETY_MARGIN_USEC;
++
++    u->delayed_mixer_ctrl.hw_vol_current = hw_vol;
++
++    PA_MSGOBJECT(u->sink)->process_msg(
++        PA_MSGOBJECT(u->sink), PA_SINK_MESSAGE_GET_LATENCY, &sink_latency, (int64_t)0, NULL);
++
++    u->core->mainloop->rtclock_time_new(u->core->mainloop, pa_rtclock_now() + padding + sink_latency, set_alsa_mixer_volume_timer_cb, u); 
++    pa_log_debug("Mixer volume control timer started: padding %lld + sink_latency %lld us", padding, sink_latency);
++
++    return 0;
++}
++
+ static void fill_mixer_tuning(struct userdata *u, struct mixer_control_t *m, const int table) {
+     tuning_data_t *td;
+     pa_assert(u);
+@@ -598,7 +653,7 @@ static void sink_set_volume_cb(pa_sink *s) {
+ 
+     log_spam("set volume to active mixer %s", u->active_mixer->name);
+ 
+-    set_alsa_mixer_volumes(u, u->active_mixer, &s->virtual_volume);
++    set_alsa_mixer_volumes_delay_compensated(u, u->active_mixer, &s->virtual_volume);
+ }
+ 
+ static int get_mute(struct mixer_control_t *m, int *sw) {
+-- 
+1.6.3.1
+
