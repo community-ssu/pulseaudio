@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo10) unstable; urgency=low
+
+  * Delay mixer change, avoiding volume jumps.
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Thu, 04 Jun 2009 18:41:26 +0300
+
 pulseaudio (0.9.15-1maemo9) unstable; urgency=low
 
   * Classify using "application.name".
