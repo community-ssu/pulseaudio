@@ -1,4 +1,4 @@
-From eb0d21c5c50e427f12ceac4cecc478a866d9de95 Mon Sep 17 00:00:00 2001
+From 2b8d507a1950288f10003de751a4c59a584b298b Mon Sep 17 00:00:00 2001
 From: Pekka Ervasti <peervast@gmail.com>
 Date: Thu, 4 Jun 2009 16:11:35 +0300
 Subject: [PATCH 62/62] alsa-sink-volume: mixer volume control delayed
@@ -8,7 +8,7 @@ Subject: [PATCH 62/62] alsa-sink-volume: mixer volume control delayed
  1 files changed, 56 insertions(+), 1 deletions(-)
 
 diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
-index 2b00316..0bd3b6e 100644
+index 2b00316..59524da 100644
 --- a/src/modules/alsa/module-alsa-sink-volume.c
 +++ b/src/modules/alsa/module-alsa-sink-volume.c
 @@ -52,6 +52,7 @@
@@ -23,7 +23,7 @@ index 2b00316..0bd3b6e 100644
  #define PROP_MIXER_CONTROL "control"
  #define PROP_MIXER_SLAVE   "slave"
  
-+#define MIXER_DELAY_PADDING             10000
++#define MIXER_DELAY_PADDING             17000
 +#define MIXER_DELAY_SAFETY_MARGIN_USEC  3000
 +
  /* String of comma separated integer pairs defining alsa volumes,
