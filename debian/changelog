@@ -1,7 +1,6 @@
 pulseaudio (0.9.15-1maemo11) unstable; urgency=low
 
   * Recursively update stream volume level. Fixes: NB#118988
-  * Don't drain sinks at init, start suspended. Fixes: NB#119028
 
  -- Maemo Multimedia <multimedia@maemo.org>  Fri, 05 Jun 2009 19:04:57 +0300
 

@@ -24,7 +24,7 @@ load-module module-null-sink sink_name=sink.null
 
 ### Default static drivers
 load-module module-alsa-sink-old sink_name=sink.hw0 device=hw:0  rate=48000 fragment_size=1920 fragments=4 alt_fragment_size=960 alt_fragments=2
-load-module module-alsa-sink-volume sink_name=sink.hw0 mixer_load=HP_DAC,Headphone,Earphone mixer=HP_DAC device=hw:0
+load-module module-alsa-sink-volume sink_name=sink.hw0 mixer_load=HP_DAC,Headphone,Earphone mixer=HP_DAC
 update-sink-proplist sink.hw0 module-suspend-on-idle.timeout=2
 
 load-module module-alsa-source-old source_name=source.hw0 device=hw:0 rate=48000 fragment_size=1920 fragments=4 alt_fragment_size=960 alt_fragments=4

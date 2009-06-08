@@ -58,7 +58,6 @@
 0058-stream-restore-make-route-volume-optional.patch
 0059-alsa-port-the-old-alsa-modules.patch
 0060-pulsecore-Send-PA_SINK_MESSAGE_SYNC_VOLUMES-always-a.patch
-0061-alsa-old-start-as-suspended.patch
 0062-alsa-sink-volume-a-complex-mixer-module.patch
 0063-alsa-sink-volume-mixer-volume-control-delayed.patch
 0064-autofoo.patch
