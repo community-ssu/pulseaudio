@@ -1,7 +1,7 @@
 From 1f8a7d83fbefa1e062977832f847bf6162502cc7 Mon Sep 17 00:00:00 2001
 From: Pekka Ervasti <peervast@gmail.com>
 Date: Thu, 4 Jun 2009 16:11:35 +0300
-Subject: [PATCH 63/64] alsa-sink-volume: mixer volume control delayed
+Subject: [PATCH 63/65] alsa-sink-volume: mixer volume control delayed
 
 ---
  src/modules/alsa/module-alsa-sink-volume.c |   57 +++++++++++++++++++++++++++-

@@ -1,7 +1,7 @@
 From 083bff5818ddcfecbd07f09eee73a61f451d8ac1 Mon Sep 17 00:00:00 2001
 From: Juho Hamalainen <jusa@IT-W1767.(none)>
 Date: Thu, 4 Jun 2009 13:24:31 +0300
-Subject: [PATCH 61/64] alsa-old: start as suspended
+Subject: [PATCH 61/65] alsa-old: start as suspended
 
 ---
  src/modules/alsa/module-alsa-sink-old.c   |  220 ++++++++++------

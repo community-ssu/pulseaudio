@@ -1,7 +1,7 @@
 From 3160bb415a042493c83cf7897f97727505299300 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Sat, 4 Apr 2009 22:56:38 +0300
-Subject: [PATCH 01/64] perl -p -i -e 's/pa_rtclock_usec/pa_rtclock_now/g' `find . -name '*.[ch]'`
+Subject: [PATCH 01/65] perl -p -i -e 's/pa_rtclock_usec/pa_rtclock_now/g' `find . -name '*.[ch]'`
 
 ---
  src/daemon/cpulimit.c                           |    4 ++--

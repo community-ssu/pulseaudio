@@ -62,3 +62,4 @@
 0062-alsa-sink-volume-a-complex-mixer-module.patch
 0063-alsa-sink-volume-mixer-volume-control-delayed.patch
 0064-autofoo.patch
+0065-core-make-sure-soft-mute-status-stays-in-sync-with-h.patch

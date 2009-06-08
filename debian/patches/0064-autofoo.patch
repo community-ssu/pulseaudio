@@ -1,7 +1,7 @@
 From 53d3b5f1655078692100d2cf47012a152619527d Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Fri, 5 Jun 2009 19:04:03 +0300
-Subject: [PATCH 64/64] autofoo
+Subject: [PATCH 64/65] autofoo
 
 ---
  ABOUT-NLS              | 1068 ++
