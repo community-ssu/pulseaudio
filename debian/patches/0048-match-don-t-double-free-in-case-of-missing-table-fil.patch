@@ -1,0 +1,24 @@
+From b8f6b56ad761e9f95b768b237bdb44c4dde8c933 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Wed, 13 May 2009 21:11:52 +0300
+Subject: [PATCH 48/65] match: don't double free in case of missing table file
+
+---
+ src/modules/module-match.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/src/modules/module-match.c b/src/modules/module-match.c
+index 625f2a8..0014dec 100644
+--- a/src/modules/module-match.c
++++ b/src/modules/module-match.c
+@@ -90,7 +90,6 @@ static int load_rules(struct userdata *u, const char *filename) {
+         f = pa_open_config_file(DEFAULT_MATCH_TABLE_FILE, DEFAULT_MATCH_TABLE_FILE_USER, NULL, &fn);
+ 
+     if (!f) {
+-        pa_xfree(fn);
+         pa_log("Failed to open file config file: %s", pa_cstrerror(errno));
+         goto finish;
+     }
+-- 
+1.6.3.1
+
