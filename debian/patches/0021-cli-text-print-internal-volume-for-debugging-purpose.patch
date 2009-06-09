@@ -1,7 +1,7 @@
 From 00cd1d6495f390e50cff2e378dc25f4971d05cfe Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Sat, 4 Apr 2009 14:47:30 +0300
-Subject: [PATCH 21/65] cli-text: print internal volume for debugging purposes
+Subject: [PATCH 21/68] cli-text: print internal volume for debugging purposes
 
 ---
  src/pulsecore/cli-text.c |    8 ++++++++

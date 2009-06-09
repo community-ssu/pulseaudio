@@ -1,7 +1,7 @@
 From 9543b857d602786adcbbd04e24cb8f0a24e24f3d Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Sat, 4 Apr 2009 14:50:37 +0300
-Subject: [PATCH 23/65] bootstrap: enable DEBUG_VOLUME and NOKIA
+Subject: [PATCH 23/68] bootstrap: enable DEBUG_VOLUME and NOKIA
 
 ---
  bootstrap.sh |    2 +-

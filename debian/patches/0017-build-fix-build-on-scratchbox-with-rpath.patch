@@ -1,7 +1,7 @@
 From 61fbb6836aebaa5bbe7311d920d37f21fdeeb9c6 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 7 Jan 2009 18:18:26 +0200
-Subject: [PATCH 17/65] build: fix build on scratchbox with rpath
+Subject: [PATCH 17/68] build: fix build on scratchbox with rpath
 
 X11 depends on libraries that are not listed during link. Those
 libraries symbol fail to be found, because -rpath seems to override

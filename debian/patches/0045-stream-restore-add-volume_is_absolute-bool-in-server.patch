@@ -1,7 +1,7 @@
 From 1338637ba0b17799a3596f6040956a4bef07dff6 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 7 May 2009 17:07:37 +0300
-Subject: [PATCH 45/65] stream-restore: add volume_is_absolute bool in server side
+Subject: [PATCH 45/68] stream-restore: add volume_is_absolute bool in server side
 
 ---
  configure.ac                        |    2 +-

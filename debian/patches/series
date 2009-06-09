@@ -63,3 +63,6 @@
 0063-remap-flat-remap-sink-volume.patch
 0064-pulsecore-Send-PA_SINK_MESSAGE_SYNC_VOLUMES-always-a.patch
 0065-autofoo.patch
+0066-alsa-old-remove-30dB-from-HP-hack.patch
+0067-volume-remove-the-cruft.patch
+0068-alsa-old-remove-warnings.patch

@@ -1,7 +1,7 @@
 From f7560e0ca8adb349cff508f9068ea4935794c422 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 17:07:35 +0200
-Subject: [PATCH 55/65] pulsecore: add flat_volume_sink and forward set_volume to it
+Subject: [PATCH 55/68] pulsecore: add flat_volume_sink and forward set_volume to it
 
 ---
  src/pulsecore/sink.c |   47 ++++++++++++++++++++++++++++++++---------------

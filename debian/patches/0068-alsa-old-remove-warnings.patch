@@ -1,0 +1,138 @@
+From e188b9edcf8344d9d9a6754102917a5324a96009 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Tue, 9 Jun 2009 12:46:08 +0300
+Subject: [PATCH 68/68] alsa-old: remove warnings
+
+---
+ src/modules/alsa/module-alsa-sink-volume.c |   42 ++++++++++++---------------
+ 1 files changed, 19 insertions(+), 23 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
+index 3c080e3..b6eae83 100644
+--- a/src/modules/alsa/module-alsa-sink-volume.c
++++ b/src/modules/alsa/module-alsa-sink-volume.c
+@@ -126,7 +126,7 @@ const char *PROP_MIXER_TUNING[2] = {
+ /* from Nokia modules */
+ #define XMAEMO_MODE "x-maemo.mode"
+ 
+-#ifdef DEBUG_VOLUME
++#ifdef SPAM_ALSA_SINK_VOLUME
+ #define log_spam(args...) pa_log_debug(args)
+ #else
+ #define log_spam(args...)
+@@ -303,6 +303,7 @@ static void fill_tuning_table_range(struct mixer_control_t *m, const int table,
+         m->tuning_data[table].tuning_table[start + i] = lrint((double)mBstart + mB_step*i);
+ }
+ 
++#ifdef DEBUG_VOLUME
+ static void print_tuning_table(struct mixer_control_t *m, const int table) {
+     int i;
+     pa_assert(m);
+@@ -311,6 +312,7 @@ static void print_tuning_table(struct mixer_control_t *m, const int table) {
+     for(i=0; i<= m->tuning_data[table].tuning_table_max; i++)
+         pa_log_debug("%ld:%ld", i+m->tuning_data[table].tuned_volume_min, m->tuning_data[table].tuning_table[i]);
+ }
++#endif
+ 
+ static void fill_tuning_table_from_dB_info(struct mixer_control_t *m, const int table) {
+     tuning_data_t *td = &m->tuning_data[table];
+@@ -333,7 +335,6 @@ static void sink_get_volume_cb(pa_sink *s) {
+     int err;
+     unsigned i;
+     pa_cvolume r;
+-    char t[PA_CVOLUME_SNPRINT_MAX];
+     const int active_tuning = u->active_tuning;
+ 
+     pa_assert(u);
+@@ -397,7 +398,12 @@ static void sink_get_volume_cb(pa_sink *s) {
+         pa_cvolume_set(&r, u->sink->sample_spec.channels, pa_vol);
+     }
+ 
+-    log_spam("Read hardware volume: %s", pa_cvolume_snprint(t, sizeof(t), &r));
++#ifdef SPAM_ALSA_SINK_VOLUME
++    {
++        char t[PA_CVOLUME_SNPRINT_MAX];
++        log_spam("Read hardware volume: %s", pa_cvolume_snprint(t, sizeof(t), &r));
++    }
++#endif
+ 
+     if (m->name && pa_streq(m->name, "Headphone"))
+         for (i = 0; i < r.channels; ++i)
+@@ -443,10 +449,12 @@ static pa_volume_t calculate_alsa_mixer_value(struct mixer_control_t *m, const i
+ static int set_alsa_mixer_volumes(struct userdata *u,
+                                   struct mixer_control_t *m,
+                                   pa_cvolume *vv) {
+-    char t[PA_CVOLUME_SNPRINT_MAX];
+     int err;
+     unsigned i;
+     pa_cvolume r;
++#ifdef SPAM_ALSA_SINK_VOLUME
++    char t[PA_CVOLUME_SNPRINT_MAX];
++#endif
+ 
+     tuning_data_t *td = &m->tuning_data[u->active_tuning];
+     const int active_tuning = u->active_tuning;
+@@ -596,8 +604,8 @@ static int set_alsa_mixer_volumes_delay_compensated(struct userdata *u,
+     PA_MSGOBJECT(u->sink)->process_msg(
+         PA_MSGOBJECT(u->sink), PA_SINK_MESSAGE_GET_LATENCY, &sink_latency, (int64_t)0, NULL);
+ 
+-    u->core->mainloop->rtclock_time_new(u->core->mainloop, pa_rtclock_now() + padding + sink_latency, set_alsa_mixer_volume_timer_cb, u); 
+-    pa_log_debug("Mixer volume control timer started: padding %lld + sink_latency %lld us", padding, sink_latency);
++    u->core->mainloop->rtclock_time_new(u->core->mainloop, pa_rtclock_now() + padding + sink_latency, set_alsa_mixer_volume_timer_cb, u);
++    pa_log_debug("Mixer volume control timer started: padding %llu + sink_latency %llu us", (unsigned long long)padding, (unsigned long long)sink_latency);
+ 
+     return 0;
+ }
+@@ -741,20 +749,6 @@ static int set_control_mixer_elem(struct userdata *u, struct mixer_control_t *m)
+     return 0;
+ }
+ 
+-static int set_control_mixer_elem_by_name(struct userdata *u, const char *mixer) {
+-    struct mixer_control_t *m = NULL;
+-
+-    m = get_mixer_elem_by_name(u, mixer);
+-
+-    if (!m) {
+-        pa_log_info("%s: no preloaded mixer %s found", u->device_name, mixer);
+-
+-        return 1;
+-    }
+-
+-    return set_control_mixer_elem(u, m);
+-}
+-
+ static struct mixer_control_t* get_mixer_element(struct userdata *u, const char *mixer) {
+     struct mixer_control_t *m = NULL;
+     snd_mixer_elem_t *mixer_elem;
+@@ -1124,7 +1118,8 @@ static int set_mixer_state(struct userdata *u, const char *value_str) {
+  */
+ static int update_mixer_setup(struct userdata *u, const char *value_list) {
+     int ret = 0;
+-    pa_cvolume *vol = NULL;
++    const pa_cvolume *vol;
++    pa_cvolume volume;
+     const char *state = NULL;
+     char *value;
+ 
+@@ -1132,6 +1127,8 @@ static int update_mixer_setup(struct userdata *u, const char *value_list) {
+     pa_assert(u->sink);
+ 
+     vol = pa_sink_get_volume(u->sink, FALSE, FALSE);
++    pa_return_val_if_fail (vol, 1);
++    volume = *vol;
+ 
+     while ((value = pa_split(value_list, ",", &state))) {
+         if (value) {
+@@ -1151,8 +1148,7 @@ static int update_mixer_setup(struct userdata *u, const char *value_list) {
+ 
+     if (u->active_mixer) {
+         log_spam("update mixer volume (vol was %d) sink->refresh_volume %d", vol->values[0], u->sink->refresh_volume);
+-        //pa_sink_set_volume(u->sink, vol, FALSE,FALSE,FALSE);
+-        set_alsa_mixer_volumes(u, u->active_mixer, vol);
++        set_alsa_mixer_volumes(u, u->active_mixer, &volume);
+     }
+ 
+     return ret;
+-- 
+1.6.3.1
+

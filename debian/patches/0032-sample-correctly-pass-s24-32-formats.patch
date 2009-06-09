@@ -1,7 +1,7 @@
 From 7ad7e8c178641ef3d5ec1121d42cd7e3272c09f0 Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Fri, 1 May 2009 04:12:24 +0200
-Subject: [PATCH 32/65] sample: correctly pass s24-32 formats
+Subject: [PATCH 32/68] sample: correctly pass s24-32 formats
 
 ---
  src/pulse/sample.c |    8 ++++----

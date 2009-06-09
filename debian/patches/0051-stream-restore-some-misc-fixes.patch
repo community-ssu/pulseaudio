@@ -1,7 +1,7 @@
 From 19e25ac02954d3d55c26ae02c87abc964a3e175a Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 21 May 2009 17:38:17 +0300
-Subject: [PATCH 51/65] stream-restore: some misc fixes
+Subject: [PATCH 51/68] stream-restore: some misc fixes
 
 Explicitely subscribe to CHANGE events on s-i & s-o.
 Keep rules in sync by saving them by default.

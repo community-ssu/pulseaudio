@@ -1,7 +1,7 @@
 From 32a6869470b8f413dac366f5bf7b7206df007656 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 20:08:34 +0200
-Subject: [PATCH 60/65] pulsecore: intermediate s-i soft_vol is 0dB
+Subject: [PATCH 60/68] pulsecore: intermediate s-i soft_vol is 0dB
 
 ---
  src/pulsecore/sink-input.c |    2 ++

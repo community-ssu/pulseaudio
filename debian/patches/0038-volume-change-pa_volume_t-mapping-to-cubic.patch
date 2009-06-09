@@ -1,7 +1,7 @@
 From e27df1c0d38b74f8568c17eb7d4b6f6a644bd5ba Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Fri, 22 May 2009 01:30:54 +0200
-Subject: [PATCH 38/65] volume: change pa_volume_t mapping to cubic
+Subject: [PATCH 38/68] volume: change pa_volume_t mapping to cubic
 
 ---
  src/pulse/volume.c |   42 ++++++++++++++++++++++++++++++------------

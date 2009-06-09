@@ -1,7 +1,7 @@
 From 82e55b5d9652c68ca9bdd79fb835473702bfa909 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 13 May 2009 21:32:03 +0300
-Subject: [PATCH 49/65] match: match rule earlier, in SINK_INPUT_NEW
+Subject: [PATCH 49/68] match: match rule earlier, in SINK_INPUT_NEW
 
 ---
  src/modules/module-match.c |   30 +++++++++++-------------------

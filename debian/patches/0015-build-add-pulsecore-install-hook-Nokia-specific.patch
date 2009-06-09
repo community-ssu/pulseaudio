@@ -1,7 +1,7 @@
 From 9c31da28b29675bb6944f741d226259acf2fb814 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 9 Jan 2009 16:59:05 +0200
-Subject: [PATCH 15/65] build: add pulsecore install-hook (Nokia specific)
+Subject: [PATCH 15/68] build: add pulsecore install-hook (Nokia specific)
 
 ---
  src/Makefile.am |    7 +++++++

@@ -1,7 +1,7 @@
 From cdf799025b0a55bbf5304bf1331cbda913c77261 Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Fri, 1 May 2009 04:13:15 +0200
-Subject: [PATCH 31/65] endian: fix LE/BE order for 24 bit accessor functions
+Subject: [PATCH 31/68] endian: fix LE/BE order for 24 bit accessor functions
 
 ---
  src/pulsecore/endianmacros.h |    8 ++++----

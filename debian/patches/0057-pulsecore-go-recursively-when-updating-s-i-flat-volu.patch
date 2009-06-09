@@ -1,7 +1,7 @@
 From aa82ed2098393135456bdd07a31df8026023541c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 17:22:11 +0200
-Subject: [PATCH 57/65] pulsecore: go recursively when updating s-i flat-volume
+Subject: [PATCH 57/68] pulsecore: go recursively when updating s-i flat-volume
 
 ---
  src/pulsecore/sink.c |   44 ++++++++++++++++++++++++++++++--------------

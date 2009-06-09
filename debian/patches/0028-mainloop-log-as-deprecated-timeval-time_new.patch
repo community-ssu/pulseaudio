@@ -1,7 +1,7 @@
 From a1eb819d9d580e26b16d96f1b2225608b6deab59 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 1 Jun 2009 14:17:59 +0300
-Subject: [PATCH 28/65] mainloop: log as deprecated timeval time_new
+Subject: [PATCH 28/68] mainloop: log as deprecated timeval time_new
 
 ---
  src/pulse/mainloop.c |    2 ++

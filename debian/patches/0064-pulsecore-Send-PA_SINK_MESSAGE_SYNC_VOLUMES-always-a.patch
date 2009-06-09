@@ -1,7 +1,7 @@
 From f0389ff55db7385e90761edd2453ce0fb206fcdf Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Fri, 5 Jun 2009 17:20:36 +0300
-Subject: [PATCH 64/65] pulsecore: Send PA_SINK_MESSAGE_SYNC_VOLUMES always after flat volume recalculations to all collapsed sinks.
+Subject: [PATCH 64/68] pulsecore: Send PA_SINK_MESSAGE_SYNC_VOLUMES always after flat volume recalculations to all collapsed sinks.
 
 ---
  src/pulsecore/sink.c |    1 +

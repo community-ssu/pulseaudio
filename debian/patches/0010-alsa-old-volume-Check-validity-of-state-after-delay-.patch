@@ -1,7 +1,7 @@
 From 7920a6c2023a0a1ec21c318ec9719bb342c958d0 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Mon, 8 Jun 2009 15:51:55 +0300
-Subject: [PATCH 10/65] alsa-old: volume: Check validity of state after delay timer expiration.
+Subject: [PATCH 10/68] alsa-old: volume: Check validity of state after delay timer expiration.
 
 ---
  src/modules/alsa/module-alsa-sink-volume.c |   32 +++++++++++++++++++++++----

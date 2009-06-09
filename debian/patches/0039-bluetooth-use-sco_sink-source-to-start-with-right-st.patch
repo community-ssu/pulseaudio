@@ -1,7 +1,7 @@
 From 2172425c6b0db9cfe02ead5b39350705bc954949 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 25 May 2009 18:22:16 +0300
-Subject: [PATCH 39/65] bluetooth: use sco_sink/source to start with right state
+Subject: [PATCH 39/68] bluetooth: use sco_sink/source to start with right state
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |   34 +++++++++++++++--------
