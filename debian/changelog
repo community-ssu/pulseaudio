@@ -1,3 +1,11 @@
+pulseaudio (0.9.15-1maemo12) unstable; urgency=low
+
+  * Start with alsa-sink suspended.
+  * Improve latency computation.
+  * Improve mixer changes delay.
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Wed, 10 Jun 2009 16:08:49 +0300
+
 pulseaudio (0.9.15-1maemo11) unstable; urgency=low
 
   * Recursively update stream volume level (help: NB#118988)
