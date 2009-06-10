@@ -1,8 +1,9 @@
 pulseaudio (0.9.15-1maemo12) unstable; urgency=low
 
-  * Start with alsa-sink suspended.
+  * Start with alsa-sink suspended. Fixes: NB#119028
   * Improve latency computation.
   * Improve mixer changes delay.
+  * Should finally report coredumps.. Fixes: NB#119929
 
  -- Maemo Multimedia <multimedia@maemo.org>  Wed, 10 Jun 2009 16:08:49 +0300
 

@@ -9,11 +9,15 @@ stop on starting shutdown
 console none
 
 pre-start script
-	if [ -e  /sys/devices/platform/omap-mcbsp.2/st_ch0gain ]; then
+	if [ -e /proc/sys/fs/suid_dumpable ]; then
+		echo 1 > /proc/sys/fs/suid_dumpable
+	fi
+
+	if [ -e /sys/devices/platform/omap-mcbsp.2/st_ch0gain ]; then
 		chown pulse:pulse /sys/devices/platform/omap-mcbsp.2/st_ch0gain
 	fi
 
-	if [ -e  /sys/devices/platform/omap-mcbsp.2/st_ch1gain ]; then
+	if [ -e /sys/devices/platform/omap-mcbsp.2/st_ch1gain ]; then
 		chown pulse:pulse /sys/devices/platform/omap-mcbsp.2/st_ch1gain
 	fi
 
@@ -39,11 +43,11 @@ post-start script
 end script
 
 post-stop script
-	if [ -e  /sys/devices/platform/omap-mcbsp.2/st_ch0gain ]; then
+	if [ -e /sys/devices/platform/omap-mcbsp.2/st_ch0gain ]; then
 		chown root:root /sys/devices/platform/omap-mcbsp.2/st_ch0gain
 	fi
 
-	if [ -e  /sys/devices/platform/omap-mcbsp.2/st_ch1gain ]; then
+	if [ -e /sys/devices/platform/omap-mcbsp.2/st_ch1gain ]; then
 		chown root:root /sys/devices/platform/omap-mcbsp.2/st_ch1gain
 	fi
 
