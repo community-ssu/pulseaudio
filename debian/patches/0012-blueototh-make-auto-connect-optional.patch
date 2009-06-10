@@ -1,0 +1,70 @@
+From e294762b93a53ca1823f6b39c1ef6e2ed9d7ba0a Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Wed, 13 May 2009 22:46:50 +0300
+Subject: [PATCH 12/69] blueototh: make auto-connect optional
+
+---
+ src/modules/bluetooth/module-bluetooth-device.c |   19 ++++++++++++++++++-
+ 1 files changed, 18 insertions(+), 1 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index f73ab1c..0e6caa7 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -74,6 +74,12 @@ PA_MODULE_USAGE(
+         "path=<device object path>");
+ 
+ /*
++  This is not a user friendly option, jhe couldn't come up with a good
++  reason why it should be configurable. Commenting for now.
++        "auto_connect=<attempt to connect if profile is disconnected?>"
++*/
++
++/*
+ #ifdef NOKIA
+         "sco_sink=<SCO over PCM sink name> "
+         "sco_source=<SCO over PCM source name>"
+@@ -92,6 +98,7 @@ static const char* const valid_modargs[] = {
+     "rate",
+     "channels",
+     "path",
++    "auto_connect",
+ #ifdef NOKIA
+     "sco_sink",
+     "sco_source",
+@@ -169,6 +176,8 @@ struct userdata {
+ 
+     int stream_write_type;
+     int service_write_type, service_read_type;
++
++    pa_bool_t auto_connect;
+ };
+ 
+ #define FIXED_LATENCY_PLAYBACK_A2DP (25*PA_USEC_PER_MSEC)
+@@ -366,7 +375,9 @@ static int get_caps(struct userdata *u, uint8_t seid) {
+         pa_assert(u->profile == PROFILE_HSP);
+         msg.getcaps_req.transport = BT_CAPABILITIES_TRANSPORT_SCO;
+     }
+-    msg.getcaps_req.flags = BT_FLAG_AUTOCONNECT;
++
++    if (u->auto_connect)
++        msg.getcaps_req.flags = BT_FLAG_AUTOCONNECT;
+ 
+     if (service_send(u, &msg.getcaps_req.h) < 0)
+         return -1;
+@@ -2137,6 +2148,12 @@ int pa__init(pa_module* m) {
+     u->sample_spec.channels = (uint8_t) channels;
+     u->requested_sample_spec = u->sample_spec;
+ 
++    u->auto_connect = FALSE;
++    if (pa_modargs_get_value_boolean(ma, "auto_connect", &u->auto_connect) < 0) {
++        pa_log_error("Failed to get auto_connect from module arguments");
++        goto fail;
++    }
++
+     address = pa_modargs_get_value(ma, "address", NULL);
+     path = pa_modargs_get_value(ma, "path", NULL);
+ 
+-- 
+1.6.3.1
+

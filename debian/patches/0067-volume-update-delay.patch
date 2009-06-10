@@ -1,0 +1,92 @@
+From f19b618819f59a257c92b16b029fabf862eaa6b9 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Wed, 10 Jun 2009 15:25:46 +0300
+Subject: [PATCH 67/69] volume: update delay
+
+---
+ src/modules/alsa/module-alsa-sink-volume.c |   35 ++++++++++++++++------------
+ 1 files changed, 20 insertions(+), 15 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
+index b6eae83..cb24c19 100644
+--- a/src/modules/alsa/module-alsa-sink-volume.c
++++ b/src/modules/alsa/module-alsa-sink-volume.c
+@@ -91,9 +91,6 @@ static const char* const valid_modargs[] = {
+ #define PROP_MIXER_CONTROL "control"
+ #define PROP_MIXER_SLAVE   "slave"
+ 
+-#define MIXER_DELAY_PADDING             17000
+-#define MIXER_DELAY_SAFETY_MARGIN_USEC  3000
+-
+ /* String of comma separated integer pairs defining alsa volumes,
+  * where the first value is HW register value and the second value
+  * is the corresponding millibel value. The register values should
+@@ -175,6 +172,7 @@ struct delayed_mixer_ctrl_args_t {
+     struct mixer_control_t *m;
+     pa_cvolume *vv;
+     long hw_vol_current;
++    pa_usec_t time;
+ };
+ 
+ #define DEFAULT_MIXER_DB_VALUE_ON_FIRST_BOOT (-12)
+@@ -551,6 +549,7 @@ static void set_alsa_mixer_volume_timer_cb(pa_mainloop_api *a, pa_time_event *e,
+     struct userdata *u = (struct userdata *)userdata;
+ 
+     u->core->mainloop->time_free(e);
++    u->delayed_mixer_ctrl.time = 0;
+ 
+     if (u->active_mixer != u->delayed_mixer_ctrl.m)
+         pa_log_warn("Active mixer has changed during compensation delay.");
+@@ -581,31 +580,37 @@ static void set_alsa_mixer_volume_timer_cb(pa_mainloop_api *a, pa_time_event *e,
+ static int set_alsa_mixer_volumes_delay_compensated(struct userdata *u,
+                                                     struct mixer_control_t *m,
+                                                     pa_cvolume *vv) {
+-    pa_usec_t padding = MIXER_DELAY_PADDING;
+-    pa_usec_t sink_latency;
++    pa_usec_t new_time, delay = 0;
+     long hw_vol;
+ 
+     pa_assert(u);
+     pa_assert(m);
+     pa_assert(vv);
+ 
+-    u->delayed_mixer_ctrl.m = m;
+-    u->delayed_mixer_ctrl.vv = vv;
++    PA_MSGOBJECT(u->sink)->process_msg(
++            PA_MSGOBJECT(u->sink), PA_SINK_MESSAGE_GET_LATENCY, &delay, (int64_t)0, NULL);
+ 
+-    /*pa_volume_t real_pa_vol = */ calculate_alsa_mixer_value(m, u->active_tuning, pa_cvolume_max(vv), &hw_vol);
++    /* pa_volume_t real_pa_vol = */ calculate_alsa_mixer_value(m, u->active_tuning, pa_cvolume_max(vv), &hw_vol);
+ 
+     if (hw_vol > u->delayed_mixer_ctrl.hw_vol_current)
+-        padding += MIXER_DELAY_SAFETY_MARGIN_USEC;
++        delay += 25000;
+     else
+-        padding -= MIXER_DELAY_SAFETY_MARGIN_USEC;
++        delay += 5000;
+ 
+-    u->delayed_mixer_ctrl.hw_vol_current = hw_vol;
++    /* in theory we should compare to all out time events...,
++       but because last time is the last time, that is fine */
++    new_time = pa_rtclock_now() + delay;
++    if (u->delayed_mixer_ctrl.time != 0 &&
++        new_time < u->delayed_mixer_ctrl.time)
++        new_time = u->delayed_mixer_ctrl.time + 5000; /* give it at least some time to take effect */
+ 
+-    PA_MSGOBJECT(u->sink)->process_msg(
+-        PA_MSGOBJECT(u->sink), PA_SINK_MESSAGE_GET_LATENCY, &sink_latency, (int64_t)0, NULL);
++    u->delayed_mixer_ctrl.hw_vol_current = hw_vol;
++    u->delayed_mixer_ctrl.m = m;
++    u->delayed_mixer_ctrl.vv = vv;
++    u->delayed_mixer_ctrl.time = new_time;
+ 
+-    u->core->mainloop->rtclock_time_new(u->core->mainloop, pa_rtclock_now() + padding + sink_latency, set_alsa_mixer_volume_timer_cb, u);
+-    pa_log_debug("Mixer volume control timer started: padding %llu + sink_latency %llu us", (unsigned long long)padding, (unsigned long long)sink_latency);
++    u->core->mainloop->rtclock_time_new(u->core->mainloop, u->delayed_mixer_ctrl.time, set_alsa_mixer_volume_timer_cb, u);
++    pa_log_debug("Mixer volume control delayed by %llu us", (unsigned long long)delay);
+ 
+     return 0;
+ }
+-- 
+1.6.3.1
+

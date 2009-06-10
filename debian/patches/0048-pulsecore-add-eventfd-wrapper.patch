@@ -1,0 +1,251 @@
+From b9e874b497048fd3cbbcbc655210ebe6558a872c Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Mon, 2 Mar 2009 15:58:53 +0200
+Subject: [PATCH 48/69] pulsecore: add eventfd wrapper
+
+---
+ src/Makefile.am         |    1 +
+ src/pulsecore/eventfd.c |   60 +++++++++++++++++++++++++++++++++++++++++++++++
+ src/pulsecore/eventfd.h |   54 ++++++++++++++++++++++++++++++++++++++++++
+ src/pulsecore/fdsem.c   |   23 +++++++++++-------
+ 4 files changed, 129 insertions(+), 9 deletions(-)
+ create mode 100644 src/pulsecore/eventfd.c
+ create mode 100644 src/pulsecore/eventfd.h
+
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 5e5ac8a..be8594d 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -576,6 +576,7 @@ libpulsecommon_@PA_MAJORMINORMICRO@_la_SOURCES = \
+ 		pulsecore/pid.c pulsecore/pid.h \
+ 		pulsecore/pipe.c pulsecore/pipe.h \
+ 		pulsecore/poll.c pulsecore/poll.h \
++		pulsecore/eventfd.c pulsecore/eventfd.h \
+ 		pulsecore/prioq.c pulsecore/prioq.h \
+ 		pulsecore/proplist-util.c pulsecore/proplist-util.h \
+ 		pulsecore/pstream-util.c pulsecore/pstream-util.h \
+diff --git a/src/pulsecore/eventfd.c b/src/pulsecore/eventfd.c
+new file mode 100644
+index 0000000..1b2c579
+--- /dev/null
++++ b/src/pulsecore/eventfd.c
+@@ -0,0 +1,60 @@
++/***
++    This file is part of PulseAudio.
++
++    Copyright 2009 Nokia Corporation.
++
++    PulseAudio is free software; you can redistribute it and/or modify
++    it under the terms of the GNU Lesser General Public License as published
++    by the Free Software Foundation; either version 2 of the License,
++    or (at your option) any later version.
++
++    PulseAudio is distributed in the hope that it will be useful, but
++    WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++    General Public License for more details.
++
++    You should have received a copy of the GNU Lesser General Public License
++    along with PulseAudio; if not, write to the Free Software
++    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
++    USA.
++***/
++
++/***
++    Based on work for the GNU C Library.
++    Copyright (C) 2007, 2008 Free Software Foundation, Inc.
++***/
++
++#ifdef HAVE_CONFIG_H
++#include <config.h>
++#endif
++
++#ifndef HAVE_SYS_EVENTFD_H
++
++#include <unistd.h>
++#include <errno.h>
++#include "eventfd.h"
++
++int eventfd(int count, int flags)
++{
++  #ifdef SYS_eventfd2
++    return syscall(SYS_eventfd2, count, flags);
++  #else
++  /* The old system call has no flag parameter which is bad.  So we
++     have to wait until we have to support to pass additional
++     values to the kernel (sys_indirect) before implementing
++      setting flags like O_NONBLOCK etc.  */
++  if (flags != 0) {
++      errno = EINVAL;
++      return -1;
++  }
++
++  # ifdef SYS_eventfd
++  return syscall(SYS_eventfd, count);
++  # else
++  errno = ENOSYS;
++  return -1;
++  # endif
++  #endif
++}
++
++#endif /* HAVE_SYS_EVENTFD_H */
+diff --git a/src/pulsecore/eventfd.h b/src/pulsecore/eventfd.h
+new file mode 100644
+index 0000000..2b8154a
+--- /dev/null
++++ b/src/pulsecore/eventfd.h
+@@ -0,0 +1,54 @@
++/***
++    This file is part of PulseAudio.
++
++    Copyright 2009 Nokia Corporation.
++
++    PulseAudio is free software; you can redistribute it and/or modify
++    it under the terms of the GNU Lesser General Public License as published
++    by the Free Software Foundation; either version 2 of the License,
++    or (at your option) any later version.
++
++    PulseAudio is distributed in the hope that it will be useful, but
++    WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++    General Public License for more details.
++
++    You should have received a copy of the GNU Lesser General Public License
++    along with PulseAudio; if not, write to the Free Software
++    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
++    USA.
++***/
++
++/***
++    Based on work for the GNU C Library.
++    Copyright (C) 2007,2008 Free Software Foundation, Inc.
++***/
++#ifndef __linux__
++#error "eventfd.h wrapper is Linux only!"
++#endif
++
++#include <sys/syscall.h>
++
++#if defined(SYS_eventfd) || defined(SYS_eventfd2)
++
++#include <stdint.h>
++
++/* Type for event counter.  */
++typedef uint64_t eventfd_t;
++
++/* Flags for signalfd.  */
++enum
++{
++    EFD_CLOEXEC = 02000000,
++#define EFD_CLOEXEC EFD_CLOEXEC
++    EFD_NONBLOCK = 04000
++#define EFD_NONBLOCK EFD_NONBLOCK
++};
++
++/* Return file descriptor for generic event channel.  Set initial
++   value to COUNT.  */
++extern int eventfd (int __count, int __flags);
++
++#define HAVE_EVENTFD 1
++
++#endif /* (SYS_eventfd) || (SYS_eventfd2) */
+diff --git a/src/pulsecore/fdsem.c b/src/pulsecore/fdsem.c
+index 380f34f..4a9c951 100644
+--- a/src/pulsecore/fdsem.c
++++ b/src/pulsecore/fdsem.c
+@@ -43,13 +43,18 @@
+ 
+ #ifdef HAVE_SYS_EVENTFD_H
+ #include <sys/eventfd.h>
++#define HAVE_EVENTFD 1
++#else
++#ifdef __linux__
++#include "eventfd.h"
++#endif
+ #endif
+ 
+ #include "fdsem.h"
+ 
+ struct pa_fdsem {
+     int fds[2];
+-#ifdef HAVE_SYS_EVENTFD_H
++#ifdef HAVE_EVENTFD
+     int efd;
+ #endif
+ 
+@@ -61,7 +66,7 @@ pa_fdsem *pa_fdsem_new(void) {
+ 
+     f = pa_xmalloc(PA_ALIGN(sizeof(pa_fdsem)) + PA_ALIGN(sizeof(pa_fdsem_data)));
+ 
+-#ifdef HAVE_SYS_EVENTFD_H
++#ifdef HAVE_EVENTFD
+     if ((f->efd = eventfd(0, 0)) >= 0) {
+         pa_make_fd_cloexec(f->efd);
+         f->fds[0] = f->fds[1] = -1;
+@@ -92,7 +97,7 @@ pa_fdsem *pa_fdsem_open_shm(pa_fdsem_data *data, int event_fd) {
+     pa_assert(data);
+     pa_assert(event_fd >= 0);
+ 
+-#ifdef HAVE_SYS_EVENTFD_H
++#ifdef HAVE_EVENTFD
+     f = pa_xnew(pa_fdsem, 1);
+ 
+     f->efd = event_fd;
+@@ -110,7 +115,7 @@ pa_fdsem *pa_fdsem_new_shm(pa_fdsem_data *data, int* event_fd) {
+     pa_assert(data);
+     pa_assert(event_fd);
+ 
+-#ifdef HAVE_SYS_EVENTFD_H
++#ifdef HAVE_EVENTFD
+ 
+     f = pa_xnew(pa_fdsem, 1);
+ 
+@@ -135,7 +140,7 @@ pa_fdsem *pa_fdsem_new_shm(pa_fdsem_data *data, int* event_fd) {
+ void pa_fdsem_free(pa_fdsem *f) {
+     pa_assert(f);
+ 
+-#ifdef HAVE_SYS_EVENTFD_H
++#ifdef HAVE_EVENTFD
+     if (f->efd >= 0)
+         pa_close(f->efd);
+ #endif
+@@ -154,7 +159,7 @@ static void flush(pa_fdsem *f) {
+     do {
+         char x[10];
+ 
+-#ifdef HAVE_SYS_EVENTFD_H
++#ifdef HAVE_EVENTFD
+         if (f->efd >= 0) {
+             uint64_t u;
+ 
+@@ -187,7 +192,7 @@ void pa_fdsem_post(pa_fdsem *f) {
+ 
+             for (;;) {
+ 
+-#ifdef HAVE_SYS_EVENTFD_H
++#ifdef HAVE_EVENTFD
+                 if (f->efd >= 0) {
+                     uint64_t u = 1;
+ 
+@@ -223,7 +228,7 @@ void pa_fdsem_wait(pa_fdsem *f) {
+         char x[10];
+         ssize_t r;
+ 
+-#ifdef HAVE_SYS_EVENTFD_H
++#ifdef HAVE_EVENTFD
+         if (f->efd >= 0) {
+             uint64_t u;
+ 
+@@ -261,7 +266,7 @@ int pa_fdsem_try(pa_fdsem *f) {
+ int pa_fdsem_get(pa_fdsem *f) {
+     pa_assert(f);
+ 
+-#ifdef HAVE_SYS_EVENTFD_H
++#ifdef HAVE_EVENTFD
+     if (f->efd >= 0)
+         return f->efd;
+ #endif
+-- 
+1.6.3.1
+
