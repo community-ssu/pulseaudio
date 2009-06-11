@@ -4,6 +4,7 @@ pulseaudio (0.9.15-1maemo12) unstable; urgency=low
   * Improve latency computation.
   * Improve mixer changes delay.
   * Should finally report coredumps.. Fixes: NB#119929
+  * Disable shm in client side too. Fixes: NB#122104
 
  -- Maemo Multimedia <multimedia@maemo.org>  Wed, 10 Jun 2009 16:08:49 +0300
 
