@@ -15,7 +15,8 @@ Build-Depends: debhelper (>= 5), cdbs, quilt, m4, libltdl7-dev,
     libgdbm-dev,
     libglib2.0-dev,
     libspeexdsp-dev (>= 1.2~rc1),
-    upstart-dev
+    upstart-dev,
+    doxygen
 Standards-Version: 3.8.1
 Vcs-Git: git://git.debian.org/git/pkg-pulseaudio/pulseaudio.git
 Vcs-Browser: http://git.debian.org/?p=pkg-pulseaudio/pulseaudio.git
@@ -345,3 +346,15 @@ Description: PulseAudio tests
  much better latency, mixing/re-sampling quality and overall architecture.
  .
  This package include PulseAudio internal tests.
+
+Package: pulseaudio-doc
+Section: doc
+Architecture: all
+Depends: ${misc:Depends}
+Description: PulseAudio client development documentation
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
+ Documentation for developing applications that access a PulseAudio
+ sound server via PulseAudio's native interface.
