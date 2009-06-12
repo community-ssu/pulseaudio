@@ -1,7 +1,7 @@
 From f19b618819f59a257c92b16b029fabf862eaa6b9 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 10 Jun 2009 15:25:46 +0300
-Subject: [PATCH 67/69] volume: update delay
+Subject: [PATCH 67/70] volume: update delay
 
 ---
  src/modules/alsa/module-alsa-sink-volume.c |   35 ++++++++++++++++------------

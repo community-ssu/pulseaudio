@@ -1,7 +1,7 @@
 From 1a3b77834ded3c578c53f7b7b757083fe7840e79 Mon Sep 17 00:00:00 2001
 From: Juho Hamalainen <jusa@IT-W1767.(none)>
 Date: Mon, 8 Jun 2009 13:52:13 +0300
-Subject: [PATCH 63/69] ensure use mmap
+Subject: [PATCH 63/70] ensure use mmap
 
 ---
  src/modules/alsa/module-alsa-sink-old.c   |    2 +-

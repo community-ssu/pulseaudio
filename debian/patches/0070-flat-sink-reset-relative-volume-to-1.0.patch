@@ -1,0 +1,45 @@
+From 53089159135abec1fab95f19cf9397339f8c06af Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Fri, 12 Jun 2009 20:06:04 +0300
+Subject: [PATCH 70/70] flat-sink: reset relative volume to 1.0
+
+Because we skip compute_soft_volume(), there is no chance
+relative_volume[] is properly set. It remains at 0 all the time.
+
+When moving a stream, this has the effect to set virtual_volume to 0,
+which will then remain at 0 once the move is finished.
+---
+ src/pulsecore/sink-input.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/src/pulsecore/sink-input.c b/src/pulsecore/sink-input.c
+index 2ba8b0c..9bcd592 100644
+--- a/src/pulsecore/sink-input.c
++++ b/src/pulsecore/sink-input.c
+@@ -137,6 +137,7 @@ int pa_sink_input_new(
+     pa_resampler *resampler = NULL;
+     char st[PA_SAMPLE_SPEC_SNPRINT_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+     pa_channel_map original_cm;
++    unsigned c;
+     int r;
+ 
+     pa_assert(_i);
+@@ -280,9 +281,12 @@ int pa_sink_input_new(
+ 
+     i->volume_factor = data->volume_factor;
+     pa_cvolume_init(&i->soft_volume);
+-    memset(i->relative_volume, 0, sizeof(i->relative_volume));
+-    if (i->origin_sink)
+-      pa_cvolume_reset(&i->soft_volume, i->origin_sink->sample_spec.channels);
++    if (i->origin_sink) {
++        pa_cvolume_reset(&i->soft_volume, i->origin_sink->sample_spec.channels);
++        for (c = 0; c < PA_CHANNELS_MAX; c++)
++            i->relative_volume[c] = 1.0;
++    } else
++        memset(i->relative_volume, 0, sizeof(i->relative_volume));
+     i->save_volume = data->save_volume;
+     i->save_sink = data->save_sink;
+     i->save_muted = data->save_muted;
+-- 
+1.6.3.1
+
