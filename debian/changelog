@@ -1,8 +1,10 @@
 pulseaudio (0.9.15-1maemo13) unstable; urgency=low
 
   * Add pulseaudio-doc. Fixes: NB#122423
+  * Fix audio getting silent when routing to BTHS.
+  * Modify policy-enforcement to use sink.null.
 
- -- Maemo Multimedia <multimedia@maemo.org>  Fri, 12 Jun 2009 19:03:53 +0300
+ -- Maemo Multimedia <multimedia@maemo.org>  Mon, 15 Jun 2009 15:17:34 +0300
 
 pulseaudio (0.9.15-1maemo12) unstable; urgency=low
 

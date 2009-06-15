@@ -74,7 +74,7 @@ load-module module-zeroconf-discover
 .endif
 
 .ifexists module-policy-enforcement.so
-load-module module-policy-enforcement
+load-module module-policy-enforcement null_sink_name=sink.null
 .endif
 
 .ifexists module-nokia-audiots.so
