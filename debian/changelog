@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo14) unstable; urgency=low
+
+  * Set hw0 reference volume to 0 to avoid annoying glitch. Fixes: NB#121115
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 16 Jun 2009 20:45:19 +0300
+
 pulseaudio (0.9.15-1maemo13) unstable; urgency=low
 
   * Add pulseaudio-doc. Fixes: NB#122423
