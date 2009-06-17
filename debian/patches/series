@@ -66,5 +66,5 @@
 0066-alsa-sink-volume-a-complex-mixer-module.patch
 0067-volume-update-delay.patch
 0068-Revert-alsa-old-remove-30dB-from-HP-hack.patch
-0069-autofoo.patch
-0070-flat-sink-reset-relative-volume-to-1.0.patch
+0069-flat-sink-reset-relative-volume-to-1.0.patch
+0070-autofoo.patch
