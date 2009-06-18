@@ -1,0 +1,56 @@
+From 4159328396a5164c1bbb7cb4d0954d71a6cbe450 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Wed, 10 Jun 2009 15:32:10 +0300
+Subject: [PATCH 66/70] Revert "alsa-old: remove -30dB from HP hack"
+
+This reverts commit 6fc36ed7865964f5ef6798e41c6eda4912f4a0b2.
+---
+ src/modules/alsa/module-alsa-sink-volume.c |   14 --------------
+ 1 files changed, 0 insertions(+), 14 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
+index cb24c19..843f921 100644
+--- a/src/modules/alsa/module-alsa-sink-volume.c
++++ b/src/modules/alsa/module-alsa-sink-volume.c
+@@ -403,10 +403,6 @@ static void sink_get_volume_cb(pa_sink *s) {
+     }
+ #endif
+ 
+-    if (m->name && pa_streq(m->name, "Headphone"))
+-        for (i = 0; i < r.channels; ++i)
+-            r.values[i] = pa_sw_volume_from_dB(pa_sw_volume_to_dB(r.values[i]) + 30);
+-
+     if (!pa_cvolume_equal(&u->active_mixer->hardware_volume, &r)) {
+         pa_cvolume reset;
+ 
+@@ -458,16 +454,10 @@ static int set_alsa_mixer_volumes(struct userdata *u,
+     const int active_tuning = u->active_tuning;
+ 
+     pa_assert(u);
+-    pa_assert(m);
+-    pa_assert(td);
+     pa_assert(m->mixer_elem);
+     pa_assert(td->tuning_table);
+     pa_assert(td->tuning_table_filled);
+ 
+-    if (m->name && pa_streq(m->name, "Headphone"))
+-        for (i = 0; i < vv->channels; ++i)
+-            vv->values[i] = pa_sw_volume_from_dB(pa_sw_volume_to_dB(vv->values[i]) - 30);
+-
+     if (m->mixer_separate_channels) {
+ 
+         r.channels = u->sink->sample_spec.channels;
+@@ -522,10 +512,6 @@ static int set_alsa_mixer_volumes(struct userdata *u,
+     log_spam("Requested volume: %s", pa_cvolume_snprint(t, sizeof(t), vv));
+     log_spam("Got hardware volume: %s", pa_cvolume_snprint(t, sizeof(t), &m->hardware_volume));
+ 
+-    if (m->name && pa_streq(m->name, "Headphone"))
+-        for (i = 0; i < m->hardware_volume.channels; ++i)
+-            m->hardware_volume.values[i] = pa_sw_volume_from_dB(pa_sw_volume_to_dB(m->hardware_volume.values[i]) + 30);
+-
+     if (u->sw_vol_compensation)  {
+         /* Match exactly what the user requested by software */
+         pa_sw_cvolume_divide(&u->sink->soft_volume, vv, &m->hardware_volume);
+-- 
+1.6.3.1
+

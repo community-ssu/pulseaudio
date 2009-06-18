@@ -1,0 +1,192 @@
+From 48e004fe073bc092eb69411ff12dde260fe2fb6e Mon Sep 17 00:00:00 2001
+From: Pekka Ervasti <peervast@gmail.com>
+Date: Tue, 9 Jun 2009 14:44:37 +0300
+Subject: [PATCH 62/70] alsa-old: check buffer xruns in mmap mode
+
+---
+ src/modules/alsa/module-alsa-sink-old.c   |   31 ++++++++++++++++++++++++++++-
+ src/modules/alsa/module-alsa-source-old.c |   30 ++++++++++++++++++++++++++-
+ 2 files changed, 58 insertions(+), 3 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
+index c72b49c..c480ee6 100644
+--- a/src/modules/alsa/module-alsa-sink-old.c
++++ b/src/modules/alsa/module-alsa-sink-old.c
+@@ -83,6 +83,8 @@ PA_MODULE_USAGE(
+ #define PROP_BUFFERS_PRIMARY "primary"
+ #define PROP_BUFFERS_ALTERNATIVE "alternative"
+ 
++#define PA_SINK_MESSAGE_GET_UNDERRUN (PA_SINK_MESSAGE_MAX + 1)
++
+ struct userdata {
+     pa_core *core;
+     pa_module *module;
+@@ -124,6 +126,8 @@ struct userdata {
+     char *init_device_string;
+ 
+     pa_rtpoll_item *alsa_rtpoll_item;
++
++    pa_atomic_t buffer_underrun;
+ };
+ 
+ static const char* const valid_modargs[] = {
+@@ -207,6 +211,11 @@ static int mmap_write(struct userdata *u) {
+         const snd_pcm_channel_area_t *areas;
+         snd_pcm_uframes_t offset, frames;
+ 
++        if ((frames = snd_pcm_avail(u->pcm_handle)) * u->frame_size >= u->hwbuf_size) {
++            pa_log_warn("Buffer underrun ! frames: %d", (int)frames);
++            pa_atomic_store(&u->buffer_underrun, TRUE);
++        }
++
+         if ((n = snd_pcm_avail_update(u->pcm_handle)) < 0) {
+ 
+             if (n == -EPIPE) {
+@@ -368,6 +377,8 @@ static int unix_write(struct userdata *u) {
+     }
+ }
+ 
++#define HW_FIFO_SIZE_BYTES 0  /* (1280 * 2) */
++
+ static int sink_get_latency_by_timestamps(struct userdata *u, pa_usec_t *d) {
+     snd_pcm_uframes_t avail;
+     snd_htimestamp_t tstamp;
+@@ -380,10 +391,17 @@ static int sink_get_latency_by_timestamps(struct userdata *u, pa_usec_t *d) {
+     ts_dma.tv_sec = tstamp.tv_sec;
+     ts_dma.tv_nsec = tstamp.tv_nsec;
+ 
+-    buffered = pa_bytes_to_usec(u->hwbuf_size - avail * u->frame_size, &u->sink->sample_spec);
++    buffered = pa_bytes_to_usec(HW_FIFO_SIZE_BYTES + u->hwbuf_size -
++								avail * u->frame_size, &u->sink->sample_spec);
+     elapsed = pa_rtclock_now() - pa_timespec_load(&ts_dma);
+ 
+     *d = buffered - elapsed;
++            
++    pa_log_debug("DL latency: hw fifo: %d + hwbuf_size: %d - (avail: %d * frame_size: %d) bytes",
++                 HW_FIFO_SIZE_BYTES, (int)u->hwbuf_size, (int)avail, (int)u->frame_size);
++
++    pa_log_debug("DL latency: buffered %d - elapsed %d = %d usecs",
++                 (int)buffered, (int)elapsed, (int)*d);
+ 
+     return 0;
+ }
+@@ -466,6 +484,8 @@ static int suspend(struct userdata *u) {
+         u->alsa_rtpoll_item = NULL;
+     }
+ 
++    pa_atomic_store(&u->buffer_underrun, FALSE);
++
+     pa_log_info("Device suspended...");
+ 
+     return 0;
+@@ -551,6 +571,13 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+ 
+     switch (code) {
+ 
++        case PA_SINK_MESSAGE_GET_UNDERRUN: {
++            *((pa_bool_t*) data) = pa_atomic_load(&u->buffer_underrun);
++            pa_atomic_store(&u->buffer_underrun, FALSE);
++
++            return 0;
++        }
++
+         case PA_SINK_MESSAGE_GET_LATENCY: {
+             pa_usec_t r = 0;
+ 
+@@ -1014,6 +1041,8 @@ int pa__init(pa_module*m) {
+                                                         PA_HOOK_LATE,
+                                                         (pa_hook_cb_t)sink_proplist_changed_hook_callback, u);
+ 
++    pa_atomic_store(&u->buffer_underrun, FALSE);
++
+     pa_sink_put(u->sink);
+     pa_sink_suspend(u->sink, TRUE); /* start suspended */
+ 
+diff --git a/src/modules/alsa/module-alsa-source-old.c b/src/modules/alsa/module-alsa-source-old.c
+index 697da8a..cea1c86 100644
+--- a/src/modules/alsa/module-alsa-source-old.c
++++ b/src/modules/alsa/module-alsa-source-old.c
+@@ -84,6 +84,8 @@ PA_MODULE_USAGE(
+ #define PROP_BUFFERS_PRIMARY "primary"
+ #define PROP_BUFFERS_ALTERNATIVE "alternative"
+ 
++#define PA_SOURCE_MESSAGE_GET_OVERRUN (PA_SOURCE_MESSAGE_MAX + 1)
++
+ struct userdata {
+     pa_core *core;
+     pa_module *module;
+@@ -134,6 +136,8 @@ struct userdata {
+     char *init_device_id;
+     char *init_device_string;
+     char *init_alsa_mixer;
++
++    pa_atomic_t buffer_overrun;
+ };
+ 
+ static const char* const valid_modargs[] = {
+@@ -218,6 +222,11 @@ static int mmap_read(struct userdata *u) {
+         pa_memchunk chunk;
+         void *p;
+ 
++        if ((frames = snd_pcm_avail(u->pcm_handle)) * u->frame_size >= u->hwbuf_size) {
++            pa_log_warn("Buffer overrun ! frames: %d", (int)frames);
++            pa_atomic_store(&u->buffer_overrun, TRUE);
++        }
++
+         if ((n = snd_pcm_avail_update(u->pcm_handle)) < 0) {
+ 
+             if (n == -EPIPE)
+@@ -384,10 +393,16 @@ static int source_get_latency_by_timestamps(struct userdata *u, pa_usec_t *d) {
+     ts_dma.tv_sec = tstamp.tv_sec;
+     ts_dma.tv_nsec = tstamp.tv_nsec;
+ 
+-    buffered = pa_bytes_to_usec(avail * u->frame_size, &u->source->sample_spec);
++    buffered = pa_bytes_to_usec(avail * u->frame_size - u->fragment_size, &u->source->sample_spec);
+     elapsed = pa_rtclock_now() - pa_timespec_load(&ts_dma);
+ 
+-    *d = /* buffered + */ elapsed;
++    *d = buffered + elapsed;
++
++    pa_log_debug("UL latency: avail: %d * frame_size: %d - fragment_size: %d bytes",
++                 (int)avail, (int)u->frame_size, (int)u->fragment_size);
++
++    pa_log_debug("UL latency: buffered %d + elapsed %d = %d usecs",
++                 (int)buffered, (int)elapsed, (int)*d);
+ 
+     return 0;
+ }
+@@ -464,6 +479,8 @@ static int suspend(struct userdata *u) {
+         u->alsa_rtpoll_item = NULL;
+     }
+ 
++    pa_atomic_store(&u->buffer_overrun, FALSE);
++
+     pa_log_info("Device suspended...");
+ 
+     return 0;
+@@ -550,6 +567,13 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
+ 
+     switch (code) {
+ 
++        case PA_SOURCE_MESSAGE_GET_OVERRUN: {
++            *((pa_bool_t*) data) = pa_atomic_load(&u->buffer_overrun);
++            pa_atomic_store(&u->buffer_overrun, FALSE);
++
++            return 0;
++        }
++
+         case PA_SOURCE_MESSAGE_GET_LATENCY: {
+             pa_usec_t r = 0;
+ 
+@@ -1376,6 +1400,8 @@ int pa__init(pa_module*m) {
+                                                           PA_HOOK_LATE,
+                                                           (pa_hook_cb_t)source_proplist_changed_hook_callback, u);
+ 
++    pa_atomic_store(&u->buffer_overrun, FALSE);
++
+     pa_source_put(u->source);
+     pa_source_suspend(u->source, TRUE);
+ 
+-- 
+1.6.3.1
+

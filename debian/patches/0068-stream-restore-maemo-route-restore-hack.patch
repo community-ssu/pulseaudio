@@ -1,0 +1,415 @@
+From ef8d1333e2d60cf1b55049c782ce7272e2ce978b Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Thu, 21 May 2009 19:32:58 +0300
+Subject: [PATCH 68/70] stream-restore: maemo route restore hack
+
+Also, attenuate if volume is more than -20dB when switching route.
+---
+ src/modules/module-stream-restore.c |  244 ++++++++++++++++++++++++++++++++---
+ 1 files changed, 228 insertions(+), 16 deletions(-)
+
+diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
+index 8964792..c87b421 100644
+--- a/src/modules/module-stream-restore.c
++++ b/src/modules/module-stream-restore.c
+@@ -97,9 +97,14 @@ struct userdata {
+ 
+     pa_native_protocol *protocol;
+     pa_idxset *subscribed;
++
++    pa_hook_slot *sink_proplist_changed_slot;
++    GDBM_FILE gdbm_route_file;
++    char *route;
++    pa_cvolume route_volume;
+ };
+ 
+-#define ENTRY_VERSION 3
++#define ENTRY_VERSION 4
+ 
+ struct entry {
+     uint8_t version;
+@@ -111,6 +116,13 @@ struct entry {
+     char device[PA_NAME_MAX];
+ } PA_GCC_PACKED;
+ 
++#define ROUTE_ENTRY_VERSION 1
++
++struct route_entry {
++    uint8_t version;
++    pa_cvolume volume;
++} PA_GCC_PACKED;
++
+ enum {
+     SUBCOMMAND_TEST,
+     SUBCOMMAND_READ,
+@@ -120,6 +132,144 @@ enum {
+     SUBCOMMAND_EVENT
+ };
+ 
++static struct entry* read_entry(struct userdata *u, const char *name);
++static pa_bool_t entries_equal(const struct entry *a, const struct entry *b);
++static void trigger_save(struct userdata *u);
++static void apply_entry(struct userdata *u, const char *name, struct entry *e);
++
++static int _ignore_rule_hack(const char *name) {
++    pa_assert(name);
++
++    /* we only update maemo and phone volume */
++    return !(pa_streq(name, "sink-input-by-media-role:x-maemo") || pa_streq(name, "sink-input-by-media-role:phone") || pa_streq(name, "x-maemo"));
++
++    return
++        pa_streq(name, "x-maemo-hildon-notify") ||
++        pa_streq(name, "x-maemo-touchscreen-pressed") ||
++        pa_streq(name, "sink-input-by-media-role:animation") ||
++        pa_streq(name, "x-maemo-key-pressed");
++}
++
++static struct route_entry* read_route_entry(struct userdata *u, const char *route) {
++    datum key, data;
++    struct route_entry *e;
++
++    pa_assert(u);
++    pa_assert(route);
++
++    key.dptr = (char*) route;
++    key.dsize = (int) strlen(route);
++
++    data = gdbm_fetch(u->gdbm_route_file, key);
++
++    if (!data.dptr)
++        goto fail;
++
++    if (data.dsize != sizeof(struct route_entry)) {
++        /* This is probably just a database upgrade, hence let's not
++         * consider this more than a debug message */
++        pa_log_debug("Database contains entry for route %s of wrong size %lu != %lu. Probably due to uprade, ignoring.", route, (unsigned long) data.dsize, (unsigned long) sizeof(struct route_entry));
++        goto fail;
++    }
++
++    e = (struct route_entry*) data.dptr;
++
++    if (e->version != ROUTE_ENTRY_VERSION) {
++        pa_log_debug("Version of database entry for route %s doesn't match our version. Probably due to upgrade, ignoring.", route);
++        goto fail;
++    }
++
++    if (!pa_cvolume_valid(&e->volume)) {
++        pa_log_warn("Invalid volume stored in database for route %s", route);
++        goto fail;
++    }
++
++    return e;
++
++fail:
++
++    pa_xfree(data.dptr);
++    return NULL;
++}
++
++static void route_set_role_volume(struct userdata *u, const char *name) {
++    struct entry *old;
++    struct entry entry;
++    datum key, data;
++
++    pa_assert(u);
++    pa_assert(name);
++
++    if ((old = read_entry(u, name)))
++        entry = *old;
++
++    pa_channel_map_init_mono(&entry.channel_map);
++    pa_cvolume_set(&entry.volume, 1, u->route_volume.values[0]);
++    entry.volume_valid = TRUE;
++
++    if (old) {
++
++        if (entries_equal(old, &entry)) {
++            pa_xfree(old);
++            return;
++        }
++
++        pa_xfree(old);
++    }
++
++    key.dptr = (void*) name;
++    key.dsize = (int) strlen(name);
++
++    data.dptr = (void*) &entry;
++    data.dsize = sizeof(entry);
++
++    pa_log_info("Storing volume/mute/device for stream %s.", name);
++
++    gdbm_store(u->gdbm_file, key, data, GDBM_REPLACE);
++
++    apply_entry(u, name, &entry);
++}
++
++static pa_hook_result_t sink_proplist_changed_hook_callback(pa_core *c, pa_sink *s, struct userdata *u) {
++    struct route_entry* e;
++    const char *route;
++    char t[256];
++
++    pa_assert(u);
++    pa_assert(s);
++
++    route = pa_proplist_gets(s->proplist, "x-maemo.mode");
++    if (!route || (u->route && pa_streq(route, u->route)))
++        return PA_HOOK_OK;
++
++    pa_xfree(u->route);
++    u->route = pa_xstrdup(route);
++
++    /* ideally, scale stream-restore rules, by d dB: this is not
++       applicable with pa_cvolume (lose precision around 0U), and
++       would not be user friendly, because we don't have "sink" volume
++       bar: in some situation, a "role" volume would not be restored
++       because some other "role" would have constant higher volume. */
++
++    /* instead, let's restore our 2 base roles: x-maemo and phone */
++
++    e = read_route_entry(u, u->route);
++    if (!e || !pa_cvolume_valid(&e->volume))
++        pa_cvolume_scale(&u->route_volume, pa_sw_volume_from_dB(-20));
++    else
++        u->route_volume = e->volume;
++
++    pa_log_debug("Updated route volume=%s", pa_cvolume_snprint(t, sizeof(t), &u->route_volume));
++
++    route_set_role_volume(u, "sink-input-by-media-role:x-maemo");
++    route_set_role_volume(u, "sink-input-by-media-role:phone");
++    trigger_save(u);
++
++end:
++    pa_xfree(e);
++    return PA_HOOK_OK;
++}
++
+ static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, pa_usec_t t, void *userdata) {
+     struct userdata *u = userdata;
+ 
+@@ -132,6 +282,8 @@ static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, pa_usec_t t,
+     u->save_time_event = NULL;
+ 
+     gdbm_sync(u->gdbm_file);
++    gdbm_sync(u->gdbm_route_file);
++
+     pa_log_info("Synced.");
+ }
+ 
+@@ -234,6 +386,29 @@ static void trigger_save(struct userdata *u) {
+         pa_pstream_send_tagstruct(pa_native_connection_get_pstream(c), t);
+     }
+ 
++    if (!u->route)
++        goto end;
++
++    if (pa_cvolume_valid(&u->route_volume)) {
++        struct route_entry entry;
++        datum key, data;
++        char t[256];
++
++        memset(&entry, 0, sizeof(entry));
++        entry.version = ROUTE_ENTRY_VERSION;
++        entry.volume = u->route_volume;
++        pa_log_debug("Route volume=%s", pa_cvolume_snprint(t, sizeof(t), &u->route_volume));
++
++        key.dptr = (void*) u->route;
++        key.dsize = (int) strlen(u->route);
++
++        data.dptr = (void*) &entry;
++        data.dsize = sizeof(entry);
++
++        gdbm_store(u->gdbm_route_file, key, data, GDBM_REPLACE);
++    }
++
++end:
+     if (u->save_time_event)
+         return;
+ 
+@@ -241,7 +416,6 @@ static void trigger_save(struct userdata *u) {
+ }
+ 
+ static pa_bool_t entries_equal(const struct entry *a, const struct entry *b) {
+-    pa_cvolume t;
+ 
+     pa_assert(a);
+     pa_assert(b);
+@@ -258,9 +432,10 @@ static pa_bool_t entries_equal(const struct entry *a, const struct entry *b) {
+         (a->volume_is_absolute_valid && (a->volume_is_absolute != b->volume_is_absolute)))
+         return FALSE;
+ 
+-    t = b->volume;
+-    if (a->volume_valid != b->volume_valid ||
+-        (a->volume_valid && !pa_cvolume_equal(pa_cvolume_remap(&t, &b->channel_map, &a->channel_map), &a->volume)))
++    if (a->volume_valid != b->volume_valid)
++        return FALSE;
++
++    if (a->volume_valid && !pa_cvolume_equal(&a->volume, &b->volume))
+         return FALSE;
+ 
+     return TRUE;
+@@ -343,6 +518,9 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
+         pa_xfree(old);
+     }
+ 
++    if (!_ignore_rule_hack(name) && pa_cvolume_valid(&entry.volume))
++        u->route_volume = entry.volume;
++
+     key.dptr = name;
+     key.dsize = (int) strlen(name);
+ 
+@@ -410,12 +588,8 @@ static pa_hook_result_t sink_input_fixate_hook_callback(pa_core *c, pa_sink_inpu
+         if (u->restore_volume && e->volume_valid) {
+ 
+             if (!new_data->volume_is_set) {
+-                pa_cvolume v;
+-
+                 pa_log_info("Restoring volume for sink input %s.", name);
+-                v = e->volume;
+-                pa_cvolume_remap(&v, &e->channel_map, &new_data->channel_map);
+-                pa_sink_input_new_data_set_volume(new_data, &v);
++                pa_sink_input_new_data_set_volume(new_data, pa_cvolume_remap(&e->volume, &e->channel_map, &new_data->channel_map));
+ 
+                 new_data->volume_is_absolute = e->volume_is_absolute;
+                 new_data->save_volume = TRUE;
+@@ -561,6 +735,9 @@ static int fill_db(struct userdata *u, const char *filename) {
+             data.dptr = (void*) &e;
+             data.dsize = sizeof(e);
+ 
++            if (!_ignore_rule_hack(ln) && pa_cvolume_valid(&e.volume))
++                u->route_volume = e.volume;
++
+             if (gdbm_store(u->gdbm_file, key, data, GDBM_INSERT) == 0)
+                 pa_log_debug("Setting %s to %fdb", ln, db);
+         }
+@@ -604,11 +781,8 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
+         pa_xfree(n);
+ 
+         if (u->restore_volume && e->volume_valid) {
+-            pa_cvolume v;
+-
+-            v = e->volume;
+             pa_log_info("Restoring volume for sink input %s.", name);
+-            pa_sink_input_set_volume(si, pa_cvolume_remap(&v, &e->channel_map, &si->channel_map), TRUE, e->volume_is_absolute);
++            pa_sink_input_set_volume(si, pa_cvolume_remap(&e->volume, &e->channel_map, &si->channel_map), TRUE, e->volume_is_absolute);
+         }
+ 
+         if (u->restore_muted && e->muted_valid) {
+@@ -769,6 +943,7 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
+                 pa_bool_t muted, volume_is_absolute;
+                 struct entry entry;
+                 datum key, data;
++                pa_cvolume r;
+                 int k;
+ 
+                 memset(&entry, 0, sizeof(entry));
+@@ -776,11 +951,13 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
+ 
+                 if (pa_tagstruct_gets(t, &name) < 0 ||
+                     pa_tagstruct_get_channel_map(t, &entry.channel_map) ||
+-                    pa_tagstruct_get_cvolume(t, &entry.volume) < 0 ||
++                    pa_tagstruct_get_cvolume(t, &r) < 0 ||
+                     pa_tagstruct_gets(t, &device) < 0 ||
+                     pa_tagstruct_get_boolean(t, &muted) < 0)
+                     goto fail;
+ 
++                entry.volume = r;
++
+                 if (pa_native_connection_extension_supported(c, "stream-restore-2")) {
+                     if (pa_tagstruct_get_boolean(t, &volume_is_absolute) < 0)
+                         goto fail;
+@@ -795,7 +972,7 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
+                 entry.volume_valid = entry.volume.channels > 0;
+ 
+                 if (entry.volume_valid)
+-                    if (!pa_cvolume_compatible_with_channel_map(&entry.volume, &entry.channel_map))
++                    if (!pa_cvolume_compatible_with_channel_map(&r, &entry.channel_map))
+                         goto fail;
+ 
+                 entry.muted = muted;
+@@ -809,6 +986,9 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
+                     !pa_namereg_is_valid_name(entry.device))
+                     goto fail;
+ 
++                if (!_ignore_rule_hack(name) && pa_cvolume_valid(&entry.volume))
++                    u->route_volume = entry.volume;
++
+                 key.dptr = (void*) name;
+                 key.dsize = (int) strlen(name);
+ 
+@@ -919,6 +1099,9 @@ int pa__init(pa_module*m) {
+     u->restore_device = restore_device;
+     u->restore_volume = restore_volume;
+     u->restore_muted = restore_muted;
++    u->restore_route_volume = restore_route_volume;
++    pa_cvolume_init(&u->route_volume);
++
+     u->gdbm_file = NULL;
+     u->subscribed = pa_idxset_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
+ 
+@@ -937,6 +1120,9 @@ int pa__init(pa_module*m) {
+     if (restore_volume || restore_muted)
+         u->sink_input_fixate_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_INPUT_FIXATE], PA_HOOK_EARLY, (pa_hook_cb_t) sink_input_fixate_hook_callback, u);
+ 
++    u->sink_proplist_changed_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_PROPLIST_CHANGED], PA_HOOK_LATE, (pa_hook_cb_t)sink_proplist_changed_hook_callback, u);
++    u->route = NULL;
++
+     /* We include the host identifier in the file name because gdbm
+      * files are CPU dependant, and we don't want things to go wrong
+      * if we are on a multiarch system. */
+@@ -964,6 +1150,26 @@ int pa__init(pa_module*m) {
+     if (fill_db(u, pa_modargs_get_value(ma, "fallback_table", NULL)) < 0)
+         goto fail;
+ 
++    fn = pa_sprintf_malloc("x-maemo-route-volumes."CANONICAL_HOST".gdbm");
++    fname = pa_state_path(fn, TRUE);
++    pa_xfree(fn);
++
++    if (!fname)
++        goto fail;
++
++    if (!(u->gdbm_route_file = gdbm_open(fname, 0, GDBM_WRCREAT|GDBM_NOLOCK, 0600, NULL))) {
++        pa_log("Failed to open volume database '%s': %s", fname, gdbm_strerror(gdbm_errno));
++        pa_xfree(fname);
++        goto fail;
++    }
++
++    /* By default the cache of gdbm is rather large, let's reduce it a bit to save memory */
++    gdbm_cache_size = 10;
++    gdbm_setopt(u->gdbm_route_file, GDBM_CACHESIZE, &gdbm_cache_size, sizeof(gdbm_cache_size));
++
++    pa_log_info("Sucessfully opened database file '%s'.", fname);
++    pa_xfree(fname);
++
+     for (si = pa_idxset_first(m->core->sink_inputs, &idx); si; si = pa_idxset_next(m->core->sink_inputs, &idx))
+         subscribe_callback(m->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_NEW|PA_SUBSCRIPTION_EVENT_CHANGE, si->index, u);
+ 
+@@ -999,6 +1205,8 @@ void pa__done(pa_module*m) {
+         pa_hook_slot_free(u->sink_input_fixate_hook_slot);
+     if (u->source_output_new_hook_slot)
+         pa_hook_slot_free(u->source_output_new_hook_slot);
++    if (u->sink_proplist_changed_slot)
++        pa_hook_slot_free(u->sink_proplist_changed_slot);
+ 
+     if (u->connection_unlink_hook_slot)
+         pa_hook_slot_free(u->connection_unlink_hook_slot);
+@@ -1009,6 +1217,9 @@ void pa__done(pa_module*m) {
+     if (u->gdbm_file)
+         gdbm_close(u->gdbm_file);
+ 
++    if (u->gdbm_route_file)
++        gdbm_close(u->gdbm_route_file);
++
+     if (u->protocol) {
+         pa_native_protocol_remove_ext(u->protocol, m);
+         pa_native_protocol_unref(u->protocol);
+@@ -1017,5 +1228,6 @@ void pa__done(pa_module*m) {
+     if (u->subscribed)
+         pa_idxset_free(u->subscribed, NULL, NULL);
+ 
++    pa_xfree(u->route);
+     pa_xfree(u);
+ }
+-- 
+1.6.3.1
+
