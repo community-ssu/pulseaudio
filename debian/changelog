@@ -1,3 +1,10 @@
+pulseaudio (0.9.15-1maemo15) unstable; urgency=low
+
+  * Limit volume to -20dB for unkown route. Fixes: NB#120216
+  * Remember volume per route. Fixes: NB#116930
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Thu, 18 Jun 2009 17:28:09 +0300
+
 pulseaudio (0.9.15-1maemo14) unstable; urgency=low
 
   * Set hw0 reference volume to 0 to avoid annoying glitch. Fixes: NB#121115
