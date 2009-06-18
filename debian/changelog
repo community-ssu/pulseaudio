@@ -3,6 +3,7 @@ pulseaudio (0.9.15-1maemo15) unstable; urgency=low
   * Limit volume to -20dB for unkown route. Fixes: NB#120216
   * Remember volume per route. Fixes: NB#116930
   * Enable NEON by default on armel (do not rely on vfp flag).
+  * Tune mixer delay. Fixes: NB#114849
 
  -- Maemo Multimedia <multimedia@maemo.org>  Thu, 18 Jun 2009 17:28:09 +0300
 
