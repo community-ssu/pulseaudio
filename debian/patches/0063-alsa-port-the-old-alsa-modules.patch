@@ -1,45 +1,47 @@
-From 8bc034eb4b1318146dd81cd6cd16eaa0a4a3df82 Mon Sep 17 00:00:00 2001
+From f62ccaff1b08026ce12c40049341785683759ce8 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:08:35 +0300
-Subject: [PATCH 57/70] alsa: port the old alsa modules
+Subject: [PATCH 63/64] alsa: port the old alsa modules
 
 ---
- src/Makefile.am                                  |   16 +-
+ src/Makefile.am                                  |   18 +
  src/modules/alsa/module-alsa-sink-old-symdef.h   |   27 +
- src/modules/alsa/module-alsa-sink-old.c          | 1013 ++++++++++++++++
+ src/modules/alsa/module-alsa-sink-old.c          | 1110 ++++++++++++++++
  src/modules/alsa/module-alsa-source-old-symdef.h |   27 +
- src/modules/alsa/module-alsa-source-old.c        | 1385 ++++++++++++++++++++++
- 5 files changed, 2467 insertions(+), 1 deletions(-)
+ src/modules/alsa/module-alsa-source-old.c        | 1478 ++++++++++++++++++++++
+ 5 files changed, 2660 insertions(+), 0 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-old-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-old.c
  create mode 100644 src/modules/alsa/module-alsa-source-old-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-source-old.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 6d26863..b5c828b 100644
+index d7f31b4..3c8a7f5 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -1005,7 +1005,9 @@ modlibexec_LTLIBRARIES += \
- 		libalsa-util.la \
+@@ -1009,6 +1009,10 @@ modlibexec_LTLIBRARIES += \
  		module-alsa-sink.la \
  		module-alsa-source.la \
--		module-alsa-card.la
-+		module-alsa-card.la \
+ 		module-alsa-card.la
++
++modlibexec_LTLIBRARIES += \
 +		module-alsa-sink-old.la \
 +		module-alsa-source-old.la
  endif
  
  if HAVE_SOLARIS
-@@ -1116,6 +1118,8 @@ SYMDEF_FILES = \
- 		modules/alsa/module-alsa-sink-symdef.h \
- 		modules/alsa/module-alsa-source-symdef.h \
- 		modules/alsa/module-alsa-card-symdef.h \
+@@ -1147,6 +1151,10 @@ SYMDEF_FILES = \
+ 		modules/module-cork-music-on-phone-symdef.h \
+ 		modules/module-console-kit-symdef.h
+ 
++SYMDEF_FILES += \
 +		modules/alsa/module-alsa-sink-old-symdef.h \
-+		modules/alsa/module-alsa-source-old-symdef.h \
- 		modules/module-solaris-symdef.h \
- 		modules/module-waveout-symdef.h \
- 		modules/module-detect-symdef.h \
-@@ -1355,6 +1359,16 @@ module_alsa_card_la_LDFLAGS = $(MODULE_LDFLAGS)
++		modules/alsa/module-alsa-source-old-symdef.h
++
+ EXTRA_DIST += $(SYMDEF_FILES)
+ BUILT_SOURCES += $(SYMDEF_FILES)
+ 
+@@ -1364,6 +1372,16 @@ module_alsa_card_la_LDFLAGS = $(MODULE_LDFLAGS)
  module_alsa_card_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
  module_alsa_card_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
@@ -91,10 +93,10 @@ index 0000000..0c74afc
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
 new file mode 100644
-index 0000000..f6dc0f4
+index 0000000..c480ee6
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-old.c
-@@ -0,0 +1,1013 @@
+@@ -0,0 +1,1110 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -180,6 +182,8 @@ index 0000000..f6dc0f4
 +#define PROP_BUFFERS_PRIMARY "primary"
 +#define PROP_BUFFERS_ALTERNATIVE "alternative"
 +
++#define PA_SINK_MESSAGE_GET_UNDERRUN (PA_SINK_MESSAGE_MAX + 1)
++
 +struct userdata {
 +    pa_core *core;
 +    pa_module *module;
@@ -216,8 +220,13 @@ index 0000000..f6dc0f4
 +    pa_bool_t use_mmap;
 +
 +    pa_bool_t first;
++    pa_bool_t initialized;
++    char *init_device_id;
++    char *init_device_string;
 +
 +    pa_rtpoll_item *alsa_rtpoll_item;
++
++    pa_atomic_t buffer_underrun;
 +};
 +
 +static const char* const valid_modargs[] = {
@@ -300,6 +309,11 @@ index 0000000..f6dc0f4
 +        int err;
 +        const snd_pcm_channel_area_t *areas;
 +        snd_pcm_uframes_t offset, frames;
++
++        if ((frames = snd_pcm_avail(u->pcm_handle)) * u->frame_size >= u->hwbuf_size) {
++            pa_log_warn("Buffer underrun ! frames: %d", (int)frames);
++            pa_atomic_store(&u->buffer_underrun, TRUE);
++        }
 +
 +        if ((n = snd_pcm_avail_update(u->pcm_handle)) < 0) {
 +
@@ -462,6 +476,8 @@ index 0000000..f6dc0f4
 +    }
 +}
 +
++#define HW_FIFO_SIZE_BYTES 0  /* (1280 * 2) */
++
 +static int sink_get_latency_by_timestamps(struct userdata *u, pa_usec_t *d) {
 +    snd_pcm_uframes_t avail;
 +    snd_htimestamp_t tstamp;
@@ -474,10 +490,17 @@ index 0000000..f6dc0f4
 +    ts_dma.tv_sec = tstamp.tv_sec;
 +    ts_dma.tv_nsec = tstamp.tv_nsec;
 +
-+    buffered = pa_bytes_to_usec(u->hwbuf_size - avail * u->frame_size, &u->sink->sample_spec);
++    buffered = pa_bytes_to_usec(HW_FIFO_SIZE_BYTES + u->hwbuf_size -
++								avail * u->frame_size, &u->sink->sample_spec);
 +    elapsed = pa_rtclock_now() - pa_timespec_load(&ts_dma);
 +
 +    *d = buffered - elapsed;
++            
++    pa_log_debug("DL latency: hw fifo: %d + hwbuf_size: %d - (avail: %d * frame_size: %d) bytes",
++                 HW_FIFO_SIZE_BYTES, (int)u->hwbuf_size, (int)avail, (int)u->frame_size);
++
++    pa_log_debug("DL latency: buffered %d - elapsed %d = %d usecs",
++                 (int)buffered, (int)elapsed, (int)*d);
 +
 +    return 0;
 +}
@@ -538,7 +561,16 @@ index 0000000..f6dc0f4
 +
 +static int suspend(struct userdata *u) {
 +    pa_assert(u);
-+    pa_assert(u->pcm_handle);
++    //pa_assert(u->pcm_handle);
++
++    if (!u->pcm_handle) {
++        pa_log_debug("no pcm handle, alsa device is not initialized yet");
++        if (u->alsa_rtpoll_item) {
++            pa_rtpoll_item_free(u->alsa_rtpoll_item);
++            u->alsa_rtpoll_item = NULL;
++        }
++        return 0;
++    }
 +
 +    /* Let's suspend */
 +    if (!pa_streq(u->device_name, "sink.hw1")) /* FIXME: maemo hw1 has issues draining, it takes too long */
@@ -551,10 +583,14 @@ index 0000000..f6dc0f4
 +        u->alsa_rtpoll_item = NULL;
 +    }
 +
++    pa_atomic_store(&u->buffer_underrun, FALSE);
++
 +    pa_log_info("Device suspended...");
 +
 +    return 0;
 +}
++
++static int initialize_sink(struct userdata *u);
 +
 +static int unsuspend(struct userdata *u) {
 +    pa_sample_spec ss;
@@ -566,6 +602,11 @@ index 0000000..f6dc0f4
 +    pa_assert(!u->pcm_handle);
 +
 +    pa_log_info("Trying resume...");
++
++    if (!u->initialized) {
++        pa_log_debug("unsuspend for the first time -> init alsa");
++        return initialize_sink(u);
++    }
 +
 +    snd_config_update_free_global();
 +    if ((err = snd_pcm_open(&u->pcm_handle, u->device_name, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK)) < 0) {
@@ -611,6 +652,7 @@ index 0000000..f6dc0f4
 +    u->first = TRUE;
 +
 +    pa_log_info("Resumed successfully...");
++    u->initialized = TRUE;
 +
 +    return 0;
 +
@@ -627,6 +669,13 @@ index 0000000..f6dc0f4
 +    struct userdata *u = PA_SINK(o)->userdata;
 +
 +    switch (code) {
++
++        case PA_SINK_MESSAGE_GET_UNDERRUN: {
++            *((pa_bool_t*) data) = pa_atomic_load(&u->buffer_underrun);
++            pa_atomic_store(&u->buffer_underrun, FALSE);
++
++            return 0;
++        }
 +
 +        case PA_SINK_MESSAGE_GET_LATENCY: {
 +            pa_usec_t r = 0;
@@ -655,7 +704,7 @@ index 0000000..f6dc0f4
 +                case PA_SINK_RUNNING:
 +
 +                    if (u->sink->thread_info.state == PA_SINK_INIT) {
-+                        if (build_pollfd(u) < 0)
++                        if (u->initialized && build_pollfd(u) < 0)
 +                            return -1;
 +                    }
 +
@@ -705,7 +754,7 @@ index 0000000..f6dc0f4
 +        int ret;
 +
 +        /* Render some data and write it to the dsp */
-+        if (PA_SINK_IS_OPENED(u->sink->thread_info.state)) {
++        if (u->initialized && PA_SINK_IS_OPENED(u->sink->thread_info.state)) {
 +            int work_done = 0;
 +
 +            if (u->sink->thread_info.rewind_requested)
@@ -735,7 +784,7 @@ index 0000000..f6dc0f4
 +            goto finish;
 +
 +        /* Tell ALSA about this and process its response */
-+        if (PA_SINK_IS_OPENED(u->sink->thread_info.state)) {
++        if (u->initialized && PA_SINK_IS_OPENED(u->sink->thread_info.state)) {
 +            struct pollfd *pollfd;
 +            unsigned short revents = 0;
 +            int err;
@@ -824,11 +873,116 @@ index 0000000..f6dc0f4
 +    return PA_HOOK_OK;
 +}
 +
++static int initialize_sink(struct userdata *u) {
++
++    int err;
++    char *t;
++    snd_pcm_info_t *pcm_info = NULL;
++    pa_bool_t use_mmap, b, d;
++    pa_sample_spec ss;
++    uint32_t nfrags, period_size;
++    const pa_alsa_profile_info *profile;
++
++    d = FALSE; /* use_tsched */
++    use_mmap = b = u->use_mmap;
++    nfrags = u->nfragments;
++    period_size = u->period_size;
++    ss = u->sink->sample_spec;
++    profile = NULL; /* no profile specified */
++
++    snd_pcm_info_alloca(&pcm_info);
++    snd_config_update_free_global();
++
++    if (u->device_name) {
++        pa_xfree(u->device_name);
++        u->device_name = NULL;
++    }
++
++    if (u->init_device_id) {
++
++        if (!(u->pcm_handle = pa_alsa_open_by_device_id_auto(
++                      (const char*)u->init_device_id,
++                      &u->device_name,
++                      &ss, &u->channel_map,
++                      SND_PCM_STREAM_PLAYBACK,
++                      &nfrags, &period_size, period_size * nfrags,
++                      &b, &d, &profile)))
++
++            goto fail;
++
++    } else {
++
++        if (!(u->pcm_handle = pa_alsa_open_by_device_string(
++                      (const char*)u->init_device_string,
++                      &u->device_name,
++                      &ss, &u->channel_map,
++                      SND_PCM_STREAM_PLAYBACK,
++                      &nfrags, &period_size, period_size * nfrags,
++                      &b, &d, FALSE)))
++            goto fail;
++
++    }
++
++    u->sink->sample_spec = ss;
++
++    /* ALSA might tweak the sample spec, so recalculate the frame size */
++    u->frame_size = pa_frame_size(&ss);
++    u->alt_frame_size = pa_frame_size(&ss);
++
++    pa_assert(u->device_name);
++    pa_log_info("Successfully opened device %s.", u->device_name);
++
++    if (use_mmap && !b) {
++        pa_log_info("Device doesn't support mmap(), falling back to UNIX read/write mode.");
++        u->use_mmap = use_mmap = b;
++    }
++
++    if (u->use_mmap)
++        pa_log_info("Successfully enabled mmap() mode.");
++
++    if ((err = snd_pcm_info(u->pcm_handle, pcm_info)) < 0) {
++        pa_log("Error fetching PCM info: %s", snd_strerror(err));
++        goto fail;
++    }
++
++    if ((err = pa_alsa_set_sw_params(u->pcm_handle, period_size)) < 0) {
++        pa_log("Failed to set software parameters: %s", snd_strerror(err));
++        goto fail;
++    }
++
++    pa_sink_set_description(u->sink, t = pa_sprintf_malloc(
++                                    "ALSA PCM on %s (%s)%s",
++                                    u->device_name,
++                                    snd_pcm_info_get_name(pcm_info),
++                                    use_mmap ? " via DMA" : ""));
++    pa_xfree(t);
++
++    pa_alsa_init_proplist_pcm(u->core, u->sink->proplist, u->pcm_handle, NULL);
++    pa_proplist_sets(u->sink->proplist, PA_PROP_DEVICE_STRING, u->device_name);
++    pa_proplist_setf(u->sink->proplist, PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE, "%lu", (unsigned long) (u->period_size * u->frame_size * nfrags));
++    pa_proplist_setf(u->sink->proplist, PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE, "%lu", (unsigned long) (u->period_size * u->frame_size));
++    pa_proplist_sets(u->sink->proplist, PA_PROP_DEVICE_ACCESS_MODE, (u->use_mmap ? "mmap" : "serial"));
++
++    if (build_pollfd(u) < 0)
++        goto fail;
++
++    /* FIXME: We need to reload the volume somehow */
++
++    u->first = TRUE;
++
++    u->initialized = TRUE;
++    pa_log_info("%s initialized for the FIRST time", u->device_name);
++
++    return 0;
++
++fail:
++    return -1;
++}
++
 +int pa__init(pa_module*m) {
 +
 +    pa_modargs *ma = NULL;
 +    struct userdata *u = NULL;
-+    const char *dev_id;
 +    pa_sample_spec ss;
 +    pa_channel_map map;
 +    uint32_t nfrags, frag_size;
@@ -837,17 +991,11 @@ index 0000000..f6dc0f4
 +    snd_pcm_uframes_t alt_period_size;
 +    size_t frame_size;
 +    size_t alt_frame_size;
-+    snd_pcm_info_t *pcm_info = NULL;
-+    int err;
-+    char *t;
 +    const char *name;
 +    char *name_buf = NULL;
 +    int namereg_fail;
-+    pa_bool_t use_mmap = TRUE, b, d;
++    pa_bool_t use_mmap = TRUE;
 +    pa_sink_new_data data;
-+    const pa_alsa_profile_info *profile;
-+
-+    snd_pcm_info_alloca(&pcm_info);
 +
 +    pa_assert(m);
 +
@@ -910,62 +1058,17 @@ index 0000000..f6dc0f4
 +    u->rtpoll = pa_rtpoll_new();
 +    pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
 +    u->alsa_rtpoll_item = NULL;
++    u->initialized = FALSE;
 +
 +    snd_config_update_free_global();
 +
-+    b = use_mmap;
-+    d = FALSE; /* use_tsched */
-+    profile = NULL; /* no profile specified */
++    /* save device_id & string for later initialization */
++    if (pa_modargs_get_value(ma, "device_id", NULL))
++        u->init_device_id = pa_xstrdup(pa_modargs_get_value(ma, "device_id", NULL));
++    u->init_device_string = pa_xstrdup(pa_modargs_get_value(ma, "device", DEFAULT_DEVICE));
 +
-+    if ((dev_id = pa_modargs_get_value(ma, "device_id", NULL))) {
-+
-+        if (!(u->pcm_handle = pa_alsa_open_by_device_id_auto(
-+                      dev_id,
-+                      &u->device_name,
-+                      &ss, &map,
-+                      SND_PCM_STREAM_PLAYBACK,
-+                      &nfrags, &period_size, period_size * nfrags,
-+                      &b, &d, &profile)))
-+
-+            goto fail;
-+
-+    } else {
-+
-+        if (!(u->pcm_handle = pa_alsa_open_by_device_string(
-+                      pa_modargs_get_value(ma, "device", DEFAULT_DEVICE),
-+                      &u->device_name,
-+                      &ss, &map,
-+                      SND_PCM_STREAM_PLAYBACK,
-+                      &nfrags, &period_size, period_size * nfrags,
-+                      &b, &d, FALSE)))
-+            goto fail;
-+
-+    }
-+
-+    pa_assert(u->device_name);
-+    pa_log_info("Successfully opened device %s.", u->device_name);
-+
-+    if (use_mmap && !b) {
-+        pa_log_info("Device doesn't support mmap(), falling back to UNIX read/write mode.");
-+        u->use_mmap = use_mmap = b;
-+    }
-+
-+    if (u->use_mmap)
-+        pa_log_info("Successfully enabled mmap() mode.");
-+
-+    if ((err = snd_pcm_info(u->pcm_handle, pcm_info)) < 0) {
-+        pa_log("Error fetching PCM info: %s", snd_strerror(err));
-+        goto fail;
-+    }
-+
-+    if ((err = pa_alsa_set_sw_params(u->pcm_handle, period_size)) < 0) {
-+        pa_log("Failed to set software parameters: %s", snd_strerror(err));
-+        goto fail;
-+    }
-+
-+    /* ALSA might tweak the sample spec, so recalculate the frame size */
-+    frame_size = pa_frame_size(&ss);
-+    alt_frame_size = pa_frame_size(&ss);
++    /* device not initialized yet, but save something to device_name */
++    u->device_name = pa_sprintf_malloc("(uninitialized)");
 +
 +    if ((name = pa_modargs_get_value(ma, "sink_name", NULL)))
 +        namereg_fail = 1;
@@ -982,12 +1085,6 @@ index 0000000..f6dc0f4
 +    pa_sink_new_data_set_sample_spec(&data, &ss);
 +    pa_sink_new_data_set_channel_map(&data, &map);
 +
-+    pa_alsa_init_proplist_pcm(m->core, data.proplist, u->pcm_handle, NULL);
-+    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->device_name);
-+    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE, "%lu", (unsigned long) (period_size * frame_size * nfrags));
-+    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE, "%lu", (unsigned long) (period_size * frame_size));
-+    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_ACCESS_MODE, (u->use_mmap ? "mmap" : "serial"));
-+
 +    u->sink = pa_sink_new(m->core, &data, PA_SINK_HARDWARE|PA_SINK_LATENCY);
 +    pa_sink_new_data_done(&data);
 +    pa_xfree(name_buf);
@@ -1003,12 +1100,6 @@ index 0000000..f6dc0f4
 +
 +    pa_sink_set_asyncmsgq(u->sink, u->thread_mq.inq);
 +    pa_sink_set_rtpoll(u->sink, u->rtpoll);
-+    pa_sink_set_description(u->sink, t = pa_sprintf_malloc(
-+                                    "ALSA PCM on %s (%s)%s",
-+                                    u->device_name,
-+                                    snd_pcm_info_get_name(pcm_info),
-+                                    use_mmap ? " via DMA" : ""));
-+    pa_xfree(t);
 +
 +    u->frame_size = frame_size;
 +    u->fragment_size = frag_size = period_size * frame_size;
@@ -1049,7 +1140,10 @@ index 0000000..f6dc0f4
 +                                                        PA_HOOK_LATE,
 +                                                        (pa_hook_cb_t)sink_proplist_changed_hook_callback, u);
 +
++    pa_atomic_store(&u->buffer_underrun, FALSE);
++
 +    pa_sink_put(u->sink);
++    pa_sink_suspend(u->sink, TRUE); /* start suspended */
 +
 +    pa_modargs_free(ma);
 +
@@ -1103,6 +1197,11 @@ index 0000000..f6dc0f4
 +        snd_pcm_close(u->pcm_handle);
 +    }
 +
++    if (u->init_device_id)
++        pa_xfree(u->init_device_id);
++    if (u->init_device_string)
++        pa_xfree(u->init_device_string);
++
 +    pa_xfree(u->device_name);
 +    pa_xfree(u);
 +
@@ -1143,10 +1242,10 @@ index 0000000..033edd6
 +#endif
 diff --git a/src/modules/alsa/module-alsa-source-old.c b/src/modules/alsa/module-alsa-source-old.c
 new file mode 100644
-index 0000000..4b229d7
+index 0000000..cea1c86
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-source-old.c
-@@ -0,0 +1,1385 @@
+@@ -0,0 +1,1478 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -1233,6 +1332,8 @@ index 0000000..4b229d7
 +#define PROP_BUFFERS_PRIMARY "primary"
 +#define PROP_BUFFERS_ALTERNATIVE "alternative"
 +
++#define PA_SOURCE_MESSAGE_GET_OVERRUN (PA_SOURCE_MESSAGE_MAX + 1)
++
 +struct userdata {
 +    pa_core *core;
 +    pa_module *module;
@@ -1278,6 +1379,13 @@ index 0000000..4b229d7
 +    pa_rtpoll_item *alsa_rtpoll_item;
 +
 +    snd_mixer_selem_channel_id_t mixer_map[SND_MIXER_SCHN_LAST];
++
++    pa_bool_t initialized;
++    char *init_device_id;
++    char *init_device_string;
++    char *init_alsa_mixer;
++
++    pa_atomic_t buffer_overrun;
 +};
 +
 +static const char* const valid_modargs[] = {
@@ -1361,6 +1469,11 @@ index 0000000..4b229d7
 +        snd_pcm_uframes_t offset, frames;
 +        pa_memchunk chunk;
 +        void *p;
++
++        if ((frames = snd_pcm_avail(u->pcm_handle)) * u->frame_size >= u->hwbuf_size) {
++            pa_log_warn("Buffer overrun ! frames: %d", (int)frames);
++            pa_atomic_store(&u->buffer_overrun, TRUE);
++        }
 +
 +        if ((n = snd_pcm_avail_update(u->pcm_handle)) < 0) {
 +
@@ -1528,10 +1641,16 @@ index 0000000..4b229d7
 +    ts_dma.tv_sec = tstamp.tv_sec;
 +    ts_dma.tv_nsec = tstamp.tv_nsec;
 +
-+    buffered = pa_bytes_to_usec(avail * u->frame_size, &u->source->sample_spec);
++    buffered = pa_bytes_to_usec(avail * u->frame_size - u->fragment_size, &u->source->sample_spec);
 +    elapsed = pa_rtclock_now() - pa_timespec_load(&ts_dma);
 +
-+    *d = /* buffered + */ elapsed;
++    *d = buffered + elapsed;
++
++    pa_log_debug("UL latency: avail: %d * frame_size: %d - fragment_size: %d bytes",
++                 (int)avail, (int)u->frame_size, (int)u->fragment_size);
++
++    pa_log_debug("UL latency: buffered %d + elapsed %d = %d usecs",
++                 (int)buffered, (int)elapsed, (int)*d);
 +
 +    return 0;
 +}
@@ -1589,8 +1708,16 @@ index 0000000..4b229d7
 +
 +static int suspend(struct userdata *u) {
 +    pa_assert(u);
-+    pa_assert(u->pcm_handle);
++    //pa_assert(u->pcm_handle);
 +
++    if (!u->pcm_handle) {
++        pa_log_debug("no pcm handle, alsa device is not initialized yet");
++        if (u->alsa_rtpoll_item) {
++            pa_rtpoll_item_free(u->alsa_rtpoll_item);
++            u->alsa_rtpoll_item = NULL;
++        }
++        return 0;
++    }
 +    /* Let's suspend */
 +    snd_pcm_close(u->pcm_handle);
 +    u->pcm_handle = NULL;
@@ -1600,10 +1727,14 @@ index 0000000..4b229d7
 +        u->alsa_rtpoll_item = NULL;
 +    }
 +
++    pa_atomic_store(&u->buffer_overrun, FALSE);
++
 +    pa_log_info("Device suspended...");
 +
 +    return 0;
 +}
++
++static int initialize_source(struct userdata *u);
 +
 +static int unsuspend(struct userdata *u) {
 +    pa_sample_spec ss;
@@ -1614,6 +1745,11 @@ index 0000000..4b229d7
 +
 +    pa_assert(u);
 +    pa_assert(!u->pcm_handle);
++
++    if (!u->initialized) {
++        pa_log_debug("unsuspend for the first time -> init alsa");
++        return initialize_source(u);
++    }
 +
 +    pa_log_info("Trying resume...");
 +
@@ -1679,6 +1815,13 @@ index 0000000..4b229d7
 +
 +    switch (code) {
 +
++        case PA_SOURCE_MESSAGE_GET_OVERRUN: {
++            *((pa_bool_t*) data) = pa_atomic_load(&u->buffer_overrun);
++            pa_atomic_store(&u->buffer_overrun, FALSE);
++
++            return 0;
++        }
++
 +        case PA_SOURCE_MESSAGE_GET_LATENCY: {
 +            pa_usec_t r = 0;
 +
@@ -1706,10 +1849,11 @@ index 0000000..4b229d7
 +                case PA_SOURCE_RUNNING:
 +
 +                    if (u->source->thread_info.state == PA_SOURCE_INIT) {
-+                        if (build_pollfd(u) < 0)
++                        if (u->initialized && build_pollfd(u) < 0)
 +                            return -1;
 +
-+                        snd_pcm_start(u->pcm_handle);
++                        if (u->initialized)
++                            snd_pcm_start(u->pcm_handle);
 +                    }
 +
 +                    if (u->source->thread_info.state == PA_SOURCE_SUSPENDED) {
@@ -2005,7 +2149,7 @@ index 0000000..4b229d7
 +        int ret;
 +
 +        /* Read some data and pass it to the sources */
-+        if (PA_SOURCE_IS_OPENED(u->source->thread_info.state)) {
++        if (u->initialized && PA_SOURCE_IS_OPENED(u->source->thread_info.state)) {
 +
 +            if (u->use_mmap) {
 +                if (mmap_read(u) < 0)
@@ -2025,7 +2169,7 @@ index 0000000..4b229d7
 +            goto finish;
 +
 +        /* Tell ALSA about this and process its response */
-+        if (PA_SOURCE_IS_OPENED(u->source->thread_info.state)) {
++        if (u->initialized && PA_SOURCE_IS_OPENED(u->source->thread_info.state)) {
 +            struct pollfd *pollfd;
 +            unsigned short revents = 0;
 +            int err;
@@ -2108,11 +2252,233 @@ index 0000000..4b229d7
 +    return PA_HOOK_OK;
 +}
 +
++static int initialize_source(struct userdata *u) {
++    pa_sample_spec ss;
++    uint32_t nfrags;
++    snd_pcm_info_t *pcm_info = NULL;
++    int err;
++    char *t;
++    pa_bool_t use_mmap = TRUE, b, d, ignore_dB = FALSE;
++    const pa_alsa_profile_info *profile;
++
++    use_mmap = b = u->use_mmap;
++    nfrags = u->nfragments;
++
++    ss = u->source->sample_spec;
++
++    snd_pcm_info_alloca(&pcm_info);
++    snd_config_update_free_global();
++
++    b = use_mmap;
++    d = FALSE; /* use_tsched */
++    profile = NULL; /* no profile specified */
++
++    if (u->device_name) {
++        pa_xfree(u->device_name);
++        u->device_name = NULL;
++    }
++
++    if (u->init_device_id) {
++
++        if (!(u->pcm_handle = pa_alsa_open_by_device_id_auto(
++                      (const char*)u->init_device_id,
++                      &u->device_name,
++                      &ss, &u->source->channel_map,
++                      SND_PCM_STREAM_CAPTURE,
++                      &nfrags, &u->period_size, u->period_size * nfrags,
++                      &b, &d, &profile)))
++            goto fail;
++
++    } else {
++
++        if (!(u->pcm_handle = pa_alsa_open_by_device_string(
++                      u->init_device_string,
++                      &u->device_name,
++                      &ss, &u->source->channel_map,
++                      SND_PCM_STREAM_CAPTURE,
++                      &nfrags, &u->period_size, u->period_size * nfrags,
++                      &b, &d, FALSE)))
++            goto fail;
++    }
++
++    pa_assert(u->device_name);
++    pa_log_info("Successfully opened device %s.", u->device_name);
++
++    if (use_mmap && !b) {
++        pa_log_info("Device doesn't support mmap(), falling back to UNIX read/write mode.");
++        u->use_mmap = use_mmap = b;
++    }
++
++    if (u->use_mmap)
++        pa_log_info("Successfully enabled mmap() mode.");
++
++    if ((err = snd_pcm_info(u->pcm_handle, pcm_info)) < 0) {
++        pa_log("Error fetching PCM info: %s", snd_strerror(err));
++        goto fail;
++    }
++
++    if ((err = pa_alsa_set_sw_params(u->pcm_handle, u->period_size)) < 0) {
++        pa_log("Failed to set software parameters: %s", snd_strerror(err));
++        goto fail;
++    }
++
++    /* ALSA might tweak the sample spec, so recalculate the frame size */
++    u->frame_size = pa_frame_size(&ss);
++    u->alt_frame_size = pa_frame_size(&ss);
++
++    if ((err = snd_mixer_open(&u->mixer_handle, 0)) < 0)
++        pa_log("Error opening mixer: %s", snd_strerror(err));
++    else {
++        pa_bool_t found = FALSE;
++
++        if (pa_alsa_prepare_mixer(u->mixer_handle, u->device_name) >= 0)
++            found = TRUE;
++        else {
++            char *md = pa_sprintf_malloc("hw:%s", u->init_device_id);
++
++            if (strcmp(u->device_name, md))
++                if (pa_alsa_prepare_mixer(u->mixer_handle, md) >= 0)
++                    found = TRUE;
++
++            pa_xfree(md);
++        }
++
++        if (found)
++            if (!(u->mixer_elem = pa_alsa_find_elem(u->mixer_handle, u->init_alsa_mixer, "Mic", FALSE)))
++                found = FALSE;
++
++        if (!found) {
++            snd_mixer_close(u->mixer_handle);
++            u->mixer_handle = NULL;
++        }
++    }
++
++    pa_alsa_init_proplist_pcm(u->core, u->source->proplist, u->pcm_handle, NULL);
++    pa_proplist_sets(u->source->proplist, PA_PROP_DEVICE_STRING, u->device_name);
++    pa_proplist_setf(u->source->proplist, PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE, "%lu", (unsigned long) (u->period_size * u->frame_size * u->nfragments));
++    pa_proplist_setf(u->source->proplist, PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE, "%lu", (unsigned long) (u->period_size * u->frame_size));
++    pa_proplist_sets(u->source->proplist, PA_PROP_DEVICE_ACCESS_MODE, (u->use_mmap ? "mmap" : "serial"));
++
++    pa_source_set_description(u->source, t = pa_sprintf_malloc(
++                                      "ALSA PCM on %s (%s)%s",
++                                      u->device_name,
++                                      snd_pcm_info_get_name(pcm_info),
++                                      use_mmap ? " via DMA" : ""));
++    pa_xfree(t);
++
++    if (u->mixer_handle) {
++        pa_assert(u->mixer_elem);
++
++        if (snd_mixer_selem_has_capture_volume(u->mixer_elem)) {
++            pa_bool_t suitable = FALSE;
++
++            if (snd_mixer_selem_get_capture_volume_range(u->mixer_elem, &u->hw_volume_min, &u->hw_volume_max) < 0)
++                pa_log_info("Failed to get volume range. Falling back to software volume control.");
++            else if (u->hw_volume_min >= u->hw_volume_max)
++                pa_log_warn("Your kernel driver is broken: it reports a volume range from %li to %li which makes no sense.", u->hw_volume_min, u->hw_volume_max);
++            else {
++                pa_log_info("Volume ranges from %li to %li.", u->hw_volume_min, u->hw_volume_max);
++                suitable = TRUE;
++            }
++
++            if (suitable) {
++                if (ignore_dB || snd_mixer_selem_get_capture_dB_range(u->mixer_elem, &u->hw_dB_min, &u->hw_dB_max) < 0)
++                    pa_log_info("Mixer doesn't support dB information or data is ignored.");
++                else {
++#ifdef HAVE_VALGRIND_MEMCHECK_H
++                    VALGRIND_MAKE_MEM_DEFINED(&u->hw_dB_min, sizeof(u->hw_dB_min));
++                    VALGRIND_MAKE_MEM_DEFINED(&u->hw_dB_max, sizeof(u->hw_dB_max));
++#endif
++
++                    if (u->hw_dB_min >= u->hw_dB_max)
++                        pa_log_warn("Your kernel driver is broken: it reports a volume range from %0.2f dB to %0.2f dB which makes no sense.", (double) u->hw_dB_min/100.0, (double) u->hw_dB_max/100.0);
++                    else {
++                        pa_log_info("Volume ranges from %0.2f dB to %0.2f dB.", (double) u->hw_dB_min/100.0, (double) u->hw_dB_max/100.0);
++                        u->hw_dB_supported = TRUE;
++
++                        if (u->hw_dB_max > 0) {
++                            u->source->base_volume = pa_sw_volume_from_dB(- (double) u->hw_dB_max/100.0);
++                            pa_log_info("Fixing base volume to %0.2f dB", pa_sw_volume_to_dB(u->source->base_volume));
++                        } else
++                            pa_log_info("No particular base volume set, fixing to 0 dB");
++
++                    }
++                }
++
++                if (!u->hw_dB_supported &&
++                    u->hw_volume_max - u->hw_volume_min < 3) {
++
++                    pa_log_info("Device has less than 4 volume levels. Falling back to software volume control.");
++                    suitable = FALSE;
++                }
++            }
++
++            if (suitable) {
++                u->mixer_seperate_channels = pa_alsa_calc_mixer_map(u->mixer_elem, &u->source->channel_map, u->mixer_map, FALSE) >= 0;
++
++                u->source->get_volume = source_get_volume_cb;
++                u->source->set_volume = source_set_volume_cb;
++                u->source->flags |= PA_SOURCE_HW_VOLUME_CTRL | (u->hw_dB_supported ? PA_SOURCE_DECIBEL_VOLUME : 0);
++                pa_log_info("Using hardware volume control. Hardware dB scale %s.", u->hw_dB_supported ? "supported" : "not supported");
++
++                if (!u->hw_dB_supported)
++                    u->source->n_volume_steps = u->hw_volume_max - u->hw_volume_min + 1;
++            } else
++                pa_log_info("Using software volume control.");
++        }
++
++        if (snd_mixer_selem_has_capture_switch(u->mixer_elem)) {
++            u->source->get_mute = source_get_mute_cb;
++            u->source->set_mute = source_set_mute_cb;
++            u->source->flags |= PA_SOURCE_HW_MUTE_CTRL;
++        } else
++            pa_log_info("Using software mute control.");
++
++        u->mixer_fdl = pa_alsa_fdlist_new();
++
++        if (pa_alsa_fdlist_set_mixer(u->mixer_fdl, u->mixer_handle, u->core->mainloop) < 0) {
++            pa_log("Failed to initialize file descriptor monitoring");
++            goto fail;
++        }
++
++        snd_mixer_elem_set_callback(u->mixer_elem, mixer_callback);
++        snd_mixer_elem_set_callback_private(u->mixer_elem, u);
++    } else
++        u->mixer_fdl = NULL;
++
++    /* Get initial mixer settings */
++#if 0
++    if (data.volume_is_set) {
++        if (u->source->set_volume)
++            u->source->set_volume(u->source);
++    } else {
++        if (u->source->get_volume)
++            u->source->get_volume(u->source);
++    }
++
++    if (data.muted_is_set) {
++        if (u->source->set_mute)
++            u->source->set_mute(u->source);
++    } else {
++        if (u->source->get_mute)
++            u->source->get_mute(u->source);
++    }
++#endif
++
++    u->initialized = TRUE;
++    if (build_pollfd(u) < 0)
++        goto fail;
++
++    return 0;
++
++fail:
++    return -1;
++}
++
 +int pa__init(pa_module*m) {
 +
 +    pa_modargs *ma = NULL;
 +    struct userdata *u = NULL;
-+    const char *dev_id;
 +    pa_sample_spec ss;
 +    pa_channel_map map;
 +    char *alsa_mixer = NULL;
@@ -2123,17 +2489,11 @@ index 0000000..4b229d7
 +    snd_pcm_uframes_t alt_period_size;
 +    size_t frame_size;
 +    size_t alt_frame_size;
-+    snd_pcm_info_t *pcm_info = NULL;
-+    int err;
-+    char *t;
 +    const char *name;
 +    char *name_buf = NULL;
 +    int namereg_fail;
-+    pa_bool_t use_mmap = TRUE, b, d, ignore_dB = FALSE;
++    pa_bool_t use_mmap = TRUE, ignore_dB = FALSE;
 +    pa_source_new_data data;
-+    const pa_alsa_profile_info *profile;
-+
-+    snd_pcm_info_alloca(&pcm_info);
 +
 +    pa_assert(m);
 +
@@ -2209,86 +2569,15 @@ index 0000000..4b229d7
 +    u->rtpoll = pa_rtpoll_new();
 +    pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
 +    u->alsa_rtpoll_item = NULL;
++    u->initialized = FALSE;
 +
-+    snd_config_update_free_global();
++    /* save device_id & string for later initialization */
++    if (pa_modargs_get_value(ma, "device_id", NULL))
++        u->init_device_id = pa_xstrdup(pa_modargs_get_value(ma, "device_id", NULL));
++    u->init_device_string = pa_xstrdup(pa_modargs_get_value(ma, "device", DEFAULT_DEVICE));
 +
-+    b = use_mmap;
-+    d = FALSE; /* use_tsched */
-+    profile = NULL; /* no profile specified */
-+
-+    if ((dev_id = pa_modargs_get_value(ma, "device_id", NULL))) {
-+
-+        if (!(u->pcm_handle = pa_alsa_open_by_device_id_auto(
-+                      dev_id,
-+                      &u->device_name,
-+                      &ss, &map,
-+                      SND_PCM_STREAM_CAPTURE,
-+                      &nfrags, &period_size, period_size * nfrags,
-+                      &b, &d, &profile)))
-+            goto fail;
-+
-+    } else {
-+
-+        if (!(u->pcm_handle = pa_alsa_open_by_device_string(
-+                      pa_modargs_get_value(ma, "device", DEFAULT_DEVICE),
-+                      &u->device_name,
-+                      &ss, &map,
-+                      SND_PCM_STREAM_CAPTURE,
-+                      &nfrags, &period_size, period_size * nfrags,
-+                      &b, &d, FALSE)))
-+            goto fail;
-+    }
-+
-+    pa_assert(u->device_name);
-+    pa_log_info("Successfully opened device %s.", u->device_name);
-+
-+    if (use_mmap && !b) {
-+        pa_log_info("Device doesn't support mmap(), falling back to UNIX read/write mode.");
-+        u->use_mmap = use_mmap = b;
-+    }
-+
-+    if (u->use_mmap)
-+        pa_log_info("Successfully enabled mmap() mode.");
-+
-+    if ((err = snd_pcm_info(u->pcm_handle, pcm_info)) < 0) {
-+        pa_log("Error fetching PCM info: %s", snd_strerror(err));
-+        goto fail;
-+    }
-+
-+    if ((err = pa_alsa_set_sw_params(u->pcm_handle, period_size)) < 0) {
-+        pa_log("Failed to set software parameters: %s", snd_strerror(err));
-+        goto fail;
-+    }
-+
-+    /* ALSA might tweak the sample spec, so recalculate the frame size */
-+    frame_size = pa_frame_size(&ss);
-+
-+    if ((err = snd_mixer_open(&u->mixer_handle, 0)) < 0)
-+        pa_log("Error opening mixer: %s", snd_strerror(err));
-+    else {
-+        pa_bool_t found = FALSE;
-+
-+        if (pa_alsa_prepare_mixer(u->mixer_handle, u->device_name) >= 0)
-+            found = TRUE;
-+        else {
-+            char *md = pa_sprintf_malloc("hw:%s", dev_id);
-+
-+            if (strcmp(u->device_name, md))
-+                if (pa_alsa_prepare_mixer(u->mixer_handle, md) >= 0)
-+                    found = TRUE;
-+
-+            pa_xfree(md);
-+        }
-+
-+        if (found)
-+            if (!(u->mixer_elem = pa_alsa_find_elem(u->mixer_handle, alsa_mixer, "Mic", FALSE)))
-+                found = FALSE;
-+
-+        if (!found) {
-+            snd_mixer_close(u->mixer_handle);
-+            u->mixer_handle = NULL;
-+        }
-+    }
++    /* device not initialized yet, but save something to device_name */
++    u->device_name = pa_sprintf_malloc("(uninitialized)");
 +
 +    if ((name = pa_modargs_get_value(ma, "source_name", NULL)))
 +        namereg_fail = 1;
@@ -2305,12 +2594,6 @@ index 0000000..4b229d7
 +    pa_source_new_data_set_sample_spec(&data, &ss);
 +    pa_source_new_data_set_channel_map(&data, &map);
 +
-+    pa_alsa_init_proplist_pcm(m->core, data.proplist, u->pcm_handle, NULL);
-+    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->device_name);
-+    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE, "%lu", (unsigned long) (period_size * frame_size * nfrags));
-+    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE, "%lu", (unsigned long) (period_size * frame_size));
-+    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_ACCESS_MODE, (u->use_mmap ? "mmap" : "serial"));
-+
 +    u->source = pa_source_new(m->core, &data, PA_SOURCE_HARDWARE|PA_SOURCE_LATENCY);
 +    pa_source_new_data_done(&data);
 +    pa_xfree(name_buf);
@@ -2325,12 +2608,6 @@ index 0000000..4b229d7
 +
 +    pa_source_set_asyncmsgq(u->source, u->thread_mq.inq);
 +    pa_source_set_rtpoll(u->source, u->rtpoll);
-+    pa_source_set_description(u->source, t = pa_sprintf_malloc(
-+                                      "ALSA PCM on %s (%s)%s",
-+                                      u->device_name,
-+                                      snd_pcm_info_get_name(pcm_info),
-+                                      use_mmap ? " via DMA" : ""));
-+    pa_xfree(t);
 +
 +    u->source->flags = PA_SOURCE_HARDWARE|PA_SOURCE_LATENCY;
 +
@@ -2358,105 +2635,9 @@ index 0000000..4b229d7
 +    if (u->switching_enabled)
 +        pa_log_info("ALT: Using %u fragments of size %lu bytes.", alt_nfrags, (long unsigned) u->alt_fragment_size);
 +
-+    if (u->mixer_handle) {
-+        pa_assert(u->mixer_elem);
-+
-+        if (snd_mixer_selem_has_capture_volume(u->mixer_elem)) {
-+            pa_bool_t suitable = FALSE;
-+
-+            if (snd_mixer_selem_get_capture_volume_range(u->mixer_elem, &u->hw_volume_min, &u->hw_volume_max) < 0)
-+                pa_log_info("Failed to get volume range. Falling back to software volume control.");
-+            else if (u->hw_volume_min >= u->hw_volume_max)
-+                pa_log_warn("Your kernel driver is broken: it reports a volume range from %li to %li which makes no sense.", u->hw_volume_min, u->hw_volume_max);
-+            else {
-+                pa_log_info("Volume ranges from %li to %li.", u->hw_volume_min, u->hw_volume_max);
-+                suitable = TRUE;
-+            }
-+
-+            if (suitable) {
-+                if (ignore_dB || snd_mixer_selem_get_capture_dB_range(u->mixer_elem, &u->hw_dB_min, &u->hw_dB_max) < 0)
-+                    pa_log_info("Mixer doesn't support dB information or data is ignored.");
-+                else {
-+#ifdef HAVE_VALGRIND_MEMCHECK_H
-+                    VALGRIND_MAKE_MEM_DEFINED(&u->hw_dB_min, sizeof(u->hw_dB_min));
-+                    VALGRIND_MAKE_MEM_DEFINED(&u->hw_dB_max, sizeof(u->hw_dB_max));
-+#endif
-+
-+                    if (u->hw_dB_min >= u->hw_dB_max)
-+                        pa_log_warn("Your kernel driver is broken: it reports a volume range from %0.2f dB to %0.2f dB which makes no sense.", (double) u->hw_dB_min/100.0, (double) u->hw_dB_max/100.0);
-+                    else {
-+                        pa_log_info("Volume ranges from %0.2f dB to %0.2f dB.", (double) u->hw_dB_min/100.0, (double) u->hw_dB_max/100.0);
-+                        u->hw_dB_supported = TRUE;
-+
-+                        if (u->hw_dB_max > 0) {
-+                            u->source->base_volume = pa_sw_volume_from_dB(- (double) u->hw_dB_max/100.0);
-+                            pa_log_info("Fixing base volume to %0.2f dB", pa_sw_volume_to_dB(u->source->base_volume));
-+                        } else
-+                            pa_log_info("No particular base volume set, fixing to 0 dB");
-+
-+                    }
-+                }
-+
-+                if (!u->hw_dB_supported &&
-+                    u->hw_volume_max - u->hw_volume_min < 3) {
-+
-+                    pa_log_info("Device has less than 4 volume levels. Falling back to software volume control.");
-+                    suitable = FALSE;
-+                }
-+            }
-+
-+            if (suitable) {
-+                u->mixer_seperate_channels = pa_alsa_calc_mixer_map(u->mixer_elem, &map, u->mixer_map, FALSE) >= 0;
-+
-+                u->source->get_volume = source_get_volume_cb;
-+                u->source->set_volume = source_set_volume_cb;
-+                u->source->flags |= PA_SOURCE_HW_VOLUME_CTRL | (u->hw_dB_supported ? PA_SOURCE_DECIBEL_VOLUME : 0);
-+                pa_log_info("Using hardware volume control. Hardware dB scale %s.", u->hw_dB_supported ? "supported" : "not supported");
-+
-+                if (!u->hw_dB_supported)
-+                    u->source->n_volume_steps = u->hw_volume_max - u->hw_volume_min + 1;
-+            } else
-+                pa_log_info("Using software volume control.");
-+        }
-+
-+        if (snd_mixer_selem_has_capture_switch(u->mixer_elem)) {
-+            u->source->get_mute = source_get_mute_cb;
-+            u->source->set_mute = source_set_mute_cb;
-+            u->source->flags |= PA_SOURCE_HW_MUTE_CTRL;
-+        } else
-+            pa_log_info("Using software mute control.");
-+
-+        u->mixer_fdl = pa_alsa_fdlist_new();
-+
-+        if (pa_alsa_fdlist_set_mixer(u->mixer_fdl, u->mixer_handle, m->core->mainloop) < 0) {
-+            pa_log("Failed to initialize file descriptor monitoring");
-+            goto fail;
-+        }
-+
-+        snd_mixer_elem_set_callback(u->mixer_elem, mixer_callback);
-+        snd_mixer_elem_set_callback_private(u->mixer_elem, u);
-+    } else
-+        u->mixer_fdl = NULL;
-+
 +    if (!(u->thread = pa_thread_new(thread_func, u))) {
 +        pa_log("Failed to create thread.");
 +        goto fail;
-+    }
-+    /* Get initial mixer settings */
-+    if (data.volume_is_set) {
-+        if (u->source->set_volume)
-+            u->source->set_volume(u->source);
-+    } else {
-+        if (u->source->get_volume)
-+            u->source->get_volume(u->source);
-+    }
-+
-+    if (data.muted_is_set) {
-+        if (u->source->set_mute)
-+            u->source->set_mute(u->source);
-+    } else {
-+        if (u->source->get_mute)
-+            u->source->get_mute(u->source);
 +    }
 +
 +    pa_proplist_sets(u->source->proplist, PROP_BUFFERS, PROP_BUFFERS_PRIMARY);
@@ -2467,8 +2648,12 @@ index 0000000..4b229d7
 +                                                          PA_HOOK_LATE,
 +                                                          (pa_hook_cb_t)source_proplist_changed_hook_callback, u);
 +
-+    pa_source_put(u->source);
++    pa_atomic_store(&u->buffer_overrun, FALSE);
 +
++    pa_source_put(u->source);
++    pa_source_suspend(u->source, TRUE);
++
++    u->init_alsa_mixer = pa_xstrdup(alsa_mixer);
 +    if (alsa_mixer)
 +        pa_xfree(alsa_mixer);
 +
@@ -2526,6 +2711,13 @@ index 0000000..4b229d7
 +        snd_pcm_drop(u->pcm_handle);
 +        snd_pcm_close(u->pcm_handle);
 +    }
++
++    if (u->init_device_id)
++        pa_xfree(u->init_device_id);
++    if (u->init_device_string)
++        pa_xfree(u->init_device_string);
++    if (u->init_alsa_mixer)
++        pa_xfree(u->init_alsa_mixer);
 +
 +    pa_xfree(u->device_name);
 +    pa_xfree(u);
