@@ -4,6 +4,7 @@ pulseaudio (0.9.15-1maemo15) unstable; urgency=low
   * Remember volume per route. Fixes: NB#116930
   * Enable NEON by default on armel (do not rely on vfp flag).
   * Tune mixer delay. Fixes: NB#114849
+  * Set default source to source.record (help NB#110033)
 
  -- Maemo Multimedia <multimedia@maemo.org>  Thu, 18 Jun 2009 17:28:09 +0300
 
