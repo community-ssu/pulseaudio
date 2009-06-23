@@ -1,7 +1,7 @@
 From d620078de440452eb7fcf2ce130636e76a1f30c2 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 11 May 2009 21:54:10 +0300
-Subject: [PATCH 32/64] native-protocol: send supported extensions in client & server
+Subject: [PATCH 32/66] native-protocol: send supported extensions in client & server
 
 The client will send a list of extension-id along with SET_NAME.
 ---

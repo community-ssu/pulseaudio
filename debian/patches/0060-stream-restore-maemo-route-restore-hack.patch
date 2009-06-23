@@ -1,7 +1,7 @@
 From ef8d1333e2d60cf1b55049c782ce7272e2ce978b Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 21 May 2009 19:32:58 +0300
-Subject: [PATCH 60/64] stream-restore: maemo route restore hack
+Subject: [PATCH 60/66] stream-restore: maemo route restore hack
 
 Also, attenuate if volume is more than -20dB when switching route.
 ---

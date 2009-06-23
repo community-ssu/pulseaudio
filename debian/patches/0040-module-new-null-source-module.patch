@@ -1,7 +1,7 @@
 From 9661fe55454d17aca5821234b40c504afe6abd71 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 4 Dec 2008 18:02:21 +0200
-Subject: [PATCH 40/64] module: new null-source module
+Subject: [PATCH 40/66] module: new null-source module
 
 ---
  src/Makefile.am                         |    6 +

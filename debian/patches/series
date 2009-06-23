@@ -62,3 +62,5 @@
 0062-alsa-sink-volume-a-complex-mixer-module.patch
 0063-alsa-port-the-old-alsa-modules.patch
 0064-autofoo.patch
+0065-stream-restore-workaroung-moving-stream-volume-resto.patch
+0066-stream-restore-don-t-override-volume-entry-when-appl.patch

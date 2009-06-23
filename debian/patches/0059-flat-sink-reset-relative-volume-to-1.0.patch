@@ -1,7 +1,7 @@
 From fa6d2d2d679935c32b95415495d40099ec6de560 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 12 Jun 2009 20:06:04 +0300
-Subject: [PATCH 59/64] flat-sink: reset relative volume to 1.0
+Subject: [PATCH 59/66] flat-sink: reset relative volume to 1.0
 
 Because we skip compute_soft_volume(), there is no chance
 relative_volume[] is properly set. It remains at 0 all the time.

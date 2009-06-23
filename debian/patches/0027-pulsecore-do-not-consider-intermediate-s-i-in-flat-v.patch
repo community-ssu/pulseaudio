@@ -1,7 +1,7 @@
 From dfef1b1c8601c4b42d739ae2ec164fba2560eb49 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 22:44:34 +0200
-Subject: [PATCH 27/64] pulsecore: do not consider intermediate s-i in flat-vol
+Subject: [PATCH 27/66] pulsecore: do not consider intermediate s-i in flat-vol
 
 ---
  src/pulsecore/sink.c |   33 ++++++++++++++++++++++++++-------
