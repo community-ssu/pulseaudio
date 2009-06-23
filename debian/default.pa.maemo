@@ -8,7 +8,7 @@ load-module module-native-protocol-unix
 load-module module-simple-protocol-unix
 
 ### Automatically restore the volume of streams and devices
-load-module module-stream-restore fallback_table=/etc/pulse/x-maemo-stream-restore.table restore_muted=no
+load-module module-stream-restore fallback_table=/etc/pulse/x-maemo-stream-restore.table restore_muted=no restore_device=no
 load-module module-rescue-streams
 load-module module-suspend-on-idle timeout=5
 
@@ -40,7 +40,7 @@ load-module module-nokia-music sink_name=sink.music master_sink=sink.voice.raw
 set-default-sink sink.music
 .endif
 .ifexists module-nokia-record.so
-load-module module-nokia-record source_name=source.record master_source=source.hw0
+load-module module-nokia-record source_name=source.record master_source=source.voice.raw
 set-default-source source.record
 .endif
 
