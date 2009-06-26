@@ -64,3 +64,6 @@
 0064-autofoo.patch
 0065-stream-restore-workaroung-moving-stream-volume-resto.patch
 0066-stream-restore-don-t-override-volume-entry-when-appl.patch
+0067-stream-restore-initialize-userdata-to-0.patch
+0068-bluetooth-add-FIXME-about-connected-profiles.patch
+0069-alsa-old-latency-calculation-fix-no-more-negative-va.patch

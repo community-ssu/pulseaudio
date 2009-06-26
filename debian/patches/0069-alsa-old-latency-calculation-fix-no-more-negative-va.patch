@@ -1,0 +1,33 @@
+From 5f93bc29bf369b0fd710d7914bfa1e7d22891c81 Mon Sep 17 00:00:00 2001
+From: Pekka Ervasti <peervast@gmail.com>
+Date: Fri, 26 Jun 2009 15:03:38 +0300
+Subject: [PATCH 69/69] alsa-old: latency calculation fix, no more negative values
+
+---
+ src/modules/alsa/module-alsa-source-old.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-source-old.c b/src/modules/alsa/module-alsa-source-old.c
+index cea1c86..41bf162 100644
+--- a/src/modules/alsa/module-alsa-source-old.c
++++ b/src/modules/alsa/module-alsa-source-old.c
+@@ -393,13 +393,13 @@ static int source_get_latency_by_timestamps(struct userdata *u, pa_usec_t *d) {
+     ts_dma.tv_sec = tstamp.tv_sec;
+     ts_dma.tv_nsec = tstamp.tv_nsec;
+ 
+-    buffered = pa_bytes_to_usec(avail * u->frame_size - u->fragment_size, &u->source->sample_spec);
++    buffered = pa_bytes_to_usec(avail * u->frame_size, &u->source->sample_spec);
+     elapsed = pa_rtclock_now() - pa_timespec_load(&ts_dma);
+ 
+     *d = buffered + elapsed;
+ 
+-    pa_log_debug("UL latency: avail: %d * frame_size: %d - fragment_size: %d bytes",
+-                 (int)avail, (int)u->frame_size, (int)u->fragment_size);
++    pa_log_debug("UL latency: avail: %d * frame_size: %d",
++                 (int)avail, (int)u->frame_size);
+ 
+     pa_log_debug("UL latency: buffered %d + elapsed %d = %d usecs",
+                  (int)buffered, (int)elapsed, (int)*d);
+-- 
+1.6.3.1
+
