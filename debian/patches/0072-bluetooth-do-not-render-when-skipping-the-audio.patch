@@ -1,0 +1,33 @@
+From 281be36513bdc8384065b5be83e792720269f192 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Tue, 30 Jun 2009 12:50:52 +0300
+Subject: [PATCH 72/72] bluetooth: do not render when skipping the audio
+
+---
+ src/modules/bluetooth/module-bluetooth-device.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index d354390..38feed3 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -1325,7 +1325,6 @@ static void thread_func(void *userdata) {
+                         if (u->write_index > 0 && audio_to_send > MAX_PLAYBACK_CATCH_UP_USEC) {
+                             pa_usec_t skip_usec;
+                             uint64_t skip_bytes;
+-                            pa_memchunk tmp;
+ 
+                             skip_usec = audio_to_send - MAX_PLAYBACK_CATCH_UP_USEC;
+                             skip_bytes = pa_usec_to_bytes(skip_usec, &u->sample_spec);
+@@ -1334,8 +1333,6 @@ static void thread_func(void *userdata) {
+                                         (unsigned long long) skip_usec,
+                                         (unsigned long long) skip_bytes);
+ 
+-                            pa_sink_render_full(u->sink, skip_bytes, &tmp);
+-                            pa_memblock_unref(tmp.memblock);
+                             u->write_index += skip_bytes;
+                         }
+ 
+-- 
+1.6.3.1
+

@@ -1,7 +1,7 @@
 From cd386d8b2378a2fab3ecf8ea514345d64e107f61 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Sat, 4 Apr 2009 14:50:37 +0300
-Subject: [PATCH 51/69] bootstrap: enable DEBUG_VOLUME and NOKIA
+Subject: [PATCH 51/72] bootstrap: enable DEBUG_VOLUME and NOKIA
 
 ---
  bootstrap.sh |    2 +-

@@ -1,7 +1,7 @@
 From f62ccaff1b08026ce12c40049341785683759ce8 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:08:35 +0300
-Subject: [PATCH 63/69] alsa: port the old alsa modules
+Subject: [PATCH 63/72] alsa: port the old alsa modules
 
 ---
  src/Makefile.am                                  |   18 +

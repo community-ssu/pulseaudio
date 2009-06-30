@@ -1,3 +1,10 @@
+pulseaudio (0.9.15-1maemo16) unstable; urgency=low
+
+  * BT streaming irregularities fixes. Fixes: NB#115334
+    (and NB#120873, NB#124140, NB#125120, NB#124109, NB#116679)
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 30 Jun 2009 12:53:12 +0300
+
 pulseaudio (0.9.15-1maemo15) unstable; urgency=low
 
   * Limit volume to -20dB for unkown route. Fixes: NB#120216

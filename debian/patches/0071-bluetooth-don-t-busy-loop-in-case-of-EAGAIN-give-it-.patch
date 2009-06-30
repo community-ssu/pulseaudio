@@ -1,0 +1,52 @@
+From d949c3598746320cc2c34e9e0bcef9526b3a4965 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Tue, 30 Jun 2009 12:49:37 +0300
+Subject: [PATCH 71/72] bluetooth: don't busy loop in case of EAGAIN, give it 10ms
+
+---
+ src/modules/bluetooth/module-bluetooth-device.c |   23 +++++++++++++++--------
+ 1 files changed, 15 insertions(+), 8 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index 32ee38b..d354390 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -1361,20 +1361,27 @@ static void thread_func(void *userdata) {
+                     writable = FALSE;
+                 }
+ 
+-                if ((!u->source || !PA_SOURCE_IS_LINKED(u->source->thread_info.state)) && do_write <= 0) {
+-                    pa_usec_t time_passed, next_write_at, sleep_for;
+-
++                if ((!u->source || !PA_SOURCE_IS_LINKED(u->source->thread_info.state))) {
++                    pa_usec_t sleep_for;
+                     /* Hmm, there is no input stream we could synchronize
+                      * to. So let's estimate when we need to wake up the latest */
+ 
+-                    time_passed = pa_rtclock_now() - u->started_at;
+-                    next_write_at = pa_bytes_to_usec(u->write_index, &u->sample_spec);
+-                    sleep_for = time_passed < next_write_at ? next_write_at - time_passed : 0;
++                    if (do_write <= 0) {
++                        pa_usec_t time_passed, next_write_at;
++
++                        time_passed = pa_rtclock_now() - u->started_at;
++                        next_write_at = pa_bytes_to_usec(u->write_index, &u->sample_spec);
++                        sleep_for = time_passed < next_write_at ? next_write_at - time_passed : 0;
++                        /* pa_log("Sleeping for %lu; time passed %lu, next write at %lu", (unsigned long) sleep_for, (unsigned long) time_passed, (unsigned long)next_write_at); */
++                    } else
++                        sleep_for = PA_USEC_PER_MSEC * 10;
+ 
+-/*                 pa_log("Sleeping for %lu; time passed %lu, next write at %lu", (unsigned long) sleep_for, (unsigned long) time_passed, (unsigned long)next_write_at); */
++                    if (sleep_for <= PA_USEC_PER_MSEC * 10)
++                        pa_log("Sleeping for %lu", (unsigned long) sleep_for);
+ 
+                     pa_rtpoll_set_timer_relative(u->rtpoll, sleep_for);
+-                    disable_timer = FALSE;
++                    if (sleep_for != 0)
++                        disable_timer = FALSE;
+                 }
+             }
+         }
+-- 
+1.6.3.1
+

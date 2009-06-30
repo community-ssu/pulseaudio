@@ -1,0 +1,34 @@
+From 37b2b81d1dce9269215928e1cc62feeff3cb6743 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
+Date: Mon, 29 Jun 2009 17:46:30 +0300
+Subject: [PATCH 69/72] bluetooth: don't connect on unconnected profile
+
+---
+ src/modules/bluetooth/module-bluetooth-device.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index 01357e5..92f4d2e 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -2052,6 +2052,17 @@ static int add_card(struct userdata *u, const char *default_profile, const pa_bl
+     u->card->set_profile = card_set_profile;
+ 
+     d = PA_CARD_PROFILE_DATA(u->card->active_profile);
++
++    if (device->headset_state < PA_BT_AUDIO_STATE_CONNECTED && *d == PROFILE_HSP) {
++        pa_log_warn("HSP is not connected, refused to use this profile");
++        pa_card_set_profile(u->card, "off", FALSE);
++    }
++    if (device->audio_sink_state < PA_BT_AUDIO_STATE_CONNECTED && *d == PROFILE_A2DP) {
++        pa_log_warn("A2DP is not connected, refused to use this profile");
++        pa_card_set_profile(u->card, "off", FALSE);
++    }
++
++    d = PA_CARD_PROFILE_DATA(u->card->active_profile);
+     u->profile = *d;
+ 
+     return 0;
+-- 
+1.6.3.1
+
