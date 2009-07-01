@@ -66,7 +66,7 @@
 0066-stream-restore-don-t-override-volume-entry-when-appl.patch
 0067-stream-restore-initialize-userdata-to-0.patch
 0068-alsa-old-latency-calculation-fix-no-more-negative-va.patch
-0069-bluetooth-don-t-connect-on-unconnected-profile.patch
-0070-bluetooth-device-Add-safe-guard-against-BT-streaming.patch
-0071-bluetooth-don-t-busy-loop-in-case-of-EAGAIN-give-it-.patch
-0072-bluetooth-do-not-render-when-skipping-the-audio.patch
+0069-bluetooth-device-Add-safe-guard-against-BT-streaming.patch
+0070-bluetooth-warn-on-EAGAIN-after-POLLOUT.patch
+0071-bluetooth-drop-data-every-500ms-on-oor-condition.patch
+0072-bluetooth-don-t-connect-on-unconnected-profile.patch
