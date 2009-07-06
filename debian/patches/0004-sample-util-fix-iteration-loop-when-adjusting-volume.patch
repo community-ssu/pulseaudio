@@ -1,7 +1,7 @@
 From 69eddaa7b86790a1d6b4fdb49d222b2930a6dbc0 Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Fri, 1 May 2009 04:14:40 +0200
-Subject: [PATCH 04/72] sample-util: fix iteration loop when adjusting volume of s24 samples
+Subject: [PATCH 04/74] sample-util: fix iteration loop when adjusting volume of s24 samples
 
 ---
  src/pulsecore/sample-util.c |    8 ++++----
@@ -36,5 +36,5 @@ index 3a9b384..a3e490b 100644
  
                  t = (int64_t)((int32_t) (PA_READ24RE(d) << 8));
 -- 
-1.6.3.1
+1.6.3.3
 

@@ -1,17 +1,17 @@
-From 6cba0a645c04dbf9a90c955d0e01dd035ab58163 Mon Sep 17 00:00:00 2001
+From 89397b1024f173c6bde6818f7ebec9c409c60e8d Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 23 Jun 2009 19:38:55 +0300
-Subject: [PATCH 66/72] stream-restore: don't override volume entry, when applied to different channel maps
+Subject: [PATCH 63/74] stream-restore: don't override volume entry, when applied to different channel maps
 
 ---
  src/modules/module-stream-restore.c |    7 +++++--
  1 files changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index 972b8a5..8e96932 100644
+index f5cbbb5..125f1e5 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
-@@ -789,8 +789,11 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
+@@ -788,8 +788,11 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
          pa_xfree(n);
  
          if (u->restore_volume && e->volume_valid) {
@@ -26,5 +26,5 @@ index 972b8a5..8e96932 100644
  
          if (u->restore_muted && e->muted_valid) {
 -- 
-1.6.3.1
+1.6.3.3
 

@@ -1,15 +1,14 @@
-From ef8d1333e2d60cf1b55049c782ce7272e2ce978b Mon Sep 17 00:00:00 2001
+From efb81780c1cda18fee4c782b07aa281f04e263d9 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 21 May 2009 19:32:58 +0300
-Subject: [PATCH 60/72] stream-restore: maemo route restore hack
+Subject: [PATCH 60/74] stream-restore: maemo route restore hack
 
-Also, attenuate if volume is more than -20dB when switching route.
 ---
- src/modules/module-stream-restore.c |  244 ++++++++++++++++++++++++++++++++---
- 1 files changed, 228 insertions(+), 16 deletions(-)
+ src/modules/module-stream-restore.c |  243 ++++++++++++++++++++++++++++++++---
+ 1 files changed, 227 insertions(+), 16 deletions(-)
 
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index 8964792..c87b421 100644
+index 8964792..5ab3aa7 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
 @@ -97,9 +97,14 @@ struct userdata {
@@ -42,7 +41,7 @@ index 8964792..c87b421 100644
  enum {
      SUBCOMMAND_TEST,
      SUBCOMMAND_READ,
-@@ -120,6 +132,144 @@ enum {
+@@ -120,6 +132,143 @@ enum {
      SUBCOMMAND_EVENT
  };
  
@@ -179,7 +178,6 @@ index 8964792..c87b421 100644
 +    route_set_role_volume(u, "sink-input-by-media-role:phone");
 +    trigger_save(u);
 +
-+end:
 +    pa_xfree(e);
 +    return PA_HOOK_OK;
 +}
@@ -187,7 +185,7 @@ index 8964792..c87b421 100644
  static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, pa_usec_t t, void *userdata) {
      struct userdata *u = userdata;
  
-@@ -132,6 +282,8 @@ static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, pa_usec_t t,
+@@ -132,6 +281,8 @@ static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, pa_usec_t t,
      u->save_time_event = NULL;
  
      gdbm_sync(u->gdbm_file);
@@ -196,7 +194,7 @@ index 8964792..c87b421 100644
      pa_log_info("Synced.");
  }
  
-@@ -234,6 +386,29 @@ static void trigger_save(struct userdata *u) {
+@@ -234,6 +385,29 @@ static void trigger_save(struct userdata *u) {
          pa_pstream_send_tagstruct(pa_native_connection_get_pstream(c), t);
      }
  
@@ -226,7 +224,7 @@ index 8964792..c87b421 100644
      if (u->save_time_event)
          return;
  
-@@ -241,7 +416,6 @@ static void trigger_save(struct userdata *u) {
+@@ -241,7 +415,6 @@ static void trigger_save(struct userdata *u) {
  }
  
  static pa_bool_t entries_equal(const struct entry *a, const struct entry *b) {
@@ -234,7 +232,7 @@ index 8964792..c87b421 100644
  
      pa_assert(a);
      pa_assert(b);
-@@ -258,9 +432,10 @@ static pa_bool_t entries_equal(const struct entry *a, const struct entry *b) {
+@@ -258,9 +431,10 @@ static pa_bool_t entries_equal(const struct entry *a, const struct entry *b) {
          (a->volume_is_absolute_valid && (a->volume_is_absolute != b->volume_is_absolute)))
          return FALSE;
  
@@ -248,7 +246,7 @@ index 8964792..c87b421 100644
          return FALSE;
  
      return TRUE;
-@@ -343,6 +518,9 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
+@@ -343,6 +517,9 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
          pa_xfree(old);
      }
  
@@ -258,7 +256,7 @@ index 8964792..c87b421 100644
      key.dptr = name;
      key.dsize = (int) strlen(name);
  
-@@ -410,12 +588,8 @@ static pa_hook_result_t sink_input_fixate_hook_callback(pa_core *c, pa_sink_inpu
+@@ -410,12 +587,8 @@ static pa_hook_result_t sink_input_fixate_hook_callback(pa_core *c, pa_sink_inpu
          if (u->restore_volume && e->volume_valid) {
  
              if (!new_data->volume_is_set) {
@@ -272,7 +270,7 @@ index 8964792..c87b421 100644
  
                  new_data->volume_is_absolute = e->volume_is_absolute;
                  new_data->save_volume = TRUE;
-@@ -561,6 +735,9 @@ static int fill_db(struct userdata *u, const char *filename) {
+@@ -561,6 +734,9 @@ static int fill_db(struct userdata *u, const char *filename) {
              data.dptr = (void*) &e;
              data.dsize = sizeof(e);
  
@@ -282,7 +280,7 @@ index 8964792..c87b421 100644
              if (gdbm_store(u->gdbm_file, key, data, GDBM_INSERT) == 0)
                  pa_log_debug("Setting %s to %fdb", ln, db);
          }
-@@ -604,11 +781,8 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
+@@ -604,11 +780,8 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
          pa_xfree(n);
  
          if (u->restore_volume && e->volume_valid) {
@@ -295,7 +293,7 @@ index 8964792..c87b421 100644
          }
  
          if (u->restore_muted && e->muted_valid) {
-@@ -769,6 +943,7 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
+@@ -769,6 +942,7 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
                  pa_bool_t muted, volume_is_absolute;
                  struct entry entry;
                  datum key, data;
@@ -303,7 +301,7 @@ index 8964792..c87b421 100644
                  int k;
  
                  memset(&entry, 0, sizeof(entry));
-@@ -776,11 +951,13 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
+@@ -776,11 +950,13 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
  
                  if (pa_tagstruct_gets(t, &name) < 0 ||
                      pa_tagstruct_get_channel_map(t, &entry.channel_map) ||
@@ -318,7 +316,7 @@ index 8964792..c87b421 100644
                  if (pa_native_connection_extension_supported(c, "stream-restore-2")) {
                      if (pa_tagstruct_get_boolean(t, &volume_is_absolute) < 0)
                          goto fail;
-@@ -795,7 +972,7 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
+@@ -795,7 +971,7 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
                  entry.volume_valid = entry.volume.channels > 0;
  
                  if (entry.volume_valid)
@@ -327,7 +325,7 @@ index 8964792..c87b421 100644
                          goto fail;
  
                  entry.muted = muted;
-@@ -809,6 +986,9 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
+@@ -809,6 +985,9 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
                      !pa_namereg_is_valid_name(entry.device))
                      goto fail;
  
@@ -337,7 +335,7 @@ index 8964792..c87b421 100644
                  key.dptr = (void*) name;
                  key.dsize = (int) strlen(name);
  
-@@ -919,6 +1099,9 @@ int pa__init(pa_module*m) {
+@@ -919,6 +1098,9 @@ int pa__init(pa_module*m) {
      u->restore_device = restore_device;
      u->restore_volume = restore_volume;
      u->restore_muted = restore_muted;
@@ -347,7 +345,7 @@ index 8964792..c87b421 100644
      u->gdbm_file = NULL;
      u->subscribed = pa_idxset_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
  
-@@ -937,6 +1120,9 @@ int pa__init(pa_module*m) {
+@@ -937,6 +1119,9 @@ int pa__init(pa_module*m) {
      if (restore_volume || restore_muted)
          u->sink_input_fixate_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_INPUT_FIXATE], PA_HOOK_EARLY, (pa_hook_cb_t) sink_input_fixate_hook_callback, u);
  
@@ -357,7 +355,7 @@ index 8964792..c87b421 100644
      /* We include the host identifier in the file name because gdbm
       * files are CPU dependant, and we don't want things to go wrong
       * if we are on a multiarch system. */
-@@ -964,6 +1150,26 @@ int pa__init(pa_module*m) {
+@@ -964,6 +1149,26 @@ int pa__init(pa_module*m) {
      if (fill_db(u, pa_modargs_get_value(ma, "fallback_table", NULL)) < 0)
          goto fail;
  
@@ -384,7 +382,7 @@ index 8964792..c87b421 100644
      for (si = pa_idxset_first(m->core->sink_inputs, &idx); si; si = pa_idxset_next(m->core->sink_inputs, &idx))
          subscribe_callback(m->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_NEW|PA_SUBSCRIPTION_EVENT_CHANGE, si->index, u);
  
-@@ -999,6 +1205,8 @@ void pa__done(pa_module*m) {
+@@ -999,6 +1204,8 @@ void pa__done(pa_module*m) {
          pa_hook_slot_free(u->sink_input_fixate_hook_slot);
      if (u->source_output_new_hook_slot)
          pa_hook_slot_free(u->source_output_new_hook_slot);
@@ -393,7 +391,7 @@ index 8964792..c87b421 100644
  
      if (u->connection_unlink_hook_slot)
          pa_hook_slot_free(u->connection_unlink_hook_slot);
-@@ -1009,6 +1217,9 @@ void pa__done(pa_module*m) {
+@@ -1009,6 +1216,9 @@ void pa__done(pa_module*m) {
      if (u->gdbm_file)
          gdbm_close(u->gdbm_file);
  
@@ -403,7 +401,7 @@ index 8964792..c87b421 100644
      if (u->protocol) {
          pa_native_protocol_remove_ext(u->protocol, m);
          pa_native_protocol_unref(u->protocol);
-@@ -1017,5 +1228,6 @@ void pa__done(pa_module*m) {
+@@ -1017,5 +1227,6 @@ void pa__done(pa_module*m) {
      if (u->subscribed)
          pa_idxset_free(u->subscribed, NULL, NULL);
  
@@ -411,5 +409,5 @@ index 8964792..c87b421 100644
      pa_xfree(u);
  }
 -- 
-1.6.3.1
+1.6.3.3
 

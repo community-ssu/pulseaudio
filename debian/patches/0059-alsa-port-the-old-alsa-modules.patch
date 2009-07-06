@@ -1,15 +1,26 @@
-From f62ccaff1b08026ce12c40049341785683759ce8 Mon Sep 17 00:00:00 2001
+From a012c5af27d1c79a38b4899052a33f41877eea5d Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:08:35 +0300
-Subject: [PATCH 63/72] alsa: port the old alsa modules
+Subject: [PATCH 59/74] alsa: port the old alsa modules
 
+alsa-old: start as suspended
+
+ensure use mmap
+
+alsa-old: check buffer xruns in mmap mode
+
+alsa-old: try to ease merging of alsa-* branches
+
+alsa-old: latency calculation fix, no more negative values
+
+alsa-old: Fix "start as suspended" thread usage.
 ---
  src/Makefile.am                                  |   18 +
  src/modules/alsa/module-alsa-sink-old-symdef.h   |   27 +
- src/modules/alsa/module-alsa-sink-old.c          | 1110 ++++++++++++++++
+ src/modules/alsa/module-alsa-sink-old.c          | 1128 ++++++++++++++++
  src/modules/alsa/module-alsa-source-old-symdef.h |   27 +
- src/modules/alsa/module-alsa-source-old.c        | 1478 ++++++++++++++++++++++
- 5 files changed, 2660 insertions(+), 0 deletions(-)
+ src/modules/alsa/module-alsa-source-old.c        | 1499 ++++++++++++++++++++++
+ 5 files changed, 2699 insertions(+), 0 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-old-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-old.c
  create mode 100644 src/modules/alsa/module-alsa-source-old-symdef.h
@@ -93,10 +104,10 @@ index 0000000..0c74afc
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
 new file mode 100644
-index 0000000..c480ee6
+index 0000000..62e0db7
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-old.c
-@@ -0,0 +1,1110 @@
+@@ -0,0 +1,1128 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -495,7 +506,7 @@ index 0000000..c480ee6
 +    elapsed = pa_rtclock_now() - pa_timespec_load(&ts_dma);
 +
 +    *d = buffered - elapsed;
-+            
++
 +    pa_log_debug("DL latency: hw fifo: %d + hwbuf_size: %d - (avail: %d * frame_size: %d) bytes",
 +                 HW_FIFO_SIZE_BYTES, (int)u->hwbuf_size, (int)avail, (int)u->frame_size);
 +
@@ -590,8 +601,6 @@ index 0000000..c480ee6
 +    return 0;
 +}
 +
-+static int initialize_sink(struct userdata *u);
-+
 +static int unsuspend(struct userdata *u) {
 +    pa_sample_spec ss;
 +    int err;
@@ -599,14 +608,19 @@ index 0000000..c480ee6
 +    unsigned nfrags;
 +
 +    pa_assert(u);
-+    pa_assert(!u->pcm_handle);
-+
-+    pa_log_info("Trying resume...");
 +
 +    if (!u->initialized) {
-+        pa_log_debug("unsuspend for the first time -> init alsa");
-+        return initialize_sink(u);
++        pa_log_warn("unsuspend called, but sink not initialized!");
++        return -1;
 +    }
++
++    //pa_assert(!u->pcm_handle)
++    if (u->pcm_handle) {
++        pa_log_debug("Device was just initialized, no need to resume.");
++        return 0;
++    }
++
++    pa_log_info("Trying resume...");
 +
 +    snd_config_update_free_global();
 +    if ((err = snd_pcm_open(&u->pcm_handle, u->device_name, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK)) < 0) {
@@ -979,6 +993,20 @@ index 0000000..c480ee6
 +    return -1;
 +}
 +
++static int set_state(pa_sink *s, pa_sink_state_t state) {
++    struct userdata *u;
++
++    pa_sink_assert_ref(s);
++    pa_assert_se(u = s->userdata);
++
++    if (!u->initialized && (state == PA_SINK_RUNNING || state == PA_SINK_IDLE)) {
++        pa_log_debug("unsuspend for the first time -> init alsa");
++        return initialize_sink(u);
++    }
++
++    return 0;
++}
++
 +int pa__init(pa_module*m) {
 +
 +    pa_modargs *ma = NULL;
@@ -1143,6 +1171,7 @@ index 0000000..c480ee6
 +    pa_atomic_store(&u->buffer_underrun, FALSE);
 +
 +    pa_sink_put(u->sink);
++    u->sink->set_state = set_state;
 +    pa_sink_suspend(u->sink, TRUE); /* start suspended */
 +
 +    pa_modargs_free(ma);
@@ -1242,10 +1271,10 @@ index 0000000..033edd6
 +#endif
 diff --git a/src/modules/alsa/module-alsa-source-old.c b/src/modules/alsa/module-alsa-source-old.c
 new file mode 100644
-index 0000000..cea1c86
+index 0000000..091a9d3
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-source-old.c
-@@ -0,0 +1,1478 @@
+@@ -0,0 +1,1499 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -1641,13 +1670,13 @@ index 0000000..cea1c86
 +    ts_dma.tv_sec = tstamp.tv_sec;
 +    ts_dma.tv_nsec = tstamp.tv_nsec;
 +
-+    buffered = pa_bytes_to_usec(avail * u->frame_size - u->fragment_size, &u->source->sample_spec);
++    buffered = pa_bytes_to_usec(avail * u->frame_size, &u->source->sample_spec);
 +    elapsed = pa_rtclock_now() - pa_timespec_load(&ts_dma);
 +
 +    *d = buffered + elapsed;
 +
-+    pa_log_debug("UL latency: avail: %d * frame_size: %d - fragment_size: %d bytes",
-+                 (int)avail, (int)u->frame_size, (int)u->fragment_size);
++    pa_log_debug("UL latency: avail: %d * frame_size: %d",
++                 (int)avail, (int)u->frame_size);
 +
 +    pa_log_debug("UL latency: buffered %d + elapsed %d = %d usecs",
 +                 (int)buffered, (int)elapsed, (int)*d);
@@ -1734,8 +1763,6 @@ index 0000000..cea1c86
 +    return 0;
 +}
 +
-+static int initialize_source(struct userdata *u);
-+
 +static int unsuspend(struct userdata *u) {
 +    pa_sample_spec ss;
 +    int err;
@@ -1744,11 +1771,16 @@ index 0000000..cea1c86
 +    snd_pcm_uframes_t period_size;
 +
 +    pa_assert(u);
-+    pa_assert(!u->pcm_handle);
 +
 +    if (!u->initialized) {
-+        pa_log_debug("unsuspend for the first time -> init alsa");
-+        return initialize_source(u);
++        pa_log_warn("unsuspend called, but source not initialized!");
++        return -1;
++    }
++
++    //pa_assert(!u->pcm_handle);
++    if (u->pcm_handle) {
++        pa_log_debug("Device was just initialized, no need to resume.");
++        return 0;
 +    }
 +
 +    pa_log_info("Trying resume...");
@@ -2475,6 +2507,22 @@ index 0000000..cea1c86
 +    return -1;
 +}
 +
++static int set_state(pa_source *s, pa_source_state_t state) {
++    struct userdata *u;
++
++    pa_source_assert_ref(s);
++    pa_assert_se(u = s->userdata);
++
++    if (!u->initialized && (state == PA_SOURCE_RUNNING || state == PA_SOURCE_IDLE)) {
++        pa_log_debug("unsuspend for the first time -> init alsa");
++        return initialize_source(u);
++    }
++
++    return 0;
++}
++
++
++
 +int pa__init(pa_module*m) {
 +
 +    pa_modargs *ma = NULL;
@@ -2650,10 +2698,12 @@ index 0000000..cea1c86
 +
 +    pa_atomic_store(&u->buffer_overrun, FALSE);
 +
++    u->init_alsa_mixer = pa_xstrdup(alsa_mixer);
++
 +    pa_source_put(u->source);
++    u->source->set_state = set_state;
 +    pa_source_suspend(u->source, TRUE);
 +
-+    u->init_alsa_mixer = pa_xstrdup(alsa_mixer);
 +    if (alsa_mixer)
 +        pa_xfree(alsa_mixer);
 +
@@ -2725,5 +2775,5 @@ index 0000000..cea1c86
 +    snd_config_update_free_global();
 +}
 -- 
-1.6.3.1
+1.6.3.3
 

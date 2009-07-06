@@ -1,17 +1,17 @@
-From 709c5902d1d963f870f63b4527483c6f26e21a12 Mon Sep 17 00:00:00 2001
+From bb883427a9d1f2b4e9307239c46bbbf4d97f1e15 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 23 Jun 2009 15:52:37 +0300
-Subject: [PATCH 65/72] stream-restore: workaroung moving stream volume restore
+Subject: [PATCH 62/74] stream-restore: workaroung moving stream volume restore
 
 ---
  src/modules/module-stream-restore.c |    8 +++++++-
  1 files changed, 7 insertions(+), 1 deletions(-)
 
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index 761b293..972b8a5 100644
+index 41a1c78..f5cbbb5 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
-@@ -776,7 +776,10 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
+@@ -775,7 +775,10 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
          char *n;
          pa_sink *s;
  
@@ -23,7 +23,7 @@ index 761b293..972b8a5 100644
              continue;
  
          if (!pa_streq(name, n)) {
-@@ -808,6 +811,9 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
+@@ -807,6 +810,9 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
          char *n;
          pa_source *s;
  
@@ -34,5 +34,5 @@ index 761b293..972b8a5 100644
              continue;
  
 -- 
-1.6.3.1
+1.6.3.3
 

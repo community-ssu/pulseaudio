@@ -1,7 +1,7 @@
 From 18bec537e02248fa5f4cc112f85deb0650da320d Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Sat, 4 Apr 2009 23:19:53 +0300
-Subject: [PATCH 02/72] pulse: move pa_rtclock_now in pulsecommon
+Subject: [PATCH 02/74] pulse: move pa_rtclock_now in pulsecommon
 
 ---
  src/Makefile.am                                 |    3 +-
@@ -1006,5 +1006,5 @@ index 006b93f..9401deb 100644
  #include <pulsecore/llist.h>
  #include <pulsecore/rtsig.h>
 -- 
-1.6.3.1
+1.6.3.3
 

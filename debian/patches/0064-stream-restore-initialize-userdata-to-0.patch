@@ -1,7 +1,7 @@
-From 59934741d94768586d2d13cf0bad6f0d2b6a7ae6 Mon Sep 17 00:00:00 2001
+From 8f2d404e0cb3f6f3da98c235af16117b9feccf81 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 25 Jun 2009 13:13:43 +0300
-Subject: [PATCH 67/72] stream-restore: initialize userdata to 0
+Subject: [PATCH 64/74] stream-restore: initialize userdata to 0
 
 This avoid crash when unloading and some slots are != NULL
 ---
@@ -9,10 +9,10 @@ This avoid crash when unloading and some slots are != NULL
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index 8e96932..030e167 100644
+index 125f1e5..de81baa 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
-@@ -1107,7 +1107,7 @@ int pa__init(pa_module*m) {
+@@ -1106,7 +1106,7 @@ int pa__init(pa_module*m) {
      if (!restore_muted && !restore_volume && !restore_device)
          pa_log_warn("Neither restoring volume, nor restoring muted, nor restoring device enabled!");
  
@@ -22,5 +22,5 @@ index 8e96932..030e167 100644
      u->module = m;
      u->save_time_event = NULL;
 -- 
-1.6.3.1
+1.6.3.3
 

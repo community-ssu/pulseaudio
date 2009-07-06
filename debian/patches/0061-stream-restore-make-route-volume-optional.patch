@@ -1,14 +1,14 @@
-From 4b4721869c6e769365503006eff375c7654a9f0b Mon Sep 17 00:00:00 2001
+From 5050b381810c9a9e5a464cf1cda8935a9155117e Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 2 Jun 2009 18:20:00 +0300
-Subject: [PATCH 61/72] stream-restore: make route volume optional
+Subject: [PATCH 61/74] stream-restore: make route volume optional
 
 ---
  src/modules/module-stream-restore.c |   13 ++++++++++---
  1 files changed, 10 insertions(+), 3 deletions(-)
 
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index c87b421..bfa885c 100644
+index 5ab3aa7..41a1c78 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
 @@ -75,6 +75,7 @@ static const char* const valid_modargs[] = {
@@ -27,7 +27,7 @@ index c87b421..bfa885c 100644
  
      pa_native_protocol *protocol;
      pa_idxset *subscribed;
-@@ -386,6 +388,9 @@ static void trigger_save(struct userdata *u) {
+@@ -385,6 +387,9 @@ static void trigger_save(struct userdata *u) {
          pa_pstream_send_tagstruct(pa_native_connection_get_pstream(c), t);
      }
  
@@ -37,7 +37,7 @@ index c87b421..bfa885c 100644
      if (!u->route)
          goto end;
  
-@@ -1071,7 +1076,7 @@ int pa__init(pa_module*m) {
+@@ -1070,7 +1075,7 @@ int pa__init(pa_module*m) {
      pa_sink_input *si;
      pa_source_output *so;
      uint32_t idx;
@@ -46,7 +46,7 @@ index c87b421..bfa885c 100644
      int gdbm_cache_size;
      const char* ext_supported[] = { "stream-restore-1", "stream-restore-2", NULL };
  
-@@ -1084,7 +1089,8 @@ int pa__init(pa_module*m) {
+@@ -1083,7 +1088,8 @@ int pa__init(pa_module*m) {
  
      if (pa_modargs_get_value_boolean(ma, "restore_device", &restore_device) < 0 ||
          pa_modargs_get_value_boolean(ma, "restore_volume", &restore_volume) < 0 ||
@@ -56,7 +56,7 @@ index c87b421..bfa885c 100644
          pa_log("restore_device=, restore_volume= and restore_muted= expect boolean arguments");
          goto fail;
      }
-@@ -1120,7 +1126,8 @@ int pa__init(pa_module*m) {
+@@ -1119,7 +1125,8 @@ int pa__init(pa_module*m) {
      if (restore_volume || restore_muted)
          u->sink_input_fixate_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_INPUT_FIXATE], PA_HOOK_EARLY, (pa_hook_cb_t) sink_input_fixate_hook_callback, u);
  
@@ -67,5 +67,5 @@ index c87b421..bfa885c 100644
  
      /* We include the host identifier in the file name because gdbm
 -- 
-1.6.3.1
+1.6.3.3
 

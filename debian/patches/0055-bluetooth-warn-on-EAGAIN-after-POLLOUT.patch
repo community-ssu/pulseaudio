@@ -1,7 +1,7 @@
 From 382ac517f4781af95c2bc2071f91de7201bfe7dd Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 1 Jul 2009 13:11:33 +0300
-Subject: [PATCH 70/72] bluetooth: warn on EAGAIN after POLLOUT
+Subject: [PATCH 55/74] bluetooth: warn on EAGAIN after POLLOUT
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |    3 +++
@@ -22,5 +22,5 @@ index 32ee38b..c0de74b 100644
                      writable = FALSE;
                  }
 -- 
-1.6.3.1
+1.6.3.3
 
