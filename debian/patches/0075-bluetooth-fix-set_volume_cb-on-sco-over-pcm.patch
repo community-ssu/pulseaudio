@@ -1,0 +1,145 @@
+From af7793dbe198640c83c87a47a23c919a0f1892b3 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Tue, 7 Jul 2009 18:00:14 +0300
+Subject: [PATCH 75/75] bluetooth: fix set_volume_cb on sco over pcm
+
+The current implementation is totally bogus, it cast the over_sink
+userdata to the bluetooth-device userdata... It was failing nicely
+because the previous code had a gentle safe-guard in u->profile ==
+PROFILE_HSP, and u->profile was just random.
+
+There is no easy way to associate additional data to a sink or
+source. Two solutions seems possible: looking up loaded modules and
+check which one was handling the sink/source, or using pa_shared. I
+went for the second solution.
+---
+ src/modules/bluetooth/module-bluetooth-device.c |   63 +++++++++++++++++++---
+ 1 files changed, 54 insertions(+), 9 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index 08a0d71..c435e7b 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -41,6 +41,7 @@
+ #include <pulsecore/core-rtclock.h>
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/core-error.h>
++#include <pulsecore/shared.h>
+ #include <pulsecore/socket-util.h>
+ #include <pulsecore/thread.h>
+ #include <pulsecore/thread-mq.h>
+@@ -1476,14 +1477,21 @@ fail:
+ 
+ /* Run from main thread */
+ static void sink_set_volume_cb(pa_sink *s) {
+-    struct userdata *u = s->userdata;
+     DBusMessage *m;
+     dbus_uint16_t gain;
++    struct userdata *u;
++    char *k;
+ 
+-    pa_assert(u);
++    pa_assert(s);
++    pa_assert(s->core);
+ 
+-    if (u->profile != PROFILE_HSP)
+-        return;
++    k = pa_sprintf_malloc("bluetooth-device@%p", (void*)s);
++    u = pa_shared_get(s->core, k);
++    pa_xfree(k);
++
++    pa_assert(u);
++    pa_assert(u->sink == s);
++    pa_assert(u->profile == PROFILE_HSP);
+ 
+     gain = (pa_cvolume_max(&s->virtual_volume) * 15) / PA_VOLUME_NORM;
+ 
+@@ -1500,14 +1508,21 @@ static void sink_set_volume_cb(pa_sink *s) {
+ 
+ /* Run from main thread */
+ static void source_set_volume_cb(pa_source *s) {
+-    struct userdata *u = s->userdata;
+     DBusMessage *m;
+     dbus_uint16_t gain;
++    struct userdata *u;
++    char *k;
+ 
+-    pa_assert(u);
++    pa_assert(s);
++    pa_assert(s->core);
+ 
+-    if (u->profile != PROFILE_HSP)
+-        return;
++    k = pa_sprintf_malloc("bluetooth-device@%p", (void*)s);
++    u = pa_shared_get(s->core, k);
++    pa_xfree(k);
++
++    pa_assert(u);
++    pa_assert(u->source == s);
++    pa_assert(u->profile == PROFILE_HSP);
+ 
+     gain = (pa_cvolume_max(&s->virtual_volume) * 15) / PA_VOLUME_NORM;
+ 
+@@ -2159,7 +2174,7 @@ int pa__init(pa_module* m) {
+     struct userdata *u;
+     const char *address, *path;
+     DBusError err;
+-    char *mike, *speaker;
++    char *mike, *speaker, *k;
+     const pa_bluetooth_device *device;
+ 
+     pa_assert(m);
+@@ -2258,6 +2273,20 @@ int pa__init(pa_module* m) {
+     pa_xfree(speaker);
+     pa_xfree(mike);
+ 
++#ifdef NOKIA
++    if (u->hsp.sco_sink) {
++        k = pa_sprintf_malloc("bluetooth-device@%p", (void*)u->hsp.sco_sink);
++        pa_shared_set(u->core, k, u);
++        pa_xfree(k);
++    }
++
++    if (u->hsp.sco_source) {
++        k = pa_sprintf_malloc("bluetooth-device@%p", (void*)u->hsp.sco_source);
++        pa_shared_set(u->core, k, u);
++        pa_xfree(k);
++    }
++#endif
++
+     if (u->profile != PROFILE_OFF)
+         if (init_profile(u) < 0)
+             goto fail;
+@@ -2290,6 +2319,8 @@ int pa__get_n_used(pa_module *m) {
+ 
+ void pa__done(pa_module *m) {
+     struct userdata *u;
++    char *k;
++
+     pa_assert(m);
+ 
+     if (!(u = m->userdata))
+@@ -2339,6 +2370,20 @@ void pa__done(pa_module *m) {
+ 
+     shutdown_bt(u);
+ 
++#ifdef NOKIA
++    if (u->hsp.sco_sink) {
++        k = pa_sprintf_malloc("bluetooth-device@%p", (void*)u->hsp.sco_sink);
++        pa_shared_remove(u->core, k);
++        pa_xfree(k);
++    }
++
++    if (u->hsp.sco_source) {
++        k = pa_sprintf_malloc("bluetooth-device@%p", (void*)u->hsp.sco_source);
++        pa_shared_remove(u->core, k);
++        pa_xfree(k);
++    }
++#endif
++
+     if (u->a2dp.buffer)
+         pa_xfree(u->a2dp.buffer);
+ 
+-- 
+1.6.3.3
+

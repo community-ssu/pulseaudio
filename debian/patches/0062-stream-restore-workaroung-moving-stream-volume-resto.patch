@@ -1,7 +1,7 @@
 From bb883427a9d1f2b4e9307239c46bbbf4d97f1e15 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 23 Jun 2009 15:52:37 +0300
-Subject: [PATCH 62/74] stream-restore: workaroung moving stream volume restore
+Subject: [PATCH 62/75] stream-restore: workaroung moving stream volume restore
 
 ---
  src/modules/module-stream-restore.c |    8 +++++++-

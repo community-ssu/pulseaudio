@@ -1,7 +1,7 @@
 From a012c5af27d1c79a38b4899052a33f41877eea5d Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:08:35 +0300
-Subject: [PATCH 59/74] alsa: port the old alsa modules
+Subject: [PATCH 59/75] alsa: port the old alsa modules
 
 alsa-old: start as suspended
 

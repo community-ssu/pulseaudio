@@ -1,7 +1,7 @@
 From f876ab2e3e840a71e1b9f81c40b01641c6ee8837 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Fri, 3 Jul 2009 17:26:12 +0300
-Subject: [PATCH 73/74] core: no rewinding on volume change if the sink does not support it.
+Subject: [PATCH 73/75] core: no rewinding on volume change if the sink does not support it.
 
 ---
  src/pulsecore/sink-input.c |    6 ++++--

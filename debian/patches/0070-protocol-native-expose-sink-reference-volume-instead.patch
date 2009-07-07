@@ -1,7 +1,7 @@
 From f496cc38faa4d3d0b9dd71a48cf5ca3dd4767e6d Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 22 Apr 2009 13:07:01 +0300
-Subject: [PATCH 70/74] protocol-native: expose sink reference volume instead of virtual volume
+Subject: [PATCH 70/75] protocol-native: expose sink reference volume instead of virtual volume
 
 ---
  src/pulsecore/protocol-native.c |    2 +-

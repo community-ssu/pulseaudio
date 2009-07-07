@@ -1,7 +1,7 @@
 From b02cfcceadde14421545aeac895011cec4547e81 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 6 Jul 2009 17:50:51 +0300
-Subject: [PATCH 58/74] bluetooth: don't call pa_sink_render with 0 bytes request
+Subject: [PATCH 58/75] bluetooth: don't call pa_sink_render with 0 bytes request
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |   17 ++++++++++-------

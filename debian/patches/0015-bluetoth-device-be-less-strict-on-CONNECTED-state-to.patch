@@ -1,7 +1,7 @@
 From f04ae4e1b71b1cbd64df0305ac7d0739c7b2e95a Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Sat, 4 Apr 2009 17:56:36 +0300
-Subject: [PATCH 15/74] bluetoth-device: be less strict on CONNECTED state to switch profile
+Subject: [PATCH 15/75] bluetoth-device: be less strict on CONNECTED state to switch profile
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |    9 +++++++--

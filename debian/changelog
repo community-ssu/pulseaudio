@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo18) unstable; urgency=low
+
+  * Fix setting BTHS volume level. Fixes: NB#111167
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 07 Jul 2009 18:23:09 +0300
+
 pulseaudio (0.9.15-1maemo17) unstable; urgency=low
 
   * Get rid of gdbm usage and crashes. Fixes: NB#120362
