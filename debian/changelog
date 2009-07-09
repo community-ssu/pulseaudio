@@ -1,3 +1,10 @@
+pulseaudio (0.9.15-1maemo19) unstable; urgency=low
+
+  * BTHS or wired headsets can get 100% volume. Fixes: NB#127171
+    (during initial connection or when changing routes between them)
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Thu, 09 Jul 2009 19:43:16 +0300
+
 pulseaudio (0.9.15-1maemo18) unstable; urgency=low
 
   * Fix setting BTHS volume level. Fixes: NB#111167

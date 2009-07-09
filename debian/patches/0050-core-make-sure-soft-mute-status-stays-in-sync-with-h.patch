@@ -1,7 +1,7 @@
 From 1fc104eb222b8517b03c66b67fc11746be83376a Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Mon, 8 Jun 2009 00:02:15 +0200
-Subject: [PATCH 51/75] core: make sure soft mute status stays in sync with hw mute status
+Subject: [PATCH 50/77] core: make sure soft mute status stays in sync with hw mute status
 
 This should close rhbz #494851, mandriva bz #51234.
 

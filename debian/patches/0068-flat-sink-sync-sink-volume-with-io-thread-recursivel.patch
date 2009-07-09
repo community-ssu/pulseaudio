@@ -1,0 +1,134 @@
+From 401ba93deac8d2efb4e58e4bb273bbddc326bc4e Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Mon, 13 Jul 2009 15:46:12 +0300
+Subject: [PATCH 68/77] flat-sink: sync sink volume with io thread recursively
+
+Also, get rid of PA_SINK_MESSAGE_SYNC_VOLUMES in a context where
+intermediate sink are not ready (while moving, asycmsgq is NULL)
+
+This revert patch from Jyri, 0aeac53.
+---
+ src/pulsecore/sink.c |   58 +++++++++++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 50 insertions(+), 8 deletions(-)
+
+diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
+index f8c5d27..c6d7064 100644
+--- a/src/pulsecore/sink.c
++++ b/src/pulsecore/sink.c
+@@ -1094,7 +1094,6 @@ static void update_input_soft_volume(pa_sink *s, const pa_cvolume *new_volume, c
+          * update, hence we do it within the pa_sink_set_volume() call
+          * below */
+     }
+-    pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SYNC_VOLUMES, NULL, 0, NULL) == 0);
+ }
+ 
+ /* Called from main thread */
+@@ -1245,6 +1244,21 @@ static void post_virtual_volume_changed(pa_sink *s) {
+     }
+ }
+ 
++static void sink_set_volume(pa_sink *s) {
++    pa_sink_input *i;
++    uint32_t idx;
++
++    for (i = PA_SINK_INPUT(pa_idxset_first(s->inputs, &idx)); i; i = PA_SINK_INPUT(pa_idxset_next(s->inputs, &idx))) {
++        if (!i->origin_sink)
++            continue;
++        /* go recursively on slaved flatten sink
++         * and ignore this intermediate sink-input. */
++        sink_set_volume(i->origin_sink);
++    }
++
++    pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SET_VOLUME, NULL, 0, NULL) == 0);
++}
++
+ /* Called from main thread */
+ void pa_sink_set_volume(pa_sink *s, const pa_cvolume *volume, pa_bool_t propagate, pa_bool_t sendmsg, pa_bool_t become_reference) {
+     pa_bool_t virtual_volume_changed;
+@@ -1295,9 +1309,9 @@ void pa_sink_set_volume(pa_sink *s, const pa_cvolume *volume, pa_bool_t propagat
+         pa_cvolume_reset(&s->soft_volume, s->sample_spec.channels);
+     }
+ 
+-    /* This tells the sink that soft and/or virtual volume changed */
+-    if (sendmsg)
+-        pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SET_VOLUME, NULL, 0, NULL) == 0);
++    /* This tells the sink that soft and/or virtual volume changed, from the bottom sink only */
++    if (sendmsg && !s->flat_volume_sink)
++        sink_set_volume(s);
+ 
+     if (virtual_volume_changed)
+         post_virtual_volume_changed(s);
+@@ -1542,6 +1556,30 @@ static void sync_input_volumes_within_thread(pa_sink *s) {
+     }
+ }
+ 
++/* Called from the IO thread */
++static void set_sink_volume_up_within_thread(pa_sink *s) {
++    pa_sink_input *i;
++    void *state = NULL;
++
++    pa_sink_assert_ref(s);
++
++    while ((i = PA_SINK_INPUT(pa_hashmap_iterate(s->thread_info.inputs, &state, NULL))))
++        if (i->origin_sink)
++            set_sink_volume_up_within_thread(i->origin_sink);
++
++    PA_MSGOBJECT(s)->process_msg(PA_MSGOBJECT(s), PA_SINK_MESSAGE_SET_VOLUME, NULL, 0, NULL);
++}
++
++/* Called from the IO thread */
++static void set_sink_volume_within_thread(pa_sink *s) {
++    pa_sink_assert_ref(s);
++
++    while (s->flat_volume_sink)
++        s = s->flat_volume_sink;
++
++    set_sink_volume_up_within_thread(s);
++}
++
+ /* Called from IO thread, except when it is not */
+ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offset, pa_memchunk *chunk) {
+     pa_sink *s = PA_SINK(o);
+@@ -1598,7 +1636,8 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
+ 
+             /* In flat volume mode we need to update the volume as
+              * well */
+-            return o->process_msg(o, PA_SINK_MESSAGE_SET_VOLUME, NULL, 0, NULL);
++            set_sink_volume_within_thread(s);
++            return 0;
+         }
+ 
+         case PA_SINK_MESSAGE_REMOVE_INPUT: {
+@@ -1641,7 +1680,8 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
+ 
+             /* In flat volume mode we need to update the volume as
+              * well */
+-            return o->process_msg(o, PA_SINK_MESSAGE_SET_VOLUME, NULL, 0, NULL);
++            set_sink_volume_within_thread(s);
++            return 0;
+         }
+ 
+         case PA_SINK_MESSAGE_START_MOVE: {
+@@ -1689,7 +1729,8 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
+ 
+             /* In flat volume mode we need to update the volume as
+              * well */
+-            return o->process_msg(o, PA_SINK_MESSAGE_SET_VOLUME, NULL, 0, NULL);
++            set_sink_volume_within_thread(s);
++            return 0;
+         }
+ 
+         case PA_SINK_MESSAGE_FINISH_MOVE: {
+@@ -1735,7 +1776,8 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
+ 
+             /* In flat volume mode we need to update the volume as
+              * well */
+-            return o->process_msg(o, PA_SINK_MESSAGE_SET_VOLUME, NULL, 0, NULL);
++            set_sink_volume_within_thread(s);
++            return 0;
+         }
+ 
+         case PA_SINK_MESSAGE_SET_VOLUME:
+-- 
+1.6.3.3
+

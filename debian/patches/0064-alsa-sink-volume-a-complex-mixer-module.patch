@@ -1,13 +1,13 @@
-From b561f3afea6ffaa7011d34bbede8c9521549ba7d Mon Sep 17 00:00:00 2001
+From e2a87b32e6c395dbd5e9cac627524bf297baeebf Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:09:01 +0300
-Subject: [PATCH 53/75] alsa: sink-volume, a complex mixer module
+Subject: [PATCH 64/77] alsa: sink-volume, a complex mixer module
 
 ---
  src/Makefile.am                                   |    9 +
  src/modules/alsa/module-alsa-sink-volume-symdef.h |   27 +
- src/modules/alsa/module-alsa-sink-volume.c        | 1393 +++++++++++++++++++++
- 3 files changed, 1429 insertions(+), 0 deletions(-)
+ src/modules/alsa/module-alsa-sink-volume.c        | 1400 +++++++++++++++++++++
+ 3 files changed, 1436 insertions(+), 0 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-volume-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-volume.c
 
@@ -80,10 +80,10 @@ index 0000000..30c44c1
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
 new file mode 100644
-index 0000000..ac8edaa
+index 0000000..109b967
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-volume.c
-@@ -0,0 +1,1393 @@
+@@ -0,0 +1,1400 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -1224,6 +1224,13 @@ index 0000000..ac8edaa
 +    }
 +
 +    if (u->active_mixer) {
++        if (!u->active_mixer->tuning_data[u->active_tuning].tuning_table_filled) {
++            load_mixer_tuning(u, u->active_mixer, u->active_tuning);
++            if (!u->active_mixer->tuning_data[u->active_tuning].tuning_table_filled) {
++                pa_log_info("No tuning table %d filled for %s mixer", u->active_tuning, u->active_mixer->name);
++                fill_mixer_tuning(u, u->active_mixer, u->active_tuning);
++            }
++        }
 +        log_spam("update mixer volume (vol was %d) sink->refresh_volume %d", vol->values[0], u->sink->refresh_volume);
 +        set_alsa_mixer_volumes(u, u->active_mixer, &volume);
 +    }

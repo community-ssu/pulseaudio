@@ -1,7 +1,7 @@
-From ec2908851ec741a0e33482e2d85dc0a7bfa3aaed Mon Sep 17 00:00:00 2001
+From 315c4c2feb8bb5a56cc6dc0715c256ec59dc6916 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Fri, 17 Apr 2009 15:47:27 +0300
-Subject: [PATCH 68/75] pulse/context: when NOFAIL, don't try_next_connection() if c->client
+Subject: [PATCH 71/77] pulse/context: when NOFAIL, don't try_next_connection() if c->client
 
 ---
  src/pulse/context.c |    3 ++-

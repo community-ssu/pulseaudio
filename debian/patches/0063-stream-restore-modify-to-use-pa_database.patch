@@ -1,7 +1,7 @@
 From 146931c4af4f512c6584f25e1b1c871173cdeac9 Mon Sep 17 00:00:00 2001
 From: Juho Hamalainen <jusa@IT-W1767.(none)>
 Date: Fri, 3 Jul 2009 14:37:11 +0300
-Subject: [PATCH 66/75] stream-restore: modify to use pa_database
+Subject: [PATCH 63/77] stream-restore: modify to use pa_database
 
 ---
  src/modules/module-stream-restore.c |  202 +++++++++++++++-------------------

@@ -1,7 +1,7 @@
-From a012c5af27d1c79a38b4899052a33f41877eea5d Mon Sep 17 00:00:00 2001
+From 7d2707ed385584a24bc4d2d5808e24ddc401df23 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:08:35 +0300
-Subject: [PATCH 59/75] alsa: port the old alsa modules
+Subject: [PATCH 67/77] alsa: port the old alsa modules
 
 alsa-old: start as suspended
 
@@ -14,13 +14,15 @@ alsa-old: try to ease merging of alsa-* branches
 alsa-old: latency calculation fix, no more negative values
 
 alsa-old: Fix "start as suspended" thread usage.
+
+alsa-old: reduce amount of logging
 ---
  src/Makefile.am                                  |   18 +
  src/modules/alsa/module-alsa-sink-old-symdef.h   |   27 +
- src/modules/alsa/module-alsa-sink-old.c          | 1128 ++++++++++++++++
+ src/modules/alsa/module-alsa-sink-old.c          | 1129 ++++++++++++++++
  src/modules/alsa/module-alsa-source-old-symdef.h |   27 +
- src/modules/alsa/module-alsa-source-old.c        | 1499 ++++++++++++++++++++++
- 5 files changed, 2699 insertions(+), 0 deletions(-)
+ src/modules/alsa/module-alsa-source-old.c        | 1501 ++++++++++++++++++++++
+ 5 files changed, 2702 insertions(+), 0 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-old-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-old.c
  create mode 100644 src/modules/alsa/module-alsa-source-old-symdef.h
@@ -104,10 +106,10 @@ index 0000000..0c74afc
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
 new file mode 100644
-index 0000000..62e0db7
+index 0000000..fde61c6
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-old.c
-@@ -0,0 +1,1128 @@
+@@ -0,0 +1,1129 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -502,17 +504,18 @@ index 0000000..62e0db7
 +    ts_dma.tv_nsec = tstamp.tv_nsec;
 +
 +    buffered = pa_bytes_to_usec(HW_FIFO_SIZE_BYTES + u->hwbuf_size -
-+								avail * u->frame_size, &u->sink->sample_spec);
++                                avail * u->frame_size, &u->sink->sample_spec);
 +    elapsed = pa_rtclock_now() - pa_timespec_load(&ts_dma);
 +
 +    *d = buffered - elapsed;
 +
++#if 0
 +    pa_log_debug("DL latency: hw fifo: %d + hwbuf_size: %d - (avail: %d * frame_size: %d) bytes",
 +                 HW_FIFO_SIZE_BYTES, (int)u->hwbuf_size, (int)avail, (int)u->frame_size);
 +
 +    pa_log_debug("DL latency: buffered %d - elapsed %d = %d usecs",
 +                 (int)buffered, (int)elapsed, (int)*d);
-+
++#endif
 +    return 0;
 +}
 +
@@ -1271,10 +1274,10 @@ index 0000000..033edd6
 +#endif
 diff --git a/src/modules/alsa/module-alsa-source-old.c b/src/modules/alsa/module-alsa-source-old.c
 new file mode 100644
-index 0000000..091a9d3
+index 0000000..ade2757
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-source-old.c
-@@ -0,0 +1,1499 @@
+@@ -0,0 +1,1501 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -1675,11 +1678,13 @@ index 0000000..091a9d3
 +
 +    *d = buffered + elapsed;
 +
++#if 0
 +    pa_log_debug("UL latency: avail: %d * frame_size: %d",
 +                 (int)avail, (int)u->frame_size);
 +
 +    pa_log_debug("UL latency: buffered %d + elapsed %d = %d usecs",
 +                 (int)buffered, (int)elapsed, (int)*d);
++#endif
 +
 +    return 0;
 +}

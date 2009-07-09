@@ -1,7 +1,7 @@
 From 40a107c3558aa053b617d65d13c77b3c5ce9419f Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Fri, 8 May 2009 13:25:21 +0300
-Subject: [PATCH 54/75] bluetooth-device: Add safe guard against BT streaming irregularities.
+Subject: [PATCH 52/77] bluetooth-device: Add safe guard against BT streaming irregularities.
 
 Some bad quality BT-headsets block bluez socket sometimes for hundreds
 of milliseconds, especially when changing mode. When the module tries

@@ -1,7 +1,7 @@
 From 08903f06f5a0de4ddc344481c21f39661dbfa136 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 13 May 2009 21:11:52 +0300
-Subject: [PATCH 33/75] match: don't double free in case of missing table file
+Subject: [PATCH 33/77] match: don't double free in case of missing table file
 
 ---
  src/modules/module-match.c |    1 -
