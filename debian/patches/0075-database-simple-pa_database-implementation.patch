@@ -1,7 +1,7 @@
-From 4f62235e6db859b16d194c33928216dcab52b2cf Mon Sep 17 00:00:00 2001
+From 74230cc753ddd33ed9081ea34e82ab51f51ecfc8 Mon Sep 17 00:00:00 2001
 From: Juho Hamalainen <jusa@IT-W1767.(none)>
 Date: Fri, 3 Jul 2009 11:38:08 +0300
-Subject: [PATCH 62/77] database: simple pa_database implementation
+Subject: [PATCH 75/77] database: simple pa_database implementation
 
 ---
  src/Makefile.am                 |    5 +-

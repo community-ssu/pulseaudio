@@ -1,7 +1,7 @@
-From 8f2d404e0cb3f6f3da98c235af16117b9feccf81 Mon Sep 17 00:00:00 2001
+From 8632bb344f9aea3fc1189b90bc3d24e45c2f87dc Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 25 Jun 2009 13:13:43 +0300
-Subject: [PATCH 61/77] stream-restore: initialize userdata to 0
+Subject: [PATCH 74/77] stream-restore: initialize userdata to 0
 
 This avoid crash when unloading and some slots are != NULL
 ---
@@ -9,7 +9,7 @@ This avoid crash when unloading and some slots are != NULL
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index 125f1e5..de81baa 100644
+index 2354ed1..c477a66 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
 @@ -1106,7 +1106,7 @@ int pa__init(pa_module*m) {

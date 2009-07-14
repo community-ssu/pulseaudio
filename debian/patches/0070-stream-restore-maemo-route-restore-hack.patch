@@ -1,14 +1,14 @@
-From efb81780c1cda18fee4c782b07aa281f04e263d9 Mon Sep 17 00:00:00 2001
+From 8e54078a240d8ff9ab3ed885b14a86dc61119c02 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 21 May 2009 19:32:58 +0300
-Subject: [PATCH 57/77] stream-restore: maemo route restore hack
+Subject: [PATCH 70/77] stream-restore: maemo route restore hack
 
 ---
  src/modules/module-stream-restore.c |  243 ++++++++++++++++++++++++++++++++---
  1 files changed, 227 insertions(+), 16 deletions(-)
 
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index 8964792..5ab3aa7 100644
+index 8964792..059a5f2 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
 @@ -97,9 +97,14 @@ struct userdata {
@@ -172,7 +172,7 @@ index 8964792..5ab3aa7 100644
 +    else
 +        u->route_volume = e->volume;
 +
-+    pa_log_debug("Updated route volume=%s", pa_cvolume_snprint(t, sizeof(t), &u->route_volume));
++    pa_log_debug("Updated route %s volume=%s", route, pa_cvolume_snprint(t, sizeof(t), &u->route_volume));
 +
 +    route_set_role_volume(u, "sink-input-by-media-role:x-maemo");
 +    route_set_role_volume(u, "sink-input-by-media-role:phone");
@@ -209,7 +209,7 @@ index 8964792..5ab3aa7 100644
 +        memset(&entry, 0, sizeof(entry));
 +        entry.version = ROUTE_ENTRY_VERSION;
 +        entry.volume = u->route_volume;
-+        pa_log_debug("Route volume=%s", pa_cvolume_snprint(t, sizeof(t), &u->route_volume));
++        pa_log_debug("Route %s volume=%s", u->route, pa_cvolume_snprint(t, sizeof(t), &u->route_volume));
 +
 +        key.dptr = (void*) u->route;
 +        key.dsize = (int) strlen(u->route);

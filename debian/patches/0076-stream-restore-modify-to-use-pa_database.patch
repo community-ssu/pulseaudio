@@ -1,14 +1,14 @@
-From 146931c4af4f512c6584f25e1b1c871173cdeac9 Mon Sep 17 00:00:00 2001
+From 4576196fc6d6c32ef11031427864823168a4a934 Mon Sep 17 00:00:00 2001
 From: Juho Hamalainen <jusa@IT-W1767.(none)>
 Date: Fri, 3 Jul 2009 14:37:11 +0300
-Subject: [PATCH 63/77] stream-restore: modify to use pa_database
+Subject: [PATCH 76/77] stream-restore: modify to use pa_database
 
 ---
  src/modules/module-stream-restore.c |  202 +++++++++++++++-------------------
  1 files changed, 89 insertions(+), 113 deletions(-)
 
 diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
-index de81baa..a5c74f9 100644
+index c477a66..ec1f255 100644
 --- a/src/modules/module-stream-restore.c
 +++ b/src/modules/module-stream-restore.c
 @@ -30,7 +30,6 @@
@@ -188,7 +188,7 @@ index de81baa..a5c74f9 100644
          memset(&entry, 0, sizeof(entry));
 @@ -403,13 +403,13 @@ static void trigger_save(struct userdata *u) {
          entry.volume = u->route_volume;
-         pa_log_debug("Route volume=%s", pa_cvolume_snprint(t, sizeof(t), &u->route_volume));
+         pa_log_debug("Route %s volume=%s", u->route, pa_cvolume_snprint(t, sizeof(t), &u->route_volume));
  
 -        key.dptr = (void*) u->route;
 -        key.dsize = (int) strlen(u->route);
