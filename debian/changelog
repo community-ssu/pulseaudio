@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo20) unstable; urgency=low
+
+  * BT headset's mic is muted in some cases. Fixes: NB#126474, NB#128304
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Wed, 15 Jul 2009 15:29:31 +0300
+
 pulseaudio (0.9.15-1maemo19) unstable; urgency=low
 
   * BTHS or wired headsets can get 100% volume. Fixes: NB#127171

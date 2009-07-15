@@ -1,7 +1,7 @@
-From 7d2707ed385584a24bc4d2d5808e24ddc401df23 Mon Sep 17 00:00:00 2001
+From dddcbd665528581072d638e929118a083120b25b Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:08:35 +0300
-Subject: [PATCH 60/77] alsa: port the old alsa modules
+Subject: [PATCH 76/77] alsa: port the old alsa modules
 
 alsa-old: start as suspended
 
@@ -16,13 +16,21 @@ alsa-old: latency calculation fix, no more negative values
 alsa-old: Fix "start as suspended" thread usage.
 
 alsa-old: reduce amount of logging
+
+alsa-source-old: make logging slightly less annoying
+
+alsa-source-old: unsuspend should unsuspend unconditionally
+
+alsa-source-old: just don't hook proplist changed from other sources
+
+alsa-sink-old: make logging slightly less annoying
 ---
  src/Makefile.am                                  |   18 +
  src/modules/alsa/module-alsa-sink-old-symdef.h   |   27 +
- src/modules/alsa/module-alsa-sink-old.c          | 1129 ++++++++++++++++
+ src/modules/alsa/module-alsa-sink-old.c          | 1127 ++++++++++++++++
  src/modules/alsa/module-alsa-source-old-symdef.h |   27 +
- src/modules/alsa/module-alsa-source-old.c        | 1501 ++++++++++++++++++++++
- 5 files changed, 2702 insertions(+), 0 deletions(-)
+ src/modules/alsa/module-alsa-source-old.c        | 1492 ++++++++++++++++++++++
+ 5 files changed, 2691 insertions(+), 0 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-old-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-old.c
  create mode 100644 src/modules/alsa/module-alsa-source-old-symdef.h
@@ -106,10 +114,10 @@ index 0000000..0c74afc
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
 new file mode 100644
-index 0000000..fde61c6
+index 0000000..3d23419
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-old.c
-@@ -0,0 +1,1129 @@
+@@ -0,0 +1,1127 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -267,14 +275,13 @@ index 0000000..fde61c6
 +        pa_log_info("switch_buffers() switching disabled by config (no alt_ parameters)");
 +        return;
 +    }
-+    if (switch_mode == u->switch_mode) {
-+        pa_log_debug("switch_buffers() same mode as previously");
++    if (switch_mode == u->switch_mode)
 +        return;
-+    }
++
 +    u->switch_mode = switch_mode;
 +    num_inputs = pa_sink_used_by(u->sink);
 +
-+    pa_log_debug("switch_buffers() got %d inputs", num_inputs);
++    pa_log_debug("switch_buffers() %s got %d inputs", u->device_name, num_inputs);
 +
 +    /* Suspend is dependent on the context where switch_buffers is run.
 +     * If using from thread_func, internal suspend() should be used. */
@@ -599,7 +606,7 @@ index 0000000..fde61c6
 +
 +    pa_atomic_store(&u->buffer_underrun, FALSE);
 +
-+    pa_log_info("Device suspended...");
++    pa_log_info("Device %s suspended...", u->device_name);
 +
 +    return 0;
 +}
@@ -623,7 +630,7 @@ index 0000000..fde61c6
 +        return 0;
 +    }
 +
-+    pa_log_info("Trying resume...");
++    pa_log_info("unsuspend %s...", u->device_name);
 +
 +    snd_config_update_free_global();
 +    if ((err = snd_pcm_open(&u->pcm_handle, u->device_name, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK)) < 0) {
@@ -668,7 +675,6 @@ index 0000000..fde61c6
 +
 +    u->first = TRUE;
 +
-+    pa_log_info("Resumed successfully...");
 +    u->initialized = TRUE;
 +
 +    return 0;
@@ -988,7 +994,7 @@ index 0000000..fde61c6
 +    u->first = TRUE;
 +
 +    u->initialized = TRUE;
-+    pa_log_info("%s initialized for the FIRST time", u->device_name);
++    pa_log_info("initialized %s for the first time", u->device_name);
 +
 +    return 0;
 +
@@ -1003,7 +1009,7 @@ index 0000000..fde61c6
 +    pa_assert_se(u = s->userdata);
 +
 +    if (!u->initialized && (state == PA_SINK_RUNNING || state == PA_SINK_IDLE)) {
-+        pa_log_debug("unsuspend for the first time -> init alsa");
++        pa_log_debug("set_state() for the first time -> initialize_sink()");
 +        return initialize_sink(u);
 +    }
 +
@@ -1274,10 +1280,10 @@ index 0000000..033edd6
 +#endif
 diff --git a/src/modules/alsa/module-alsa-source-old.c b/src/modules/alsa/module-alsa-source-old.c
 new file mode 100644
-index 0000000..ade2757
+index 0000000..8d9cbd2
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-source-old.c
-@@ -0,0 +1,1501 @@
+@@ -0,0 +1,1492 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -1447,14 +1453,13 @@ index 0000000..ade2757
 +        pa_log_info("switch_buffers() switching disabled by config (no alt_ parameters)");
 +        return;
 +    }
-+    if (switch_mode == u->switch_mode) {
-+        pa_log_debug("switch_buffers() same mode as previously");
++    if (switch_mode == u->switch_mode)
 +        return;
-+    }
++
 +    u->switch_mode = switch_mode;
 +    num_outputs = pa_source_used_by(u->source);
 +
-+    pa_log_debug("switch_buffers() got %d outputs", num_outputs);
++    pa_log_debug("switch_buffers() %s got %d outputs", u->device_name, num_outputs);
 +
 +    /* Suspend is dependent on the context where switch_buffers is run.
 +     * If using from thread_func, internal suspend() should be used. */
@@ -1742,10 +1747,8 @@ index 0000000..ade2757
 +
 +static int suspend(struct userdata *u) {
 +    pa_assert(u);
-+    //pa_assert(u->pcm_handle);
 +
 +    if (!u->pcm_handle) {
-+        pa_log_debug("no pcm handle, alsa device is not initialized yet");
 +        if (u->alsa_rtpoll_item) {
 +            pa_rtpoll_item_free(u->alsa_rtpoll_item);
 +            u->alsa_rtpoll_item = NULL;
@@ -1763,7 +1766,7 @@ index 0000000..ade2757
 +
 +    pa_atomic_store(&u->buffer_overrun, FALSE);
 +
-+    pa_log_info("Device suspended...");
++    pa_log_info("Device %s suspended...", u->device_name);
 +
 +    return 0;
 +}
@@ -1782,18 +1785,14 @@ index 0000000..ade2757
 +        return -1;
 +    }
 +
-+    //pa_assert(!u->pcm_handle);
-+    if (u->pcm_handle) {
-+        pa_log_debug("Device was just initialized, no need to resume.");
-+        return 0;
-+    }
++    pa_log_info("unsuspend %s...", u->device_name);
 +
-+    pa_log_info("Trying resume...");
-+
-+    snd_config_update_free_global();
-+    if ((err = snd_pcm_open(&u->pcm_handle, u->device_name, SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK)) < 0) {
-+        pa_log("Error opening PCM device %s: %s", u->device_name, snd_strerror(err));
-+        goto fail;
++    if (!u->pcm_handle) {
++        snd_config_update_free_global();
++        if ((err = snd_pcm_open(&u->pcm_handle, u->device_name, SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK)) < 0) {
++            pa_log("Error opening PCM device %s: %s", u->device_name, snd_strerror(err));
++            goto fail;
++        }
 +    }
 +
 +    ss = u->source->sample_spec;
@@ -1833,8 +1832,6 @@ index 0000000..ade2757
 +    snd_pcm_start(u->pcm_handle);
 +
 +    /* FIXME: We need to reload the volume somehow */
-+
-+    pa_log_info("Resumed successfully...");
 +
 +    return 0;
 +
@@ -1888,9 +1885,6 @@ index 0000000..ade2757
 +                    if (u->source->thread_info.state == PA_SOURCE_INIT) {
 +                        if (u->initialized && build_pollfd(u) < 0)
 +                            return -1;
-+
-+                        if (u->initialized)
-+                            snd_pcm_start(u->pcm_handle);
 +                    }
 +
 +                    if (u->source->thread_info.state == PA_SOURCE_SUSPENDED) {
@@ -2276,6 +2270,9 @@ index 0000000..ade2757
 +    pa_assert(u);
 +    pa_assert(s);
 +
++    if (u->source != s)
++        return PA_HOOK_OK;
++
 +    v = pa_proplist_gets(s->proplist, PROP_BUFFERS);
 +    if (v) {
 +        if (pa_startswith(v, PROP_BUFFERS_PRIMARY)) {
@@ -2519,7 +2516,7 @@ index 0000000..ade2757
 +    pa_assert_se(u = s->userdata);
 +
 +    if (!u->initialized && (state == PA_SOURCE_RUNNING || state == PA_SOURCE_IDLE)) {
-+        pa_log_debug("unsuspend for the first time -> init alsa");
++        pa_log_debug("set_state() for the first time -> initialize_source()");
 +        return initialize_source(u);
 +    }
 +
@@ -2684,7 +2681,7 @@ index 0000000..ade2757
 +        u->alt_period_size = alt_period_size;
 +    }
 +
-+    pa_log_info("PRI: Using %u fragments of size %lu bytes.", nfrags, (long unsigned) u->pri_fragment_size);
++    pa_log_info("PRI: Using %u fragments of size %lu bytes.", nfrags, (long unsigned) u->fragment_size);
 +    if (u->switching_enabled)
 +        pa_log_info("ALT: Using %u fragments of size %lu bytes.", alt_nfrags, (long unsigned) u->alt_fragment_size);
 +
