@@ -1,7 +1,7 @@
 From 8e54078a240d8ff9ab3ed885b14a86dc61119c02 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 21 May 2009 19:32:58 +0300
-Subject: [PATCH 68/80] stream-restore: maemo route restore hack
+Subject: [PATCH 67/82] stream-restore: maemo route restore hack
 
 ---
  src/modules/module-stream-restore.c |  243 ++++++++++++++++++++++++++++++++---

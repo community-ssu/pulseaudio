@@ -1,7 +1,7 @@
 From 8da89d447f6d209451f16d61868a7ae0cb8a80f3 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 13 Jul 2009 15:46:12 +0300
-Subject: [PATCH 76/80] flat-sink: sync sink volume with io thread recursively
+Subject: [PATCH 74/82] flat-sink: sync sink volume with io thread recursively
 
 Also, get rid of PA_SINK_MESSAGE_SYNC_VOLUMES in a context where
 intermediate sink are not ready (while moving, asycmsgq is NULL)

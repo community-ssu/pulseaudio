@@ -1,7 +1,7 @@
 From 97f4e2edd95ca02f8ef35f56c32dfda9df002000 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 9 Jul 2009 21:34:50 +0300
-Subject: [PATCH 59/80] bluetooth: restore original over_{sink,src}->set_volume when unloading
+Subject: [PATCH 58/82] bluetooth: restore original over_{sink,src}->set_volume when unloading
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |    6 ++++++

@@ -1,13 +1,13 @@
-From e2a87b32e6c395dbd5e9cac627524bf297baeebf Mon Sep 17 00:00:00 2001
+From 101bc790072318bde4e5227819f3de60a5d40293 Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:09:01 +0300
-Subject: [PATCH 57/80] alsa: sink-volume, a complex mixer module
+Subject: [PATCH 78/82] alsa: sink-volume, a complex mixer module
 
 ---
  src/Makefile.am                                   |    9 +
  src/modules/alsa/module-alsa-sink-volume-symdef.h |   27 +
- src/modules/alsa/module-alsa-sink-volume.c        | 1400 +++++++++++++++++++++
- 3 files changed, 1436 insertions(+), 0 deletions(-)
+ src/modules/alsa/module-alsa-sink-volume.c        | 1397 +++++++++++++++++++++
+ 3 files changed, 1433 insertions(+), 0 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-volume-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-volume.c
 
@@ -80,10 +80,10 @@ index 0000000..30c44c1
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
 new file mode 100644
-index 0000000..109b967
+index 0000000..bad9a18
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-volume.c
-@@ -0,0 +1,1400 @@
+@@ -0,0 +1,1397 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -948,14 +948,12 @@ index 0000000..109b967
 +    pa_assert(mixer_list);
 +
 +    while ((mixer = pa_split(mixer_list, ",", &state))) {
-+        if (mixer) {
-+            m = get_mixer_element(u, mixer);
-+            if (m) {
-+                PA_LLIST_PREPEND(struct mixer_control_t, u->mixer_list, m);
-+                count++;
-+            }
-+            pa_xfree(mixer);
++        m = get_mixer_element(u, mixer);
++        if (m) {
++            PA_LLIST_PREPEND(struct mixer_control_t, u->mixer_list, m);
++            count++;
 +        }
++        pa_xfree(mixer);
 +    }
 +
 +    return count;
@@ -1007,8 +1005,8 @@ index 0000000..109b967
 +
 +static int load_mixer_tuning(struct userdata *u, struct mixer_control_t *m, const int tuning_mode) {
 +    const char *tuning = NULL;
-+    const char *element = NULL;
-+    const char *mixer_name = NULL;
++    char *element = NULL;
++    char *mixer_name = NULL;
 +    const char *element_state = NULL;
 +    uint element_count = 0;
 +    const char *error = NULL;
@@ -1038,20 +1036,22 @@ index 0000000..109b967
 +       highest. The millibel values between specified end points are interpolated. */
 +    if ((mixer_name = pa_split(tuning, "=" , &element_state))) {
 +        if (strcmp(mixer_name, m->name) != 0) {
-+            pa_log_info("Found tuning table is not for this mixer %s != %s",
-+                        mixer_name, m->name);
++            pa_log_info("Found tuning table is not for this mixer %s != %s", mixer_name, m->name);
++            pa_xfree(mixer_name);
 +            return -1;
 +        }
++        pa_xfree(mixer_name);
 +    } else {
 +        pa_log_info("Can not extract mixer name from tuning, assuming it is for %s", m->name);
 +        element_state = NULL;
 +    }
 +
 +    while ((element = pa_split(tuning, "," , &element_state))) {
-+        const char *value = NULL;
++        char *value = NULL;
 +        const char *value_state = NULL;
 +        enum { FIELD_HW_VOL = 0, FIELD_MB_VOL, FIELD_END } field = FIELD_HW_VOL;
 +        int hw = -1, mB = -1;
++
 +        element_count++;
 +        while ((value = pa_split(element, ":" , &value_state))) {
 +            switch (field) {
@@ -1065,19 +1065,17 @@ index 0000000..109b967
 +                break;
 +                /* Add more fileds to implement slave mixers */
 +            default:
-+                pa_log_warn("Too many fields in element %d of mixer tuning: %s (ignoring)",
-+                            element_count, element);
++                pa_log_warn("Too many fields in element %d of mixer tuning: %s (ignoring)", element_count, element);
 +            }
 +            if (error)
 +                break;
-+            pa_xfree((void *)value);
++            pa_xfree(value);
 +            field++;
 +        }
 +        if (error) {
-+            pa_log_error("Can't parse \"%s\" in field %d of element %d in: %s",
-+                         error, field, element_count, tuning);
-+            pa_xfree((void *)error);
-+            pa_xfree((void *)element);
++            pa_log_error("Can't parse \"%s\" in field %d of element %d in: %s", error, field, element_count, tuning);
++            pa_xfree(error);
++            pa_xfree(element);
 +            return -1;
 +        }
 +
@@ -1086,7 +1084,7 @@ index 0000000..109b967
 +
 +        if (hw_vol < m->hw_volume_min || hw_vol > m->hw_volume_max) {
 +            pa_log_error("Bad hw vol value %ld in element %d", hw_vol, element_count);
-+            pa_xfree((void *)element);
++            pa_xfree(element);
 +            return -1;
 +        }
 +
@@ -1096,7 +1094,7 @@ index 0000000..109b967
 +            if (prev_hw_vol > hw_vol || prev_mB_vol > mB_vol) {
 +                pa_log_error("The tuning values should be in increasing order, problem with element %d of %s",
 +                             element_count, tuning);
-+                pa_xfree((void *)element);
++                pa_xfree(element);
 +                return -1;
 +            }
 +            fill_tuning_table_range(m, tuning_mode, prev_hw_vol - td->tuned_volume_min, hw_vol - td->tuned_volume_min,
@@ -1104,8 +1102,9 @@ index 0000000..109b967
 +        }
 +        prev_hw_vol = hw_vol;
 +        prev_mB_vol = mB_vol;
-+        pa_xfree((void *)element);
++        pa_xfree(element);
 +    }
++
 +    if (element_count < 2) {
 +        pa_log_error("Too few element in tuning table %s", tuning);
 +        return -1;
@@ -1114,6 +1113,7 @@ index 0000000..109b967
 +    td->tuned_volume_max = hw_vol;
 +    td->tuning_table_max = td->tuned_volume_max - td->tuned_volume_min;
 +    td->tuning_table_filled = TRUE;
++
 +    return 0;
 +}
 +
@@ -1208,20 +1208,17 @@ index 0000000..109b967
 +    volume = *vol;
 +
 +    while ((value = pa_split(value_list, ",", &state))) {
-+        if (value) {
-+            int err = set_mixer_state(u, value);
-+            pa_xfree(value);
-+            if (err < 0) {
-+                ret = err;
-+                break;
-+            }
-+            ret += err;
++        int err = set_mixer_state(u, value);
++        pa_xfree(value);
++        if (err < 0) {
++            ret = err;
++            break;
 +        }
++        ret += err;
 +    }
 +
-+    if (ret > 0)  {
++    if (ret > 0)
 +        pa_log_warn("Setting mixer state for %d mixers failed", ret);
-+    }
 +
 +    if (u->active_mixer) {
 +        if (!u->active_mixer->tuning_data[u->active_tuning].tuning_table_filled) {
