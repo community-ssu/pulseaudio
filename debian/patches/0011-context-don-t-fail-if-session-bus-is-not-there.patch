@@ -1,7 +1,7 @@
 From 4d1a3e64d8fbebc32180319da43feed1c1eda92e Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 12 May 2009 01:39:55 +0300
-Subject: [PATCH 11/82] context: don't fail if session bus is not there
+Subject: [PATCH] context: don't fail if session bus is not there
 
 Also invert the order of bus tracking since we expect session_bus to
 be present when we check for it. Although that should not change
@@ -37,5 +37,5 @@ index 4aad737..9f6f55c 100644
  
      if (is_session)
 -- 
-1.6.3.3
+1.5.6.3
 
