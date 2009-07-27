@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo22) unstable; urgency=low
+
+  * unreleased
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Mon, 27 Jul 2009 16:01:23 +0300
+
 pulseaudio (0.9.15-1maemo21) unstable; urgency=low
 
   * Implements synchronization of SW and HW volume in IO-thread. Fixes: NB#118988

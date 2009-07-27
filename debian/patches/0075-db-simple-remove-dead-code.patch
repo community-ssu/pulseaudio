@@ -1,0 +1,27 @@
+From 3ebb245cfec67a7f8e6f293223b30c14f2903fdb Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Wed, 15 Jul 2009 20:25:01 +0300
+Subject: [PATCH 75/84] db-simple: remove dead code
+
+---
+ src/pulsecore/database-simple.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/src/pulsecore/database-simple.c b/src/pulsecore/database-simple.c
+index ceb565b..00a1fc8 100644
+--- a/src/pulsecore/database-simple.c
++++ b/src/pulsecore/database-simple.c
+@@ -202,10 +202,6 @@ static int fill_data(simple_data *db, FILE *f) {
+                 data.size = l;
+                 append = TRUE;
+                 break;
+-            default:
+-                append = FALSE;
+-                field = FIELD_KEY;
+-                break;
+         }
+ 
+         if (append) {
+-- 
+1.6.3.3
+
