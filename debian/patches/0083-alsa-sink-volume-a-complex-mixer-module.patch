@@ -1,7 +1,7 @@
 From 3476436264879e2ddd0ad5914e46e3038f155a9d Mon Sep 17 00:00:00 2001
 From: Maemo Multimedia <multimedia@maemo.org>
 Date: Fri, 17 Apr 2009 17:09:01 +0300
-Subject: [PATCH 83/84] alsa: sink-volume, a complex mixer module
+Subject: [PATCH 83/85] alsa: sink-volume, a complex mixer module
 
 volume: update delay
 

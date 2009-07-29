@@ -1,7 +1,7 @@
 From 8632bb344f9aea3fc1189b90bc3d24e45c2f87dc Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Thu, 25 Jun 2009 13:13:43 +0300
-Subject: [PATCH 71/84] stream-restore: initialize userdata to 0
+Subject: [PATCH 71/85] stream-restore: initialize userdata to 0
 
 This avoid crash when unloading and some slots are != NULL
 ---

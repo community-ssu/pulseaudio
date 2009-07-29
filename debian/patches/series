@@ -82,3 +82,4 @@
 0082-alsa-port-the-old-alsa-modules.patch
 0083-alsa-sink-volume-a-complex-mixer-module.patch
 0084-autofoo.patch
+0085-sink-input-don-t-make-volume-relative-to-dest-sink-r.patch

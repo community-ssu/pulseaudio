@@ -1,7 +1,7 @@
 From 83641c3473b5066719bc2b2b49c7ce7db0ee3cdd Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 2 Jun 2009 18:20:00 +0300
-Subject: [PATCH 68/84] stream-restore: make route volume optional
+Subject: [PATCH 68/85] stream-restore: make route volume optional
 
 ---
  src/modules/module-stream-restore.c |   13 ++++++++++---

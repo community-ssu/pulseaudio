@@ -1,7 +1,7 @@
 From d57102969a6bfa761684003c339e26e375b41992 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 20 Jul 2009 13:53:17 +0300
-Subject: [PATCH 78/84] pulse: even in case of record stream, let's initialize req_bytes to 0
+Subject: [PATCH 78/85] pulse: even in case of record stream, let's initialize req_bytes to 0
 
 ---
  src/pulse/stream.c |    2 +-

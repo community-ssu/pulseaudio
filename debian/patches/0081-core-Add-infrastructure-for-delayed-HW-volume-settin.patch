@@ -1,7 +1,7 @@
 From d6cde519c0c41b98038ba6f27dfe28b277ccbb26 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Wed, 22 Jul 2009 12:00:59 +0300
-Subject: [PATCH 81/84] core: Add infrastructure for delayed HW volume setting
+Subject: [PATCH 81/85] core: Add infrastructure for delayed HW volume setting
 
 To make concurrent use of SW and HW volume glitchles their application
 needs to be syncronized. For accurate syncronization the HW volume

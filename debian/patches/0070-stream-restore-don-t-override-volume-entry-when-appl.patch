@@ -1,7 +1,7 @@
 From 04181589dfe9e28ee55354f3b8b482831272566f Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 23 Jun 2009 19:38:55 +0300
-Subject: [PATCH 70/84] stream-restore: don't override volume entry, when applied to different channel maps
+Subject: [PATCH 70/85] stream-restore: don't override volume entry, when applied to different channel maps
 
 ---
  src/modules/module-stream-restore.c |    7 +++++--
