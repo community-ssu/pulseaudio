@@ -1,4 +1,4 @@
-From d503326e6f171929e4b095513556f4bbb7f187c3 Mon Sep 17 00:00:00 2001
+From 002b33742fd9e1f24844998c84f429dffb5435f7 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Fri, 31 Jul 2009 15:45:34 +0300
 Subject: [PATCH] alsa-volume: Make sure volume is updated after mixer change.
