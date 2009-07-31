@@ -1,7 +1,7 @@
 From d05d443a084a9a0b34d77cea8af101abd5f57b03 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 10 Mar 2009 17:43:55 +0200
-Subject: [PATCH 23/85] pulsecore: propagate flat-vol recursively
+Subject: [PATCH] pulsecore: propagate flat-vol recursively
 
 ---
  src/pulsecore/sink.c |   35 +++++++++++++++++++++++------------
@@ -70,5 +70,5 @@ index 10f32a9..930a87d 100644
      pa_bool_t virtual_volume_changed;
  
 -- 
-1.6.3.3
+1.5.6.3
 

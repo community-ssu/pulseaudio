@@ -1,7 +1,7 @@
 From 2485db27a63d3ef6543fe0fb50975fb703c200dc Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Thu, 21 May 2009 17:38:17 +0300
-Subject: [PATCH 36/85] stream-restore: some misc fixes
+Subject: [PATCH] stream-restore: some misc fixes
 
 Explicitely subscribe to CHANGE events on s-i & s-o.
 Keep rules in sync by saving them by default.
@@ -45,5 +45,5 @@ index 4813912..8964792 100644
      pa_modargs_free(ma);
      return 0;
 -- 
-1.6.3.3
+1.5.6.3
 

@@ -1,7 +1,7 @@
 From e294762b93a53ca1823f6b39c1ef6e2ed9d7ba0a Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 13 May 2009 22:46:50 +0300
-Subject: [PATCH 12/85] blueototh: make auto-connect optional
+Subject: [PATCH] blueototh: make auto-connect optional
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |   19 ++++++++++++++++++-
@@ -66,5 +66,5 @@ index f73ab1c..0e6caa7 100644
      path = pa_modargs_get_value(ma, "path", NULL);
  
 -- 
-1.6.3.3
+1.5.6.3
 

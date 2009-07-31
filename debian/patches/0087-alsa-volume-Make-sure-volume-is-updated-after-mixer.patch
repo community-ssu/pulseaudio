@@ -1,0 +1,91 @@
+From d503326e6f171929e4b095513556f4bbb7f187c3 Mon Sep 17 00:00:00 2001
+From: Jyri Sarha <jyri.sarha@nokia.com>
+Date: Fri, 31 Jul 2009 15:45:34 +0300
+Subject: [PATCH] alsa-volume: Make sure volume is updated after mixer change.
+
+---
+ src/modules/alsa/module-alsa-sink-volume.c |   41 ++++++++++++++++-----------
+ 1 files changed, 24 insertions(+), 17 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
+index 7084a9f..9cc7747 100644
+--- a/src/modules/alsa/module-alsa-sink-volume.c
++++ b/src/modules/alsa/module-alsa-sink-volume.c
+@@ -775,7 +775,7 @@ static int load_mixer_tuning(struct userdata *u, struct mixer_control_t *m, cons
+     char *mixer_name = NULL;
+     const char *element_state = NULL;
+     uint element_count = 0;
+-    const char *error = NULL;
++    char *error = NULL;
+     /* Gcc is not clever enough to see these are initialized before use. */
+     long prev_hw_vol = -1;
+     long prev_mB_vol = -1;
+@@ -1046,9 +1046,8 @@ static int update_mixer_setup(struct userdata *u, const char *value_list) {
+ 
+ static pa_hook_result_t sink_proplist_changed_hook_callback(pa_core *c, pa_sink *s, struct userdata *u) {
+     const char *v = NULL;
+-    int tmp;
++    int new_active_tuning;
+     pa_bool_t full_update = TRUE;
+-    pa_bool_t update_volume = FALSE;
+ 
+     if (s != u->sink) {
+         return PA_HOOK_OK;
+@@ -1075,32 +1074,40 @@ static pa_hook_result_t sink_proplist_changed_hook_callback(pa_core *c, pa_sink
+             u->audio_mode = pa_xstrdup(v);
+     }
+ 
++    new_active_tuning  = u->active_tuning;
+     v = pa_proplist_gets(s->proplist, PROP_MIXER_TUNING_MODE);
+     if (v) {
+-        if (!pa_atoi(v, &tmp)) {
+-            if (u->active_tuning != tmp) {
+-                u->active_tuning = tmp;
+-                log_spam("change tuning mode to %d", tmp);
+-                update_volume = TRUE;
++        if (!pa_atoi(v, &new_active_tuning)) {
++            if (u->active_tuning != new_active_tuning) {
++                log_spam("change tuning mode to %d", new_active_tuning);
+             }
+         }
+     }
+ 
+-    if (full_update) {
++    if (full_update || u->active_tuning != new_active_tuning) {
+         enter_initialization(u);
+-        v = pa_proplist_gets(s->proplist, PROP_MIXER);
+-        if (v) {
+-            update_mixer_setup(u, v);
++        if (full_update) {
++            v = pa_proplist_gets(s->proplist, PROP_MIXER);
++            if (v) {
++                update_mixer_setup(u, v);
++            }
++        }
++        u->active_tuning = new_active_tuning;
++
++        /* First write curren HW volume according to new mixer settings */
++        if (u->active_mixer) {
++            write_alsa_mixer_volumes(u, u->active_mixer, &u->sink->thread_info.current_hw_volume);
++        }
++        else {
++            /* If no active mixer, just set HW volume. */
++            u->sink->thread_info.current_hw_volume = u->sink->virtual_volume;
+         }
+-        update_volume = FALSE;
++        leave_initialization(u);
++        /* Propagate possibly missed volume and mute state changes */
+         pa_sink_set_mute(u->sink, u->sink->muted);
+         pa_sink_set_volume(u->sink, &u->sink->virtual_volume, FALSE, TRUE, FALSE);
+-        leave_initialization(u);
+     }
+ 
+-    if (update_volume)
+-        pa_sink_set_volume(u->sink, &u->sink->virtual_volume, FALSE, TRUE, FALSE);
+-
+     return PA_HOOK_OK;
+ }
+ 
+-- 
+1.5.6.3
+
