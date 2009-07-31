@@ -1,5 +1,6 @@
 pulseaudio (0.9.15-1maemo22) unstable; urgency=low
 
+  * Make sure volume is updated after mixer change. Fixes: XX#130685
   * Don't make volume relative to dest sink reference volume. Keep current
     volume instead. Fixes: NB#125401
 
