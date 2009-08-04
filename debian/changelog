@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo23) unstable; urgency=low
+
+  * Remove pa_assert(). Fixes: NB#118688
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 04 Aug 2009 18:35:54 +0300
+
 pulseaudio (0.9.15-1maemo22) unstable; urgency=low
 
   * Make sure volume is updated after mixer change. Fixes: XX#130685
