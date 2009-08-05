@@ -1,0 +1,50 @@
+From 83d000084004ee29cecd292a0eaa6006e9c4c823 Mon Sep 17 00:00:00 2001
+From: Jyri Sarha <jyri.sarha@nokia.com>
+Date: Fri, 3 Jul 2009 17:26:12 +0300
+Subject: [PATCH 66/85] core: no rewinding on volume change if the sink does not support it.
+
+---
+ src/pulsecore/sink-input.c |    6 ++++--
+ src/pulsecore/sink.c       |    3 ++-
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/src/pulsecore/sink-input.c b/src/pulsecore/sink-input.c
+index 0229918..06d9b74 100644
+--- a/src/pulsecore/sink-input.c
++++ b/src/pulsecore/sink-input.c
+@@ -1349,14 +1349,16 @@ int pa_sink_input_process_msg(pa_msgobject *o, int code, void *userdata, int64_t
+         case PA_SINK_INPUT_MESSAGE_SET_SOFT_VOLUME:
+             if (!pa_cvolume_equal(&i->thread_info.soft_volume, &i->soft_volume)) {
+                 i->thread_info.soft_volume = i->soft_volume;
+-                pa_sink_input_request_rewind(i, 0, TRUE, FALSE, FALSE);
++                if (i->sink && i->sink->thread_info.max_rewind > 0)
++                    pa_sink_input_request_rewind(i, 0, TRUE, FALSE, FALSE);
+             }
+             return 0;
+ 
+         case PA_SINK_INPUT_MESSAGE_SET_SOFT_MUTE:
+             if (i->thread_info.muted != i->muted) {
+                 i->thread_info.muted = i->muted;
+-                pa_sink_input_request_rewind(i, 0, TRUE, FALSE, FALSE);
++                if (i->sink && i->sink->thread_info.max_rewind > 0)
++                    pa_sink_input_request_rewind(i, 0, TRUE, FALSE, FALSE);
+             }
+             return 0;
+ 
+diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
+index c01eabc..d34a3ff 100644
+--- a/src/pulsecore/sink.c
++++ b/src/pulsecore/sink.c
+@@ -1423,7 +1423,8 @@ static void sync_input_volumes_within_thread(pa_sink *s) {
+             continue;
+ 
+         i->thread_info.soft_volume = i->soft_volume;
+-        pa_sink_input_request_rewind(i, 0, TRUE, FALSE, FALSE);
++        if (s->thread_info.max_rewind > 0)
++            pa_sink_input_request_rewind(i, 0, TRUE, FALSE, FALSE);
+     }
+ }
+ 
+-- 
+1.6.3.3
+

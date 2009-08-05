@@ -1,0 +1,24 @@
+From 0aeac53ec70407a3815992887ae907a31462e1ea Mon Sep 17 00:00:00 2001
+From: Jyri Sarha <jyri.sarha@nokia.com>
+Date: Fri, 5 Jun 2009 17:20:36 +0300
+Subject: [PATCH 49/85] pulsecore: Send PA_SINK_MESSAGE_SYNC_VOLUMES always after flat volume recalculations to all collapsed sinks.
+
+---
+ src/pulsecore/sink.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
+index 1d69d7f..f8c5d27 100644
+--- a/src/pulsecore/sink.c
++++ b/src/pulsecore/sink.c
+@@ -1094,6 +1094,7 @@ static void update_input_soft_volume(pa_sink *s, const pa_cvolume *new_volume, c
+          * update, hence we do it within the pa_sink_set_volume() call
+          * below */
+     }
++    pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SYNC_VOLUMES, NULL, 0, NULL) == 0);
+ }
+ 
+ /* Called from main thread */
+-- 
+1.6.3.3
+

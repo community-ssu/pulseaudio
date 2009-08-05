@@ -1,0 +1,684 @@
+From 3160bb415a042493c83cf7897f97727505299300 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Sat, 4 Apr 2009 22:56:38 +0300
+Subject: [PATCH 01/85] perl -p -i -e 's/pa_rtclock_usec/pa_rtclock_now/g' `find . -name '*.[ch]'`
+
+---
+ src/daemon/cpulimit.c                           |    4 ++--
+ src/modules/alsa/alsa-sink.c                    |   12 ++++++------
+ src/modules/alsa/alsa-source.c                  |   12 ++++++------
+ src/modules/bluetooth/module-bluetooth-device.c |   18 +++++++++---------
+ src/modules/module-combine.c                    |   12 ++++++------
+ src/modules/module-esound-sink.c                |   10 +++++-----
+ src/modules/module-null-sink.c                  |    8 ++++----
+ src/modules/module-raop-sink.c                  |   10 +++++-----
+ src/modules/module-sine-source.c                |    8 ++++----
+ src/modules/module-solaris.c                    |    2 +-
+ src/modules/module-tunnel.c                     |   12 ++++++------
+ src/modules/rtp/module-rtp-recv.c               |    2 +-
+ src/pulse/stream.c                              |    8 ++++----
+ src/pulsecore/log.c                             |    2 +-
+ src/pulsecore/ratelimit.c                       |    2 +-
+ src/pulsecore/rtclock.c                         |    2 +-
+ src/pulsecore/rtclock.h                         |    2 +-
+ src/pulsecore/rtpoll.c                          |    6 +++---
+ 18 files changed, 66 insertions(+), 66 deletions(-)
+
+diff --git a/src/daemon/cpulimit.c b/src/daemon/cpulimit.c
+index 45d6a0f..e9cefdc 100644
+--- a/src/daemon/cpulimit.c
++++ b/src/daemon/cpulimit.c
+@@ -125,7 +125,7 @@ static void signal_handler(int sig) {
+         char t[256];
+ #endif
+ 
+-        now = pa_rtclock_usec();
++        now = pa_rtclock_now();
+         elapsed = now - last_time;
+ 
+ #ifdef PRINT_CPU_LOAD
+@@ -184,7 +184,7 @@ int pa_cpu_limit_init(pa_mainloop_api *m) {
+     pa_assert(the_pipe[1] == -1);
+     pa_assert(!installed);
+ 
+-    last_time = pa_rtclock_usec();
++    last_time = pa_rtclock_now();
+ 
+     /* Prepare the main loop pipe */
+     if (pipe(the_pipe) < 0) {
+diff --git a/src/modules/alsa/alsa-sink.c b/src/modules/alsa/alsa-sink.c
+index 2fbcd7b..037c128 100644
+--- a/src/modules/alsa/alsa-sink.c
++++ b/src/modules/alsa/alsa-sink.c
+@@ -655,7 +655,7 @@ static void update_smoother(struct userdata *u) {
+ 
+     /* Hmm, if the timestamp is 0, then it wasn't set and we take the current time */
+     if (now1 <= 0)
+-        now1 = pa_rtclock_usec();
++        now1 = pa_rtclock_now();
+ 
+     now2 = pa_bytes_to_usec((uint64_t) position, &u->sink->sample_spec);
+ 
+@@ -669,7 +669,7 @@ static pa_usec_t sink_get_latency(struct userdata *u) {
+ 
+     pa_assert(u);
+ 
+-    now1 = pa_rtclock_usec();
++    now1 = pa_rtclock_now();
+     now2 = pa_smoother_get(u->smoother, now1);
+ 
+     delay = (int64_t) pa_bytes_to_usec(u->write_count, &u->sink->sample_spec) - (int64_t) now2;
+@@ -700,7 +700,7 @@ static int suspend(struct userdata *u) {
+     pa_assert(u);
+     pa_assert(u->pcm_handle);
+ 
+-    pa_smoother_pause(u->smoother, pa_rtclock_usec());
++    pa_smoother_pause(u->smoother, pa_rtclock_now());
+ 
+     /* Let's suspend -- we don't call snd_pcm_drain() here since that might
+      * take awfully long with our long buffer sizes today. */
+@@ -1298,7 +1298,7 @@ static void thread_func(void *userdata) {
+                     pa_log_info("Starting playback.");
+                     snd_pcm_start(u->pcm_handle);
+ 
+-                    pa_smoother_resume(u->smoother, pa_rtclock_usec(), TRUE);
++                    pa_smoother_resume(u->smoother, pa_rtclock_now(), TRUE);
+                 }
+ 
+                 update_smoother(u);
+@@ -1327,7 +1327,7 @@ static void thread_func(void *userdata) {
+ 
+                 /* Convert from the sound card time domain to the
+                  * system time domain */
+-                cusec = pa_smoother_translate(u->smoother, pa_rtclock_usec(), sleep_usec);
++                cusec = pa_smoother_translate(u->smoother, pa_rtclock_now(), sleep_usec);
+ 
+ /*                 pa_log_debug("Waking up in %0.2fms (system clock).", (double) cusec / PA_USEC_PER_MSEC); */
+ 
+@@ -1576,7 +1576,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
+             TRUE,
+             TRUE,
+             5,
+-            pa_rtclock_usec(),
++            pa_rtclock_now(),
+             TRUE);
+ 
+     if (reserve_init(u, pa_modargs_get_value(
+diff --git a/src/modules/alsa/alsa-source.c b/src/modules/alsa/alsa-source.c
+index c59fc75..9fdc0e9 100644
+--- a/src/modules/alsa/alsa-source.c
++++ b/src/modules/alsa/alsa-source.c
+@@ -622,7 +622,7 @@ static void update_smoother(struct userdata *u) {
+ 
+     /* Hmm, if the timestamp is 0, then it wasn't set and we take the current time */
+     if (now1 <= 0)
+-        now1 = pa_rtclock_usec();
++        now1 = pa_rtclock_now();
+ 
+     now2 = pa_bytes_to_usec(position, &u->source->sample_spec);
+ 
+@@ -635,7 +635,7 @@ static pa_usec_t source_get_latency(struct userdata *u) {
+ 
+     pa_assert(u);
+ 
+-    now1 = pa_rtclock_usec();
++    now1 = pa_rtclock_now();
+     now2 = pa_smoother_get(u->smoother, now1);
+ 
+     delay = (int64_t) now2 - (int64_t) pa_bytes_to_usec(u->read_count, &u->source->sample_spec);
+@@ -660,7 +660,7 @@ static int suspend(struct userdata *u) {
+     pa_assert(u);
+     pa_assert(u->pcm_handle);
+ 
+-    pa_smoother_pause(u->smoother, pa_rtclock_usec());
++    pa_smoother_pause(u->smoother, pa_rtclock_now());
+ 
+     /* Let's suspend */
+     snd_pcm_close(u->pcm_handle);
+@@ -788,7 +788,7 @@ static int unsuspend(struct userdata *u) {
+     /* FIXME: We need to reload the volume somehow */
+ 
+     snd_pcm_start(u->pcm_handle);
+-    pa_smoother_resume(u->smoother, pa_rtclock_usec(), TRUE);
++    pa_smoother_resume(u->smoother, pa_rtclock_now(), TRUE);
+ 
+     pa_log_info("Resumed successfully...");
+ 
+@@ -1190,7 +1190,7 @@ static void thread_func(void *userdata) {
+ 
+                 /* Convert from the sound card time domain to the
+                  * system time domain */
+-                cusec = pa_smoother_translate(u->smoother, pa_rtclock_usec(), sleep_usec);
++                cusec = pa_smoother_translate(u->smoother, pa_rtclock_now(), sleep_usec);
+ 
+ /*                 pa_log_debug("Waking up in %0.2fms (system clock).", (double) cusec / PA_USEC_PER_MSEC); */
+ 
+@@ -1434,7 +1434,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
+             TRUE,
+             TRUE,
+             5,
+-            pa_rtclock_usec(),
++            pa_rtclock_now(),
+             FALSE);
+ 
+     if (reserve_init(u, pa_modargs_get_value(
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index 90f6486..d3e0fab 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -765,7 +765,7 @@ static int start_stream_fd(struct userdata *u) {
+                 TRUE,
+                 TRUE,
+                 10,
+-                pa_rtclock_usec(),
++                pa_rtclock_now(),
+                 TRUE);
+ 
+     return 0;
+@@ -859,14 +859,14 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+             if (u->read_smoother) {
+                 pa_usec_t wi, ri;
+ 
+-                ri = pa_smoother_get(u->read_smoother, pa_rtclock_usec());
++                ri = pa_smoother_get(u->read_smoother, pa_rtclock_now());
+                 wi = pa_bytes_to_usec(u->write_index + u->block_size, &u->sample_spec);
+ 
+                 *((pa_usec_t*) data) = wi > ri ? wi - ri : 0;
+             } else {
+                 pa_usec_t ri, wi;
+ 
+-                ri = pa_rtclock_usec() - u->started_at;
++                ri = pa_rtclock_now() - u->started_at;
+                 wi = pa_bytes_to_usec(u->write_index, &u->sample_spec);
+ 
+                 *((pa_usec_t*) data) = wi > ri ? wi - ri : 0;
+@@ -904,7 +904,7 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
+                         stop_stream_fd(u);
+ 
+                     if (u->read_smoother)
+-                        pa_smoother_pause(u->read_smoother, pa_rtclock_usec());
++                        pa_smoother_pause(u->read_smoother, pa_rtclock_now());
+                     break;
+ 
+                 case PA_SOURCE_IDLE:
+@@ -931,7 +931,7 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
+         case PA_SOURCE_MESSAGE_GET_LATENCY: {
+             pa_usec_t wi, ri;
+ 
+-            wi = pa_smoother_get(u->read_smoother, pa_rtclock_usec());
++            wi = pa_smoother_get(u->read_smoother, pa_rtclock_now());
+             ri = pa_bytes_to_usec(u->read_index, &u->sample_spec);
+ 
+             *((pa_usec_t*) data) = (wi > ri ? wi - ri : 0) + u->source->fixed_latency;
+@@ -1078,7 +1078,7 @@ static int hsp_process_push(struct userdata *u) {
+ 
+         if (!found_tstamp) {
+             pa_log_warn("Couldn't find SO_TIMESTAMP data in auxiliary recvmsg() data!");
+-            tstamp = pa_rtclock_usec();
++            tstamp = pa_rtclock_now();
+         }
+ 
+         pa_smoother_put(u->read_smoother, tstamp, pa_bytes_to_usec(u->read_index, &u->sample_spec));
+@@ -1301,7 +1301,7 @@ static void thread_func(void *userdata) {
+                     /* Hmm, there is no input stream we could synchronize
+                      * to. So let's do things by time */
+ 
+-                    time_passed = pa_rtclock_usec() - u->started_at;
++                    time_passed = pa_rtclock_now() - u->started_at;
+                     should_have_written = pa_usec_to_bytes(time_passed, &u->sample_spec);
+ 
+                     do_write = u->write_index <= should_have_written;
+@@ -1311,7 +1311,7 @@ static void thread_func(void *userdata) {
+                     int n_written;
+ 
+                     if (u->write_index <= 0)
+-                        u->started_at = pa_rtclock_usec();
++                        u->started_at = pa_rtclock_now();
+ 
+                     if (u->profile == PROFILE_A2DP) {
+                         if ((n_written = a2dp_process_render(u)) < 0)
+@@ -1331,7 +1331,7 @@ static void thread_func(void *userdata) {
+                     /* Hmm, there is no input stream we could synchronize
+                      * to. So let's estimate when we need to wake up the latest */
+ 
+-                    time_passed = pa_rtclock_usec() - u->started_at;
++                    time_passed = pa_rtclock_now() - u->started_at;
+                     next_write_at = pa_bytes_to_usec(u->write_index, &u->sample_spec);
+                     sleep_for = time_passed < next_write_at ? next_write_at - time_passed : 0;
+ 
+diff --git a/src/modules/module-combine.c b/src/modules/module-combine.c
+index a1ef8da..ee4f424 100644
+--- a/src/modules/module-combine.c
++++ b/src/modules/module-combine.c
+@@ -280,7 +280,7 @@ static void thread_func(void *userdata) {
+     pa_thread_mq_install(&u->thread_mq);
+     pa_rtpoll_install(u->rtpoll);
+ 
+-    u->thread_info.timestamp = pa_rtclock_usec();
++    u->thread_info.timestamp = pa_rtclock_now();
+     u->thread_info.in_null_mode = FALSE;
+ 
+     for (;;) {
+@@ -294,7 +294,7 @@ static void thread_func(void *userdata) {
+         if (PA_SINK_IS_OPENED(u->sink->thread_info.state) && !u->thread_info.active_outputs) {
+             pa_usec_t now;
+ 
+-            now = pa_rtclock_usec();
++            now = pa_rtclock_now();
+ 
+             if (!u->thread_info.in_null_mode || u->thread_info.timestamp <= now)
+                 process_render_null(u, now);
+@@ -662,16 +662,16 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+             pa_atomic_store(&u->thread_info.running, PA_PTR_TO_UINT(data) == PA_SINK_RUNNING);
+ 
+             if (PA_PTR_TO_UINT(data) == PA_SINK_SUSPENDED)
+-                pa_smoother_pause(u->thread_info.smoother, pa_rtclock_usec());
++                pa_smoother_pause(u->thread_info.smoother, pa_rtclock_now());
+             else
+-                pa_smoother_resume(u->thread_info.smoother, pa_rtclock_usec(), TRUE);
++                pa_smoother_resume(u->thread_info.smoother, pa_rtclock_now(), TRUE);
+ 
+             break;
+ 
+         case PA_SINK_MESSAGE_GET_LATENCY: {
+             pa_usec_t x, y, c, *delay = data;
+ 
+-            x = pa_rtclock_usec();
++            x = pa_rtclock_now();
+             y = pa_smoother_get(u->thread_info.smoother, x);
+ 
+             c = pa_bytes_to_usec(u->thread_info.counter, &u->sink->sample_spec);
+@@ -728,7 +728,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+         case SINK_MESSAGE_UPDATE_LATENCY: {
+             pa_usec_t x, y, latency = (pa_usec_t) offset;
+ 
+-            x = pa_rtclock_usec();
++            x = pa_rtclock_now();
+             y = pa_bytes_to_usec(u->thread_info.counter, &u->sink->sample_spec);
+ 
+             if (y > latency)
+diff --git a/src/modules/module-esound-sink.c b/src/modules/module-esound-sink.c
+index a1a783a..f22cc01 100644
+--- a/src/modules/module-esound-sink.c
++++ b/src/modules/module-esound-sink.c
+@@ -143,14 +143,14 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+                 case PA_SINK_SUSPENDED:
+                     pa_assert(PA_SINK_IS_OPENED(u->sink->thread_info.state));
+ 
+-                    pa_smoother_pause(u->smoother, pa_rtclock_usec());
++                    pa_smoother_pause(u->smoother, pa_rtclock_now());
+                     break;
+ 
+                 case PA_SINK_IDLE:
+                 case PA_SINK_RUNNING:
+ 
+                     if (u->sink->thread_info.state == PA_SINK_SUSPENDED)
+-                        pa_smoother_resume(u->smoother, pa_rtclock_usec(), TRUE);
++                        pa_smoother_resume(u->smoother, pa_rtclock_now(), TRUE);
+ 
+                     break;
+ 
+@@ -165,7 +165,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+         case PA_SINK_MESSAGE_GET_LATENCY: {
+             pa_usec_t w, r;
+ 
+-            r = pa_smoother_get(u->smoother, pa_rtclock_usec());
++            r = pa_smoother_get(u->smoother, pa_rtclock_now());
+             w = pa_bytes_to_usec((uint64_t) u->offset + u->memchunk.length, &u->sink->sample_spec);
+ 
+             *((pa_usec_t*) data) = w > r ? w - r : 0;
+@@ -200,7 +200,7 @@ static void thread_func(void *userdata) {
+     pa_thread_mq_install(&u->thread_mq);
+     pa_rtpoll_install(u->rtpoll);
+ 
+-    pa_smoother_set_time_offset(u->smoother, pa_rtclock_usec());
++    pa_smoother_set_time_offset(u->smoother, pa_rtclock_now());
+ 
+     for (;;) {
+         int ret;
+@@ -293,7 +293,7 @@ static void thread_func(void *userdata) {
+                 else
+                     usec = 0;
+ 
+-                pa_smoother_put(u->smoother, pa_rtclock_usec(), usec);
++                pa_smoother_put(u->smoother, pa_rtclock_now(), usec);
+             }
+ 
+             /* Hmm, nothing to do. Let's sleep */
+diff --git a/src/modules/module-null-sink.c b/src/modules/module-null-sink.c
+index d9bab6b..1611424 100644
+--- a/src/modules/module-null-sink.c
++++ b/src/modules/module-null-sink.c
+@@ -100,14 +100,14 @@ static int sink_process_msg(
+         case PA_SINK_MESSAGE_SET_STATE:
+ 
+             if (PA_PTR_TO_UINT(data) == PA_SINK_RUNNING)
+-                u->timestamp = pa_rtclock_usec();
++                u->timestamp = pa_rtclock_now();
+ 
+             break;
+ 
+         case PA_SINK_MESSAGE_GET_LATENCY: {
+             pa_usec_t now;
+ 
+-            now = pa_rtclock_usec();
++            now = pa_rtclock_now();
+             *((pa_usec_t*) data) = u->timestamp > now ? u->timestamp - now : 0ULL;
+ 
+             return 0;
+@@ -209,7 +209,7 @@ static void thread_func(void *userdata) {
+     pa_thread_mq_install(&u->thread_mq);
+     pa_rtpoll_install(u->rtpoll);
+ 
+-    u->timestamp = pa_rtclock_usec();
++    u->timestamp = pa_rtclock_now();
+ 
+     for (;;) {
+         int ret;
+@@ -218,7 +218,7 @@ static void thread_func(void *userdata) {
+         if (PA_SINK_IS_OPENED(u->sink->thread_info.state)) {
+             pa_usec_t now;
+ 
+-            now = pa_rtclock_usec();
++            now = pa_rtclock_now();
+ 
+             if (u->sink->thread_info.rewind_requested) {
+                 if (u->sink->thread_info.rewind_nbytes > 0)
+diff --git a/src/modules/module-raop-sink.c b/src/modules/module-raop-sink.c
+index 4d68b1b..344bb95 100644
+--- a/src/modules/module-raop-sink.c
++++ b/src/modules/module-raop-sink.c
+@@ -180,7 +180,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+                 case PA_SINK_SUSPENDED:
+                     pa_assert(PA_SINK_IS_OPENED(u->sink->thread_info.state));
+ 
+-                    pa_smoother_pause(u->smoother, pa_rtclock_usec());
++                    pa_smoother_pause(u->smoother, pa_rtclock_now());
+ 
+                     /* Issue a FLUSH if we are connected */
+                     if (u->fd >= 0) {
+@@ -192,7 +192,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+                 case PA_SINK_RUNNING:
+ 
+                     if (u->sink->thread_info.state == PA_SINK_SUSPENDED) {
+-                        pa_smoother_resume(u->smoother, pa_rtclock_usec(), TRUE);
++                        pa_smoother_resume(u->smoother, pa_rtclock_now(), TRUE);
+ 
+                         /* The connection can be closed when idle, so check to
+                            see if we need to reestablish it */
+@@ -215,7 +215,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+         case PA_SINK_MESSAGE_GET_LATENCY: {
+             pa_usec_t w, r;
+ 
+-            r = pa_smoother_get(u->smoother, pa_rtclock_usec());
++            r = pa_smoother_get(u->smoother, pa_rtclock_now());
+             w = pa_bytes_to_usec((u->offset - u->encoding_overhead + (u->encoded_memchunk.length / u->encoding_ratio)), &u->sink->sample_spec);
+ 
+             *((pa_usec_t*) data) = w > r ? w - r : 0;
+@@ -324,7 +324,7 @@ static void thread_func(void *userdata) {
+     pa_thread_mq_install(&u->thread_mq);
+     pa_rtpoll_install(u->rtpoll);
+ 
+-    pa_smoother_set_time_offset(u->smoother, pa_rtclock_usec());
++    pa_smoother_set_time_offset(u->smoother, pa_rtclock_now());
+ 
+     /* Create a chunk of memory that is our encoded silence sample. */
+     pa_memchunk_reset(&silence);
+@@ -464,7 +464,7 @@ static void thread_func(void *userdata) {
+                 else
+                     usec = 0;
+ 
+-                pa_smoother_put(u->smoother, pa_rtclock_usec(), usec);
++                pa_smoother_put(u->smoother, pa_rtclock_now(), usec);
+             }
+ 
+             /* Hmm, nothing to do. Let's sleep */
+diff --git a/src/modules/module-sine-source.c b/src/modules/module-sine-source.c
+index a5f1ce7..58a8c24 100644
+--- a/src/modules/module-sine-source.c
++++ b/src/modules/module-sine-source.c
+@@ -99,14 +99,14 @@ static int source_process_msg(
+         case PA_SOURCE_MESSAGE_SET_STATE:
+ 
+             if (PA_PTR_TO_UINT(data) == PA_SOURCE_RUNNING)
+-                u->timestamp = pa_rtclock_usec();
++                u->timestamp = pa_rtclock_now();
+ 
+             break;
+ 
+         case PA_SOURCE_MESSAGE_GET_LATENCY: {
+             pa_usec_t now, left_to_fill;
+ 
+-            now = pa_rtclock_usec();
++            now = pa_rtclock_now();
+             left_to_fill = u->timestamp > now ? u->timestamp - now : 0ULL;
+ 
+             *((pa_usec_t*) data) = u->block_usec > left_to_fill ? u->block_usec - left_to_fill : 0ULL;
+@@ -166,7 +166,7 @@ static void thread_func(void *userdata) {
+     pa_thread_mq_install(&u->thread_mq);
+     pa_rtpoll_install(u->rtpoll);
+ 
+-    u->timestamp = pa_rtclock_usec();
++    u->timestamp = pa_rtclock_now();
+ 
+     for (;;) {
+         int ret;
+@@ -174,7 +174,7 @@ static void thread_func(void *userdata) {
+         if (PA_SOURCE_IS_OPENED(u->source->thread_info.state)) {
+             pa_usec_t now;
+ 
+-            now = pa_rtclock_usec();
++            now = pa_rtclock_now();
+ 
+             if (u->timestamp <= now)
+                 process_render(u, now);
+diff --git a/src/modules/module-solaris.c b/src/modules/module-solaris.c
+index ecd3ba3..e7cc786 100644
+--- a/src/modules/module-solaris.c
++++ b/src/modules/module-solaris.c
+@@ -637,7 +637,7 @@ static void thread_func(void *userdata) {
+                  * Since we cannot modify the size of the output buffer we fake it
+                  * by not filling it more than u->buffer_size.
+                  */
+-                xtime0 = pa_rtclock_usec();
++                xtime0 = pa_rtclock_now();
+                 buffered_bytes = get_playback_buffered_bytes(u);
+                 if (buffered_bytes >= (uint64_t)u->buffer_size)
+                     break;
+diff --git a/src/modules/module-tunnel.c b/src/modules/module-tunnel.c
+index 5ea58aa..05480cb 100644
+--- a/src/modules/module-tunnel.c
++++ b/src/modules/module-tunnel.c
+@@ -391,7 +391,7 @@ static void check_smoother_status(struct userdata *u, pa_bool_t past)  {
+ 
+     pa_assert(u);
+ 
+-    x = pa_rtclock_usec();
++    x = pa_rtclock_now();
+ 
+     /* Correct by the time the requested issued needs to travel to the
+      * other side.  This is a valid thread-safe access, because the
+@@ -496,7 +496,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+             pa_usec_t yl, yr, *usec = data;
+ 
+             yl = pa_bytes_to_usec((uint64_t) u->counter, &u->sink->sample_spec);
+-            yr = pa_smoother_get(u->smoother, pa_rtclock_usec());
++            yr = pa_smoother_get(u->smoother, pa_rtclock_now());
+ 
+             *usec = yl > yr ? yl - yr : 0;
+             return 0;
+@@ -529,7 +529,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+             else
+                 y = 0;
+ 
+-            pa_smoother_put(u->smoother, pa_rtclock_usec(), y);
++            pa_smoother_put(u->smoother, pa_rtclock_now(), y);
+ 
+             /* We can access this freely here, since the main thread is waiting for us */
+             u->thread_transport_usec = u->transport_usec;
+@@ -603,7 +603,7 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
+             pa_usec_t yr, yl, *usec = data;
+ 
+             yl = pa_bytes_to_usec((uint64_t) u->counter, &PA_SOURCE(o)->sample_spec);
+-            yr = pa_smoother_get(u->smoother, pa_rtclock_usec());
++            yr = pa_smoother_get(u->smoother, pa_rtclock_now());
+ 
+             *usec = yr > yl ? yr - yl : 0;
+             return 0;
+@@ -629,7 +629,7 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
+             y = pa_bytes_to_usec((uint64_t) u->counter, &u->source->sample_spec);
+             y += (pa_usec_t) offset;
+ 
+-            pa_smoother_put(u->smoother, pa_rtclock_usec(), y);
++            pa_smoother_put(u->smoother, pa_rtclock_now(), y);
+ 
+             /* We can access this freely here, since the main thread is waiting for us */
+             u->thread_transport_usec = u->transport_usec;
+@@ -1821,7 +1821,7 @@ int pa__init(pa_module*m) {
+             TRUE,
+             TRUE,
+             10,
+-            pa_rtclock_usec(),
++            pa_rtclock_now(),
+             FALSE);
+     u->ctag = 1;
+     u->device_index = u->channel = PA_INVALID_INDEX;
+diff --git a/src/modules/rtp/module-rtp-recv.c b/src/modules/rtp/module-rtp-recv.c
+index c61d2d8..0c17161 100644
+--- a/src/modules/rtp/module-rtp-recv.c
++++ b/src/modules/rtp/module-rtp-recv.c
+@@ -193,7 +193,7 @@ static void sink_input_suspend_within_thread(pa_sink_input* i, pa_bool_t b) {
+     pa_assert_se(s = i->userdata);
+ 
+     if (b) {
+-        pa_smoother_pause(s->smoother, pa_rtclock_usec());
++        pa_smoother_pause(s->smoother, pa_rtclock_now());
+         pa_memblockq_flush_read(s->memblockq);
+     } else
+         s->first_packet = FALSE;
+diff --git a/src/pulse/stream.c b/src/pulse/stream.c
+index 339a89e..8df8a5e 100644
+--- a/src/pulse/stream.c
++++ b/src/pulse/stream.c
+@@ -373,7 +373,7 @@ static void check_smoother_status(pa_stream *s, pa_bool_t aposteriori, pa_bool_t
+     if (!s->smoother)
+         return;
+ 
+-    x = pa_rtclock_usec();
++    x = pa_rtclock_now();
+ 
+     if (s->timing_info_valid) {
+         if (aposteriori)
+@@ -1057,7 +1057,7 @@ static int create_stream(
+     if (flags & PA_STREAM_INTERPOLATE_TIMING) {
+         pa_usec_t x;
+ 
+-        x = pa_rtclock_usec();
++        x = pa_rtclock_now();
+ 
+         pa_assert(!s->smoother);
+         s->smoother = pa_smoother_new(
+@@ -1594,7 +1594,7 @@ static void stream_get_timing_info_callback(pa_pdispatch *pd, uint32_t command,
+         if (o->stream->smoother) {
+             pa_usec_t u, x;
+ 
+-            u = x = pa_rtclock_usec() - i->transport_usec;
++            u = x = pa_rtclock_now() - i->transport_usec;
+ 
+             if (o->stream->direction == PA_STREAM_PLAYBACK && o->context->version >= 13) {
+                 pa_usec_t su;
+@@ -2103,7 +2103,7 @@ int pa_stream_get_time(pa_stream *s, pa_usec_t *r_usec) {
+     PA_CHECK_VALIDITY(s->context, s->direction != PA_STREAM_RECORD || !s->timing_info.write_index_corrupt, PA_ERR_NODATA);
+ 
+     if (s->smoother)
+-        usec = pa_smoother_get(s->smoother, pa_rtclock_usec());
++        usec = pa_smoother_get(s->smoother, pa_rtclock_now());
+     else
+         usec = calc_time(s, FALSE);
+ 
+diff --git a/src/pulsecore/log.c b/src/pulsecore/log.c
+index 60ea9c5..46770ab 100644
+--- a/src/pulsecore/log.c
++++ b/src/pulsecore/log.c
+@@ -294,7 +294,7 @@ void pa_log_levelv_meta(
+         static pa_usec_t start, last;
+         pa_usec_t u, a, r;
+ 
+-        u = pa_rtclock_usec();
++        u = pa_rtclock_now();
+ 
+         PA_ONCE_BEGIN {
+             start = u;
+diff --git a/src/pulsecore/ratelimit.c b/src/pulsecore/ratelimit.c
+index 29e6fb1..6a9782d 100644
+--- a/src/pulsecore/ratelimit.c
++++ b/src/pulsecore/ratelimit.c
+@@ -38,7 +38,7 @@ pa_bool_t pa_ratelimit_test(pa_ratelimit *r) {
+     pa_usec_t now;
+     pa_mutex *m;
+ 
+-    now = pa_rtclock_usec();
++    now = pa_rtclock_now();
+ 
+     m = pa_static_mutex_get(&mutex, FALSE, FALSE);
+     pa_mutex_lock(m);
+diff --git a/src/pulsecore/rtclock.c b/src/pulsecore/rtclock.c
+index 65c826a..53c0258 100644
+--- a/src/pulsecore/rtclock.c
++++ b/src/pulsecore/rtclock.c
+@@ -122,7 +122,7 @@ void pa_rtclock_hrtimer_enable(void) {
+ #endif
+ }
+ 
+-pa_usec_t pa_rtclock_usec(void) {
++pa_usec_t pa_rtclock_now(void) {
+     struct timeval tv;
+ 
+     return pa_timeval_load(pa_rtclock_get(&tv));
+diff --git a/src/pulsecore/rtclock.h b/src/pulsecore/rtclock.h
+index 03cc1c7..b8a588c 100644
+--- a/src/pulsecore/rtclock.h
++++ b/src/pulsecore/rtclock.h
+@@ -31,7 +31,7 @@ struct timeval;
+ 
+ struct timeval *pa_rtclock_get(struct timeval *ts);
+ 
+-pa_usec_t pa_rtclock_usec(void);
++pa_usec_t pa_rtclock_now(void);
+ 
+ pa_usec_t pa_rtclock_age(const struct timeval *tv);
+ pa_bool_t pa_rtclock_hrtimer(void);
+diff --git a/src/pulsecore/rtpoll.c b/src/pulsecore/rtpoll.c
+index aa8ca32..006b93f 100644
+--- a/src/pulsecore/rtpoll.c
++++ b/src/pulsecore/rtpoll.c
+@@ -160,7 +160,7 @@ pa_rtpoll *pa_rtpoll_new(void) {
+     PA_LLIST_HEAD_INIT(pa_rtpoll_item, p->items);
+ 
+ #ifdef DEBUG_TIMING
+-    p->timestamp = pa_rtclock_usec();
++    p->timestamp = pa_rtclock_now();
+     p->slept = p->awake = 0;
+ #endif
+ 
+@@ -394,7 +394,7 @@ int pa_rtpoll_run(pa_rtpoll *p, pa_bool_t wait) {
+ 
+ #ifdef DEBUG_TIMING
+     {
+-        pa_usec_t now = pa_rtclock_usec();
++        pa_usec_t now = pa_rtclock_now();
+         p->awake = now - p->timestamp;
+         p->timestamp = now;
+     }
+@@ -421,7 +421,7 @@ int pa_rtpoll_run(pa_rtpoll *p, pa_bool_t wait) {
+ 
+ #ifdef DEBUG_TIMING
+     {
+-        pa_usec_t now = pa_rtclock_usec();
++        pa_usec_t now = pa_rtclock_now();
+         p->slept = now - p->timestamp;
+         p->timestamp = now;
+ 
+-- 
+1.6.3.3
+

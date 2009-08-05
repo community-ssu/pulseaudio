@@ -1,7 +1,7 @@
 From 3ebb245cfec67a7f8e6f293223b30c14f2903fdb Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 15 Jul 2009 20:25:01 +0300
-Subject: [PATCH] db-simple: remove dead code
+Subject: [PATCH 75/85] db-simple: remove dead code
 
 ---
  src/pulsecore/database-simple.c |    4 ----
@@ -23,5 +23,5 @@ index ceb565b..00a1fc8 100644
  
          if (append) {
 -- 
-1.5.6.3
+1.6.3.3
 

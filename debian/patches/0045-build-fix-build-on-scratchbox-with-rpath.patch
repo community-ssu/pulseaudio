@@ -1,7 +1,7 @@
 From 025b3f96b3b45e8e83d6c595c3fdd3def94da330 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Wed, 7 Jan 2009 18:18:26 +0200
-Subject: [PATCH] build: fix build on scratchbox with rpath
+Subject: [PATCH 45/85] build: fix build on scratchbox with rpath
 
 X11 depends on libraries that are not listed during link. Those
 libraries symbol fail to be found, because -rpath seems to override
@@ -25,5 +25,5 @@ index cfc7635..5e5ac8a 100644
  pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlopen force $(foreach f,$(PREOPEN_LIBS),-dlopen $(f))
  endif
 -- 
-1.5.6.3
+1.6.3.3
 
