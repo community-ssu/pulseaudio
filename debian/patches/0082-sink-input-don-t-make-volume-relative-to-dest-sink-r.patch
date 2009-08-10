@@ -1,7 +1,7 @@
 From ee1dc8d8b9fa43c76d3a5abb4e8cd9c8aaba11d1 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 29 Jul 2009 15:33:19 +0300
-Subject: [PATCH 82/85] sink-input: don't make volume relative to dest sink reference volume
+Subject: [PATCH 82/87] sink-input: don't make volume relative to dest sink reference volume
 
 When sink-input is moving to a new sink, PulseAudio keep the relative
 volume and multiply with the reference volume of the new sink.  But

@@ -82,4 +82,6 @@
 0082-sink-input-don-t-make-volume-relative-to-dest-sink-r.patch
 0083-alsa-port-the-old-alsa-modules.patch
 0084-alsa-sink-volume-a-complex-mixer-module.patch
-0085-autofoo.patch
+0085-bluetooth-handle-absence-of-bluez-D-Bus-service-prop.patch
+0086-autofoo.patch
+0087-bluetooth-match-org.bluez-NameOwnerChanged.patch

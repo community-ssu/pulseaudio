@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo24) unstable; urgency=low
+
+  * Pulseaudio crash if bluetooth is restarted. Fixes: NB#130647
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Mon, 10 Aug 2009 20:18:09 +0300
+
 pulseaudio (0.9.15-1maemo23) unstable; urgency=low
 
   * Remove pa_assert(). Fixes: NB#118688
