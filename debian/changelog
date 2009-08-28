@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo25) unstable; urgency=low
+
+  * Handle DisconnectRequested in bluetooth module. Fixes: NB#132426
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Fri, 28 Aug 2009 12:19:08 +0300
+
 pulseaudio (0.9.15-1maemo24) unstable; urgency=low
 
   * Pulseaudio crash if bluetooth is restarted. Fixes: NB#130647
