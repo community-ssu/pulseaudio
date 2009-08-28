@@ -86,3 +86,4 @@
 0086-autofoo.patch
 0087-bluetooth-match-org.bluez-NameOwnerChanged.patch
 0088-Handle-DisconnectRequested-in-bluetooth-module.patch
+0089-bluetooth-Remove-reference-to-audio_source_state.patch
