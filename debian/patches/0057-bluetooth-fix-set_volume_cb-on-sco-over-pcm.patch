@@ -1,7 +1,7 @@
 From 2119629cd2cec3a524dd0c5c1d76188816ae3dfb Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 7 Jul 2009 18:00:14 +0300
-Subject: [PATCH 57/87] bluetooth: fix set_volume_cb on sco over pcm
+Subject: [PATCH] bluetooth: fix set_volume_cb on sco over pcm
 
 The current implementation is totally bogus, it cast the over_sink
 userdata to the bluetooth-device userdata... It was failing nicely
@@ -141,5 +141,5 @@ index 08a0d71..c435e7b 100644
          pa_xfree(u->a2dp.buffer);
  
 -- 
-1.6.3.3
+1.5.6.3
 

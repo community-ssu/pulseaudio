@@ -1,7 +1,7 @@
 From c877e9800df2af9bc2aec90ac07ce91eaa750aad Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 1 Jul 2009 13:11:59 +0300
-Subject: [PATCH 54/87] bluetooth: drop data every 500ms on oor condition
+Subject: [PATCH] bluetooth: drop data every 500ms on oor condition
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |   23 +++++++++++++----------
@@ -42,5 +42,5 @@ index c0de74b..7b3e641 100644
                      pa_rtpoll_set_timer_relative(u->rtpoll, sleep_for);
                      disable_timer = FALSE;
 -- 
-1.6.3.3
+1.5.6.3
 

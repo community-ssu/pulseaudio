@@ -1,7 +1,7 @@
 From 02969e3c123853faf608a0f5c869f260400910e5 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 18 Feb 2009 16:21:34 +0200
-Subject: [PATCH 46/87] pulsecore: Lower pool to 16MB max (Nokia specific)
+Subject: [PATCH] pulsecore: Lower pool to 16MB max (Nokia specific)
 
 ---
  src/pulsecore/memblock.c |    2 +-
@@ -21,5 +21,5 @@ index 6cc0ff3..c4e0fbe 100644
  #define PA_MEMEXPORT_SLOTS_MAX 128
  
 -- 
-1.6.3.3
+1.5.6.3
 

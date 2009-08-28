@@ -1,7 +1,7 @@
 From 7299dd4515212bd76f3508c607169189b5b09aa9 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Mon, 20 Jul 2009 13:44:27 +0300
-Subject: [PATCH 77/87] bluetooth: fix typo with service_{read,write}_type
+Subject: [PATCH] bluetooth: fix typo with service_{read,write}_type
 
 ---
  src/modules/bluetooth/module-bluetooth-device.c |    6 ++++--
@@ -32,5 +32,5 @@ index 059ee85..7721257 100644
      if ((u->service_fd = bt_audio_service_open()) < 0) {
          pa_log_error("Couldn't connect to bluetooth audio service");
 -- 
-1.6.3.3
+1.5.6.3
 
