@@ -55,5 +55,5 @@ index 0000000..8f39d59
 +Libs: -L${libdir} -lpulsecore-@PA_MAJORMINORMICRO@ -lpulsecommon-@PA_MAJORMINORMICRO@ -lpulse @PTHREAD_LIBS@
 +Cflags: -D_REENTRANT -I${includedir} -I${includedir}/pulsecore/modules
 -- 
-1.5.6.3
+1.6.0.4
 

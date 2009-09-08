@@ -1,0 +1,36 @@
+From 12ec97a3657971c0740baa398592e8a45bd472af Mon Sep 17 00:00:00 2001
+From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
+Date: Tue, 8 Sep 2009 13:49:32 +0300
+Subject: [PATCH] suspend: don't resume on CORKED stream moves
+
+---
+ src/modules/module-suspend-on-idle.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/src/modules/module-suspend-on-idle.c b/src/modules/module-suspend-on-idle.c
+index 8883780..77d6131 100644
+--- a/src/modules/module-suspend-on-idle.c
++++ b/src/modules/module-suspend-on-idle.c
+@@ -231,6 +231,9 @@ static pa_hook_result_t sink_input_move_finish_hook_cb(pa_core *c, pa_sink_input
+     pa_sink_input_assert_ref(s);
+     pa_assert(u);
+ 
++    if (pa_sink_input_get_state(s) == PA_SINK_INPUT_CORKED)
++        return PA_HOOK_OK;
++
+     if ((d = pa_hashmap_get(u->device_infos, s->sink)))
+         resume(d);
+ 
+@@ -265,6 +268,9 @@ static pa_hook_result_t source_output_move_finish_hook_cb(pa_core *c, pa_source_
+     pa_source_output_assert_ref(s);
+     pa_assert(u);
+ 
++    if (pa_source_output_get_state(s) == PA_SOURCE_OUTPUT_CORKED)
++        return PA_HOOK_OK;
++
+     if (s->source->monitor_of)
+         d = pa_hashmap_get(u->device_infos, s->source->monitor_of);
+     else
+-- 
+1.6.0.4
+
