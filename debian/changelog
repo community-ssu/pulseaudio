@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo27) unstable; urgency=low
+
+  * Add bluetooth HSP auto connect functionality. Fixes: NB#129403
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 08 Sep 2009 16:13:41 +0300
+
 pulseaudio (0.9.15-1maemo26) unstable; urgency=low
 
   * Suspend module doesn't resume on CORKED stream moves. Fixes: NB#124058
