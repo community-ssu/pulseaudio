@@ -88,3 +88,4 @@
 0088-Handle-DisconnectRequested-in-bluetooth-module.patch
 0089-bluetooth-Remove-reference-to-audio_source_state.patch
 0090-suspend-don-t-resume-on-CORKED-stream-moves.patch
+0091-bluetooth-Add-bluetooth-HSP-auto-connect-functional.patch

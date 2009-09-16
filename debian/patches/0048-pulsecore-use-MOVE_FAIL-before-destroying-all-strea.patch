@@ -53,5 +53,5 @@ index 2190250..a8db849 100644
          pa_assert(o != j);
          pa_source_output_kill(o);
 -- 
-1.6.0.4
+1.5.6.3
 
