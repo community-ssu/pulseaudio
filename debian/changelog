@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo28) unstable; urgency=low
+
+  * Stop auto timing updates if connected to suspended sink or source. Fixes: NB#141154
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 06 Oct 2009 19:16:41 +0300
+
 pulseaudio (0.9.15-1maemo27) unstable; urgency=low
 
   * Add bluetooth HSP auto connect functionality. Fixes: NB#129403
