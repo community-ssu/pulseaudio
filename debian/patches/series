@@ -90,3 +90,4 @@
 0090-suspend-don-t-resume-on-CORKED-stream-moves.patch
 0091-bluetooth-Add-bluetooth-HSP-auto-connect-functional.patch
 0092-protocol-native-Stop-auto-timing-updates-if-connect.patch
+0093-stream-restore-save-individual-values-for-role-rout.patch

@@ -22,5 +22,5 @@ index 4aad737..bfff0e1 100644
  finish:
      return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 -- 
-1.5.6.3
+1.6.0.4
 
