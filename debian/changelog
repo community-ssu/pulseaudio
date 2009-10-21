@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo30) unstable; urgency=low
+
+  * Fix lock handling in sink_get_volume_cb. Fixes: NB#139279
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Wed, 14 Oct 2009 15:07:41 +0300
+
 pulseaudio (0.9.15-1maemo29) unstable; urgency=low
 
   * Save individual values for role routes. Fixes: NB#142700
