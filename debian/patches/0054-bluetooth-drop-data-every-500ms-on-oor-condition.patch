@@ -42,5 +42,5 @@ index c0de74b..7b3e641 100644
                      pa_rtpoll_set_timer_relative(u->rtpoll, sleep_for);
                      disable_timer = FALSE;
 -- 
-1.6.0.4
+1.5.6.3
 

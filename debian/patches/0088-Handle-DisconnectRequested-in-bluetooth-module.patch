@@ -50,5 +50,5 @@ index 326bd8b..963ed28 100644
                                 "type='signal',sender='org.bluez',interface='org.bluez.Headset',member='PropertyChanged'",
                                 "type='signal',sender='org.bluez',interface='org.bluez.AudioSink',member='PropertyChanged'", NULL);
 -- 
-1.6.0.4
+1.5.6.3
 
