@@ -93,3 +93,5 @@
 0093-stream-restore-save-individual-values-for-role-rout.patch
 0094-alsa-volume-Fix-lock-handling-in-sink_get_volume_cb.patch
 0095-alsa-old-Set-fixed-latency-for-alsa-old-sink-and-so.patch
+0096-protocol-native-use-the-right-samplerate.patch
+0097-bt-device-Refuse-to-use-the-HSP-profile-if-there-is.patch

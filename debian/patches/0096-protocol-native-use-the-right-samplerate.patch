@@ -1,0 +1,27 @@
+From 3344421474509f6602b8fe96a4431192837a2e71 Mon Sep 17 00:00:00 2001
+From: Wim Taymans <wim.taymans@collabora.co.uk>
+Date: Thu, 23 Jul 2009 13:40:23 +0200
+Subject: [PATCH] protocol-native: use the right samplerate
+
+The render_memblockq is expressed in the sample_spec of the sink, not of the
+particular stream before resampling.
+---
+ src/pulsecore/protocol-native.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/src/pulsecore/protocol-native.c b/src/pulsecore/protocol-native.c
+index b37b068..a6bea61 100644
+--- a/src/pulsecore/protocol-native.c
++++ b/src/pulsecore/protocol-native.c
+@@ -2601,7 +2601,7 @@ static void command_get_playback_latency(pa_pdispatch *pd, uint32_t command, uin
+     reply = reply_new(tag);
+     pa_tagstruct_put_usec(reply,
+                           s->current_sink_latency +
+-                          pa_bytes_to_usec(s->render_memblockq_length, &s->sink_input->sample_spec));
++                          pa_bytes_to_usec(s->render_memblockq_length, &s->sink_input->sink->sample_spec));
+     pa_tagstruct_put_usec(reply, 0);
+     pa_tagstruct_put_boolean(reply,
+                              s->playing_for > 0 &&
+-- 
+1.5.6.3
+
