@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo31) unstable; urgency=low
+
+  * Refuse to use the HSP profile if there is some other HSP device active. Fixes: NB#138555
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Mon, 02 Oct 2009 15:17:01 +0200
+
 pulseaudio (0.9.15-1maemo30) unstable; urgency=low
 
   * Fix lock handling in sink_get_volume_cb. Fixes: NB#139279
