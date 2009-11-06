@@ -101,5 +101,5 @@ index 60fb46b..1ada1fa 100644
      if (u->adjust_time > 0)
          u->time_event = m->core->mainloop->rtclock_time_new(m->core->mainloop, pa_rtclock_now() + u->adjust_time * PA_USEC_PER_SEC, time_callback, u);
 -- 
-1.6.0.4
+1.5.6.3
 

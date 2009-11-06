@@ -182,5 +182,5 @@ index 5c7681d..66e1c31 100644
                                 "type='signal',sender='org.bluez',interface='org.bluez.Manager',member='AdapterRemoved'",
                                 "type='signal',sender='org.bluez',interface='org.bluez.Adapter',member='DeviceRemoved'",
 -- 
-1.6.0.4
+1.5.6.3
 

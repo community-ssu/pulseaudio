@@ -1,0 +1,42 @@
+From 183c46b7477bd603f0d6cd4ef34abe386abd1877 Mon Sep 17 00:00:00 2001
+From: Jyri Sarha <jyri.sarha@nokia.com>
+Date: Fri, 27 Nov 2009 10:33:46 +0200
+Subject: [PATCH] combine: Stop rate adjustments if sink is supended
+
+---
+ src/modules/module-combine.c |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
+
+diff --git a/src/modules/module-combine.c b/src/modules/module-combine.c
+index 1ada1fa..279761a 100644
+--- a/src/modules/module-combine.c
++++ b/src/modules/module-combine.c
+@@ -242,7 +242,12 @@ static void time_callback(pa_mainloop_api*a, pa_time_event* e, pa_usec_t t, void
+ 
+     adjust_rates(u);
+ 
+-    u->sink->core->mainloop->rtclock_time_restart(e, pa_rtclock_now() + u->adjust_time * PA_USEC_PER_SEC);
++    if (pa_sink_get_state(u->sink) == PA_SINK_SUSPENDED) {
++        u->core->mainloop->time_free(e);
++        u->time_event = NULL;
++    }
++    else
++        u->sink->core->mainloop->rtclock_time_restart(e, pa_rtclock_now() + u->adjust_time * PA_USEC_PER_SEC);
+ }
+ 
+ static void process_render_null(struct userdata *u, pa_usec_t now) {
+@@ -609,6 +614,11 @@ static void unsuspend(struct userdata *u) {
+             enable_output(o);
+     }
+ 
++    if (NULL == u->time_event) {
++        u->time_event = u->core->mainloop->rtclock_time_new(
++            u->core->mainloop, pa_rtclock_now() + u->adjust_time * PA_USEC_PER_SEC, time_callback, u);
++    }
++
+     pa_log_info("Resumed successfully...");
+ }
+ 
+-- 
+1.5.6.3
+

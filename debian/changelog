@@ -1,3 +1,29 @@
+pulseaudio (0.9.15-1maemo35+0m5) unstable; urgency=low
+
+  * This entry has been added by BIFH queue processor
+    Suffix +0m5 added to package revision
+
+ -- Harri Mahonen <ext-harri.mahonen@nokia.com>  Mon, 30 Nov 2009 13:28:18 +0200
+
+pulseaudio (0.9.15-1maemo35) unstable; urgency=low
+
+  * combine: Stop rate adjustments if sink is supended. Fixes: NB#148607
+  * libpulse: Store pa_stream pointers to hashmaps instead of dynarrays. Fixes: NB#142517
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Fri, 27 Nov 2009 10:40:11 +0200
+
+pulseaudio (0.9.15-1maemo34) unstable; urgency=low
+
+  * Fix timer event handling. Fixes: NB#145577
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Wed, 11 Nov 2009 16:30:01 +0200
+
+pulseaudio (0.9.15-1maemo33) unstable; urgency=low
+
+  * Turn BT-ringtone volume down even more. Fixes: NB#146007
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 10 Nov 2009 16:30:01 +0200
+
 pulseaudio (0.9.15-1maemo32) unstable; urgency=low
 
   * Enable simultaneous playback to sink.hw0 and .hw1 using module-combine. Fixes: NB#126956

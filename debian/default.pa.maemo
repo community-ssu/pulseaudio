@@ -54,7 +54,7 @@ load-module module-alsa-source-old source_name=source.hw1 device=hw:0,1 rate=800
 load-module module-bluetooth-discover sco_sink=sink.hw1 sco_source=source.hw1
 
 ### Sink for playing ringtones to both IHF and BT/HSP
-load-module module-combine sink_name=sink.hw0andhw1 slaves=sink.hw0,sink.hw1 slave_amps=0,-18 resample_method=trivial
+load-module module-combine sink_name=sink.hw0andhw1 slaves=sink.hw0,sink.hw1 slave_amps=0,-28 resample_method=trivial adjust_time=1
 
 ###################################
 #         other modules           #

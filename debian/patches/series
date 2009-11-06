@@ -97,3 +97,6 @@
 0097-alsa-port-the-old-alsa-modules.patch
 0098-suspend-don-t-resume-on-CORKED-stream-moves.patch
 0099-autofoo.patch
+0100-rtclock-mainloop-Fix-bug-in-rtclock-fix-fixes-1455.patch
+0101-combine-Stop-rate-adjustments-if-sink-is-supended.patch
+0102-libpulse-Store-pa_stream-pointers-to-hashmaps-inste.patch
