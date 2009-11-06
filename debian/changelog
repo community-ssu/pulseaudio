@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo32) unstable; urgency=low
+
+  * Enable simultaneous playback to sink.hw0 and .hw1 using module-combine. Fixes: NB#126956
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Fri, 06 Nov 2009 09:30:01 +0200
+
 pulseaudio (0.9.15-1maemo31) unstable; urgency=low
 
   * Refuse to use the HSP profile if there is some other HSP device active. Fixes: NB#138555
