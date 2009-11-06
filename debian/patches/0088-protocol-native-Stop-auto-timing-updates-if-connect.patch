@@ -1,4 +1,4 @@
-From 38def2be8ba69185804e600a50646bc8ce20ce84 Mon Sep 17 00:00:00 2001
+From 19a31e9b9f027e046916cf1eaa78389726e1c87a Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Tue, 6 Oct 2009 19:13:35 +0300
 Subject: [PATCH] protocol-native: Stop auto timing updates if connected to suspended sink or source
@@ -68,5 +68,5 @@ index 3ec1342..6632132 100644
      request_auto_timing_update(s, TRUE);
  
 -- 
-1.5.6.3
+1.6.0.4
 

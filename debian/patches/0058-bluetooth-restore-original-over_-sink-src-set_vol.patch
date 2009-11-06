@@ -52,5 +52,5 @@ index c435e7b..059ee85 100644
          pa_shared_remove(u->core, k);
          pa_xfree(k);
 -- 
-1.5.6.3
+1.6.0.4
 

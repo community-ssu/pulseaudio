@@ -1,6 +1,6 @@
-From 3a2b2d90f41ecb42d44eed634404419593366c05 Mon Sep 17 00:00:00 2001
-From: Maemo Multimedia <multimedia@maemo.org>
-Date: Fri, 17 Apr 2009 17:08:35 +0300
+From 4760d9e33d35bf3299c4aa2d03661131e85319d7 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Juho=20H=C3=A4m=C3=A4l=C3=A4inen?= <ext-juho.hamalainen@nokia.com>
+Date: Fri, 6 Nov 2009 07:24:13 +0200
 Subject: [PATCH] alsa: port the old alsa modules
 
 alsa-old: start as suspended
@@ -44,23 +44,34 @@ alsa-old: Increase volume_change_extra_delay to 9000us
 Increase volume_change_extra_delay from 6000us to 9000us to get rid of
 the occasional scratches in sound when short samples are played with
 high volume while listening to music on low volume.
+
+alsa-old: Change PA_SINK_MESSAGE_GET_UNDERRUN to (PA_SINK_MESSAGE_MAX + 50)
+
+The previous value (PA_SINK_MESSAGE_MAX + 1) was conflicting with
+combine modules internal messages.
+
+alsa-old: Move buffer mode switching to IO thread with internal message
+
+alsa-old: update buffer metrics correctly to proplist
+
+alsa-old: Set fixed latency for alsa-old sink and source
 ---
  src/Makefile.am                                  |   18 +
  src/modules/alsa/module-alsa-sink-old-symdef.h   |   27 +
- src/modules/alsa/module-alsa-sink-old.c          | 1170 +++++++++++++++++
+ src/modules/alsa/module-alsa-sink-old.c          | 1210 +++++++++++++++++
  src/modules/alsa/module-alsa-source-old-symdef.h |   27 +
- src/modules/alsa/module-alsa-source-old.c        | 1492 ++++++++++++++++++++++
- 5 files changed, 2734 insertions(+), 0 deletions(-)
+ src/modules/alsa/module-alsa-source-old.c        | 1532 ++++++++++++++++++++++
+ 5 files changed, 2814 insertions(+), 0 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-old-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-old.c
  create mode 100644 src/modules/alsa/module-alsa-source-old-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-source-old.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 6d26863..6721335 100644
+index d7f31b4..3c8a7f5 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -1006,6 +1006,10 @@ modlibexec_LTLIBRARIES += \
+@@ -1009,6 +1009,10 @@ modlibexec_LTLIBRARIES += \
  		module-alsa-sink.la \
  		module-alsa-source.la \
  		module-alsa-card.la
@@ -71,7 +82,7 @@ index 6d26863..6721335 100644
  endif
  
  if HAVE_SOLARIS
-@@ -1143,6 +1147,10 @@ SYMDEF_FILES = \
+@@ -1147,6 +1151,10 @@ SYMDEF_FILES = \
  		modules/module-cork-music-on-phone-symdef.h \
  		modules/module-console-kit-symdef.h
  
@@ -82,7 +93,7 @@ index 6d26863..6721335 100644
  EXTRA_DIST += $(SYMDEF_FILES)
  BUILT_SOURCES += $(SYMDEF_FILES)
  
-@@ -1355,6 +1363,16 @@ module_alsa_card_la_LDFLAGS = $(MODULE_LDFLAGS)
+@@ -1364,6 +1372,16 @@ module_alsa_card_la_LDFLAGS = $(MODULE_LDFLAGS)
  module_alsa_card_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
  module_alsa_card_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
@@ -134,10 +145,10 @@ index 0000000..0c74afc
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
 new file mode 100644
-index 0000000..8fe1770
+index 0000000..2c6529f
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-old.c
-@@ -0,0 +1,1170 @@
+@@ -0,0 +1,1210 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -224,8 +235,6 @@ index 0000000..8fe1770
 +#define PROP_BUFFERS_PRIMARY "primary"
 +#define PROP_BUFFERS_ALTERNATIVE "alternative"
 +
-+#define PA_SINK_MESSAGE_GET_UNDERRUN (PA_SINK_MESSAGE_MAX + 1)
-+
 +struct userdata {
 +    pa_core *core;
 +    pa_module *module;
@@ -290,8 +299,16 @@ index 0000000..8fe1770
 +    NULL
 +};
 +
++enum {
++    SINK_MESSAGE_SWITCH_BUFFERS = PA_SINK_MESSAGE_MAX,
++/* FIXME: This shared constant should be defined in some header file. */
++    PA_SINK_MESSAGE_GET_UNDERRUN = (PA_SINK_MESSAGE_MAX + 50)
++};
++
++
 +static void switch_buffers(struct userdata *u, int switch_mode) {
-+    unsigned num_inputs = 0;
++    long buffer_size;
++    long fragment_size;
 +
 +    pa_assert(u->sink);
 +
@@ -303,14 +320,44 @@ index 0000000..8fe1770
 +        return;
 +
 +    u->switch_mode = switch_mode;
-+    num_inputs = pa_sink_used_by(u->sink);
 +
-+    pa_log_debug("switch_buffers() %s got %d inputs", u->device_name, num_inputs);
++    pa_log_debug("%s: Posting switch command %d to IO thread", u->device_name, switch_mode);
 +
-+    /* Suspend is dependent on the context where switch_buffers is run.
-+     * If using from thread_func, internal suspend() should be used. */
-+    if (pa_sink_get_state(u->sink) != PA_SINK_SUSPENDED)
-+        pa_sink_suspend(u->sink, TRUE);
++    pa_asyncmsgq_post(u->thread_mq.inq, PA_MSGOBJECT(u->sink), SINK_MESSAGE_SWITCH_BUFFERS, (void *) switch_mode, 0, NULL, NULL);
++
++    if (u->switch_mode == SINK_SWITCH_PRIMARY) {
++        buffer_size = u->pri_period_size * u->pri_frame_size * u->pri_nfragments;
++        fragment_size = u->pri_period_size * u->pri_frame_size;
++    } else {
++        buffer_size = u->alt_period_size * u->alt_frame_size * u->alt_nfragments;
++        fragment_size = u->alt_period_size * u->alt_frame_size;
++    }
++
++    /* update buffer metrics */
++    pa_proplist_setf(u->sink->proplist,
++                     PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE,
++                     "%lu", (unsigned long) buffer_size);
++    pa_proplist_setf(u->sink->proplist,
++                     PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE,
++                     "%lu", (unsigned long) fragment_size);
++}
++
++static int suspend(struct userdata *u);
++static int unsuspend(struct userdata *u);
++
++static void switch_buffers_iothread(struct userdata *u, int switch_mode) {
++    pa_bool_t sink_is_running = FALSE;
++
++    if (u->sink->thread_info.state == PA_SINK_IDLE ||
++        u->sink->thread_info.state == PA_SINK_RUNNING) {
++        pa_log_info("Sink %s is running suspending for switching to %d", u->device_name, switch_mode);
++        sink_is_running = TRUE;
++    }
++    else
++        pa_log_info("Sink %s is not running, switching to %d", u->device_name, switch_mode);
++
++    if (sink_is_running)
++        suspend(u);
 +
 +    if (u->switch_mode == SINK_SWITCH_PRIMARY) {
 +        pa_log_info("switch to primary buffer");
@@ -328,16 +375,8 @@ index 0000000..8fe1770
 +        u->period_size = u->alt_period_size;
 +    }
 +
-+    if (num_inputs > 0)
-+        pa_sink_suspend(u->sink, FALSE);
-+
-+    /* update buffer metrics */
-+    pa_proplist_setf(u->sink->proplist,
-+                     PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE,
-+                     "%lu", (unsigned long) (u->period_size * u->frame_size * u->nfragments));
-+    pa_proplist_setf(u->sink->proplist,
-+                     PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE,
-+                     "%lu", (unsigned long) (u->period_size * u->frame_size));
++    if (sink_is_running)
++        unsuspend(u);
 +}
 +
 +static int mmap_write(struct userdata *u) {
@@ -733,6 +772,12 @@ index 0000000..8fe1770
 +        case PA_SINK_MESSAGE_GET_UNDERRUN: {
 +            *((pa_bool_t*) data) = pa_atomic_load(&u->buffer_underrun);
 +            pa_atomic_store(&u->buffer_underrun, FALSE);
++
++            return 0;
++        }
++
++        case SINK_MESSAGE_SWITCH_BUFFERS: {
++            switch_buffers_iothread(u, PA_PTR_TO_UINT(data));
 +
 +            return 0;
 +        }
@@ -1204,6 +1249,7 @@ index 0000000..8fe1770
 +    u->nfragments = nfrags;
 +    u->hwbuf_size = u->fragment_size * nfrags;
 +    u->period_size = period_size;
++    u->sink->fixed_latency = pa_bytes_to_usec(u->hwbuf_size, &u->sink->sample_spec);
 +
 +    if (u->switching_enabled) {
 +        u->pri_frame_size = frame_size;
@@ -1217,8 +1263,13 @@ index 0000000..8fe1770
 +        u->alt_nfragments = alt_nfrags;
 +        u->alt_hwbuf_size = u->alt_fragment_size * alt_nfrags;
 +        u->alt_period_size = alt_period_size;
++        /* If we'd like to be clever we could set this sink to have dynamic latency and set
++           max_latency = min_latency = bwbuf_size usec and call pa_sink_invalidate_requested_latency()
++           always when we do a buffer switch but there is no time, so let's assume the worst case and
++           be stupid instead. */
++        if (u->alt_hwbuf_size > u->hwbuf_size)
++            u->sink->fixed_latency = pa_bytes_to_usec(u->alt_hwbuf_size, &u->sink->sample_spec);
 +    }
-+
 +
 +    pa_log_info("PRI: Using %u fragments of size %lu bytes.", nfrags, (long unsigned) u->fragment_size);
 +    if (u->switching_enabled)
@@ -1343,10 +1394,10 @@ index 0000000..033edd6
 +#endif
 diff --git a/src/modules/alsa/module-alsa-source-old.c b/src/modules/alsa/module-alsa-source-old.c
 new file mode 100644
-index 0000000..8d9cbd2
+index 0000000..c329048
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-source-old.c
-@@ -0,0 +1,1492 @@
+@@ -0,0 +1,1532 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -1433,8 +1484,6 @@ index 0000000..8d9cbd2
 +#define PROP_BUFFERS_PRIMARY "primary"
 +#define PROP_BUFFERS_ALTERNATIVE "alternative"
 +
-+#define PA_SOURCE_MESSAGE_GET_OVERRUN (PA_SOURCE_MESSAGE_MAX + 1)
-+
 +struct userdata {
 +    pa_core *core;
 +    pa_module *module;
@@ -1506,9 +1555,15 @@ index 0000000..8d9cbd2
 +    NULL
 +};
 +
++enum {
++    SOURCE_MESSAGE_SWITCH_BUFFERS = PA_SOURCE_MESSAGE_MAX,
++/* FIXME: This shared constant should be defined in some header file. */
++    PA_SOURCE_MESSAGE_GET_OVERRUN = (PA_SOURCE_MESSAGE_MAX + 1)
++};
 +
 +static void switch_buffers(struct userdata *u, int switch_mode) {
-+    unsigned num_outputs = 0;
++    long buffer_size;
++    long fragment_size;
 +
 +    pa_assert(u->source);
 +
@@ -1520,14 +1575,44 @@ index 0000000..8d9cbd2
 +        return;
 +
 +    u->switch_mode = switch_mode;
-+    num_outputs = pa_source_used_by(u->source);
 +
-+    pa_log_debug("switch_buffers() %s got %d outputs", u->device_name, num_outputs);
++    pa_log_debug("%s: Posting switch command %d to IO thread", u->device_name, switch_mode);
 +
-+    /* Suspend is dependent on the context where switch_buffers is run.
-+     * If using from thread_func, internal suspend() should be used. */
-+    if (pa_source_get_state(u->source) != PA_SOURCE_SUSPENDED)
-+        pa_source_suspend(u->source, TRUE);
++    pa_asyncmsgq_post(u->thread_mq.inq, PA_MSGOBJECT(u->source), SOURCE_MESSAGE_SWITCH_BUFFERS, (void *) switch_mode, 0, NULL, NULL);
++
++    if (u->switch_mode == SOURCE_SWITCH_PRIMARY) {
++        buffer_size = u->pri_period_size * u->pri_frame_size * u->pri_nfragments;
++        fragment_size = u->pri_period_size * u->pri_frame_size;
++    } else {
++        buffer_size = u->alt_period_size * u->alt_frame_size * u->alt_nfragments;
++        fragment_size = u->alt_period_size * u->alt_frame_size;
++    }
++
++    /* update buffer metrics */
++    pa_proplist_setf(u->source->proplist,
++                     PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE,
++                     "%lu", (unsigned long) buffer_size);
++    pa_proplist_setf(u->source->proplist,
++                     PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE,
++                     "%lu", (unsigned long) fragment_size);
++}
++
++static int suspend(struct userdata *u);
++static int unsuspend(struct userdata *u);
++
++static void switch_buffers_iothread(struct userdata *u, int switch_mode) {
++    pa_bool_t source_is_running = FALSE;
++
++    if (u->source->thread_info.state == PA_SOURCE_IDLE ||
++        u->source->thread_info.state == PA_SOURCE_RUNNING) {
++        pa_log_info("Source %s is running suspending for switching to %d", u->device_name, switch_mode);
++        source_is_running = TRUE;
++    }
++    else
++        pa_log_info("Source %s is not running, switching to %d", u->device_name, switch_mode);
++
++    if (source_is_running)
++        suspend(u);
 +
 +    if (u->switch_mode == SOURCE_SWITCH_PRIMARY) {
 +        pa_log_info("switch to primary buffer");
@@ -1545,15 +1630,8 @@ index 0000000..8d9cbd2
 +        u->period_size = u->alt_period_size;
 +    }
 +
-+    if (num_outputs > 0)
-+        pa_source_suspend(u->source, FALSE);
-+
-+    pa_proplist_setf(u->source->proplist,
-+                     PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE,
-+                     "%lu", (unsigned long) (u->period_size * u->frame_size * u->nfragments));
-+    pa_proplist_setf(u->source->proplist,
-+                     PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE,
-+                     "%lu", (unsigned long) (u->period_size * u->frame_size));
++    if (source_is_running)
++        unsuspend(u);
 +}
 +
 +static int mmap_read(struct userdata *u) {
@@ -1915,6 +1993,12 @@ index 0000000..8d9cbd2
 +        case PA_SOURCE_MESSAGE_GET_OVERRUN: {
 +            *((pa_bool_t*) data) = pa_atomic_load(&u->buffer_overrun);
 +            pa_atomic_store(&u->buffer_overrun, FALSE);
++
++            return 0;
++        }
++
++        case SOURCE_MESSAGE_SWITCH_BUFFERS: {
++            switch_buffers_iothread(u, PA_PTR_TO_UINT(data));
 +
 +            return 0;
 +        }
@@ -2729,6 +2813,7 @@ index 0000000..8d9cbd2
 +    u->nfragments = nfrags;
 +    u->hwbuf_size = u->fragment_size * nfrags;
 +    u->period_size = period_size;
++    u->source->fixed_latency = pa_bytes_to_usec(u->hwbuf_size, &u->source->sample_spec);
 +
 +    if (u->switching_enabled) {
 +        u->pri_frame_size = frame_size;
@@ -2742,7 +2827,13 @@ index 0000000..8d9cbd2
 +        u->alt_nfragments = alt_nfrags;
 +        u->alt_hwbuf_size = u->alt_fragment_size * alt_nfrags;
 +        u->alt_period_size = alt_period_size;
-+    }
++        /* If we'd like to be clever we could set this sink to have dynamic latency and set
++           max_latency = min_latency = bwbuf_size usec and call pa_sink_invalidate_requested_latency()
++           always when we do a buffer switch but there is no time, so let's assume the worst case and
++           be stupid instead. */
++        if (u->alt_hwbuf_size > u->hwbuf_size)
++            u->source->fixed_latency = pa_bytes_to_usec(u->alt_hwbuf_size, &u->source->sample_spec);
++      }
 +
 +    pa_log_info("PRI: Using %u fragments of size %lu bytes.", nfrags, (long unsigned) u->fragment_size);
 +    if (u->switching_enabled)
@@ -2840,5 +2931,5 @@ index 0000000..8d9cbd2
 +    snd_config_update_free_global();
 +}
 -- 
-1.5.6.3
+1.6.0.4
 

@@ -1,4 +1,4 @@
-From e520618d09926450bfc39869e64275b41a367236 Mon Sep 17 00:00:00 2001
+From 5d6b343dc06819de026e15ff2c40e5cfab5c56e9 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Fri, 11 Sep 2009 15:21:48 +0300
 Subject: [PATCH] bluetooth: Add bluetooth HSP auto connect functionality
@@ -111,5 +111,5 @@ index 788fee0..cea73f8 100644
  
          if (mi) {
 -- 
-1.5.6.3
+1.6.0.4
 

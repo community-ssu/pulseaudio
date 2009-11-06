@@ -1,0 +1,191 @@
+From b27aba92503cb85660875c914e22238e033c94e3 Mon Sep 17 00:00:00 2001
+From: Tanu Kaskinen <tanu.kaskinen@digia.com>
+Date: Fri, 9 Oct 2009 15:54:48 +0300
+Subject: [PATCH] combine: Add new module argument: slave_amps.
+
+---
+ src/modules/module-combine.c |   65 +++++++++++++++++++++++++++++++++++------
+ 1 files changed, 55 insertions(+), 10 deletions(-)
+
+diff --git a/src/modules/module-combine.c b/src/modules/module-combine.c
+index bda3d19..60fb46b 100644
+--- a/src/modules/module-combine.c
++++ b/src/modules/module-combine.c
+@@ -57,6 +57,7 @@ PA_MODULE_LOAD_ONCE(FALSE);
+ PA_MODULE_USAGE(
+         "sink_name=<name for the sink> "
+         "slaves=<slave sinks> "
++        "slave_amps=<slave amps in dB> "
+         "adjust_time=<seconds> "
+         "resample_method=<method> "
+         "format=<sample format> "
+@@ -78,6 +79,7 @@ PA_MODULE_USAGE(
+ static const char* const valid_modargs[] = {
+     "sink_name",
+     "slaves",
++    "slave_amps",
+     "adjust_time",
+     "resample_method",
+     "format",
+@@ -100,6 +102,9 @@ struct output {
+ 
+     pa_memblockq *memblockq;
+ 
++    pa_bool_t apply_amp;
++    pa_cvolume volume;
++
+     pa_usec_t total_latency;
+ 
+     pa_atomic_t max_request;
+@@ -365,8 +370,7 @@ static void render_memblock(struct userdata *u, struct output *o, size_t length)
+                 pa_asyncmsgq_post(j->inq, PA_MSGOBJECT(j->sink_input), SINK_INPUT_MESSAGE_POST, NULL, 0, &chunk, NULL);
+ 
+         /* And place it directly into the requesting output's queue */
+-        if (o)
+-            pa_memblockq_push_align(o->memblockq, &chunk);
++        pa_memblockq_push_align(o->memblockq, &chunk);
+ 
+         pa_memblock_unref(chunk.memblock);
+     }
+@@ -406,6 +410,11 @@ static int sink_input_pop_cb(pa_sink_input *i, size_t nbytes, pa_memchunk *chunk
+     if (pa_memblockq_peek(o->memblockq, chunk) < 0)
+         return -1;
+ 
++    if (o->apply_amp) {
++        pa_memchunk_make_writable(chunk, 0);
++        pa_volume_memchunk(chunk, &o->userdata->sink->sample_spec, &o->volume);
++    }
++
+     pa_memblockq_drop(o->memblockq, chunk->length);
+     return 0;
+ }
+@@ -816,6 +825,12 @@ static int output_create_sink_input(struct output *o) {
+     data.module = o->userdata->module;
+     data.resample_method = o->userdata->resample_method;
+ 
++    /* FIXME: If the underlying sink supports decibel volume, we should apply
++     * the slave amplification by setting the stream volume. There's a Nokia
++     * specific issue that the underlying sink may claim to support decibel
++     * volume, when it really doesn't. So we always apply the slave amp in
++     * software inside module-combine and set the stream volume to
++     * PA_VOLUME_NORM. */
+     pa_cvolume_reset(&volume, data.sample_spec.channels);
+     pa_sink_input_new_data_set_volume(&data, &volume);
+     data.volume_is_absolute = TRUE;
+@@ -843,7 +858,7 @@ static int output_create_sink_input(struct output *o) {
+     return 0;
+ }
+ 
+-static struct output *output_new(struct userdata *u, pa_sink *sink) {
++static struct output *output_new(struct userdata *u, pa_sink *sink, pa_volume_t volume) {
+     struct output *o;
+     pa_sink_state_t state;
+ 
+@@ -868,6 +883,8 @@ static struct output *output_new(struct userdata *u, pa_sink *sink) {
+             0,
+             0,
+             NULL);
++    o->apply_amp = volume != PA_VOLUME_NORM;
++    pa_cvolume_set(&o->volume, o->userdata->sink->sample_spec.channels, volume);
+     pa_atomic_store(&o->max_request, 0);
+     PA_LLIST_INIT(struct output, o);
+ 
+@@ -959,7 +976,7 @@ static pa_hook_result_t sink_put_hook_cb(pa_core *c, pa_sink *s, struct userdata
+ 
+     pa_log_info("Configuring new sink: %s", s->name);
+ 
+-    if (!(o = output_new(u, s))) {
++    if (!(o = output_new(u, s, PA_VOLUME_NORM))) {
+         pa_log("Failed to create sink input on sink '%s'.", s->name);
+         return PA_HOOK_OK;
+     }
+@@ -1025,7 +1042,7 @@ static pa_hook_result_t sink_state_changed_hook_cb(pa_core *c, pa_sink *s, struc
+ int pa__init(pa_module*m) {
+     struct userdata *u;
+     pa_modargs *ma = NULL;
+-    const char *slaves, *rm;
++    const char *slaves, *slave_amps, *rm;
+     int resample_method = PA_RESAMPLER_TRIVIAL;
+     pa_sample_spec ss;
+     pa_channel_map map;
+@@ -1079,7 +1096,12 @@ int pa__init(pa_module*m) {
+     }
+ 
+     slaves = pa_modargs_get_value(ma, "slaves", NULL);
++    slave_amps = pa_modargs_get_value(ma, "slave_amps", NULL);
+     u->automatic = !slaves;
++    if (!slaves && slave_amps) {
++        pa_log("The slave_amps argument may not be given without the slaves argument.");
++        goto fail;
++    }
+ 
+     ss = m->core->default_sample_spec;
+     map = m->core->default_channel_map;
+@@ -1120,15 +1142,17 @@ int pa__init(pa_module*m) {
+     pa_sink_set_max_request(u->sink, pa_usec_to_bytes(u->block_usec, &u->sink->sample_spec));
+ 
+     if (!u->automatic) {
+-        const char*split_state;
++        const char *slaves_split_state, *slave_amps_split_state;
+         char *n = NULL;
++        char *amp_str = NULL;
+         pa_assert(slaves);
+ 
+         /* The slaves have been specified manually */
+ 
+-        split_state = NULL;
+-        while ((n = pa_split(slaves, ",", &split_state))) {
++        slaves_split_state = slave_amps_split_state = NULL;
++        while ((n = pa_split(slaves, ",", &slaves_split_state))) {
+             pa_sink *slave_sink;
++            double slave_amp = 0.0;
+ 
+             if (!(slave_sink = pa_namereg_get(m->core, n, PA_NAMEREG_SINK)) || slave_sink == u->sink) {
+                 pa_log("Invalid slave sink '%s'", n);
+@@ -1138,12 +1162,33 @@ int pa__init(pa_module*m) {
+ 
+             pa_xfree(n);
+ 
+-            if (!output_new(u, slave_sink)) {
++            if (slave_amps) {
++                if (!(amp_str = pa_split(slave_amps, ",", &slave_amps_split_state))) {
++                    pa_log("Too few values in the slave_amps argument.");
++                    goto fail;
++                }
++
++                if (pa_atod(amp_str, &slave_amp) < 0) {
++                    pa_log("Invalid amplification value: '%s'", amp_str);
++                    pa_xfree(amp_str);
++                    goto fail;
++                }
++
++                pa_xfree(amp_str);
++            }
++
++            if (!output_new(u, slave_sink, pa_sw_volume_from_dB(slave_amp))) {
+                 pa_log("Failed to create slave sink input on sink '%s'.", slave_sink->name);
+                 goto fail;
+             }
+         }
+ 
++        if (slave_amps && (amp_str = pa_split(slave_amps, ",", &slave_amps_split_state))) {
++            pa_xfree(amp_str);
++            pa_log("Too many values in the slave_amps argument.");
++            goto fail;
++        }
++
+         if (pa_idxset_size(u->outputs) <= 1)
+             pa_log_warn("No slave sinks specified.");
+ 
+@@ -1159,7 +1204,7 @@ int pa__init(pa_module*m) {
+             if (!is_suitable_sink(u, s))
+                 continue;
+ 
+-            if (!output_new(u, s)) {
++            if (!output_new(u, s, PA_VOLUME_NORM)) {
+                 pa_log("Failed to create sink input on sink '%s'.", s->name);
+                 goto fail;
+             }
+-- 
+1.6.0.4
+

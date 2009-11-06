@@ -1,0 +1,105 @@
+From 8d449c784a74e1f6b9a8ef933879e5b3d09896d9 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Juho=20H=C3=A4m=C3=A4l=C3=A4inen?= <ext-juho.hamalainen@nokia.com>
+Date: Mon, 2 Nov 2009 13:35:23 +0200
+Subject: [PATCH] combine: start suspended
+
+---
+ src/modules/module-combine.c |   45 +++++++++++++++--------------------------
+ 1 files changed, 17 insertions(+), 28 deletions(-)
+
+diff --git a/src/modules/module-combine.c b/src/modules/module-combine.c
+index 60fb46b..1ada1fa 100644
+--- a/src/modules/module-combine.c
++++ b/src/modules/module-combine.c
+@@ -144,6 +144,8 @@ struct userdata {
+         pa_smoother *smoother;
+         uint64_t counter;
+     } thread_info;
++
++    pa_atomic_t first; /* initialized to 1 and set to 0 when first sink is connected */
+ };
+ 
+ enum {
+@@ -668,6 +670,12 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
+ 
+     switch (code) {
+ 
++        case PA_SINK_MESSAGE_ADD_INPUT: {
++            pa_log("message add input");
++            pa_atomic_store(&u->first, 0);
++            break;
++        }
++
+         case PA_SINK_MESSAGE_SET_STATE:
+             pa_atomic_store(&u->thread_info.running, PA_PTR_TO_UINT(data) == PA_SINK_RUNNING);
+ 
+@@ -892,30 +900,6 @@ static struct output *output_new(struct userdata *u, pa_sink *sink, pa_volume_t
+ 
+     state = pa_sink_get_state(u->sink);
+ 
+-    if (state != PA_SINK_INIT)
+-        pa_asyncmsgq_send(u->sink->asyncmsgq, PA_MSGOBJECT(u->sink), SINK_MESSAGE_ADD_OUTPUT, o, 0, NULL);
+-    else {
+-        /* If the sink is not yet started, we need to do the activation ourselves */
+-        PA_LLIST_PREPEND(struct output, u->thread_info.active_outputs, o);
+-
+-        o->outq_rtpoll_item_read = pa_rtpoll_item_new_asyncmsgq_read(
+-                u->rtpoll,
+-                PA_RTPOLL_EARLY-1,  /* This item is very important */
+-                o->outq);
+-        o->inq_rtpoll_item_write = pa_rtpoll_item_new_asyncmsgq_write(
+-                u->rtpoll,
+-                PA_RTPOLL_EARLY,
+-                o->inq);
+-    }
+-
+-    if (PA_SINK_IS_OPENED(state) || state == PA_SINK_INIT) {
+-        pa_sink_suspend(sink, FALSE);
+-
+-        if (PA_SINK_IS_OPENED(pa_sink_get_state(sink)))
+-            if (output_create_sink_input(o) < 0)
+-                goto fail;
+-    }
+-
+     update_description(u);
+ 
+     return o;
+@@ -1028,6 +1012,12 @@ static pa_hook_result_t sink_state_changed_hook_cb(pa_core *c, pa_sink *s, struc
+     if (!(o = find_output(u, s)))
+         return PA_HOOK_OK;
+ 
++    if (pa_atomic_load(&o->userdata->first)) {
++        pa_log_debug("sink not added yet");
++        return PA_HOOK_OK;
++    }
++
++
+     state = pa_sink_get_state(s);
+ 
+     if (PA_SINK_IS_OPENED(state) && PA_SINK_IS_OPENED(pa_sink_get_state(u->sink)) && !o->sink_input)
+@@ -1089,6 +1079,7 @@ int pa__init(pa_module*m) {
+             10,
+             0,
+             FALSE);
++    pa_atomic_store(&u->first, 1);
+ 
+     if (pa_modargs_get_value_u32(ma, "adjust_time", &u->adjust_time) < 0) {
+         pa_log("Failed to parse adjust_time value");
+@@ -1221,12 +1212,10 @@ int pa__init(pa_module*m) {
+         goto fail;
+     }
+ 
+-    /* Activate the sink and the sink inputs */
++    /* Activate the sink */
+     pa_sink_put(u->sink);
+ 
+-    for (o = pa_idxset_first(u->outputs, &idx); o; o = pa_idxset_next(u->outputs, &idx))
+-        if (o->sink_input)
+-            pa_sink_input_put(o->sink_input);
++    /* Activate sink inputs when first stream is connected */
+ 
+     if (u->adjust_time > 0)
+         u->time_event = m->core->mainloop->rtclock_time_new(m->core->mainloop, pa_rtclock_now() + u->adjust_time * PA_USEC_PER_SEC, time_callback, u);
+-- 
+1.6.0.4
+

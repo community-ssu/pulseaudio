@@ -1,4 +1,4 @@
-From 3344421474509f6602b8fe96a4431192837a2e71 Mon Sep 17 00:00:00 2001
+From d0b0d0142b07ba146161eff711a42b8c044b5280 Mon Sep 17 00:00:00 2001
 From: Wim Taymans <wim.taymans@collabora.co.uk>
 Date: Thu, 23 Jul 2009 13:40:23 +0200
 Subject: [PATCH] protocol-native: use the right samplerate
@@ -10,10 +10,10 @@ particular stream before resampling.
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/pulsecore/protocol-native.c b/src/pulsecore/protocol-native.c
-index b37b068..a6bea61 100644
+index 92171bf..5a14c62 100644
 --- a/src/pulsecore/protocol-native.c
 +++ b/src/pulsecore/protocol-native.c
-@@ -2601,7 +2601,7 @@ static void command_get_playback_latency(pa_pdispatch *pd, uint32_t command, uin
+@@ -2546,7 +2546,7 @@ static void command_get_playback_latency(pa_pdispatch *pd, uint32_t command, uin
      reply = reply_new(tag);
      pa_tagstruct_put_usec(reply,
                            s->current_sink_latency +
@@ -23,5 +23,5 @@ index b37b068..a6bea61 100644
      pa_tagstruct_put_boolean(reply,
                               s->playing_for > 0 &&
 -- 
-1.5.6.3
+1.6.0.4
 

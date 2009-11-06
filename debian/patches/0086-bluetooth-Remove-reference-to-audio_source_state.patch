@@ -1,4 +1,4 @@
-From be498052c0826ed68ba4ae1b2a0930b96b27546e Mon Sep 17 00:00:00 2001
+From 217152dfb1be900455a886f03b896d7e68b20133 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Fri, 28 Aug 2009 13:12:09 +0300
 Subject: [PATCH] bluetooth: Remove reference to audio_source_state
@@ -22,5 +22,5 @@ index 963ed28..3ed8ed5 100644
  
              run_callback(y, d, FALSE);
 -- 
-1.5.6.3
+1.6.0.4
 

@@ -1,4 +1,4 @@
-From 12ec97a3657971c0740baa398592e8a45bd472af Mon Sep 17 00:00:00 2001
+From c1de7e98586f22547f78485d1d983b479b34d6c1 Mon Sep 17 00:00:00 2001
 From: Juho Hamalainen <ext-juho.hamalainen@nokia.com>
 Date: Tue, 8 Sep 2009 13:49:32 +0300
 Subject: [PATCH] suspend: don't resume on CORKED stream moves
@@ -32,5 +32,5 @@ index 8883780..77d6131 100644
          d = pa_hashmap_get(u->device_infos, s->source->monitor_of);
      else
 -- 
-1.5.6.3
+1.6.0.4
 

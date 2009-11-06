@@ -1,4 +1,4 @@
-From a458eed03cfabbc108dd08cb5f6bf582bffecfd0 Mon Sep 17 00:00:00 2001
+From 62a8f529147ea13a576c797b71cb6882e3b3f737 Mon Sep 17 00:00:00 2001
 From: Tanu Kaskinen <tanu.kaskinen@digia.com>
 Date: Thu, 22 Oct 2009 15:08:13 +0300
 Subject: [PATCH] bt-device: Refuse to use the HSP profile if there is some other HSP device active.
@@ -307,5 +307,5 @@ index 7721257..266ee58 100644
          pa_xfree(u->a2dp.buffer);
  
 -- 
-1.5.6.3
+1.6.0.4
 

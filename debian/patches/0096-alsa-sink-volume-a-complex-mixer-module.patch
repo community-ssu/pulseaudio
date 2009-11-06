@@ -1,12 +1,11 @@
-From 8be6711ee42815d54cf337c2cb06741c3b608461 Mon Sep 17 00:00:00 2001
-From: Maemo Multimedia <multimedia@maemo.org>
-Date: Fri, 17 Apr 2009 17:09:01 +0300
+From 852aa19539f1f603662bf7234df2e24b49689245 Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Juho=20H=C3=A4m=C3=A4l=C3=A4inen?= <ext-juho.hamalainen@nokia.com>
+Date: Fri, 6 Nov 2009 07:25:22 +0200
 Subject: [PATCH] alsa: sink-volume, a complex mixer module
 
 volume: update delay
 
 Revert "alsa-old: remove -30dB from HP hack"
-
 This reverts commit 6fc36ed7865964f5ef6798e41c6eda4912f4a0b2.
 
 volume: tune the delay a little to fix 114849
@@ -20,6 +19,8 @@ alsa-volume: Take sync volume patch into use and clean up.
 alsa-volume: Re-apply a change that was lost from 2b30bb29 in merge
 
 alsa-volume: Make sure volume is updated after mixer change.
+
+alsa-volume: Fix lock handling in sink_get_volume_cb
 ---
  src/Makefile.am                                   |    9 +
  src/modules/alsa/module-alsa-sink-volume-symdef.h |   27 +
@@ -29,7 +30,7 @@ alsa-volume: Make sure volume is updated after mixer change.
  create mode 100644 src/modules/alsa/module-alsa-sink-volume.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 6721335..3c8a7f5 100644
+index 6d26863..d7f31b4 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -1003,6 +1003,9 @@ pulselibexec_PROGRAMS =
@@ -42,7 +43,7 @@ index 6721335..3c8a7f5 100644
  		module-alsa-sink.la \
  		module-alsa-source.la \
  		module-alsa-card.la
-@@ -1118,6 +1121,7 @@ SYMDEF_FILES = \
+@@ -1114,6 +1117,7 @@ SYMDEF_FILES = \
  		modules/module-x11-cork-request-symdef.h \
  		modules/oss/module-oss-symdef.h \
  		modules/alsa/module-alsa-sink-symdef.h \
@@ -50,7 +51,7 @@ index 6721335..3c8a7f5 100644
  		modules/alsa/module-alsa-source-symdef.h \
  		modules/alsa/module-alsa-card-symdef.h \
  		modules/module-solaris-symdef.h \
-@@ -1353,6 +1357,11 @@ module_alsa_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
+@@ -1345,6 +1349,11 @@ module_alsa_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
  module_alsa_sink_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
  module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
@@ -97,7 +98,7 @@ index 0000000..30c44c1
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-volume.c b/src/modules/alsa/module-alsa-sink-volume.c
 new file mode 100644
-index 0000000..9cc7747
+index 0000000..a1ae98c
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-volume.c
 @@ -0,0 +1,1468 @@
@@ -476,12 +477,12 @@ index 0000000..9cc7747
 +
 +    if (!u->sink) {
 +        pa_log_debug("This sink does not exist any more, go away.");
-+        return;
++        goto fail;
 +    }
 +
 +    if (s != u->sink) {
 +        pa_log_error("This in not my sink, what to do?");
-+        return;
++        goto fail;
 +    }
 +
 +    m = u->active_mixer;
@@ -1570,5 +1571,5 @@ index 0000000..9cc7747
 +    snd_config_update_free_global();
 +}
 -- 
-1.5.6.3
+1.6.0.4
 
