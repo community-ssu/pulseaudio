@@ -1,0 +1,590 @@
+From c59bc79d91e48f9f063b8c81e31c8395a079733b Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Juho=20H=C3=A4m=C3=A4l=C3=A4inen?= <ext-juho.hamalainen@nokia.com>
+Date: Fri, 27 Nov 2009 14:34:49 +0200
+Subject: [PATCH] stream-restore: implement sink-volume mode
+
+When in sink-volume mode, flat-sink should be disabled for the sink
+stream-restore controls. Currently two main role volumes are set
+to 100%, and volume changes to those two streams are applied directly
+to sink.
+---
+ src/modules/module-stream-restore.c |  372 ++++++++++++++++++++++++++++++++---
+ 1 files changed, 340 insertions(+), 32 deletions(-)
+
+diff --git a/src/modules/module-stream-restore.c b/src/modules/module-stream-restore.c
+index fafa1c3..37d24a6 100644
+--- a/src/modules/module-stream-restore.c
++++ b/src/modules/module-stream-restore.c
+@@ -61,7 +61,8 @@ PA_MODULE_USAGE(
+         "restore_device=<Save/restore sinks/sources?> "
+         "restore_volume=<Save/restore volumes?> "
+         "restore_muted=<Save/restore muted states?> "
+-        "fallback_table=<filename>");
++        "fallback_table=<filename> "
++        "sink_volume_table=<filename>");
+ 
+ #define SAVE_INTERVAL (10 * PA_USEC_PER_SEC)
+ #define IDENTIFICATION_PROPERTY "module-stream-restore.id"
+@@ -69,6 +70,14 @@ PA_MODULE_USAGE(
+ #define DEFAULT_FALLBACK_FILE PA_DEFAULT_CONFIG_DIR"/stream-restore.table"
+ #define DEFAULT_FALLBACK_FILE_USER "stream-restore.table"
+ 
++/* sink-volume table syntax:
++ * <audio mode>:<sink to control>
++ * for example:
++ * btmono:sink.hw1
++ */
++#define DEFAULT_SINK_VOLUME_FILE PA_DEFAULT_CONFIG_DIR"/sink-volume.table"
++#define DEFAULT_SINK_VOLUME_FILE_USER "sink-volume.table"
++
+ #define WHITESPACE "\n\r \t"
+ 
+ static const char* const valid_modargs[] = {
+@@ -77,6 +86,7 @@ static const char* const valid_modargs[] = {
+     "restore_muted",
+     "restore_route_volume",
+     "fallback_table",
++    "sink_volume_table",
+     NULL
+ };
+ 
+@@ -87,6 +97,14 @@ struct route_volume {
+     pa_bool_t reset_min_volume;
+ };
+ 
++struct sink_volume {
++    char *mode;
++    char *sink_name;
++    pa_sink *sink;
++
++    PA_LLIST_FIELDS(struct sink_volume);
++};
++
+ struct userdata {
+     pa_core *core;
+     pa_module *module;
+@@ -112,6 +130,11 @@ struct userdata {
+     char *route;
+     struct route_volume media_route;
+     struct route_volume phone_route;
++
++    /* sink volumes */
++    pa_subscription *sink_subscription;
++    struct sink_volume *use_sink_volume;
++    PA_LLIST_HEAD(struct sink_volume, sink_volumes);
+ };
+ 
+ #define ENTRY_VERSION 4
+@@ -147,7 +170,20 @@ static struct entry* read_entry(struct userdata *u, const char *name);
+ static pa_bool_t entries_equal(const struct entry *a, const struct entry *b);
+ static void trigger_save(struct userdata *u);
+ static void apply_entry(struct userdata *u, const char *name, struct entry *e);
+-
++static void apply_volumes(struct userdata *u,
++                         const char *name,
++                         pa_channel_map *channel_map,
++                         pa_cvolume *volume,
++                         pa_bool_t volume_valid,
++                         pa_bool_t volume_is_absolute,
++                         pa_bool_t muted,
++                         pa_bool_t muted_valid,
++                         char *device,
++                         pa_bool_t device_valid);
++
++static struct sink_volume* have_sink_volume(struct userdata *u, const char *mode);
++static void sink_volume_subscribe_cb(pa_core *c, pa_subscription_event_type_t t, uint32_t idx, void *userdata);
++static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint32_t idx, void *userdata);
+ 
+ /* we only update media and phone volume */
+ static int _role_media(const char *name) {
+@@ -202,7 +238,26 @@ fail:
+     return NULL;
+ }
+ 
+-static void route_set_role_volume(struct userdata *u, const char *name) {
++static void sink_set_volume(pa_sink *s, const pa_cvolume *vol) {
++    pa_channel_map c;
++
++    pa_assert(s);
++    pa_assert(vol);
++    pa_assert(vol->channels == 1 || vol->channels == 2);
++
++    if (vol->channels == 1)
++        pa_channel_map_init_mono(&c);
++    else
++        pa_channel_map_init_stereo(&c);
++
++    pa_sink_set_volume(s,
++                       pa_cvolume_remap(vol, &c, &s->channel_map),
++                       FALSE,
++                       FALSE,
++                       FALSE);
++}
++
++static void route_set_role_volume(struct userdata *u, const char *name, pa_cvolume *v, pa_bool_t control_sink, pa_bool_t apply_volume) {
+     struct entry *old;
+     struct entry entry;
+     pa_datum key, data;
+@@ -214,10 +269,7 @@ static void route_set_role_volume(struct userdata *u, const char *name) {
+         entry = *old;
+ 
+     pa_channel_map_init_mono(&entry.channel_map);
+-    if (_role_media(name))
+-        pa_cvolume_set(&entry.volume, 1, u->media_route.volume.values[0]);
+-    else if (_role_phone(name))
+-        pa_cvolume_set(&entry.volume, 1, u->phone_route.volume.values[0]);
++    pa_cvolume_set(&entry.volume, 1, v->values[0]);
+     entry.volume_valid = TRUE;
+ 
+     if (old) {
+@@ -236,24 +288,32 @@ static void route_set_role_volume(struct userdata *u, const char *name) {
+     data.data = (void*) &entry;
+     data.size = sizeof(entry);
+ 
+-    pa_log_info("Storing route volume/mute/device for stream %s.", name);
+     pa_database_set(u->database, &key, &data, TRUE);
+ 
+-    apply_entry(u, name, &entry);
++    pa_log_info("Storing route volume/mute/device for stream %s.", name);
++
++    if (!apply_volume)
++        return;
++
++    if (control_sink)
++        sink_set_volume(u->use_sink_volume->sink, v);
++    else
++        apply_entry(u, name, &entry);
+ }
+ 
+ static pa_hook_result_t sink_proplist_changed_hook_callback(pa_core *c, pa_sink *s, struct userdata *u) {
+     struct route_entry* e;
+     const char *route;
+     char t[256];
++    pa_bool_t control_sink = FALSE;
+ 
+     pa_assert(u);
+     pa_assert(s);
+ 
+     route = pa_proplist_gets(s->proplist, "x-maemo.mode");
+-    /*if (!route || (u->route && pa_streq(route, u->route))) */
+-    if (!route)
++    if (!route || (u->route && pa_streq(route, u->route)))
+         return PA_HOOK_OK;
++    pa_log_debug("route changed to %s", route);
+ 
+     pa_xfree(u->route);
+     u->route = pa_xstrdup(route);
+@@ -266,6 +326,40 @@ static pa_hook_result_t sink_proplist_changed_hook_callback(pa_core *c, pa_sink
+ 
+     /* instead, let's restore our 2 base roles: x-maemo and phone */
+ 
++    if ((u->use_sink_volume = have_sink_volume(u, u->route))) {
++        pa_log_debug("Using sink-volume for mode %s.", u->route);
++        if (u->subscription) {
++            pa_subscription_free(u->subscription);
++            u->subscription = NULL;
++        }
++        if (!u->sink_subscription)
++            u->sink_subscription = pa_subscription_new(u->core, PA_SUBSCRIPTION_MASK_SINK, sink_volume_subscribe_cb, u);
++    } else {
++        if (u->sink_subscription) {
++            pa_subscription_free(u->sink_subscription);
++            u->sink_subscription = NULL;
++        }
++        if (!u->subscription)
++            u->subscription = pa_subscription_new(u->core, PA_SUBSCRIPTION_MASK_SINK_INPUT|PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT, subscribe_callback, u);
++    }
++
++    /* if using sink volume,
++     * first apply role volumes to 0dB, then
++     * save real volumes and apply sink-volume to real volume, don't touch role volumes.
++     */
++    if (u->use_sink_volume) {
++        pa_cvolume vol;
++        pa_channel_map mono;
++        pa_cvolume_init(&vol);
++        pa_cvolume_set(&vol, 1, PA_VOLUME_NORM);
++        pa_channel_map_init_mono(&mono);
++
++        apply_volumes(u, "sink-input-by-media-role:x-maemo", &mono, &vol, TRUE, TRUE, FALSE, FALSE, NULL, FALSE);
++        apply_volumes(u, "sink-input-by-media-role:phone", &mono, &vol, TRUE, TRUE, FALSE, FALSE, NULL, FALSE);
++
++        control_sink = TRUE;
++    }
++
+     e = read_route_entry(u, u->route);
+ 
+     if (!e) {
+@@ -280,7 +374,9 @@ static pa_hook_result_t sink_proplist_changed_hook_callback(pa_core *c, pa_sink
+         if (!pa_cvolume_valid(&e->phone_volume))
+             u->phone_route.volume = u->phone_route.default_volume;
+         /* if phone volume too low, restore defined minimum value */
+-        else if (u->phone_route.reset_min_volume && e->phone_volume.values[0] < u->phone_route.min_volume.values[0]) {
++        else if (!u->use_sink_volume &&
++                 u->phone_route.reset_min_volume &&
++                 e->phone_volume.values[0] < u->phone_route.min_volume.values[0]) {
+             pa_log_debug("phone volume too low, reset to %s.", pa_cvolume_snprint(t, sizeof(t), &u->phone_route.default_volume));
+             u->phone_route.volume = u->phone_route.default_volume;
+         }
+@@ -291,9 +387,16 @@ static pa_hook_result_t sink_proplist_changed_hook_callback(pa_core *c, pa_sink
+     pa_log_debug("Updated media %s volume=%s", route, pa_cvolume_snprint(t, sizeof(t), &u->media_route.volume));
+     pa_log_debug("Updated phone %s volume=%s", route, pa_cvolume_snprint(t, sizeof(t), &u->phone_route.volume));
+ 
+-    route_set_role_volume(u, "sink-input-by-media-role:x-maemo");
+-    route_set_role_volume(u, "sink-input-by-media-role:phone");
+-    trigger_save(u);
++    route_set_role_volume(u, "sink-input-by-media-role:x-maemo", &u->media_route.volume, control_sink, TRUE);
++    if (u->use_sink_volume)
++        route_set_role_volume(u, "sink-input-by-media-role:phone", &u->phone_route.volume, FALSE, FALSE);
++    else
++        route_set_role_volume(u, "sink-input-by-media-role:phone", &u->phone_route.volume, control_sink, TRUE);
++
++    /* only save stream volumes if not in sink-volume mode. in sink-volume mode
++     * stream volumes are saved in sink_volume_subscribe_cb */
++    if (!u->use_sink_volume)
++        trigger_save(u);
+ 
+     pa_xfree(e);
+     return PA_HOOK_OK;
+@@ -476,6 +579,45 @@ static pa_bool_t entries_equal(const struct entry *a, const struct entry *b) {
+     return TRUE;
+ }
+ 
++static void sink_volume_subscribe_cb(pa_core *c, pa_subscription_event_type_t t, uint32_t idx, void *userdata) {
++    struct userdata *u = userdata;
++    pa_sink *sink;
++    pa_sink *sink_vol;
++    const pa_cvolume *vol;
++
++    pa_assert(c);
++    pa_assert(u);
++
++    if (t != (PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE))
++        return;
++
++    if (!u->use_sink_volume)
++        return;
++
++    pa_assert(u->use_sink_volume->sink);
++    sink_vol = u->use_sink_volume->sink;
++
++    if (!(sink = pa_idxset_get_by_index(c->sinks, idx)))
++        return;
++
++    if (sink != sink_vol)
++        return;
++
++    vol = pa_sink_get_volume(sink, FALSE, FALSE);
++
++    if (pa_cvolume_valid(vol)) {
++        pa_cvolume_set(&u->media_route.volume, u->media_route.volume.channels, vol->values[0]);
++        pa_cvolume_set(&u->phone_route.volume, u->phone_route.volume.channels, vol->values[0]);
++
++        pa_log_debug("Setting stream volumes to sink %s volume (%d).", sink->name, vol->values[0]);
++
++        route_set_role_volume(u, "sink-input-by-media-role:x-maemo", &u->media_route.volume, FALSE, FALSE);
++        route_set_role_volume(u, "sink-input-by-media-role:phone", &u->phone_route.volume, FALSE, FALSE);
++
++        trigger_save(u);
++    }
++}
++
+ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint32_t idx, void *userdata) {
+     struct userdata *u = userdata;
+     struct entry entry, *old;
+@@ -627,6 +769,12 @@ static pa_hook_result_t sink_input_fixate_hook_callback(pa_core *c, pa_sink_inpu
+         if (u->restore_volume && e->volume_valid) {
+ 
+             if (!new_data->volume_is_set) {
++
++                /* If we are in sink-volume mode and our role streams appear, we set them to
++                 * PA_VOLUME_NORM */
++                if (u->use_sink_volume && (_role_phone(name) || _role_media(name)))
++                    pa_cvolume_set(&e->volume, e->volume.channels, PA_VOLUME_NORM);
++
+                 pa_log_info("Restoring volume for sink input %s.", name);
+                 pa_sink_input_new_data_set_volume(new_data, pa_cvolume_remap(&e->volume, &e->channel_map, &new_data->channel_map));
+ 
+@@ -693,6 +841,115 @@ static pa_hook_result_t source_output_new_hook_callback(pa_core *c, pa_source_ou
+ 
+ #define EXT_VERSION 2
+ 
++static int fill_sink_vol(struct userdata *u, const char *filename) {
++    FILE *f;
++    int n = 0;
++    int ret = -1;
++    char *fn = NULL;
++
++    pa_assert(u);
++
++    if (filename)
++        f = fopen(fn = pa_xstrdup(filename), "r");
++    else
++        f = pa_open_config_file(DEFAULT_SINK_VOLUME_FILE, DEFAULT_SINK_VOLUME_FILE_USER, NULL, &fn);
++
++    if (!f) {
++        pa_log_warn("Failed to open sink-volume-table file: %s", pa_cstrerror(errno));
++        goto finish;
++    }
++
++    pa_lock_fd(fileno(f), 1);
++
++    while (!feof(f)) {
++        char ln[256];
++        char *d, *mode, *sink_name;
++        struct sink_volume *v;
++
++        n++;
++
++        if (!fgets(ln, sizeof(ln), f))
++            break;
++
++        pa_strip_nl(ln);
++
++        if (ln[0] == '#' || !*ln)
++            continue;
++
++        mode = ln + strspn(ln, WHITESPACE);
++        d = mode + strcspn(mode, ":");
++        d[0] = '\0';
++        sink_name = d + 1;
++
++        if (!*sink_name) {
++            pa_log_error("[%s:%u] failed to parse line", filename, n);
++            goto finish;
++        }
++
++        v = pa_xnew0(struct sink_volume, 1);
++        PA_LLIST_INIT(struct sink_volume, v);
++
++        v->mode = pa_xstrdup(mode);
++        v->sink_name = pa_xstrdup(sink_name);
++        v->sink = pa_namereg_get(u->core, sink_name, PA_NAMEREG_SINK);
++
++        PA_LLIST_PREPEND(struct sink_volume, u->sink_volumes, v);
++
++        pa_log_debug("sink-volume, mode \"%s\" controls sink \"%s\"", mode, sink_name);
++    }
++
++finish:
++    if (f) {
++        pa_lock_fd(fileno(f), 0);
++        fclose(f);
++    }
++
++    if (fn)
++        pa_xfree(fn);
++
++    return ret;
++}
++
++static void free_sink_volumes(struct userdata *u) {
++    struct sink_volume *v;
++
++    pa_assert(u);
++    pa_assert(u->sink_volumes);
++
++    while ((v = u->sink_volumes)) {
++        PA_LLIST_REMOVE(struct sink_volume, u->sink_volumes, v);
++        pa_xfree(v->mode);
++        pa_xfree(v->sink_name);
++        pa_xfree(v);
++    }
++}
++
++/* TODO should it be possible to define multiple sinks to mode:sink pair, so that if
++ * some sink doesn't exist, it would iterate until existing sink is found, then this
++ * function would return that pa_sink pointer, and not struct sink_volume. */
++static struct sink_volume* have_sink_volume(struct userdata *u, const char *mode) {
++    struct sink_volume *v;
++
++    pa_assert(u);
++
++    if (!u->sink_volumes)
++        return NULL;
++
++    for (v = u->sink_volumes; v; v = v->next) {
++        if (pa_streq(mode, v->mode)) {
++            if (!v->sink)
++                v->sink = pa_namereg_get(u->core, v->sink_name, PA_NAMEREG_SINK);
++
++            if (v->sink)
++                return v;
++            else
++                return NULL;
++        }
++    }
++
++    return NULL;
++}
++
+ static int fill_db(struct userdata *u, const char *filename) {
+     FILE *f;
+     int n = 0;
+@@ -801,14 +1058,24 @@ finish:
+     return ret;
+ }
+ 
+-static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
++static void apply_volumes(struct userdata *u,
++                         const char *name,
++                         pa_channel_map *channel_map,
++                         pa_cvolume *volume,
++                         pa_bool_t volume_valid,
++                         pa_bool_t volume_is_absolute,
++                         pa_bool_t muted,
++                         pa_bool_t muted_valid,
++                         char *device,
++                         pa_bool_t device_valid) {
+     pa_sink_input *si;
+     pa_source_output *so;
+     uint32_t idx;
+ 
+     pa_assert(u);
+     pa_assert(name);
+-    pa_assert(e);
++    pa_assert(channel_map);
++    pa_assert(volume);
+ 
+     for (si = pa_idxset_first(u->core->sink_inputs, &idx); si; si = pa_idxset_next(u->core->sink_inputs, &idx)) {
+         char *n;
+@@ -826,22 +1093,22 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
+         }
+         pa_xfree(n);
+ 
+-        if (u->restore_volume && e->volume_valid) {
++        if (u->restore_volume && volume_valid) {
+             pa_cvolume v;
+ 
+-            pa_log_info("Restoring volume for sink input %s. c %d vol %d", name, e->channel_map.channels, e->volume.values[0]);
+-            v = e->volume;
+-            pa_sink_input_set_volume(si, pa_cvolume_remap(&v, &e->channel_map, &si->channel_map), TRUE, e->volume_is_absolute);
++            pa_log_info("Restoring volume for sink input %s. c %d vol %d", name, channel_map->channels, volume->values[0]);
++            v = *volume;
++            pa_sink_input_set_volume(si, pa_cvolume_remap(&v, channel_map, &si->channel_map), TRUE, volume_is_absolute);
+         }
+ 
+-        if (u->restore_muted && e->muted_valid) {
++        if (u->restore_muted && muted_valid) {
+             pa_log_info("Restoring mute state for sink input %s.", name);
+-            pa_sink_input_set_mute(si, e->muted, TRUE);
++            pa_sink_input_set_mute(si, muted, TRUE);
+         }
+ 
+         if (u->restore_device &&
+-            e->device_valid &&
+-            (s = pa_namereg_get(u->core, e->device, PA_NAMEREG_SINK))) {
++            device_valid &&
++            (s = pa_namereg_get(u->core, device, PA_NAMEREG_SINK))) {
+ 
+             pa_log_info("Restoring device for stream %s.", name);
+             pa_sink_input_move_to(si, s, TRUE);
+@@ -865,8 +1132,8 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
+         pa_xfree(n);
+ 
+         if (u->restore_device &&
+-            e->device_valid &&
+-            (s = pa_namereg_get(u->core, e->device, PA_NAMEREG_SOURCE))) {
++            device_valid &&
++            (s = pa_namereg_get(u->core, device, PA_NAMEREG_SOURCE))) {
+ 
+             pa_log_info("Restoring device for stream %s.", name);
+             pa_source_output_move_to(so, s, TRUE);
+@@ -874,6 +1141,23 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
+     }
+ }
+ 
++static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
++    pa_assert(u);
++    pa_assert(name);
++    pa_assert(e);
++
++    apply_volumes(u,
++                 name,
++                 &e->channel_map,
++                 &e->volume,
++                 e->volume_valid,
++                 e->volume_is_absolute,
++                 e->muted,
++                 e->muted_valid,
++                 e->device,
++                 e->device_valid);
++}
++
+ #ifdef DEBUG_VOLUME
+ PA_GCC_UNUSED static void stream_restore_dump_database(struct userdata *u) {
+     pa_datum key;
+@@ -1043,7 +1327,12 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
+                     goto fail;
+ 
+                 if (pa_cvolume_valid(&entry.volume)) {
+-                    if (_role_media(name))
++                    /* if we are using sink-volume, use same volume for
++                     * both phone and media streams */
++                    if (u->use_sink_volume && (_role_media(name) || _role_phone(name))) {
++                        u->media_route.volume = entry.volume;
++                        u->phone_route.volume = entry.volume;
++                    } else if (_role_media(name))
+                         u->media_route.volume = entry.volume;
+                     else if (_role_phone(name))
+                         u->phone_route.volume = entry.volume;
+@@ -1055,12 +1344,21 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
+                 data.data = (void*) &entry;
+                 data.size = sizeof(entry);
+ 
+-                if (pa_database_set(u->database, &key, &data, mode == PA_UPDATE_REPLACE) == 0)
+-                    if (apply_immediately)
+-                        apply_entry(u, name, &entry);
++                if (pa_database_set(u->database, &key, &data, mode == PA_UPDATE_REPLACE) == 0) {
++                    if (u->use_sink_volume) {
++                        /* apply volume directly to sink */
++                        sink_set_volume(u->use_sink_volume->sink, &entry.volume);
++                    } else {
++                        if (apply_immediately)
++                            apply_entry(u, name, &entry);
++                    }
++                }
+             }
+ 
+-            trigger_save(u);
++            /* only save stream volumes if not in sink-volume mode. in sink-volume mode
++             * stream volumes are saved in sink_volume_subscribe_cb */
++            if (!u->use_sink_volume)
++                trigger_save(u);
+ 
+             break;
+         }
+@@ -1216,6 +1514,10 @@ int pa__init(pa_module*m) {
+     if (fill_db(u, pa_modargs_get_value(ma, "fallback_table", NULL)) < 0)
+         goto fail;
+ 
++    /* try to load sink-volume table, not mandatory */
++    u->use_sink_volume = NULL;
++    fill_sink_vol(u, pa_modargs_get_value(ma, "sink_volume_table", NULL));
++
+     fn = pa_sprintf_malloc("x-maemo-route-volumes");
+     fname = pa_state_path(fn, TRUE);
+     pa_xfree(fn);
+@@ -1261,6 +1563,9 @@ void pa__done(pa_module*m) {
+     if (u->subscription)
+         pa_subscription_free(u->subscription);
+ 
++    if (u->sink_subscription)
++        pa_subscription_free(u->sink_subscription);
++
+     if (u->sink_input_new_hook_slot)
+         pa_hook_slot_free(u->sink_input_new_hook_slot);
+     if (u->sink_input_fixate_hook_slot)
+@@ -1276,6 +1581,9 @@ void pa__done(pa_module*m) {
+     if (u->save_time_event)
+         u->core->mainloop->time_free(u->save_time_event);
+ 
++    if (u->sink_volumes)
++        free_sink_volumes(u);
++
+     if (u->database)
+         pa_database_close(u->database);
+ 
+-- 
+1.6.0.4
+

@@ -1,6 +1,6 @@
-From 4760d9e33d35bf3299c4aa2d03661131e85319d7 Mon Sep 17 00:00:00 2001
-From: =?utf-8?q?Juho=20H=C3=A4m=C3=A4l=C3=A4inen?= <ext-juho.hamalainen@nokia.com>
-Date: Fri, 6 Nov 2009 07:24:13 +0200
+From 9df3a134963ced78ef092cec750bf2a0251c0379 Mon Sep 17 00:00:00 2001
+From: Jyri Sarha <jyri.sarha@nokia.com>
+Date: Thu, 10 Dec 2009 16:33:48 +0200
 Subject: [PATCH] alsa: port the old alsa modules
 
 alsa-old: start as suspended
@@ -55,23 +55,30 @@ alsa-old: Move buffer mode switching to IO thread with internal message
 alsa-old: update buffer metrics correctly to proplist
 
 alsa-old: Set fixed latency for alsa-old sink and source
+
+alsa-old: Don't push the first captured frames
+
+The first captured frames after device open on N900 may be crap, so
+let's skip them.
+
+alsa-old: add module parameter to enable hw volume control
 ---
  src/Makefile.am                                  |   18 +
  src/modules/alsa/module-alsa-sink-old-symdef.h   |   27 +
- src/modules/alsa/module-alsa-sink-old.c          | 1210 +++++++++++++++++
+ src/modules/alsa/module-alsa-sink-old.c          | 1218 +++++++++++++++++
  src/modules/alsa/module-alsa-source-old-symdef.h |   27 +
- src/modules/alsa/module-alsa-source-old.c        | 1532 ++++++++++++++++++++++
- 5 files changed, 2814 insertions(+), 0 deletions(-)
+ src/modules/alsa/module-alsa-source-old.c        | 1557 ++++++++++++++++++++++
+ 5 files changed, 2847 insertions(+), 0 deletions(-)
  create mode 100644 src/modules/alsa/module-alsa-sink-old-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-sink-old.c
  create mode 100644 src/modules/alsa/module-alsa-source-old-symdef.h
  create mode 100644 src/modules/alsa/module-alsa-source-old.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index d7f31b4..3c8a7f5 100644
+index 6d26863..6721335 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -1009,6 +1009,10 @@ modlibexec_LTLIBRARIES += \
+@@ -1006,6 +1006,10 @@ modlibexec_LTLIBRARIES += \
  		module-alsa-sink.la \
  		module-alsa-source.la \
  		module-alsa-card.la
@@ -82,7 +89,7 @@ index d7f31b4..3c8a7f5 100644
  endif
  
  if HAVE_SOLARIS
-@@ -1147,6 +1151,10 @@ SYMDEF_FILES = \
+@@ -1143,6 +1147,10 @@ SYMDEF_FILES = \
  		modules/module-cork-music-on-phone-symdef.h \
  		modules/module-console-kit-symdef.h
  
@@ -93,7 +100,7 @@ index d7f31b4..3c8a7f5 100644
  EXTRA_DIST += $(SYMDEF_FILES)
  BUILT_SOURCES += $(SYMDEF_FILES)
  
-@@ -1364,6 +1372,16 @@ module_alsa_card_la_LDFLAGS = $(MODULE_LDFLAGS)
+@@ -1355,6 +1363,16 @@ module_alsa_card_la_LDFLAGS = $(MODULE_LDFLAGS)
  module_alsa_card_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
  module_alsa_card_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
@@ -145,10 +152,10 @@ index 0000000..0c74afc
 +#endif
 diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
 new file mode 100644
-index 0000000..2c6529f
+index 0000000..eb303d9
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-sink-old.c
-@@ -0,0 +1,1210 @@
+@@ -0,0 +1,1218 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -225,7 +232,8 @@ index 0000000..2c6529f
 +        "alt_fragment_size=<fragment size> "
 +        "use_mcbsp_latency=<use mcbsp latency correction?> "
 +        "channel_map=<channel map> "
-+        "mmap=<enable memory mapping?>");
++        "mmap=<enable memory mapping?> "
++        "hw_volume=<use hardware volume control>");
 +
 +#define DEFAULT_DEVICE "default"
 +
@@ -296,6 +304,7 @@ index 0000000..2c6529f
 +    "use_mcbsp_latency",
 +    "channel_map",
 +    "mmap",
++    "hw_volume",
 +    NULL
 +};
 +
@@ -1124,6 +1133,7 @@ index 0000000..2c6529f
 +    int namereg_fail;
 +    pa_bool_t use_mmap = TRUE;
 +    pa_bool_t use_mcbsp_latency = FALSE;
++    pa_bool_t hw_volume = FALSE;
 +    pa_sink_new_data data;
 +
 +    pa_assert(m);
@@ -1183,6 +1193,11 @@ index 0000000..2c6529f
 +        goto fail;
 +    }
 +
++    if (pa_modargs_get_value_boolean(ma, "hw_volume", &hw_volume) < 0) {
++        pa_log("Failed to parse hw_volume argument.");
++        goto fail;
++    }
++
 +    u = pa_xnew0(struct userdata, 1);
 +    u->switch_mode = SINK_SWITCH_PRIMARY;
 +    if (alt_nfrags != 0)
@@ -1225,7 +1240,7 @@ index 0000000..2c6529f
 +    pa_sink_new_data_set_sample_spec(&data, &ss);
 +    pa_sink_new_data_set_channel_map(&data, &map);
 +
-+    u->sink = pa_sink_new(m->core, &data, PA_SINK_HARDWARE|PA_SINK_LATENCY);
++    u->sink = pa_sink_new(m->core, &data, PA_SINK_HARDWARE | PA_SINK_LATENCY | (hw_volume ? PA_SINK_HW_VOLUME_CTRL : 0));
 +    pa_sink_new_data_done(&data);
 +    pa_xfree(name_buf);
 +
@@ -1394,10 +1409,10 @@ index 0000000..033edd6
 +#endif
 diff --git a/src/modules/alsa/module-alsa-source-old.c b/src/modules/alsa/module-alsa-source-old.c
 new file mode 100644
-index 0000000..c329048
+index 0000000..3aaeaa6
 --- /dev/null
 +++ b/src/modules/alsa/module-alsa-source-old.c
-@@ -0,0 +1,1532 @@
+@@ -0,0 +1,1557 @@
 +/***
 +  This file is part of PulseAudio.
 +
@@ -1474,7 +1489,8 @@ index 0000000..c329048
 +        "alt_fragments=<number of fragments> "
 +        "alt_fragment_size=<fragment size> "
 +        "channel_map=<channel map> "
-+        "mmap=<enable memory mapping?>");
++        "mmap=<enable memory mapping?> "
++        "skip_periods=<number of periods to skip>");
 +
 +#define DEFAULT_DEVICE "default"
 +
@@ -1504,6 +1520,9 @@ index 0000000..c329048
 +    pa_bool_t mixer_seperate_channels;
 +
 +    pa_cvolume hardware_volume;
++
++    int skip_periods;
++    int skip_count;
 +
 +    size_t frame_size, fragment_size, hwbuf_size;
 +    snd_pcm_uframes_t period_size;
@@ -1552,6 +1571,7 @@ index 0000000..c329048
 +    "alt_fragment_size",
 +    "channel_map",
 +    "mmap",
++    "skip_periods",
 +    NULL
 +};
 +
@@ -1698,17 +1718,22 @@ index 0000000..c329048
 +        pa_assert((areas[0].first >> 3) == 0);
 +        pa_assert((areas[0].step >> 3) == u->frame_size);
 +
-+        p = (uint8_t*) areas[0].addr + (offset * u->frame_size);
++        if (PA_UNLIKELY(u->skip_count > 0)) {
++            u->skip_count -= frames * u->frame_size;
++        }
++        else {
++            p = (uint8_t*) areas[0].addr + (offset * u->frame_size);
 +
-+        chunk.memblock = pa_memblock_new_fixed(u->core->mempool, p, frames * u->frame_size, 1);
-+        chunk.length = pa_memblock_get_length(chunk.memblock);
-+        chunk.index = 0;
++            chunk.memblock = pa_memblock_new_fixed(u->core->mempool, p, frames * u->frame_size, 1);
++            chunk.length = pa_memblock_get_length(chunk.memblock);
++            chunk.index = 0;
 +
-+        pa_source_post(u->source, &chunk);
++            pa_source_post(u->source, &chunk);
 +
-+        /* FIXME: Maybe we can do something to keep this memory block
-+         * a little bit longer around? */
-+        pa_memblock_unref_fixed(chunk.memblock);
++            /* FIXME: Maybe we can do something to keep this memory block
++             * a little bit longer around? */
++            pa_memblock_unref_fixed(chunk.memblock);
++        }
 +
 +        if ((err = snd_pcm_mmap_commit(u->pcm_handle, offset, frames)) < 0) {
 +
@@ -1797,7 +1822,13 @@ index 0000000..c329048
 +        chunk.index = 0;
 +        chunk.length = t * u->frame_size;
 +
-+        pa_source_post(u->source, &chunk);
++        if (PA_UNLIKELY(u->skip_count > 0)) {
++            u->skip_count -= chunk.length;
++        }
++        else {
++            pa_source_post(u->source, &chunk);
++        }
++
 +        pa_memblock_unref(chunk.memblock);
 +
 +        work_done = 1;
@@ -1925,6 +1956,8 @@ index 0000000..c329048
 +        pa_log_warn("unsuspend called, but source not initialized!");
 +        return -1;
 +    }
++
++    u->skip_count = u->skip_periods * u->period_size;
 +
 +    pa_log_info("unsuspend %s...", u->device_name);
 +
@@ -2691,6 +2724,7 @@ index 0000000..c329048
 +    int namereg_fail;
 +    pa_bool_t use_mmap = TRUE, ignore_dB = FALSE;
 +    pa_source_new_data data;
++    int32_t skip_periods = 3;
 +
 +    pa_assert(m);
 +
@@ -2753,6 +2787,11 @@ index 0000000..c329048
 +        goto fail;
 +    }
 +
++    if (pa_modargs_get_value_s32(ma, "skip_periods", &skip_periods) < 0) {
++        pa_log_info("Failed to parse skip_periods argument.");
++        goto fail;
++    }
++
 +    u = pa_xnew0(struct userdata, 1);
 +    u->switch_mode = SOURCE_SWITCH_PRIMARY;
 +    if (alt_nfrags != 0)
@@ -2767,6 +2806,7 @@ index 0000000..c329048
 +    pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
 +    u->alsa_rtpoll_item = NULL;
 +    u->initialized = FALSE;
++    u->skip_periods = skip_periods;
 +
 +    /* save device_id & string for later initialization */
 +    if (pa_modargs_get_value(ma, "device_id", NULL))
@@ -2931,5 +2971,5 @@ index 0000000..c329048
 +    snd_config_update_free_global();
 +}
 -- 
-1.5.6.3
+1.6.0.4
 

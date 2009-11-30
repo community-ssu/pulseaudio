@@ -1,9 +1,27 @@
-pulseaudio (0.9.15-1maemo35+0m5) unstable; urgency=low
+pulseaudio (0.9.15-1maemo38+0m5) unstable; urgency=low
 
   * This entry has been added by BIFH queue processor
     Suffix +0m5 added to package revision
 
- -- Harri Mahonen <ext-harri.mahonen@nokia.com>  Mon, 30 Nov 2009 13:28:18 +0200
+ -- Harri Mahonen <ext-harri.mahonen@nokia.com>  Wed, 16 Dec 2009 09:47:10 +0200
+
+pulseaudio (0.9.15-1maemo38) unstable; urgency=low
+
+  * Don't use flat volume with BT-SCO devices. Fixes: NB#138085
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Thu, 10 Dec 2009 16:00:01 +0200
+
+pulseaudio (0.9.15-1maemo37) unstable; urgency=low
+
+  * alsa-old: Don't push the first captured frames. Fixes: NB#142962
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Tue, 08 Dec 2009 12:15:11 +0200
+
+pulseaudio (0.9.15-1maemo36) unstable; urgency=low
+
+  * core: New LIFO style flist implementation, improves performace. Fixes: NB#149345
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Wed, 01 Dec 2009 14:14:10 +0200
 
 pulseaudio (0.9.15-1maemo35) unstable; urgency=low
 

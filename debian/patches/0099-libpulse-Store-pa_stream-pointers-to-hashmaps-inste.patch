@@ -1,4 +1,4 @@
-From d9b9f69daefc8d5edbd33790b85e01f0272fc668 Mon Sep 17 00:00:00 2001
+From b3aadd82b1865b079d96693506b5385a05f9c3f2 Mon Sep 17 00:00:00 2001
 From: Tanu Kaskinen <ext-tanu.kaskinen@nokia.com>
 Date: Thu, 26 Nov 2009 11:23:52 +0200
 Subject: [PATCH] libpulse: Store pa_stream pointers to hashmaps instead of dynarrays.
@@ -16,7 +16,7 @@ effectively leaks memory.
  3 files changed, 17 insertions(+), 18 deletions(-)
 
 diff --git a/src/pulse/context.c b/src/pulse/context.c
-index 76ad5e9..f8a3b10 100644
+index 9f6f55c..4c67867 100644
 --- a/src/pulse/context.c
 +++ b/src/pulse/context.c
 @@ -61,7 +61,7 @@
@@ -39,7 +39,7 @@ index 76ad5e9..f8a3b10 100644
      c->client_index = PA_INVALID_INDEX;
  
      PA_LLIST_HEAD_INIT(pa_stream, c->streams);
-@@ -261,9 +261,9 @@ static void context_free(pa_context *c) {
+@@ -259,9 +259,9 @@ static void context_free(pa_context *c) {
  #endif
  
      if (c->record_streams)
@@ -51,7 +51,7 @@ index 76ad5e9..f8a3b10 100644
  
      if (c->mempool)
          pa_mempool_free(c->mempool);
-@@ -373,7 +373,7 @@ static void pstream_memblock_callback(pa_pstream *p, uint32_t channel, int64_t o
+@@ -368,7 +368,7 @@ static void pstream_memblock_callback(pa_pstream *p, uint32_t channel, int64_t o
  
      pa_context_ref(c);
  
@@ -61,7 +61,7 @@ index 76ad5e9..f8a3b10 100644
          if (chunk->memblock) {
              pa_memblockq_seek(s->record_memblockq, offset, seek, TRUE);
 diff --git a/src/pulse/internal.h b/src/pulse/internal.h
-index 25b41a5..d13937e 100644
+index 28a989b..4e2c775 100644
 --- a/src/pulse/internal.h
 +++ b/src/pulse/internal.h
 @@ -33,7 +33,6 @@
@@ -176,5 +176,5 @@ index 6632132..0c7cb4e 100644
      create_stream_complete(s);
  
 -- 
-1.5.6.3
+1.6.0.4
 

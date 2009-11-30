@@ -23,5 +23,5 @@ index 92171bf..5a14c62 100644
      pa_tagstruct_put_boolean(reply,
                               s->playing_for > 0 &&
 -- 
-1.5.6.3
+1.6.0.4
 

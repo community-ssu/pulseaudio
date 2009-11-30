@@ -8,7 +8,7 @@ load-module module-native-protocol-unix
 load-module module-simple-protocol-unix
 
 ### Automatically restore the volume of streams and devices
-load-module module-stream-restore fallback_table=/etc/pulse/x-maemo-stream-restore.table restore_muted=no restore_device=no
+load-module module-stream-restore fallback_table=/etc/pulse/x-maemo-stream-restore.table restore_muted=no restore_device=no sink_volume_table=/etc/pulse/x-maemo-sink-volume.table
 load-module module-rescue-streams
 load-module module-suspend-on-idle timeout=5
 
@@ -47,7 +47,7 @@ set-default-source source.record
 ### Bluetooth OMAP SCO over PCM
 .nofail
 
-load-module module-alsa-sink-old sink_name=sink.hw1 device=hw:0,1 rate=8000 channels=1 fragment_size=80 fragments=2
+load-module module-alsa-sink-old sink_name=sink.hw1 hw_volume=true device=hw:0,1 rate=8000 channels=1 fragment_size=80 fragments=2
 load-module module-alsa-source-old source_name=source.hw1 device=hw:0,1 rate=8000 channels=1 fragment_size=80 fragments=2
 
 ### Automatically load driver modules for Bluetooth hardware

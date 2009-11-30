@@ -1,11 +1,12 @@
-From 852aa19539f1f603662bf7234df2e24b49689245 Mon Sep 17 00:00:00 2001
-From: =?utf-8?q?Juho=20H=C3=A4m=C3=A4l=C3=A4inen?= <ext-juho.hamalainen@nokia.com>
-Date: Fri, 6 Nov 2009 07:25:22 +0200
+From bc7da0bdc880bf231f89c064ab528dbeb15de208 Mon Sep 17 00:00:00 2001
+From: Jyri Sarha <jyri.sarha@nokia.com>
+Date: Thu, 10 Dec 2009 16:32:08 +0200
 Subject: [PATCH] alsa: sink-volume, a complex mixer module
 
 volume: update delay
 
 Revert "alsa-old: remove -30dB from HP hack"
+
 This reverts commit 6fc36ed7865964f5ef6798e41c6eda4912f4a0b2.
 
 volume: tune the delay a little to fix 114849
@@ -30,7 +31,7 @@ alsa-volume: Fix lock handling in sink_get_volume_cb
  create mode 100644 src/modules/alsa/module-alsa-sink-volume.c
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 6d26863..d7f31b4 100644
+index 6721335..3c8a7f5 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -1003,6 +1003,9 @@ pulselibexec_PROGRAMS =
@@ -43,7 +44,7 @@ index 6d26863..d7f31b4 100644
  		module-alsa-sink.la \
  		module-alsa-source.la \
  		module-alsa-card.la
-@@ -1114,6 +1117,7 @@ SYMDEF_FILES = \
+@@ -1118,6 +1121,7 @@ SYMDEF_FILES = \
  		modules/module-x11-cork-request-symdef.h \
  		modules/oss/module-oss-symdef.h \
  		modules/alsa/module-alsa-sink-symdef.h \
@@ -51,7 +52,7 @@ index 6d26863..d7f31b4 100644
  		modules/alsa/module-alsa-source-symdef.h \
  		modules/alsa/module-alsa-card-symdef.h \
  		modules/module-solaris-symdef.h \
-@@ -1345,6 +1349,11 @@ module_alsa_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
+@@ -1353,6 +1357,11 @@ module_alsa_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
  module_alsa_sink_la_LIBADD = $(AM_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
  module_alsa_sink_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
  
@@ -1571,5 +1572,5 @@ index 0000000..a1ae98c
 +    snd_config_update_free_global();
 +}
 -- 
-1.5.6.3
+1.6.0.4
 
