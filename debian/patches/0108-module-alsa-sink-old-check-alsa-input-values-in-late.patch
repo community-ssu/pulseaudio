@@ -1,0 +1,25 @@
+From 281692649f2bd2b673f418b23804394545a206a2 Mon Sep 17 00:00:00 2001
+From: Marko Ollonen <marko@marko-desktop.wirelessnet.digia.com>
+Date: Fri, 30 Apr 2010 15:33:40 +0300
+Subject: [PATCH 108/114] module-alsa-sink-old-check-alsa-input-values-in-latency-calc
+
+---
+ src/modules/alsa/module-alsa-sink-old.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/src/modules/alsa/module-alsa-sink-old.c b/src/modules/alsa/module-alsa-sink-old.c
+index eb303d9..779d19d 100644
+--- a/src/modules/alsa/module-alsa-sink-old.c
++++ b/src/modules/alsa/module-alsa-sink-old.c
+@@ -419,7 +419,7 @@ static int sink_get_latency_by_timestamps(struct userdata *u, pa_usec_t *d) {
+     pa_usec_t buffered, elapsed;
+     size_t mcbsp_buffer = 0;
+ 
+-    if (snd_pcm_htimestamp(u->pcm_handle, &avail, &tstamp) < 0)
++    if( (snd_pcm_htimestamp(u->pcm_handle, &avail, &tstamp) < 0) || (avail * u->frame_size > u->hwbuf_size) )
+         return -1;
+ 
+     ts_dma.tv_sec = tstamp.tv_sec;
+-- 
+1.6.3.3
+

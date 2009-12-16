@@ -1,7 +1,7 @@
 From 21ac997a3d84bcf57321925f19c5ec976c38210b Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Fri, 27 Nov 2009 10:33:46 +0200
-Subject: [PATCH] combine: Stop rate adjustments if sink is supended
+Subject: [PATCH 098/114] combine: Stop rate adjustments if sink is supended
 
 ---
  src/modules/module-combine.c |   12 +++++++++++-
@@ -38,5 +38,5 @@ index 1ada1fa..279761a 100644
  }
  
 -- 
-1.6.0.4
+1.6.3.3
 

@@ -1,7 +1,7 @@
 From b27aba92503cb85660875c914e22238e033c94e3 Mon Sep 17 00:00:00 2001
 From: Tanu Kaskinen <tanu.kaskinen@digia.com>
 Date: Fri, 9 Oct 2009 15:54:48 +0300
-Subject: [PATCH] combine: Add new module argument: slave_amps.
+Subject: [PATCH 092/114] combine: Add new module argument: slave_amps.
 
 ---
  src/modules/module-combine.c |   65 +++++++++++++++++++++++++++++++++++------
@@ -187,5 +187,5 @@ index bda3d19..60fb46b 100644
                  goto fail;
              }
 -- 
-1.6.0.4
+1.6.3.3
 

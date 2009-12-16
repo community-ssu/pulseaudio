@@ -1,0 +1,57 @@
+From 5b6a18bae6b96d7e13d83f0341bc5866fafc87dc Mon Sep 17 00:00:00 2001
+From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
+Date: Mon, 16 Mar 2009 20:03:33 +0200
+Subject: [PATCH 048/114] pulsecore: use MOVE_FAIL before destroying all streams
+
+---
+ src/pulsecore/sink.c   |    4 ++++
+ src/pulsecore/source.c |    4 ++++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
+index 30fa557..c01eabc 100644
+--- a/src/pulsecore/sink.c
++++ b/src/pulsecore/sink.c
+@@ -387,6 +387,7 @@ void pa_sink_put(pa_sink* s) {
+ void pa_sink_unlink(pa_sink* s) {
+     pa_bool_t linked;
+     pa_sink_input *i, *j = NULL;
++    pa_queue *q;
+ 
+     pa_assert(s);
+ 
+@@ -410,6 +411,9 @@ void pa_sink_unlink(pa_sink* s) {
+     if (s->card)
+         pa_idxset_remove_by_data(s->card->sinks, s, NULL);
+ 
++    q = pa_sink_move_all_start(s);
++    pa_sink_move_all_fail(q);
++    /* kill the remaining sink-inputs */
+     while ((i = pa_idxset_first(s->inputs, NULL))) {
+         pa_assert(i != j);
+         pa_sink_input_kill(i);
+diff --git a/src/pulsecore/source.c b/src/pulsecore/source.c
+index 2190250..a8db849 100644
+--- a/src/pulsecore/source.c
++++ b/src/pulsecore/source.c
+@@ -333,6 +333,7 @@ void pa_source_put(pa_source *s) {
+ void pa_source_unlink(pa_source *s) {
+     pa_bool_t linked;
+     pa_source_output *o, *j = NULL;
++    pa_queue *q;
+ 
+     pa_assert(s);
+ 
+@@ -351,6 +352,9 @@ void pa_source_unlink(pa_source *s) {
+     if (s->card)
+         pa_idxset_remove_by_data(s->card->sources, s, NULL);
+ 
++    q = pa_source_move_all_start(s);
++    pa_source_move_all_fail(q);
++    /* kill the remaining source-output */
+     while ((o = pa_idxset_first(s->outputs, NULL))) {
+         pa_assert(o != j);
+         pa_source_output_kill(o);
+-- 
+1.6.3.3
+

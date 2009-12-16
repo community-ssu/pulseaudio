@@ -1,0 +1,35 @@
+From 6117fc7e7a3d18beed5e7a1c5316708794417d56 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Fri, 14 Aug 2009 04:18:23 +0200
+Subject: [PATCH 111/114] thread-mq: never drop queued messages for the main loop
+
+Previously we might have dropped messages from IO trheads to the main
+thread. This tuend out to be problematic since this cause SHM release
+messages to be lost. More visibly however this could cause playback
+freezing when moving streams between sinks and removing the old sink
+right away.
+---
+ src/pulsecore/thread-mq.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/src/pulsecore/thread-mq.c b/src/pulsecore/thread-mq.c
+index 34f92a7..ec67ae8 100644
+--- a/src/pulsecore/thread-mq.c
++++ b/src/pulsecore/thread-mq.c
+@@ -104,6 +104,13 @@ void pa_thread_mq_init(pa_thread_mq *q, pa_mainloop_api *mainloop, pa_rtpoll *rt
+ void pa_thread_mq_done(pa_thread_mq *q) {
+     pa_assert(q);
+ 
++    /* Since we are called from main context we can be sure that the
++     * inq is empty. However, the outq might still contain messages
++     * for the main loop, which we need to dispatch (e.g. release
++     * msgs, other stuff). Hence do so. */
++
++    pa_asyncmsgq_flush(q->outq, TRUE);
++
+     q->mainloop->io_free(q->read_event);
+     q->mainloop->io_free(q->write_event);
+     q->read_event = q->write_event = NULL;
+-- 
+1.6.3.3
+

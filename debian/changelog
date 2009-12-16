@@ -1,9 +1,39 @@
-pulseaudio (0.9.15-1maemo38+0m5) unstable; urgency=low
+pulseaudio (0.9.15-1maemo43+0m5) unstable; urgency=low
 
   * This entry has been added by BIFH queue processor
-    Suffix +0m5 added to package revision
+    version has been changed to 0.9.15-1maemo43+0m5
 
- -- Harri Mahonen <ext-harri.mahonen@nokia.com>  Wed, 16 Dec 2009 09:47:10 +0200
+ -- Jyri Sarha <jyri.sarha@nokia.com>  Mon, 14 Jun 2010 16:27:19 +0300
+
+pulseaudio (0.9.15-1maemo43) unstable; urgency=low
+
+  * Trigger mempool vacuuming when all sinks and sources are suspended. Fixes: NB#166422
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Fri, 4 Jun 2010 13:57:01 +0200
+
+pulseaudio (0.9.15-1maemo42) unstable; urgency=low
+
+  * upstream cherrypicks  Fixes: NB#159548
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Thu, 27 May 2010 10:23:05 +0200
+
+pulseaudio (0.9.15-1maemo41) unstable; urgency=low
+
+  * Poll BT SCO socket to handle remote connection close Fixes: NB#132536
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Thu, 20 May 2010 12:50:05 +0200
+
+pulseaudio (0.9.15-1maemo40) unstable; urgency=low
+
+  * module-alsa-sink-old:check alsa input values in latency calc. Fixes: NB#153159
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Thu, 23 Apr 2010 13:50:05 +0200
+
+pulseaudio (0.9.15-1maemo39) unstable; urgency=low
+
+  * core-util: handle EINTR already inside of pa_read/pa_write. Fixes: NB#139049
+
+ -- Maemo Multimedia <multimedia@maemo.org>  Thu, 23 Apr 2010 13:50:05 +0200
 
 pulseaudio (0.9.15-1maemo38) unstable; urgency=low
 

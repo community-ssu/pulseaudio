@@ -1,7 +1,7 @@
 From 0e1337a3a72c936fe629387982ea58e026b2071a Mon Sep 17 00:00:00 2001
 From: Ismo Puustinen <ismo.h.puustinen@nokia.com>
 Date: Tue, 30 Sep 2008 18:45:55 +0300
-Subject: [PATCH] build: add pulsecore.pc (Nokia specific)
+Subject: [PATCH 042/114] build: add pulsecore.pc (Nokia specific)
 
 Original patch updated for 0.9.14 with pulse/pulsecore/pulsecommon.
 ---
@@ -55,5 +55,5 @@ index 0000000..8f39d59
 +Libs: -L${libdir} -lpulsecore-@PA_MAJORMINORMICRO@ -lpulsecommon-@PA_MAJORMINORMICRO@ -lpulse @PTHREAD_LIBS@
 +Cflags: -D_REENTRANT -I${includedir} -I${includedir}/pulsecore/modules
 -- 
-1.6.0.4
+1.6.3.3
 

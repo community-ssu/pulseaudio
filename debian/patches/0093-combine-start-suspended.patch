@@ -1,7 +1,7 @@
 From 8d449c784a74e1f6b9a8ef933879e5b3d09896d9 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Juho=20H=C3=A4m=C3=A4l=C3=A4inen?= <ext-juho.hamalainen@nokia.com>
 Date: Mon, 2 Nov 2009 13:35:23 +0200
-Subject: [PATCH] combine: start suspended
+Subject: [PATCH 093/114] combine: start suspended
 
 ---
  src/modules/module-combine.c |   45 +++++++++++++++--------------------------
@@ -101,5 +101,5 @@ index 60fb46b..1ada1fa 100644
      if (u->adjust_time > 0)
          u->time_event = m->core->mainloop->rtclock_time_new(m->core->mainloop, pa_rtclock_now() + u->adjust_time * PA_USEC_PER_SEC, time_callback, u);
 -- 
-1.6.0.4
+1.6.3.3
 

@@ -1,0 +1,37 @@
+From 7d78cb7bae83bac9ddc627a55b7daaece32b359e Mon Sep 17 00:00:00 2001
+From: Marko Ollonen <marko.ollonen@digia.com>
+Date: Thu, 20 May 2010 10:44:48 +0300
+Subject: [PATCH 109/114] Poll BT SCO socket for checking remote disconnect
+
+---
+ src/modules/bluetooth/module-bluetooth-device.c |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-device.c b/src/modules/bluetooth/module-bluetooth-device.c
+index 300c214..0281fd0 100644
+--- a/src/modules/bluetooth/module-bluetooth-device.c
++++ b/src/modules/bluetooth/module-bluetooth-device.c
+@@ -1631,7 +1631,19 @@ static int sco_over_pcm_state_update(struct userdata *u) {
+ 
+     if (PA_SINK_IS_OPENED(pa_sink_get_state(u->hsp.sco_sink)) ||
+         PA_SOURCE_IS_OPENED(pa_source_get_state(u->hsp.sco_source))) {
+-
++		
++        if ((u->sink->state == PA_SINK_RUNNING) && (u->stream_fd >= 0)) {
++            struct pollfd fds;
++            memset(&fds, 0, sizeof(fds));
++            fds.fd = u->stream_fd;
++            fds.events = POLLHUP | POLLERR;
++            poll(&fds, 1, 0);
++
++            if ((fds.revents & POLLHUP) || (fds.revents & POLLERR)) {
++                pa_log_debug("Stream disconnected by the remote peer");
++                stop_stream_fd(u);
++            }
++        }
+         if (u->service_fd >= 0 && u->stream_fd >= 0)
+             return 0;
+ 
+-- 
+1.6.3.3
+

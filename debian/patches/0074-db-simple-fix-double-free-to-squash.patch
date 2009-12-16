@@ -1,7 +1,7 @@
 From 7d6f68979bc51c64954cac18e00eab302b8ae412 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Wed, 15 Jul 2009 20:21:22 +0300
-Subject: [PATCH] db-simple: fix double free (to squash)
+Subject: [PATCH 074/114] db-simple: fix double free (to squash)
 
 ---
  src/pulsecore/database-simple.c |   27 ++++++++++++++-------------
@@ -53,5 +53,5 @@ index 0fa7d1f..ceb565b 100644
      if (f)
          fclose(f);
 -- 
-1.6.0.4
+1.6.3.3
 

@@ -1,0 +1,378 @@
+From d6cde519c0c41b98038ba6f27dfe28b277ccbb26 Mon Sep 17 00:00:00 2001
+From: Jyri Sarha <jyri.sarha@nokia.com>
+Date: Wed, 22 Jul 2009 12:00:59 +0300
+Subject: [PATCH 081/114] core: Add infrastructure for delayed HW volume setting
+
+To make concurrent use of SW and HW volume glitchles their application
+needs to be syncronized. For accurate syncronization the HW volume
+needs to be applied in IO thread. This patch adds infrastructure to
+delay the applying of HW volume to match with SW volume. For this patch
+to have any effect it needs to be taken into use by sink implementor.
+---
+ src/pulse/def.h      |    8 ++-
+ src/pulsecore/sink.c |  193 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ src/pulsecore/sink.h |   35 +++++++++-
+ 3 files changed, 234 insertions(+), 2 deletions(-)
+
+diff --git a/src/pulse/def.h b/src/pulse/def.h
+index d5bbefe..77b1100 100644
+--- a/src/pulse/def.h
++++ b/src/pulse/def.h
+@@ -709,9 +709,14 @@ typedef enum pa_sink_flags {
+     /**< This sink is in flat volume mode, i.e. always the maximum of
+      * the volume of all connected inputs. \since 0.9.15 */
+ 
+-    PA_SINK_DYNAMIC_LATENCY = 0x0080U
++    PA_SINK_DYNAMIC_LATENCY = 0x0080U,
+     /**< The latency can be adjusted dynamically depending on the
+      * needs of the connected streams. \since 0.9.15 */
++
++    PA_SINK_SYNC_VOLUME = 0x0100U,
++    /**< The HW volume changes are syncronized with SW volume.
++     * \since X.X.XX */
++
+ } pa_sink_flags_t;
+ 
+ /** \cond fulldocs */
+@@ -723,6 +728,7 @@ typedef enum pa_sink_flags {
+ #define PA_SINK_DECIBEL_VOLUME PA_SINK_DECIBEL_VOLUME
+ #define PA_SINK_FLAT_VOLUME PA_SINK_FLAT_VOLUME
+ #define PA_SINK_DYNAMIC_LATENCY PA_SINK_DYNAMIC_LATENCY
++#define PA_SINK_SYNC_VOLUME PA_SINK_SYNC_VOLUME
+ /** \endcond */
+ 
+ /** Sink state. \since 0.9.15 */
+diff --git a/src/pulsecore/sink.c b/src/pulsecore/sink.c
+index d34a3ff..7bd659c 100644
+--- a/src/pulsecore/sink.c
++++ b/src/pulsecore/sink.c
+@@ -34,6 +34,7 @@
+ #include <pulse/timeval.h>
+ #include <pulse/util.h>
+ #include <pulse/i18n.h>
++#include <pulse/rtclock.h>
+ 
+ #include <pulsecore/sink-input.h>
+ #include <pulsecore/namereg.h>
+@@ -43,6 +44,7 @@
+ #include <pulsecore/log.h>
+ #include <pulsecore/macro.h>
+ #include <pulsecore/play-memblockq.h>
++#include <pulsecore/flist.h>
+ 
+ #include "sink.h"
+ 
+@@ -52,6 +54,9 @@
+ #define ABSOLUTE_MAX_LATENCY (10*PA_USEC_PER_SEC)
+ #define DEFAULT_FIXED_LATENCY (250*PA_USEC_PER_MSEC)
+ 
++#define VOLUME_CHANGE_SAFETY_MARGIN_DEFAULT (5*PA_USEC_PER_MSEC)
++#define VOLUME_CHANGE_EXTRA_DELAY_DEFAULT (5*PA_USEC_PER_MSEC)
++
+ static PA_DEFINE_CHECK_TYPE(pa_sink, pa_msgobject);
+ 
+ static void sink_free(pa_object *s);
+@@ -237,6 +242,12 @@ pa_sink* pa_sink_new(
+     s->thread_info.min_latency = ABSOLUTE_MIN_LATENCY;
+     s->thread_info.max_latency = ABSOLUTE_MAX_LATENCY;
+ 
++    PA_LLIST_HEAD_INIT(pa_sink_volume_change, s->thread_info.volume_changes);
++    s->thread_info.volume_changes_tail = NULL;
++    pa_sw_cvolume_multiply(&s->thread_info.current_hw_volume, &s->soft_volume, &s->virtual_volume);
++    s->thread_info.volume_change_safety_margin = VOLUME_CHANGE_SAFETY_MARGIN_DEFAULT;
++    s->thread_info.volume_change_extra_delay = VOLUME_CHANGE_EXTRA_DELAY_DEFAULT;
++
+     pa_assert_se(pa_idxset_put(core->sinks, s, &s->index) >= 0);
+ 
+     if (s->card)
+@@ -356,6 +367,7 @@ void pa_sink_put(pa_sink* s) {
+ 
+     s->thread_info.soft_volume = s->soft_volume;
+     s->thread_info.soft_muted = s->muted;
++    pa_sw_cvolume_multiply(&s->thread_info.current_hw_volume, &s->soft_volume, &s->virtual_volume);
+ 
+     if (s->flags & PA_SINK_DECIBEL_VOLUME)
+         s->n_volume_steps = PA_VOLUME_NORM+1;
+@@ -601,6 +613,10 @@ void pa_sink_process_rewind(pa_sink *s, size_t nbytes) {
+     if (nbytes > 0)
+         if (s->monitor_source && PA_SOURCE_IS_LINKED(s->monitor_source->thread_info.state))
+             pa_source_process_rewind(s->monitor_source, nbytes);
++
++    if (nbytes > 0) {
++        pa_sink_volume_change_rewind(s, nbytes);
++    }
+ }
+ 
+ /* Called from IO thread context */
+@@ -1631,6 +1647,9 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
+                 pa_sink_request_rewind(s, (size_t) -1);
+             }
+ 
++            if (s->flags & PA_SINK_SYNC_VOLUME)
++                pa_sink_volume_change_push(s);
++
+             if (!(s->flags & PA_SINK_FLAT_VOLUME))
+                 return 0;
+ 
+@@ -1641,6 +1660,16 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
+             return 0;
+ 
+         case PA_SINK_MESSAGE_GET_VOLUME:
++            /* In case sink implementor reset SW volume. */
++            if (!pa_cvolume_equal(&s->thread_info.soft_volume, &s->soft_volume)) {
++                s->thread_info.soft_volume = s->soft_volume;
++                pa_sink_request_rewind(s, (size_t) -1);
++            }
++
++            if (s->flags & PA_SINK_SYNC_VOLUME) {
++                pa_sink_volume_change_flush(s, FALSE);
++                pa_sw_cvolume_divide(&s->thread_info.current_hw_volume, &s->virtual_volume, &s->soft_volume);
++            }
+             return 0;
+ 
+         case PA_SINK_MESSAGE_SET_MUTE:
+@@ -2160,3 +2189,167 @@ pa_bool_t pa_device_init_description(pa_proplist *p) {
+ 
+     return FALSE;
+ }
++
++PA_STATIC_FLIST_DECLARE(pa_sink_volume_change, 0, pa_xfree);
++
++static pa_sink_volume_change *pa_sink_volume_change_new(pa_sink *s) {
++    pa_sink_volume_change *c;
++    if (!(c = pa_flist_pop(PA_STATIC_FLIST_GET(pa_sink_volume_change))))
++        c = pa_xnew(pa_sink_volume_change, 1);
++
++    pa_assert(c);
++    PA_LLIST_INIT(pa_sink_volume_change, c);
++    c->at = 0;
++    pa_cvolume_reset(&c->hw_volume, s->sample_spec.channels);
++    return c;
++}
++
++static void pa_sink_volume_change_free(pa_sink_volume_change *c) {
++    if (c)
++        if (pa_flist_push(PA_STATIC_FLIST_GET(pa_sink_volume_change), c) < 0)
++            pa_xfree(c);
++}
++
++void pa_sink_volume_change_push(pa_sink *s) {
++    pa_sink_volume_change *c = NULL;
++    pa_sink_volume_change *nc = NULL;
++    pa_usec_t safety_margin = s->thread_info.volume_change_safety_margin;
++
++    const char *direction = NULL;
++
++    pa_assert(s);
++    nc = pa_sink_volume_change_new(s);
++
++    pa_sw_cvolume_divide(&nc->hw_volume, &s->virtual_volume, &s->soft_volume);
++
++    if (!s->thread_info.volume_changes && pa_cvolume_equal(&nc->hw_volume, &s->thread_info.current_hw_volume)) {
++        pa_log_debug("Volume not changing");
++        pa_sink_volume_change_free(nc);
++        return;
++    }
++
++    /* Get the latency of the sink */
++    if (PA_MSGOBJECT(s)->process_msg(PA_MSGOBJECT(s), PA_SINK_MESSAGE_GET_LATENCY, &nc->at, 0, NULL) < 0)
++        nc->at = 0;
++
++    nc->at += pa_rtclock_now() + s->thread_info.volume_change_extra_delay;
++
++    if (s->thread_info.volume_changes_tail) {
++        for(c = s->thread_info.volume_changes_tail; c; c = c->prev) {
++            /* If volume is going up let's do it a bit late. If it is going
++             * down let's do it a bit early. */
++            if (pa_cvolume_avg(&nc->hw_volume) > pa_cvolume_avg(&c->hw_volume)) {
++                if (nc->at + safety_margin > c->at) {
++                    nc->at += safety_margin;
++                    direction = "up";
++                    break;
++                }
++            }
++            else if (nc->at - safety_margin > c->at) {
++                    nc->at -= safety_margin;
++                    direction = "down";
++                    break;
++            }
++        }
++    }
++
++    if (c == NULL) {
++        if (pa_cvolume_avg(&nc->hw_volume) > pa_cvolume_avg(&s->thread_info.current_hw_volume)) {
++            nc->at += safety_margin;
++            direction = "up";
++        } else {
++            nc->at -= safety_margin;
++            direction = "down";
++        }
++        PA_LLIST_PREPEND(pa_sink_volume_change, s->thread_info.volume_changes, nc);
++    }
++    else {
++        PA_LLIST_INSERT_AFTER(pa_sink_volume_change, s->thread_info.volume_changes, c, nc);
++    }
++
++    pa_log_debug("Volume going %s to %d at %llu", direction, pa_cvolume_avg(&nc->hw_volume), nc->at);
++
++    /* We can ignore volume events that came earlier but should happen later than this. */
++    PA_LLIST_FOREACH(c, nc->next) {
++        pa_log_debug("Volume change to %d at %llu was dropped", pa_cvolume_avg(&c->hw_volume), c->at);
++        pa_sink_volume_change_free(c);
++    }
++    nc->next = NULL;
++    s->thread_info.volume_changes_tail = nc;
++}
++
++pa_sink_volume_change *pa_sink_volume_change_next(pa_sink *s) {
++    pa_assert(s);
++    return s->thread_info.volume_changes;
++}
++
++void pa_sink_volume_change_flush(pa_sink *s, pa_bool_t write_to_hw) {
++    pa_sink_volume_change *c = s->thread_info.volume_changes;
++    pa_assert(s);
++    s->thread_info.volume_changes = NULL;
++    s->thread_info.volume_changes_tail = NULL;
++    while (c) {
++        pa_sink_volume_change *next = c->next;
++        if (write_to_hw && next == NULL) {
++            s->thread_info.current_hw_volume = c->hw_volume;
++            if (s->write_volume)
++                s->write_volume(s);
++        }
++        pa_sink_volume_change_free(c);
++        c = next;
++    }
++}
++
++pa_bool_t pa_sink_volume_change_apply(pa_sink *s, pa_usec_t *usec_to_next) {
++    pa_usec_t now = pa_rtclock_now();
++    pa_bool_t ret = FALSE;
++
++    pa_assert(s);
++    pa_assert(s->write_volume);
++
++    while (s->thread_info.volume_changes && now > s->thread_info.volume_changes->at) {
++        pa_sink_volume_change *c = s->thread_info.volume_changes;
++        PA_LLIST_REMOVE(pa_sink_volume_change, s->thread_info.volume_changes, c);
++        pa_log_debug("Volume change to %d at %llu was written %llu usec late", pa_cvolume_avg(&c->hw_volume), c->at, now - c->at);
++        ret = TRUE;
++        s->thread_info.current_hw_volume = c->hw_volume;
++        pa_sink_volume_change_free(c);
++    }
++
++    if (s->write_volume && ret)
++        s->write_volume(s);
++
++    if (s->thread_info.volume_changes) {
++        if (usec_to_next)
++            *usec_to_next = s->thread_info.volume_changes->at - now;
++        if (pa_log_ratelimit())
++            pa_log_debug("Next volume change in %lld usec", s->thread_info.volume_changes->at - now);
++    }
++    else {
++        if (usec_to_next)
++            *usec_to_next = 0;
++        s->thread_info.volume_changes_tail = NULL;
++    }
++    return ret;
++}
++
++void pa_sink_volume_change_rewind(pa_sink *s, size_t nbytes) {
++    /* All the queued volume events later than current latency are shifted to happen earlier. */
++    pa_sink_volume_change *c;
++    pa_usec_t rewound = pa_bytes_to_usec(nbytes, &s->sample_spec);
++    pa_usec_t limit;
++
++    /* Get the latency of the sink */
++    if (PA_MSGOBJECT(s)->process_msg(PA_MSGOBJECT(s), PA_SINK_MESSAGE_GET_LATENCY, &limit, 0, NULL) < 0)
++        limit = 0;
++
++    limit += pa_rtclock_now() + s->thread_info.volume_change_extra_delay;
++
++    PA_LLIST_FOREACH(c, s->thread_info.volume_changes) {
++        if (c->at > limit) {
++            c->at -= rewound;
++            if (c->at < limit)
++                c->at = limit;
++        }
++    }
++}
+diff --git a/src/pulsecore/sink.h b/src/pulsecore/sink.h
+index 352282b..9a302c4 100644
+--- a/src/pulsecore/sink.h
++++ b/src/pulsecore/sink.h
+@@ -24,6 +24,7 @@
+ ***/
+ 
+ typedef struct pa_sink pa_sink;
++typedef struct pa_sink_volume_change pa_sink_volume_change;
+ 
+ #include <inttypes.h>
+ 
+@@ -49,6 +50,13 @@ static inline pa_bool_t PA_SINK_IS_LINKED(pa_sink_state_t x) {
+     return x == PA_SINK_RUNNING || x == PA_SINK_IDLE || x == PA_SINK_SUSPENDED;
+ }
+ 
++struct pa_sink_volume_change {
++    pa_usec_t at;
++    pa_cvolume hw_volume;
++
++    PA_LLIST_FIELDS(pa_sink_volume_change);
++};
++
+ struct pa_sink {
+     pa_msgobject parent;
+ 
+@@ -103,9 +111,19 @@ struct pa_sink {
+ 
+     /* Called when the volume shall be changed. Called from main loop
+      * context. If this is NULL a PA_SINK_MESSAGE_SET_VOLUME message
+-     * will be sent to the IO thread instead. */
++     * will be sent to the IO thread instead.
++     * If sink implementor has set PA_SINK_SYNC_VOLUME flag this call
++     * should only check how close to requested volume HW can get but
++     * not write the volume to HW yet. */
+     void (*set_volume)(pa_sink *s);             /* dito */
+ 
++    /* Writes volume change to HW. Called from IO thread context.
++     * If sink implementor has set PA_SINK_SYNC_VOLUME flag it should
++     * call pa_sink_volume_change_apply() from it's IO-thread.
++     * This call back is called from pa_sink_volume_change_apply()
++     * if set. */
++    void (*write_volume)(pa_sink *s);           /* dito */
++
+     /* Called when the mute setting is queried. Called from main loop
+      * context. If this is NULL a PA_SINK_MESSAGE_GET_MUTE message
+      * will be sent to the IO thread instead. If refresh_mute is
+@@ -151,6 +169,15 @@ struct pa_sink {
+ 
+         pa_usec_t min_latency; /* we won't go below this latency */
+         pa_usec_t max_latency; /* An upper limit for the latencies */
++
++        /* Delayed volume change events are queued here */
++        PA_LLIST_HEAD(pa_sink_volume_change, volume_changes);
++        pa_sink_volume_change *volume_changes_tail;
++        /* This value is updated in pa_sink_volume_change_apply() */
++        pa_cvolume current_hw_volume;
++
++        pa_usec_t volume_change_safety_margin;
++        pa_usec_t volume_change_extra_delay;
+     } thread_info;
+ 
+     void *userdata;
+@@ -304,4 +331,10 @@ void pa_sink_invalidate_requested_latency(pa_sink *s);
+ 
+ pa_usec_t pa_sink_get_latency_within_thread(pa_sink *s);
+ 
++void pa_sink_volume_change_push(pa_sink *s);
++pa_sink_volume_change *pa_sink_volume_change_next(pa_sink *s);
++void pa_sink_volume_change_flush(pa_sink *s, pa_bool_t write_to_hw);
++pa_bool_t pa_sink_volume_change_apply(pa_sink *s, pa_usec_t *usec_to_next);
++void pa_sink_volume_change_rewind(pa_sink *s, size_t nbytes);
++
+ #endif
+-- 
+1.6.3.3
+

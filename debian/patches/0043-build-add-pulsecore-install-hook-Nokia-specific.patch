@@ -1,7 +1,7 @@
 From 21c566c10998410c98275595f9324bd33406b262 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marcandre.lureau@gmail.com>
 Date: Fri, 9 Jan 2009 16:59:05 +0200
-Subject: [PATCH] build: add pulsecore install-hook (Nokia specific)
+Subject: [PATCH 043/114] build: add pulsecore install-hook (Nokia specific)
 
 ---
  src/Makefile.am |    7 +++++++
@@ -31,5 +31,5 @@ index 7962a37..d49f4fd 100644
  massif: pulseaudio
  	libtool --mode=execute valgrind --tool=massif --depth=6  --alloc-fn=pa_xmalloc --alloc-fn=pa_xmalloc0 --alloc-fn=pa_xrealloc --alloc-fn=dbus_realloc --alloc-fn=pa_xnew0_internal --alloc-fn=pa_xnew_internal ./pulseaudio
 -- 
-1.6.0.4
+1.6.3.3
 

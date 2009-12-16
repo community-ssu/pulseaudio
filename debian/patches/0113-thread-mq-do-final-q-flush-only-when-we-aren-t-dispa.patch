@@ -1,0 +1,39 @@
+From dca41a5dde6673a1b88a49a149cc5fa0758961c4 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Sat, 15 Aug 2009 22:23:42 +0200
+Subject: [PATCH 113/114] thread-mq: do final q flush only when we aren't dispatching anyway
+
+---
+ src/pulsecore/thread-mq.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/src/pulsecore/thread-mq.c b/src/pulsecore/thread-mq.c
+index ec67ae8..73997a7 100644
+--- a/src/pulsecore/thread-mq.c
++++ b/src/pulsecore/thread-mq.c
+@@ -59,7 +59,7 @@ static void asyncmsgq_read_cb(pa_mainloop_api*api, pa_io_event* e, int fd, pa_io
+         pa_memchunk chunk;
+ 
+         /* Check whether there is a message for us to process */
+-        while (pa_asyncmsgq_get(aq, &object, &code, &data, &offset, &chunk, 0) == 0) {
++        while (pa_asyncmsgq_get(aq, &object, &code, &data, &offset, &chunk, 0) >= 0) {
+             int ret;
+ 
+             ret = pa_asyncmsgq_dispatch(object, code, data, offset, &chunk);
+@@ -107,9 +107,11 @@ void pa_thread_mq_done(pa_thread_mq *q) {
+     /* Since we are called from main context we can be sure that the
+      * inq is empty. However, the outq might still contain messages
+      * for the main loop, which we need to dispatch (e.g. release
+-     * msgs, other stuff). Hence do so. */
++     * msgs, other stuff). Hence do so if we aren't currently
++     * dispatching anyway. */
+ 
+-    pa_asyncmsgq_flush(q->outq, TRUE);
++    if (!pa_asyncmsgq_dispatching(q->outq))
++        pa_asyncmsgq_flush(q->outq, TRUE);
+ 
+     q->mainloop->io_free(q->read_event);
+     q->mainloop->io_free(q->write_event);
+-- 
+1.6.3.3
+

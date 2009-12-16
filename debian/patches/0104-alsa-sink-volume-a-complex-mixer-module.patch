@@ -1,7 +1,7 @@
 From bc7da0bdc880bf231f89c064ab528dbeb15de208 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Thu, 10 Dec 2009 16:32:08 +0200
-Subject: [PATCH] alsa: sink-volume, a complex mixer module
+Subject: [PATCH 104/114] alsa: sink-volume, a complex mixer module
 
 volume: update delay
 
@@ -1572,5 +1572,5 @@ index 0000000..a1ae98c
 +    snd_config_update_free_global();
 +}
 -- 
-1.6.0.4
+1.6.3.3
 

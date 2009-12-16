@@ -1,7 +1,7 @@
 From c59bc79d91e48f9f063b8c81e31c8395a079733b Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Juho=20H=C3=A4m=C3=A4l=C3=A4inen?= <ext-juho.hamalainen@nokia.com>
 Date: Fri, 27 Nov 2009 14:34:49 +0200
-Subject: [PATCH] stream-restore: implement sink-volume mode
+Subject: [PATCH 100/114] stream-restore: implement sink-volume mode
 
 When in sink-volume mode, flat-sink should be disabled for the sink
 stream-restore controls. Currently two main role volumes are set
@@ -586,5 +586,5 @@ index fafa1c3..37d24a6 100644
          pa_database_close(u->database);
  
 -- 
-1.6.0.4
+1.6.3.3
 

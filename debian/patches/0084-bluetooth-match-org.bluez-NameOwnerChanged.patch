@@ -1,7 +1,7 @@
 From 87df486bc2d391f8b17f67f07e5f20809e14f80c Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 11 Aug 2009 15:53:48 +0300
-Subject: [PATCH] bluetooth: match org.bluez NameOwnerChanged
+Subject: [PATCH 084/114] bluetooth: match org.bluez NameOwnerChanged
 
 ---
  src/modules/bluetooth/bluetooth-util.c |    4 ++--
@@ -30,5 +30,5 @@ index 66e1c31..326bd8b 100644
                                 "type='signal',sender='org.bluez',interface='org.bluez.Manager',member='AdapterRemoved'",
                                 "type='signal',sender='org.bluez',interface='org.bluez.Adapter',member='DeviceRemoved'",
 -- 
-1.6.0.4
+1.6.3.3
 

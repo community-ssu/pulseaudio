@@ -1,7 +1,7 @@
 From 21aa19697c17207b4d06cc6ebac542a289691975 Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Tue, 21 Apr 2009 21:23:53 +0200
-Subject: [PATCH] llist: add PA_LLIST_FOREACH
+Subject: [PATCH 079/114] llist: add PA_LLIST_FOREACH
 
 ---
  src/pulsecore/llist.h |    3 +++
@@ -20,5 +20,5 @@ index 77a1749..58b51c6 100644
 +
  #endif
 -- 
-1.6.0.4
+1.6.3.3
 

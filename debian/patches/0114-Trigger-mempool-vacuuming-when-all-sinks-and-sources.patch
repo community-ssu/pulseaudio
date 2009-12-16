@@ -1,0 +1,102 @@
+From bbd5616f598527fca76fce61d3c0022c282c9393 Mon Sep 17 00:00:00 2001
+From: Marko Ollonen <marko.ollonen@digia.com>
+Date: Fri, 4 Jun 2010 13:52:32 +0300
+Subject: [PATCH 114/114] Trigger mempool vacuuming when all sinks and sources are suspended
+
+---
+ src/modules/module-suspend-on-idle.c |   28 ++++++++++++++++++++++++++++
+ src/pulsecore/idxset.c               |   14 ++++++++++++++
+ src/pulsecore/idxset.h               |    6 ++++++
+ 3 files changed, 48 insertions(+), 0 deletions(-)
+
+diff --git a/src/modules/module-suspend-on-idle.c b/src/modules/module-suspend-on-idle.c
+index 77d6131..8e3c191 100644
+--- a/src/modules/module-suspend-on-idle.c
++++ b/src/modules/module-suspend-on-idle.c
+@@ -80,6 +80,32 @@ struct device_info {
+     pa_time_event *time_event;
+ };
+ 
++static void check_meempool_vacuum(struct device_info *d) {
++    pa_core *core = NULL;
++    pa_sink *si;
++    pa_source *so;
++    uint32_t idx;
++
++    pa_assert(d);
++    if (d->sink)
++        core = d->sink->core;
++    if (d->source)
++        core = d->source->core;
++    pa_assert(core);
++
++    idx = 0;
++    PA_IDXSET_FOREACH(si, core->sinks, idx)
++        if (pa_sink_get_state(si) != PA_SINK_SUSPENDED)
++            return;
++
++    idx = 0;
++    PA_IDXSET_FOREACH(so, core->sources, idx)
++        if (pa_source_get_state(so) != PA_SOURCE_SUSPENDED)
++            return;
++
++    pa_log_info("All sinks and sources are suspended, vacuuming memory");
++    pa_mempool_vacuum(core->mempool);
++}
+ static void timeout_cb(pa_mainloop_api*a, pa_time_event* e, pa_usec_t t, void *userdata) {
+     struct device_info *d = userdata;
+ 
+@@ -90,11 +116,13 @@ static void timeout_cb(pa_mainloop_api*a, pa_time_event* e, pa_usec_t t, void *u
+     if (d->sink && pa_sink_check_suspend(d->sink) <= 0 && pa_sink_get_state(d->sink) != PA_SINK_SUSPENDED) {
+         pa_log_info("Sink %s idle for too long, suspending ...", d->sink->name);
+         pa_sink_suspend(d->sink, TRUE);
++        check_meempool_vacuum(d);
+     }
+ 
+     if (d->source && pa_source_check_suspend(d->source) <= 0 && pa_source_get_state(d->source) != PA_SOURCE_SUSPENDED) {
+         pa_log_info("Source %s idle for too long, suspending ...", d->source->name);
+         pa_source_suspend(d->source, TRUE);
++        check_meempool_vacuum(d);
+     }
+ }
+ 
+diff --git a/src/pulsecore/idxset.c b/src/pulsecore/idxset.c
+index 352ac97..408011f 100644
+--- a/src/pulsecore/idxset.c
++++ b/src/pulsecore/idxset.c
+@@ -453,3 +453,17 @@ pa_bool_t pa_idxset_isempty(pa_idxset *s) {
+ 
+     return s->n_entries == 0;
+ }
++
++pa_idxset *pa_idxset_copy(pa_idxset *s) {
++    pa_idxset *copy;
++    struct idxset_entry *i;
++
++    pa_assert(s);
++
++    copy = pa_idxset_new(s->hash_func, s->compare_func);
++
++    for (i = s->iterate_list_head; i; i = i->iterate_next)
++        pa_idxset_put(copy, i->data, NULL);
++
++    return copy;
++}
+diff --git a/src/pulsecore/idxset.h b/src/pulsecore/idxset.h
+index 7531ea3..1f76068 100644
+--- a/src/pulsecore/idxset.h
++++ b/src/pulsecore/idxset.h
+@@ -103,4 +103,10 @@ unsigned pa_idxset_size(pa_idxset*s);
+ /* Return TRUE of the idxset is empty */
+ pa_bool_t pa_idxset_isempty(pa_idxset *s);
+ 
++/* Duplicate the idxset. This will not copy the actual indexes */
++pa_idxset *pa_idxset_copy(pa_idxset *s);
++
++/* A macro to ease iteration through all entries */
++#define PA_IDXSET_FOREACH(e, s, idx) \
++    for ((e) = pa_idxset_first((s), &(idx)); (e); (e) = pa_idxset_next((s), &(idx)))
+ #endif
+-- 
+1.6.3.3
+

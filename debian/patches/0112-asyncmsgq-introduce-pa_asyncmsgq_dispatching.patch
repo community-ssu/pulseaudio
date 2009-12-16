@@ -1,0 +1,38 @@
+From 18c27d7904e083ce011d68c2aa88eb019ba1a16b Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Sat, 15 Aug 2009 22:22:57 +0200
+Subject: [PATCH 112/114] asyncmsgq: introduce pa_asyncmsgq_dispatching()
+
+---
+ src/pulsecore/asyncmsgq.c |    6 ++++++
+ src/pulsecore/asyncmsgq.h |    2 ++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/src/pulsecore/asyncmsgq.c b/src/pulsecore/asyncmsgq.c
+index d59c824..e5ff3d7 100644
+--- a/src/pulsecore/asyncmsgq.c
++++ b/src/pulsecore/asyncmsgq.c
+@@ -351,3 +351,9 @@ void pa_asyncmsgq_flush(pa_asyncmsgq *a, pa_bool_t run) {
+         pa_asyncmsgq_unref(a);
+     }
+ }
++
++pa_bool_t pa_asyncmsgq_dispatching(pa_asyncmsgq *a) {
++    pa_assert(PA_REFCNT_VALUE(a) > 0);
++
++    return !!a->current;
++}
+diff --git a/src/pulsecore/asyncmsgq.h b/src/pulsecore/asyncmsgq.h
+index 26f528f..1085c2f 100644
+--- a/src/pulsecore/asyncmsgq.h
++++ b/src/pulsecore/asyncmsgq.h
+@@ -78,4 +78,6 @@ int pa_asyncmsgq_write_fd(pa_asyncmsgq *q);
+ void pa_asyncmsgq_write_before_poll(pa_asyncmsgq *a);
+ void pa_asyncmsgq_write_after_poll(pa_asyncmsgq *a);
+ 
++pa_bool_t pa_asyncmsgq_dispatching(pa_asyncmsgq *a);
++
+ #endif
+-- 
+1.6.3.3
+

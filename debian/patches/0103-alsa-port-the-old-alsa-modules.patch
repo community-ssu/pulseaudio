@@ -1,7 +1,7 @@
 From 9df3a134963ced78ef092cec750bf2a0251c0379 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Thu, 10 Dec 2009 16:33:48 +0200
-Subject: [PATCH] alsa: port the old alsa modules
+Subject: [PATCH 103/114] alsa: port the old alsa modules
 
 alsa-old: start as suspended
 
@@ -2971,5 +2971,5 @@ index 0000000..3aaeaa6
 +    snd_config_update_free_global();
 +}
 -- 
-1.6.0.4
+1.6.3.3
 

@@ -1,7 +1,7 @@
 From d0b0d0142b07ba146161eff711a42b8c044b5280 Mon Sep 17 00:00:00 2001
 From: Wim Taymans <wim.taymans@collabora.co.uk>
 Date: Thu, 23 Jul 2009 13:40:23 +0200
-Subject: [PATCH] protocol-native: use the right samplerate
+Subject: [PATCH 094/114] protocol-native: use the right samplerate
 
 The render_memblockq is expressed in the sample_spec of the sink, not of the
 particular stream before resampling.
@@ -23,5 +23,5 @@ index 92171bf..5a14c62 100644
      pa_tagstruct_put_boolean(reply,
                               s->playing_for > 0 &&
 -- 
-1.6.0.4
+1.6.3.3
 

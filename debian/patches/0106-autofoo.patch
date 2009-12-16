@@ -1,7 +1,7 @@
 From fbfbd576c39b769fb24c4341d7265feba68d3f43 Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Juho=20H=C3=A4m=C3=A4l=C3=A4inen?= <ext-juho.hamalainen@nokia.com>
 Date: Fri, 11 Dec 2009 14:01:10 +0200
-Subject: [PATCH] autofoo
+Subject: [PATCH 106/114] autofoo
 
 ---
  ABOUT-NLS              | 1068 ++
@@ -68976,5 +68976,5 @@ index 0000000..7484126
 +# Otherwise a system limit (for SysV at least) may be exceeded.
 +.NOEXPORT:
 -- 
-1.6.0.4
+1.6.3.3
 

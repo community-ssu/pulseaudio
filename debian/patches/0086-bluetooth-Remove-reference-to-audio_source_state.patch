@@ -1,7 +1,7 @@
 From 217152dfb1be900455a886f03b896d7e68b20133 Mon Sep 17 00:00:00 2001
 From: Jyri Sarha <jyri.sarha@nokia.com>
 Date: Fri, 28 Aug 2009 13:12:09 +0300
-Subject: [PATCH] bluetooth: Remove reference to audio_source_state
+Subject: [PATCH 086/114] bluetooth: Remove reference to audio_source_state
 
 The fix from commit 8169a6a6c9 exppects A2DP source to be implemented
 but we do not need it for fremantle.
@@ -22,5 +22,5 @@ index 963ed28..3ed8ed5 100644
  
              run_callback(y, d, FALSE);
 -- 
-1.6.0.4
+1.6.3.3
 

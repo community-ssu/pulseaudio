@@ -1,7 +1,7 @@
 From 191ccf5cd906955469c0e08891f3046b49ee3a62 Mon Sep 17 00:00:00 2001
 From: Luiz Augusto von Dentz <luiz.dentz@openbossa.org>
 Date: Thu, 27 Aug 2009 11:29:49 -0300
-Subject: [PATCH] Handle DisconnectRequested in bluetooth module.
+Subject: [PATCH 085/114] Handle DisconnectRequested in bluetooth module.
 
 ---
  src/modules/bluetooth/bluetooth-util.c |   17 +++++++++++++++++
@@ -50,5 +50,5 @@ index 326bd8b..963ed28 100644
                                 "type='signal',sender='org.bluez',interface='org.bluez.Headset',member='PropertyChanged'",
                                 "type='signal',sender='org.bluez',interface='org.bluez.AudioSink',member='PropertyChanged'", NULL);
 -- 
-1.6.0.4
+1.6.3.3
 

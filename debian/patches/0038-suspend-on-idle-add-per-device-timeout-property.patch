@@ -1,7 +1,7 @@
 From f7bd6ce2a684a3ec6158ee0990587bd4b3b6deda Mon Sep 17 00:00:00 2001
 From: =?utf-8?q?Marc-Andr=C3=A9=20Lureau?= <marc-andre.lureau@nokia.com>
 Date: Tue, 12 May 2009 01:48:05 +0300
-Subject: [PATCH] suspend-on-idle: add per-device timeout property
+Subject: [PATCH 038/114] suspend-on-idle: add per-device timeout property
 
 ---
  src/modules/module-suspend-on-idle.c |   15 ++++++++++++---
@@ -48,5 +48,5 @@ index 5200f19..8883780 100644
  
  static void resume(struct device_info *d) {
 -- 
-1.6.0.4
+1.6.3.3
 

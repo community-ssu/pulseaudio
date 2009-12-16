@@ -1,0 +1,46 @@
+From 53051f47d2e868366e3374253e74cba5261d63e9 Mon Sep 17 00:00:00 2001
+From: Jyri Sarha <jyri.sarha@nokia.com>
+Date: Wed, 11 Nov 2009 16:27:26 +0200
+Subject: [PATCH 097/114] rtclock+mainloop: Fix bug in rtclock fix (fixes 145577)
+
+---
+ src/pulse/mainloop.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/src/pulse/mainloop.c b/src/pulse/mainloop.c
+index 9b4fc9f..46e1fbf 100644
+--- a/src/pulse/mainloop.c
++++ b/src/pulse/mainloop.c
+@@ -799,7 +799,7 @@ static pa_time_event* find_next_time_event(pa_mainloop *m) {
+ 
+ static int calc_next_timeout(pa_mainloop *m) {
+     pa_time_event *t;
+-    pa_usec_t usec;
++    pa_usec_t now;
+ 
+     if (!m->n_enabled_time_events)
+         return -1;
+@@ -810,12 +810,12 @@ static int calc_next_timeout(pa_mainloop *m) {
+     if (t->time == 0)
+         return 0;
+ 
+-    usec = t->time - pa_rtclock_now();
++    now = pa_rtclock_now();
+ 
+-    if (usec <= 0)
++    if (t->time <= now)
+         return 0;
+ 
+-    return (int) (usec / 1000);
++    return (int) ((t->time - now) / 1000);
+ }
+ 
+ static int dispatch_timeout(pa_mainloop *m) {
+@@ -1031,4 +1031,3 @@ void pa_mainloop_set_poll_func(pa_mainloop *m, pa_poll_func poll_func, void *use
+     m->poll_func = poll_func;
+     m->poll_func_userdata = userdata;
+ }
+-
+-- 
+1.6.3.3
+

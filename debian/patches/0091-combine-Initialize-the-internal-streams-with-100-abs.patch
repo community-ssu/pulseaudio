@@ -1,0 +1,38 @@
+From 45f4349e07ed91743e2b87a6091644383244eb2e Mon Sep 17 00:00:00 2001
+From: Tanu Kaskinen <tanu.kaskinen@digia.com>
+Date: Tue, 6 Oct 2009 10:37:41 +0300
+Subject: [PATCH 091/114] combine: Initialize the internal streams with 100% absolute volume.
+
+This fixes the case where a downstream sink has low (even zero) volume.
+module-combine applies sw volume to its sink inputs, so the rest of the
+pipeline should play the streams from module-combine at full volume.
+---
+ src/modules/module-combine.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/src/modules/module-combine.c b/src/modules/module-combine.c
+index cdb98cf..bda3d19 100644
+--- a/src/modules/module-combine.c
++++ b/src/modules/module-combine.c
+@@ -799,6 +799,7 @@ static void update_description(struct userdata *u) {
+ 
+ static int output_create_sink_input(struct output *o) {
+     pa_sink_input_new_data data;
++    pa_cvolume volume;
+ 
+     pa_assert(o);
+ 
+@@ -815,6 +816,10 @@ static int output_create_sink_input(struct output *o) {
+     data.module = o->userdata->module;
+     data.resample_method = o->userdata->resample_method;
+ 
++    pa_cvolume_reset(&volume, data.sample_spec.channels);
++    pa_sink_input_new_data_set_volume(&data, &volume);
++    data.volume_is_absolute = TRUE;
++
+     pa_sink_input_new(&o->sink_input, o->userdata->core, &data, PA_SINK_INPUT_VARIABLE_RATE|PA_SINK_INPUT_DONT_MOVE);
+ 
+     pa_sink_input_new_data_done(&data);
+-- 
+1.6.3.3
+
