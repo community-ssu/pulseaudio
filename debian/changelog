@@ -1,3 +1,10 @@
+pulseaudio (0.9.15-1maemo44+0m5+0cssu1) unstable; urgency=low
+
+  * Add support for bluetooth AudioSource
+  * Add module-loopback
+
+ -- Ludek Finstrle <luf@pzkagis.cz>  Mon, 8 Oct 2012 21:45:52 +0200
+
 pulseaudio (0.9.15-1maemo43+0m5) unstable; urgency=low
 
   * This entry has been added by BIFH queue processor
