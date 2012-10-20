@@ -113,3 +113,4 @@
 0114-Trigger-mempool-vacuuming-when-all-sinks-and-sources.patch
 0201-device-bt-source.patch
 0202-discover-bt-source.patch
+0203-module-loopback.patch
