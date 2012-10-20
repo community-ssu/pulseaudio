@@ -83,7 +83,6 @@
 0083-bluetooth-handle-absence-of-bluez-D-Bus-service-prop.patch
 0084-bluetooth-match-org.bluez-NameOwnerChanged.patch
 0085-Handle-DisconnectRequested-in-bluetooth-module.patch
-0086-bluetooth-Remove-reference-to-audio_source_state.patch
 0087-bluetooth-Add-bluetooth-HSP-auto-connect-functionali.patch
 0088-protocol-native-Stop-auto-timing-updates-if-connecte.patch
 0089-stream-restore-save-individual-values-for-role-route.patch
@@ -112,3 +111,5 @@
 0112-asyncmsgq-introduce-pa_asyncmsgq_dispatching.patch
 0113-thread-mq-do-final-q-flush-only-when-we-aren-t-dispa.patch
 0114-Trigger-mempool-vacuuming-when-all-sinks-and-sources.patch
+0201-device-bt-source.patch
+0202-discover-bt-source.patch

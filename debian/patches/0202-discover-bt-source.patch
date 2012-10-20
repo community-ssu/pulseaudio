@@ -1,0 +1,275 @@
+author	João Paulo Rechi Vita <jprvita@gmail.com>
+commit	2772521698caa4ffe7c0c2de174e9d901d7752fd
+	2009-08-24 01:46:56 (GMT)
+
+bluetooth: add discover of bluetooth sources
+
+Add possibility to discover bluetooth Audio Sources
+
+diff -cr pulseaudio-0.9.15.fix.orig/src/modules/bluetooth/bluetooth-util.c pulseaudio-0.9.15.fix/src/modules/bluetooth/bluetooth-util.c
+*** pulseaudio-0.9.15.fix.orig/src/modules/bluetooth/bluetooth-util.c	Mon Oct  8 13:23:47 2012
+--- pulseaudio-0.9.15.fix/src/modules/bluetooth/bluetooth-util.c	Mon Oct  8 14:42:06 2012
+***************
+*** 1,7 ****
+  /***
+    This file is part of PulseAudio.
+  
+!   Copyright 2008 Joao Paulo Rechi Vita
+  
+    PulseAudio is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as
+--- 1,7 ----
+  /***
+    This file is part of PulseAudio.
+  
+!   Copyright 2008-2009 Joao Paulo Rechi Vita
+  
+    PulseAudio is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as
+***************
+*** 95,100 ****
+--- 95,101 ----
+  
+      d->audio_state = PA_BT_AUDIO_STATE_INVALID;
+      d->audio_sink_state = PA_BT_AUDIO_STATE_INVALID;
++     d->audio_source_state = PA_BT_AUDIO_STATE_INVALID;
+      d->headset_state = PA_BT_AUDIO_STATE_INVALID;
+  
+      return d;
+***************
+*** 124,129 ****
+--- 125,131 ----
+          d->device_info_valid &&
+          (d->audio_state != PA_BT_AUDIO_STATE_INVALID ||
+           d->audio_sink_state != PA_BT_AUDIO_STATE_INVALID ||
++          d->audio_source_state != PA_BT_AUDIO_STATE_INVALID ||
+           d->headset_state != PA_BT_AUDIO_STATE_INVALID);
+  }
+  
+***************
+*** 237,242 ****
+--- 239,247 ----
+                      } else if (strcasecmp(A2DP_SINK_UUID, value) == 0) {
+                          pa_assert_se(m = dbus_message_new_method_call("org.bluez", d->path, "org.bluez.AudioSink", "GetProperties"));
+                          send_and_add_to_pending(y, d, m, get_properties_reply);
++                     } else if (strcasecmp(A2DP_SOURCE_UUID, value) == 0) {
++                         pa_assert_se(m = dbus_message_new_method_call("org.bluez", d->path, "org.bluez.AudioSource", "GetProperties"));
++                         send_and_add_to_pending(y, d, m, get_properties_reply);
+                      }
+  
+                      if (!dbus_message_iter_next(&ai))
+***************
+*** 278,284 ****
+  
+      dbus_message_iter_recurse(i, &variant_i);
+  
+! /*     pa_log_debug("Parsing property org.bluez.{Audio|AudioSink|Headset}.%s", key); */
+  
+      switch (dbus_message_iter_get_arg_type(&variant_i)) {
+  
+--- 283,289 ----
+  
+      dbus_message_iter_recurse(i, &variant_i);
+  
+! /*     pa_log_debug("Parsing property org.bluez.{Audio|AudioSink|AudioSource|Headset}.%s", key); */
+  
+      switch (dbus_message_iter_get_arg_type(&variant_i)) {
+  
+***************
+*** 390,395 ****
+--- 395,403 ----
+              }  else if (dbus_message_has_interface(p->message, "org.bluez.AudioSink")) {
+                  if (parse_audio_property(y, &d->audio_sink_state, &dict_i) < 0)
+                      goto finish;
++             }  else if (dbus_message_has_interface(p->message, "org.bluez.AudioSource")) {
++                 if (parse_audio_property(y, &d->audio_source_state, &dict_i) < 0)
++                     goto finish;
+              }
+          }
+  
+***************
+*** 440,447 ****
+      pa_assert_se(m = dbus_message_new_method_call("org.bluez", path, "org.bluez.Device", "GetProperties"));
+      send_and_add_to_pending(y, d, m, get_properties_reply);
+  
+!     /* Before we read the other properties (Audio, AudioSink, Headset) we wait
+!      * that the UUID is read */
+  }
+  
+  static void list_devices_reply(DBusPendingCall *pending, void *userdata) {
+--- 448,455 ----
+      pa_assert_se(m = dbus_message_new_method_call("org.bluez", path, "org.bluez.Device", "GetProperties"));
+      send_and_add_to_pending(y, d, m, get_properties_reply);
+  
+!     /* Before we read the other properties (Audio, AudioSink, AudioSource,
+!      * Headset) we wait that the UUID is read */
+  }
+  
+  static void list_devices_reply(DBusPendingCall *pending, void *userdata) {
+***************
+*** 616,621 ****
+--- 624,630 ----
+      } else if (dbus_message_is_signal(m, "org.bluez.Audio", "PropertyChanged") ||
+                 dbus_message_is_signal(m, "org.bluez.Headset", "PropertyChanged") ||
+                 dbus_message_is_signal(m, "org.bluez.AudioSink", "PropertyChanged") ||
++                dbus_message_is_signal(m, "org.bluez.AudioSource", "PropertyChanged") ||
+                 dbus_message_is_signal(m, "org.bluez.Device", "PropertyChanged")) {
+  
+          pa_bluetooth_device *d;
+***************
+*** 643,648 ****
+--- 652,661 ----
+              }  else if (dbus_message_has_interface(m, "org.bluez.AudioSink")) {
+                  if (parse_audio_property(y, &d->audio_sink_state, &arg_i) < 0)
+                      goto fail;
++ 
++             }  else if (dbus_message_has_interface(m, "org.bluez.AudioSource")) {
++                 if (parse_audio_property(y, &d->audio_source_state, &arg_i) < 0)
++                     goto fail;
+              }
+  
+              run_callback(y, d, FALSE);
+***************
+*** 780,786 ****
+                  "type='signal',sender='org.bluez',interface='org.bluez.Device',member='DisconnectRequested'",
+                  "type='signal',sender='org.bluez',interface='org.bluez.Audio',member='PropertyChanged'",
+                  "type='signal',sender='org.bluez',interface='org.bluez.Headset',member='PropertyChanged'",
+!                 "type='signal',sender='org.bluez',interface='org.bluez.AudioSink',member='PropertyChanged'", NULL) < 0) {
+          pa_log("Failed to add D-Bus matches: %s", err.message);
+          goto fail;
+      }
+--- 793,800 ----
+                  "type='signal',sender='org.bluez',interface='org.bluez.Device',member='DisconnectRequested'",
+                  "type='signal',sender='org.bluez',interface='org.bluez.Audio',member='PropertyChanged'",
+                  "type='signal',sender='org.bluez',interface='org.bluez.Headset',member='PropertyChanged'",
+!                 "type='signal',sender='org.bluez',interface='org.bluez.AudioSink',member='PropertyChanged'",
+!                 "type='signal',sender='org.bluez',interface='org.bluez.AudioSource',member='PropertyChanged'", NULL) < 0) {
+          pa_log("Failed to add D-Bus matches: %s", err.message);
+          goto fail;
+      }
+***************
+*** 833,839 ****
+                                 "type='signal',sender='org.bluez',interface='org.bluez.Device',member='DisconnectRequested'",
+                                 "type='signal',sender='org.bluez',interface='org.bluez.Audio',member='PropertyChanged'",
+                                 "type='signal',sender='org.bluez',interface='org.bluez.Headset',member='PropertyChanged'",
+!                                "type='signal',sender='org.bluez',interface='org.bluez.AudioSink',member='PropertyChanged'", NULL);
+  
+          dbus_connection_remove_filter(pa_dbus_connection_get(y->connection), filter_cb, y);
+  
+--- 847,854 ----
+                                 "type='signal',sender='org.bluez',interface='org.bluez.Device',member='DisconnectRequested'",
+                                 "type='signal',sender='org.bluez',interface='org.bluez.Audio',member='PropertyChanged'",
+                                 "type='signal',sender='org.bluez',interface='org.bluez.Headset',member='PropertyChanged'",
+!                                "type='signal',sender='org.bluez',interface='org.bluez.AudioSink',member='PropertyChanged'",
+!                                "type='signal',sender='org.bluez',interface='org.bluez.AudioSource',member='PropertyChanged'", NULL);
+  
+          dbus_connection_remove_filter(pa_dbus_connection_get(y->connection), filter_cb, y);
+  
+diff -cr pulseaudio-0.9.15.fix.orig/src/modules/bluetooth/bluetooth-util.h pulseaudio-0.9.15.fix/src/modules/bluetooth/bluetooth-util.h
+*** pulseaudio-0.9.15.fix.orig/src/modules/bluetooth/bluetooth-util.h	Mon Jun 14 09:27:06 2010
+--- pulseaudio-0.9.15.fix/src/modules/bluetooth/bluetooth-util.h	Mon Oct  8 14:43:24 2012
+***************
+*** 4,10 ****
+  /***
+    This file is part of PulseAudio.
+  
+!   Copyright 2008 Joao Paulo Rechi Vita
+  
+    PulseAudio is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as
+--- 4,10 ----
+  /***
+    This file is part of PulseAudio.
+  
+!   Copyright 2008-2009 Joao Paulo Rechi Vita
+  
+    PulseAudio is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as
+***************
+*** 53,59 ****
+      PA_LLIST_FIELDS(pa_bluetooth_uuid);
+  };
+  
+! /* This enum is shared among Audio, Headset, and AudioSink, although not all values are acceptable in all profiles */
+  typedef enum pa_bt_audio_state {
+      PA_BT_AUDIO_STATE_INVALID = -1,
+      PA_BT_AUDIO_STATE_DISCONNECTED,
+--- 53,59 ----
+      PA_LLIST_FIELDS(pa_bluetooth_uuid);
+  };
+  
+! /* This enum is shared among Audio, Headset, AudioSink, and AudioSource, although not all values are acceptable in all profiles */
+  typedef enum pa_bt_audio_state {
+      PA_BT_AUDIO_STATE_INVALID = -1,
+      PA_BT_AUDIO_STATE_DISCONNECTED,
+***************
+*** 85,90 ****
+--- 85,93 ----
+      /* AudioSink state */
+      pa_bt_audio_state_t audio_sink_state;
+  
++     /* AudioSource state */
++     pa_bt_audio_state_t audio_source_state;
++ 
+      /* Headset state */
+      pa_bt_audio_state_t headset_state;
+  };
+diff -cr pulseaudio-0.9.15.fix.orig/src/modules/bluetooth/module-bluetooth-discover.c pulseaudio-0.9.15.fix/src/modules/bluetooth/module-bluetooth-discover.c
+*** pulseaudio-0.9.15.fix.orig/src/modules/bluetooth/module-bluetooth-discover.c	Mon Oct  8 13:23:47 2012
+--- pulseaudio-0.9.15.fix/src/modules/bluetooth/module-bluetooth-discover.c	Mon Oct  8 14:54:50 2012
+***************
+*** 1,7 ****
+  /***
+    This file is part of PulseAudio.
+  
+!   Copyright 2008 Joao Paulo Rechi Vita
+  
+    PulseAudio is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as
+--- 1,7 ----
+  /***
+    This file is part of PulseAudio.
+  
+!   Copyright 2008-2009 Joao Paulo Rechi Vita
+  
+    PulseAudio is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as
+***************
+*** 85,90 ****
+--- 85,91 ----
+  
+      mi = pa_hashmap_get(u->hashmap, d->path);
+  
++     pa_log("dead: %d, device_connected: %d, audio_state: %d, audio_source_state: %d, headset_state %d", d->dead, d->device_connected, d->audio_state, d->audio_source_state, d->headset_state);
+      if (!d->dead && d->device_connected > 0) {
+          char *auto_hsp = "";
+  
+***************
+*** 94,100 ****
+              auto_hsp = " profile=\"hsp\"";
+          }
+  
+!         if (d->audio_state >= PA_BT_AUDIO_STATE_CONNECTED || strlen(auto_hsp) > 0) {
+  
+              if (!mi) {
+                  pa_module *m = NULL;
+--- 95,101 ----
+              auto_hsp = " profile=\"hsp\"";
+          }
+  
+!         if (d->audio_state >= PA_BT_AUDIO_STATE_CONNECTED || d->audio_source_state >= PA_BT_AUDIO_STATE_CONNECTED || strlen(auto_hsp) > 0) {
+  
+              if (!mi) {
+                  pa_module *m = NULL;
+***************
+*** 117,122 ****
+--- 118,126 ----
+                  }
+  #endif
+  
++                 if (d->audio_source_state >= PA_BT_AUDIO_STATE_CONNECTED)
++                     args = pa_sprintf_malloc("%s profile=\"a2dp_source\"", args);
++ 
+                  pa_log_debug("Loading module-bluetooth-device %s", args);
+                  m = pa_module_load(u->module->core, "module-bluetooth-device", args);
+                  pa_xfree(args);
