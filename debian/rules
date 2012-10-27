@@ -20,7 +20,7 @@ endif
 
 ifneq (,$(findstring thumb,$(DEB_BUILD_OPTIONS)))
 ifeq ($(DEB_BUILD_ARCH), armel)
-	CFLAGS += -mthumb
+	CFLAGS += -mthumb -fgnu89-inline
 endif
 endif
 
