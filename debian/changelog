@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo44+0m5+0cssu1+thumb0) unstable; urgency=low
+
+  * Thumb2 compile
+
+ -- Ivaylo Dimitrov <freemangordon@abv.bg>  Sat, 27 Oct 2012 15:52:12 +0300
+
 pulseaudio (0.9.15-1maemo44+0m5+0cssu1) unstable; urgency=low
 
   * Add support for bluetooth AudioSource
