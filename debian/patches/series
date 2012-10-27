@@ -114,3 +114,4 @@
 0201-device-bt-source.patch
 0202-discover-bt-source.patch
 0203-module-loopback.patch
+0301-workaround-gcc472-vectorizer.patch

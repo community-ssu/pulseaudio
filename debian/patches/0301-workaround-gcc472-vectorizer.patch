@@ -1,0 +1,19 @@
+Index: pulseaudio/src/pulse/channelmap.c
+===================================================================
+--- pulseaudio.orig/src/pulse/channelmap.c	2012-10-27 20:23:18.000000000 +0300
++++ pulseaudio/src/pulse/channelmap.c	2012-10-27 20:24:32.000000000 +0300
+@@ -163,13 +163,11 @@
+ };
+ 
+ pa_channel_map* pa_channel_map_init(pa_channel_map *m) {
+-    unsigned c;
+     pa_assert(m);
+ 
+     m->channels = 0;
+ 
+-    for (c = 0; c < PA_CHANNELS_MAX; c++)
+-        m->map[c] = PA_CHANNEL_POSITION_INVALID;
++    memset(m->map,PA_CHANNEL_POSITION_INVALID,PA_CHANNELS_MAX);
+ 
+     return m;
+ }
