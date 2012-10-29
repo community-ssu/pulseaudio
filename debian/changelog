@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo44+0m5+0cssu1+thumb1) unstable; urgency=low
+
+  * Fix optimization flags
+
+ -- Ivaylo Dimitrov <freemangordon@abv.bg>  Mon, 29 Oct 2012 16:26:08 +0200
+
 pulseaudio (0.9.15-1maemo44+0m5+0cssu1+thumb0) unstable; urgency=low
 
   * Thumb2 compile
