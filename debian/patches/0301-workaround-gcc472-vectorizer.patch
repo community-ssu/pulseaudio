@@ -1,7 +1,7 @@
 Index: pulseaudio/src/pulse/channelmap.c
 ===================================================================
---- pulseaudio.orig/src/pulse/channelmap.c	2012-10-27 20:23:18.000000000 +0300
-+++ pulseaudio/src/pulse/channelmap.c	2012-10-27 20:24:32.000000000 +0300
+--- pulseaudio.orig/src/pulse/channelmap.c	2012-10-28 23:25:42.000000000 +0200
++++ pulseaudio/src/pulse/channelmap.c	2012-10-28 23:31:03.000000000 +0200
 @@ -163,13 +163,11 @@
  };
  
