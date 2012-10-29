@@ -11,7 +11,7 @@ CFLAGS = -Wall -g -DNOKIA=1 -DDEBUG_VOLUME=1 -DNDEBUG=1
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 	CFLAGS += -O0 -rdynamic -fno-omit-frame-pointer -mapcs-frame
 else
-	CFLAGS += -O3 -fno-omit-frame-pointer
+	CFLAGS += -O2 -fomit-frame-pointer -fno-fast-math
 endif
 
 ifeq ($(DEB_BUILD_ARCH), armel)
