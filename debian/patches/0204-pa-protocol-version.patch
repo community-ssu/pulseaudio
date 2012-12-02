@@ -1,0 +1,70 @@
+Index: pulseaudio/configure.ac
+===================================================================
+--- pulseaudio.orig/configure.ac	2012-12-02 16:24:09.823204995 +0100
++++ pulseaudio/configure.ac	2012-12-02 16:24:23.055204608 +0100
+@@ -40,7 +40,7 @@
+ AC_SUBST(PACKAGE_URL, [http://pulseaudio.org/])
+ 
+ AC_SUBST(PA_API_VERSION, 12)
+-AC_SUBST(PA_PROTOCOL_VERSION, 16)
++AC_SUBST(PA_PROTOCOL_VERSION, 15)
+ 
+ # The stable ABI for client applications, for the version info x:y:z
+ # always will hold y=z
+Index: pulseaudio/configure
+===================================================================
+--- pulseaudio.orig/configure	2012-12-08 14:47:20.914204885 +0100
++++ pulseaudio/configure	2012-12-08 14:52:01.718185394 +0100
+@@ -2919,7 +2919,7 @@
+ 
+ PA_API_VERSION=12
+ 
+-PA_PROTOCOL_VERSION=16
++PA_PROTOCOL_VERSION=15
+ 
+ 
+ # The stable ABI for client applications, for the version info x:y:z
+Index: pulseaudio/src/pulse/context.c
+===================================================================
+--- pulseaudio.orig/src/pulse/context.c	2012-12-08 16:37:03.208857031 +0100
++++ pulseaudio/src/pulse/context.c	2012-12-08 16:37:44.044855837 +0100
+@@ -501,7 +501,7 @@
+             } else
+                 pa_tagstruct_puts(reply, pa_proplist_gets(c->proplist, PA_PROP_APPLICATION_NAME));
+ 
+-            if (c->version >= 16) {
++            if (c->version == 16) {
+                 pa_tagstruct_putu32(reply, 2);
+                 pa_tagstruct_puts(reply, "stream-restore-1");
+                 pa_tagstruct_puts(reply, "stream-restore-2");
+@@ -522,7 +522,7 @@
+                 goto finish;
+             }
+ 
+-            if (c->version >= 16) {
++            if (c->version == 16) {
+                 uint32_t n;
+                 const char *supported;
+ 
+Index: pulseaudio/src/pulsecore/protocol-native.c
+===================================================================
+--- pulseaudio.orig/src/pulsecore/protocol-native.c	2012-12-08 16:37:12.020856775 +0100
++++ pulseaudio/src/pulsecore/protocol-native.c	2012-12-08 16:37:33.572856143 +0100
+@@ -2431,7 +2431,7 @@
+         (c->version >= 13 && pa_tagstruct_get_proplist(t, p) < 0))
+         goto error;
+ 
+-    if (c->version >= 16) {
++    if (c->version == 16) {
+         uint32_t n;
+ 
+         if (pa_tagstruct_getu32(t, &n) < 0)
+@@ -2466,7 +2466,7 @@
+     if (c->version >= 13)
+         pa_tagstruct_putu32(reply, c->client->index);
+ 
+-    if (c->version >= 16) {
++    if (c->version == 16) {
+         pa_strlist *extl;
+ 
+         extl = get_extension_list(c);
