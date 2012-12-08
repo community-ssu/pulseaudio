@@ -1,3 +1,12 @@
+pulseaudio (0.9.15-1maemo44+0m5+0cssu2) unstable; urgency=low
+
+  * Decrease protocol version from 16 to 15 (Maemo version 16 is not compatible with upstream 16)
+  * Move pulseaudio log output to syslog (instead of stderr whith going to /dev/null)
+  * Change vdd2_lock ownership in upstart script (from /sbin/preinit)
+  * Disable patch 0046-pulsecore-Lower-pool-to-16MB-max-Nokia-specific.patch which causing error Memory block too large for pool
+
+ -- Pali Rohár <pali.rohar@gmail.com>  Sat, 08 Dec 2012 19:11:04 +0100
+
 pulseaudio (0.9.15-1maemo44+0m5+0cssu1) unstable; urgency=low
 
   * Add support for bluetooth AudioSource
