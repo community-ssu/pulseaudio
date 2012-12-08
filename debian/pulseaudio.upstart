@@ -28,6 +28,10 @@ pre-start script
 	if [ -e /sys/devices/platform/omap-mcbsp.2/st_taps ]; then
 		chown pulse:pulse /sys/devices/platform/omap-mcbsp.2/st_taps
 	fi
+
+	if [ -e /sys/power/vdd2_lock ]; then
+		chown pulse:pulse /sys/power/vdd2_lock
+	fi
 end script
 
 post-start script
@@ -58,9 +62,13 @@ post-stop script
 	if [ -e /sys/devices/platform/omap-mcbsp.2/st_taps ]; then
 		chown root:root /sys/devices/platform/omap-mcbsp.2/st_taps
 	fi
+
+	if [ -e /sys/power/vdd2_lock ]; then
+		chown root:root /sys/power/vdd2_lock
+	fi
 end script
 
-exec /usr/bin/pulseaudio --system --high-priority
+exec /usr/bin/pulseaudio --system --high-priority --log-target=syslog
 
 respawn
 
