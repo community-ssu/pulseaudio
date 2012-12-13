@@ -115,3 +115,4 @@
 0202-discover-bt-source.patch
 0203-module-loopback.patch
 0204-pa-protocol-version.patch
+0205-pulsecore-Lower-pool-to-16MB-max-Nokia-specific2.patch
