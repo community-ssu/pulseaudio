@@ -1,7 +1,6 @@
-Index: pulseaudio/src/pulsecore/flist.c
-===================================================================
---- pulseaudio.orig/src/pulsecore/flist.c	2013-01-11 00:12:22.000000000 +0200
-+++ pulseaudio/src/pulsecore/flist.c	2013-01-11 00:17:42.000000000 +0200
+diff -ur pulseaudio-0.9.15.fix.orig/src/pulsecore/flist.c pulseaudio-0.9.15.fix/src/pulsecore/flist.c
+--- pulseaudio-0.9.15.fix.orig/src/pulsecore/flist.c	2012-12-17 06:14:21.000000000 -0500
++++ pulseaudio-0.9.15.fix/src/pulsecore/flist.c	2013-01-11 05:09:14.399625881 -0500
 @@ -2,6 +2,10 @@
    This file is part of PulseAudio.
  
@@ -13,7 +12,7 @@ Index: pulseaudio/src/pulsecore/flist.c
  
    PulseAudio is free software; you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
-@@ -27,191 +31,148 @@
+@@ -27,191 +31,139 @@
  
  #include <pulsecore/atomic.h>
  #include <pulsecore/log.h>
@@ -80,7 +79,6 @@ Index: pulseaudio/src/pulsecore/flist.c
 +typedef struct pa_flist_elem pa_flist_elem;
  
  struct pa_flist {
-+    char *name;
      unsigned size;
 -    pa_atomic_t length;
 -    pa_atomic_t read_idx;
@@ -111,8 +109,7 @@ Index: pulseaudio/src/pulsecore/flist.c
 +            return NULL;
 +        popped = &flist->table[idx & flist->index_mask];
 +    } while (!pa_atomic_cmpxchg(list, idx, pa_atomic_load(&popped->next)));
- 
--pa_flist *pa_flist_new(unsigned size) {
++
 +    return popped;
 +}
 +
@@ -131,11 +128,10 @@ Index: pulseaudio/src/pulsecore/flist.c
 +        pa_atomic_store(&new_elem->next, next);
 +    } while (!pa_atomic_cmpxchg(list, next, newindex));
 +}
-+
-+pa_flist *pa_flist_new_with_name(unsigned size, const char *name) {
+ 
+ pa_flist *pa_flist_new(unsigned size) {
      pa_flist *l;
 +    unsigned i;
-+    pa_assert(name);
  
      if (!size)
          size = FLIST_SIZE;
@@ -145,7 +141,6 @@ Index: pulseaudio/src/pulsecore/flist.c
 -    l = pa_xmalloc0(PA_ALIGN(sizeof(pa_flist)) + (sizeof(pa_atomic_ptr_t) * size));
 +    l = pa_xmalloc0(sizeof(pa_flist) + sizeof(pa_flist_elem) * size);
  
-+    l->name = pa_xstrdup(name);
      l->size = size;
  
 -    pa_atomic_store(&l->read_idx, 0);
@@ -167,13 +162,10 @@ Index: pulseaudio/src/pulsecore/flist.c
  
 -static unsigned reduce(pa_flist *l, unsigned value) {
 -    return value & (l->size - 1);
-+pa_flist *pa_flist_new(unsigned size) {
-+    return pa_flist_new_with_name(size, "unknown");
- }
- 
+-}
+-
  void pa_flist_free(pa_flist *l, pa_free_cb_t free_cb) {
      pa_assert(l);
-+    pa_assert(l->name);
  
      if (free_cb) {
 -        pa_atomic_ptr_t*cells;
@@ -192,7 +184,6 @@ Index: pulseaudio/src/pulsecore/flist.c
 +            free_cb(pa_atomic_ptr_load(&elem->ptr));
      }
  
-+    pa_xfree(l->name);
      pa_xfree(l);
  }
  
@@ -231,7 +222,7 @@ Index: pulseaudio/src/pulsecore/flist.c
 -        idx = reduce(l, idx + 1);
 +    elem = stack_pop(l, &l->empty);
 +    if (elem == NULL) {
-+        pa_log_warn("%s flist is full (don't worry)", l->name);
++        pa_log_warn("flist is full (don't worry)");
 +        return -1;
      }
 +    pa_atomic_ptr_store(&elem->ptr, p);
