@@ -43,7 +43,7 @@
 0043-build-add-pulsecore-install-hook-Nokia-specific.patch
 0044-build-libtool-fails-to-link-module-s-library-during-.patch
 0045-build-fix-build-on-scratchbox-with-rpath.patch
-0046-pulsecore-Lower-pool-to-16MB-max-Nokia-specific.patch
+#0046-pulsecore-Lower-pool-to-16MB-max-Nokia-specific.patch
 0047-pulsecore-add-eventfd-wrapper.patch
 0048-pulsecore-use-MOVE_FAIL-before-destroying-all-stream.patch
 0049-pulsecore-Send-PA_SINK_MESSAGE_SYNC_VOLUMES-always-a.patch
@@ -114,4 +114,7 @@
 0201-device-bt-source.patch
 0202-discover-bt-source.patch
 0203-module-loopback.patch
+0204-pa-protocol-version.patch
+0205-pulsecore-Lower-pool-to-16MB-max-Nokia-specific2.patch
+0206-new_lifo_style_flist.patch
 0301-workaround-gcc472-vectorizer.patch

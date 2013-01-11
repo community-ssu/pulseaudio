@@ -1,3 +1,27 @@
+pulseaudio (0.9.15-1maemo44+0m5+0cssu4) unstable; urgency=low
+
+  * core: New LIFO style flist implementation
+    Added patch 0206-new_lifo_style_flist.patch, see
+    https://bugs.maemo.org/show_bug.cgi?id=7190
+    https://bugs.launchpad.net/ubuntu/+source/pulseaudio/+bug/924416
+
+ -- Ludek Finstrle <luf@pzkagis.cz>  Thu, 10 Jan 2013 16:42:48 +0100
+
+pulseaudio (0.9.15-1maemo44+0m5+0cssu3) unstable; urgency=low
+
+  * Added patch 0205-pulsecore-Lower-pool-to-16MB-max-Nokia-specific2.patch which decrease count of memory blocks to total size 16MB
+
+ -- Pali Rohár <pali.rohar@gmail.com>  Fri, 14 Dec 2012 19:02:50 +0100
+
+pulseaudio (0.9.15-1maemo44+0m5+0cssu2) unstable; urgency=low
+
+  * Decrease protocol version from 16 to 15 (Maemo version 16 is not compatible with upstream 16)
+  * Move pulseaudio log output to syslog (instead of stderr whith going to /dev/null)
+  * Change vdd2_lock ownership in upstart script (from /sbin/preinit)
+  * Disable patch 0046-pulsecore-Lower-pool-to-16MB-max-Nokia-specific.patch which causing error Memory block too large for pool
+
+ -- Pali Rohár <pali.rohar@gmail.com>  Sat, 08 Dec 2012 19:11:04 +0100
+
 pulseaudio (0.9.15-1maemo44+0m5+0cssu1+thumb1) unstable; urgency=low
 
   * Fix optimization flags
@@ -809,6 +833,8 @@ pulseaudio (0.9.10-1) unstable; urgency=low
     + Make libpulsecore5-dbg depend on libpulsecore5, instead of pulseaudio.
     + Make libpulse-browse0-dbg depend on libpulse-browse0.
   * Update Standards-Version to 3.7.3 (no changes required).
+
+ -- CJ van den Berg <cj@vdbonline.com>  Sun, 30 Mar 2008 20:11:02 +0200
 
 pulseaudio (0.9.9-2) UNRELEASED; urgency=low
 

@@ -1,0 +1,18 @@
+Index: pulseaudio/src/pulsecore/memblock.c
+===================================================================
+--- pulseaudio.orig/src/pulsecore/memblock.c	2012-12-08 19:06:53.968594156 +0100
++++ pulseaudio/src/pulsecore/memblock.c	2012-12-13 21:58:01.704414520 +0100
+@@ -48,11 +48,11 @@
+ 
+ #include "memblock.h"
+ 
+-/* We can allocate 64*1024*1024 bytes at maximum. That's 64MB. Please
++/* We can allocate 64*1024*256 bytes at maximum. That's 16MB. Please
+  * note that the footprint is usually much smaller, since the data is
+  * stored in SHM and our OS does not commit the memory before we use
+  * it for the first time. */
+-#define PA_MEMPOOL_SLOTS_MAX 1024
++#define PA_MEMPOOL_SLOTS_MAX 256
+ #define PA_MEMPOOL_SLOT_SIZE (64*1024)
+ 
+ #define PA_MEMEXPORT_SLOTS_MAX 128
