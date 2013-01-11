@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-1maemo44+0m5+0cssu4+thumb0) unstable; urgency=low
+
+  * Thumb2 compile
+
+ -- Ivaylo Dimitrov <freemangordon@abv.bg>  Fri, 11 Jan 2013 16:57:50 +0200
+
 pulseaudio (0.9.15-1maemo44+0m5+0cssu4) unstable; urgency=low
 
   * core: New LIFO style flist implementation
