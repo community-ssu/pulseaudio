@@ -1,3 +1,12 @@
+pulseaudio (0.9.15-1maemo44+0m5+0cssu4) unstable; urgency=low
+
+  * core: New LIFO style flist implementation
+    Added patch 0206-new_lifo_style_flist.patch, see
+    https://bugs.maemo.org/show_bug.cgi?id=7190
+    https://bugs.launchpad.net/ubuntu/+source/pulseaudio/+bug/924416
+
+ -- Ludek Finstrle <luf@pzkagis.cz>  Thu, 10 Jan 2013 16:42:48 +0100
+
 pulseaudio (0.9.15-1maemo44+0m5+0cssu3) unstable; urgency=low
 
   * Added patch 0205-pulsecore-Lower-pool-to-16MB-max-Nokia-specific2.patch which decrease count of memory blocks to total size 16MB
