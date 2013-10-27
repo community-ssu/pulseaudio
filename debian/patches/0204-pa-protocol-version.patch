@@ -1,33 +1,8 @@
-Index: pulseaudio/configure.ac
-===================================================================
---- pulseaudio.orig/configure.ac	2012-12-02 16:24:09.823204995 +0100
-+++ pulseaudio/configure.ac	2012-12-02 16:24:23.055204608 +0100
-@@ -40,7 +40,7 @@
- AC_SUBST(PACKAGE_URL, [http://pulseaudio.org/])
- 
- AC_SUBST(PA_API_VERSION, 12)
--AC_SUBST(PA_PROTOCOL_VERSION, 16)
-+AC_SUBST(PA_PROTOCOL_VERSION, 15)
- 
- # The stable ABI for client applications, for the version info x:y:z
- # always will hold y=z
-Index: pulseaudio/configure
-===================================================================
---- pulseaudio.orig/configure	2012-12-08 14:47:20.914204885 +0100
-+++ pulseaudio/configure	2012-12-08 14:52:01.718185394 +0100
-@@ -2919,7 +2919,7 @@
- 
- PA_API_VERSION=12
- 
--PA_PROTOCOL_VERSION=16
-+PA_PROTOCOL_VERSION=15
- 
- 
  # The stable ABI for client applications, for the version info x:y:z
 Index: pulseaudio/src/pulse/context.c
 ===================================================================
---- pulseaudio.orig/src/pulse/context.c	2012-12-08 16:37:03.208857031 +0100
-+++ pulseaudio/src/pulse/context.c	2012-12-08 16:37:44.044855837 +0100
+--- pulseaudio.orig/src/pulse/context.c	2013-10-27 19:46:28.226753828 +0100
++++ pulseaudio/src/pulse/context.c	2013-10-27 19:50:21.210826278 +0100
 @@ -501,7 +501,7 @@
              } else
                  pa_tagstruct_puts(reply, pa_proplist_gets(c->proplist, PA_PROP_APPLICATION_NAME));
@@ -46,11 +21,47 @@ Index: pulseaudio/src/pulse/context.c
                  uint32_t n;
                  const char *supported;
  
+@@ -593,7 +593,10 @@
+ 
+     /* Starting with protocol version 13 we use the MSB of the version
+      * tag for informing the other side if we could do SHM or not */
+-    pa_tagstruct_putu32(t, PA_PROTOCOL_VERSION | (c->do_shm ? 0x80000000U : 0));
++    if (c->is_local)
++        pa_tagstruct_putu32(t, PA_PROTOCOL_VERSION | (c->do_shm ? 0x80000000U : 0));
++    else
++        pa_tagstruct_putu32(t, 15 | (c->do_shm ? 0x80000000U : 0));
+     pa_tagstruct_put_arbitrary(t, c->conf->cookie, sizeof(c->conf->cookie));
+ 
+ #ifdef HAVE_CREDS
+@@ -1314,7 +1317,10 @@
+ }
+ 
+ uint32_t pa_context_get_protocol_version(pa_context *c) {
+-    return PA_PROTOCOL_VERSION;
++    if (c->is_local)
++        return PA_PROTOCOL_VERSION;
++    else
++        return 15;
+ }
+ 
+ uint32_t pa_context_get_server_protocol_version(pa_context *c) {
 Index: pulseaudio/src/pulsecore/protocol-native.c
 ===================================================================
---- pulseaudio.orig/src/pulsecore/protocol-native.c	2012-12-08 16:37:12.020856775 +0100
-+++ pulseaudio/src/pulsecore/protocol-native.c	2012-12-08 16:37:33.572856143 +0100
-@@ -2431,7 +2431,7 @@
+--- pulseaudio.orig/src/pulsecore/protocol-native.c	2013-10-27 19:46:27.934752546 +0100
++++ pulseaudio/src/pulsecore/protocol-native.c	2013-10-27 19:46:29.414754182 +0100
+@@ -2384,7 +2384,10 @@
+     pa_pstream_enable_shm(c->pstream, do_shm);
+ 
+     reply = reply_new(tag);
+-    pa_tagstruct_putu32(reply, PA_PROTOCOL_VERSION | (do_shm ? 0x80000000 : 0));
++    if (c->is_local)
++        pa_tagstruct_putu32(reply, PA_PROTOCOL_VERSION | (do_shm ? 0x80000000 : 0));
++    else
++        pa_tagstruct_putu32(reply, 15 | (do_shm ? 0x80000000 : 0));
+ 
+ #ifdef HAVE_CREDS
+ {
+@@ -2431,7 +2434,7 @@
          (c->version >= 13 && pa_tagstruct_get_proplist(t, p) < 0))
          goto error;
  
@@ -59,7 +70,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
          uint32_t n;
  
          if (pa_tagstruct_getu32(t, &n) < 0)
-@@ -2466,7 +2466,7 @@
+@@ -2466,7 +2469,7 @@
      if (c->version >= 13)
          pa_tagstruct_putu32(reply, c->client->index);
  
@@ -68,3 +79,16 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
          pa_strlist *extl;
  
          extl = get_extension_list(c);
+Index: pulseaudio/src/modules/module-tunnel.c
+===================================================================
+--- pulseaudio.orig/src/modules/module-tunnel.c	2013-10-27 19:50:55.734751648 +0100
++++ pulseaudio/src/modules/module-tunnel.c	2013-10-27 19:52:02.598838288 +0100
+@@ -1708,7 +1708,7 @@
+     t = pa_tagstruct_new(NULL, 0);
+     pa_tagstruct_putu32(t, PA_COMMAND_AUTH);
+     pa_tagstruct_putu32(t, tag = u->ctag++);
+-    pa_tagstruct_putu32(t, PA_PROTOCOL_VERSION);
++    pa_tagstruct_putu32(t, 15);
+ 
+     pa_tagstruct_put_arbitrary(t, pa_auth_cookie_read(u->auth_cookie, PA_NATIVE_COOKIE_LENGTH), PA_NATIVE_COOKIE_LENGTH);
+ 
