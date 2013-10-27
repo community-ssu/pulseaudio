@@ -1,3 +1,13 @@
+pulseaudio (0.9.15-1maemo44+0m5+0cssu5) unstable; urgency=low
+
+  * Update patch 0204-pa-protocol-version.patch
+    Revert back PA_PROTOCOL_VERSION to 16 (needed for maemo and closed pulseaudio modules)
+    Replace all checks c->version >= 16 to c->version == 16 (which does not break maemo applications)
+    Report version 15 (last compatible version) for all non local connections
+    Report version 15 in module-tunnel (it is not used on maemo)
+
+ -- Pali Rohár <pali.rohar@gmail.com>  Sun, 27 Oct 2013 19:58:01 +0100
+
 pulseaudio (0.9.15-1maemo44+0m5+0cssu4) unstable; urgency=low
 
   * core: New LIFO style flist implementation
