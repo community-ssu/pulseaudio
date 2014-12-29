@@ -1,0 +1,43 @@
+Index: pulseaudio/src/pulsecore/ratelimit.c
+===================================================================
+--- pulseaudio.orig/src/pulsecore/ratelimit.c	2014-04-17 15:00:59.603306281 +0200
++++ pulseaudio/src/pulsecore/ratelimit.c	2014-04-17 15:01:10.435333900 +0200
+@@ -51,8 +51,10 @@
+     if (r->begin <= 0 ||
+         r->begin + r->interval < now) {
+ 
++#if 0
+         if (r->n_missed > 0)
+             pa_log_warn("%u events suppressed", r->n_missed);
++#endif
+ 
+         r->begin = now;
+ 
+Index: pulseaudio/src/modules/alsa/module-alsa-sink-old.c
+===================================================================
+--- pulseaudio.orig/src/modules/alsa/module-alsa-sink-old.c	2014-04-17 15:01:42.071412221 +0200
++++ pulseaudio/src/modules/alsa/module-alsa-sink-old.c	2014-04-17 15:01:52.303436831 +0200
+@@ -245,7 +245,9 @@
+         snd_pcm_uframes_t offset, frames;
+ 
+         if ((frames = snd_pcm_avail(u->pcm_handle)) * u->frame_size >= u->hwbuf_size) {
++#if 0
+             pa_log_warn("Buffer underrun ! frames: %d", (int)frames);
++#endif
+             pa_atomic_store(&u->buffer_underrun, TRUE);
+         }
+ 
+Index: pulseaudio/src/modules/bluetooth/module-bluetooth-discover.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/module-bluetooth-discover.c	2014-04-17 14:57:16.454788333 +0200
++++ pulseaudio/src/modules/bluetooth/module-bluetooth-discover.c	2014-04-17 15:02:58.259684620 +0200
+@@ -85,7 +85,9 @@
+ 
+     mi = pa_hashmap_get(u->hashmap, d->path);
+ 
++#if 0
+     pa_log("dead: %d, device_connected: %d, audio_state: %d, audio_source_state: %d, headset_state %d", d->dead, d->device_connected, d->audio_state, d->audio_source_state, d->headset_state);
++#endif
+     if (!d->dead && d->device_connected > 0) {
+         char *auto_hsp = "";
+ 

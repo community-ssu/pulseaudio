@@ -117,4 +117,5 @@
 0204-pa-protocol-version.patch
 0205-pulsecore-Lower-pool-to-16MB-max-Nokia-specific2.patch
 0206-new_lifo_style_flist.patch
+0207-disable-log.patch
 0301-workaround-gcc472-vectorizer.patch

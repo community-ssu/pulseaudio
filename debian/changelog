@@ -1,3 +1,10 @@
+pulseaudio (0.9.15-1maemo44+0m5+0cssu6) unstable; urgency=low
+
+  * Enable ipv6 support
+  * Disable useless logs
+
+ -- Pali Rohár <pali.rohar@gmail.com>  Thu, 17 Apr 2014 20:35:10 +0200
+
 pulseaudio (0.9.15-1maemo44+0m5+0cssu5+thumb0) unstable; urgency=low
 
   * Thumb2 compile
